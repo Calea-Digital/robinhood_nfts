@@ -1,0 +1,15 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+
+# See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
+
+# CI profile — selected by FOUNDRY_PROFILE=ci in .github/workflows/test.yml.
+# Inherits every key from [profile.default]; only test thoroughness is raised, so
+# compilation stays byte-identical and `forge build --sizes` reports the same
+# numbers locally and in CI. Keep build settings (solc_version, optimizer) in
+# [profile.default] only.
+[profile.ci]
+fuzz = { runs = 10_000 }        # default 256
+invariant = { runs = 1_000 }    # default 256; depth intentionally inherits the default (500)
