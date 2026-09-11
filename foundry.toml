@@ -3,7 +3,26 @@ src = "src"
 out = "out"
 libs = ["lib"]
 
-# See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
+# Pinned by SeaDrop, which declares `pragma solidity 0.8.17` exactly (not a caret range),
+# so every file in its import graph must compile at 0.8.17. This deviates from the
+# ^0.8.20+ house convention; the mandated dependency is the justification.
+# Consequence: evm_version cannot exceed "london" (paris landed in solc 0.8.18), so no
+# PUSH0 or transient storage. Maximally portable bytecode; nothing we build needs them.
+solc_version = "0.8.17"
+evm_version = "london"
+optimizer = true
+optimizer_runs = 1_000_000   # matches SeaDrop's own setting; the 96 KB code limit on
+                             # Robinhood Chain leaves ample headroom for it
+
+remappings = [
+    "seadrop/=lib/seadrop/src/",
+    "ERC721A/=lib/seadrop/lib/ERC721A/contracts/",
+    "solmate/=lib/seadrop/lib/solmate/src/",
+    "openzeppelin-contracts/=lib/seadrop/lib/openzeppelin-contracts/contracts/",
+    "utility-contracts/=lib/seadrop/lib/utility-contracts/src/",
+    "solady/=lib/solady/src/",
+    "forge-std/=lib/forge-std/src/",
+]
 
 # CI profile — selected by FOUNDRY_PROFILE=ci in .github/workflows/test.yml.
 # Inherits every key from [profile.default]; only test thoroughness is raised, so
