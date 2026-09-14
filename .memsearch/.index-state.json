@@ -1,10 +1,10 @@
 {
   "collection": "ms_robinhood_nfts_c6537911",
   "failed_files": [],
-  "last_completed_at": "2026-09-11T16:27:17.240252Z",
+  "last_completed_at": "2026-09-14T13:51:44.829546Z",
   "last_error": "RuntimeError: Could not open the local Milvus database at /Users/bojanjovin/.memsearch/milvus.db: <ConnectionConfigException: (code=1, message=Open local milvus failed)>. Milvus Lite 3.x stores a database as a directory, but this path is a file. If it is a database from Milvus Lite 2.x, move it aside and rebuild the index with 'memsearch index'. Otherwise check the configured URI, or use Milvus Server via Docker or Zilliz Cloud.",
-  "last_failed_at": "2026-09-11T16:27:17.240252Z",
-  "last_started_at": "2026-09-11T16:27:16.211518Z",
+  "last_failed_at": "2026-09-14T13:51:44.829546Z",
+  "last_started_at": "2026-09-14T13:51:43.838141Z",
   "milvus_uri": "~/.memsearch/milvus.db",
   "operation": "index",
   "paths": [
@@ -12,5 +12,5 @@
   ],
   "schema_version": 1,
   "status": "error",
-  "updated_at": "2026-09-11T16:27:17.240252Z"
+  "updated_at": "2026-09-14T13:51:44.829546Z"
 }
