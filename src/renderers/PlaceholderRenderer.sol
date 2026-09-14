@@ -13,6 +13,12 @@ import {Ownable} from "solady/auth/Ownable.sol";
  *         replaces it at reveal; the token's `setRenderer` is the only thing that changes.
  *         The returned document has the same shape as the final one, so marketplaces that
  *         cache the pre-reveal response refresh into the real thing without surprises.
+ *
+ *         Every owner-supplied string is escaped on the way into the document. Without that,
+ *         a single double quote in the description produces invalid JSON for all 4,444
+ *         tokens at once, and a carefully shaped one closes the field early and writes
+ *         another. Escaping at render rather than rejecting at write keeps apostrophes,
+ *         quotes and punctuation available to whoever writes the copy.
  */
 contract PlaceholderRenderer is IBearRenderer, Ownable {
     string private _description;
@@ -35,11 +41,11 @@ contract PlaceholderRenderer is IBearRenderer, Ownable {
             '{"name":"MINT Bear #',
             LibString.toString(tokenId),
             '","description":"',
-            _description,
+            LibString.escapeJSON(_description),
             '","external_url":"',
-            _externalUrl,
+            LibString.escapeJSON(_externalUrl),
             '","image":"',
-            _image,
+            LibString.escapeJSON(_image),
             '","attributes":[]}'
         );
         return string(abi.encodePacked("data:application/json;base64,", Base64.encode(json)));
@@ -49,7 +55,7 @@ contract PlaceholderRenderer is IBearRenderer, Ownable {
      * @notice Updates the collection-level strings.
      * @dev    These are owner-settable rather than fixed because the renderer is replaceable
      *         in any case — declaring them immutable would claim a guarantee this design does
-     *         not actually provide.
+     *         not actually provide. Any content is accepted; `render` escapes it.
      */
     function setStrings(string calldata description_, string calldata externalUrl_, string calldata image_)
         external

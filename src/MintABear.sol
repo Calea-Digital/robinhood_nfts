@@ -13,18 +13,33 @@ import {IBearRenderer} from "./interfaces/IBearRenderer.sol";
  *         no gas overhead). The SeaDrop mint path and `getMintStats` are untouched, per
  *         OpenSea's integration guidance.
  *
- *         Two behaviours are added on top:
+ *         Four behaviours are added on top:
  *
  *         1. A per-bear transfer counter. Activation stores a level alongside the counter
  *            value it was set at; when the counter moves, that level is void. The reset is
  *            therefore a consequence of the transfer rather than an action that has to
  *            succeed, so it can neither be skipped nor block the transfer itself.
  *
- *         2. A standing refusal to send a bear into any bear's account. Recorded at mint,
- *            when the account address is already known, so the rule holds even for accounts
- *            that have never been deployed.
+ *         2. A standing refusal to send a bear into any bear's account. Addresses are
+ *            recorded at mint and can be pre-recorded for the whole supply beforehand, so
+ *            the rule holds even for accounts that have never been deployed.
+ *
+ *         3. A refusal to burn. The inherited `ERC721SeaDrop.burn` cannot be overridden, so
+ *            it is neutralised in the transfer hook instead. A burned bear would strand its
+ *            account's contents permanently.
+ *
+ *         4. A hard supply ceiling of `MAX_BEARS`. The inherited `maxSupply` is an owner
+ *            setting that can be raised at will; this one is a constant checked on the mint
+ *            path, so 4,444 is a guarantee rather than a configuration choice.
  */
 contract MintABear is ERC721SeaDrop {
+    /// @notice The collection's permanent supply ceiling.
+    /// @dev    `maxSupply` on the SeaDrop base is an owner setting: it starts at zero, and the
+    ///         owner (or OpenSea Studio, through `multiConfigure`) can raise it at any time.
+    ///         This cannot be changed by anyone, so the stated 4,444 is a property of the
+    ///         code rather than of how the contract happens to be configured.
+    uint256 public constant MAX_BEARS = 4444;
+
     /// @notice Salt used for every bear's account. Fixed so each address is deterministic.
     bytes32 public constant ACCOUNT_SALT = bytes32(0);
 
@@ -43,11 +58,30 @@ contract MintABear is ERC721SeaDrop {
     /// @notice Emitted when the metadata renderer is replaced.
     event RendererUpdated(address indexed previousRenderer, address indexed newRenderer);
 
+    /// @notice Emitted when a range of bears' account addresses is pre-recorded.
+    event AccountsRecorded(uint256 fromTokenId, uint256 toTokenId);
+
     /// @notice A bear may never be owned by any bear's account, at any depth.
     error TransferToBearAccount();
 
     /// @notice The renderer address may not be zero.
     error RendererIsZeroAddress();
+
+    /// @notice The account implementation may not be zero: every bear's account derives
+    ///         from it, and a zero implementation would fix all 4,444 addresses for good.
+    error AccountImplementationIsZeroAddress();
+
+    /// @notice Bears cannot be burned. See `_beforeTokenTransfers`.
+    error BurnDisabled();
+
+    /// @notice The queried bear has not been minted.
+    error BearDoesNotExist();
+
+    /// @notice The supplied token id range is empty, starts at zero, or exceeds `MAX_BEARS`.
+    error InvalidTokenRange();
+
+    /// @notice The mint would take the collection past `MAX_BEARS`.
+    error ExceedsMaxBears();
 
     /**
      * @param name_           Collection name. Permanent.
@@ -64,6 +98,7 @@ contract MintABear is ERC721SeaDrop {
         address accountImplementation_,
         address renderer_
     ) ERC721SeaDrop(name_, symbol_, allowedSeaDrop_) {
+        if (accountImplementation_ == address(0)) revert AccountImplementationIsZeroAddress();
         if (renderer_ == address(0)) revert RendererIsZeroAddress();
         ACCOUNT_IMPLEMENTATION = accountImplementation_;
         renderer = IBearRenderer(renderer_);
@@ -84,8 +119,32 @@ contract MintABear is ERC721SeaDrop {
      *         anything. The registry call is idempotent, so repeat calls are harmless.
      */
     function deployAccount(uint256 tokenId) external returns (address) {
-        if (!_exists(tokenId)) revert URIQueryForNonexistentToken();
+        if (!_exists(tokenId)) revert BearDoesNotExist();
         return LibERC6551.createAccount(ACCOUNT_IMPLEMENTATION, ACCOUNT_SALT, block.chainid, address(this), tokenId);
+    }
+
+    /**
+     * @notice Records the canonical account addresses for a range of bears in advance.
+     * @dev    `_beforeTokenTransfers` records each bear's account as that bear is minted,
+     *         which leaves a window: until bear N is minted, its account address is not yet
+     *         in `isBearAccount`, so another bear can be sent there and ends up owned by a
+     *         bear once N mints. Recording the whole supply before the mint opens closes it.
+     *
+     *         Permissionless, because the only addresses it can ever mark are ones this
+     *         contract itself derives, and idempotent, so it is safely run in batches. The
+     *         range is bounded by `MAX_BEARS` rather than by `maxSupply`, so it can be run
+     *         immediately after deployment and never needs repeating if supply is raised.
+     */
+    function recordAccounts(uint256 fromTokenId, uint256 toTokenId) external {
+        if (fromTokenId == 0 || toTokenId < fromTokenId || toTokenId > MAX_BEARS) {
+            revert InvalidTokenRange();
+        }
+        unchecked {
+            for (uint256 id = fromTokenId; id <= toTokenId; ++id) {
+                isBearAccount[accountOf(id)] = true;
+            }
+        }
+        emit AccountsRecorded(fromTokenId, toTokenId);
     }
 
     /**
@@ -107,20 +166,33 @@ contract MintABear is ERC721SeaDrop {
     /**
      * @dev Records new bears' account addresses on mint, advances the transfer counter on
      *      every move, and refuses any destination that is a bear's account.
+     *
+     *      Also the only place a burn can be stopped. `ERC721SeaDrop` exposes a public
+     *      `burn`, and declares it neither `virtual` nor internal, so it cannot be
+     *      overridden — but every burn routes through this hook with `to` set to the zero
+     *      address, and `to` is zero in no other case. Burning has to be refused because a
+     *      burned bear's account keeps whatever it holds while resolving its owner through
+     *      `ownerOf`, which no longer answers: the contents would be unreachable for good.
      */
     function _beforeTokenTransfers(address from, address to, uint256 startTokenId, uint256 quantity)
         internal
         virtual
         override
     {
-        unchecked {
-            if (from == address(0)) {
-                // Record before checking `to`, so minting a bear into its own account is
-                // caught by the same rule as every other case.
+        if (to == address(0)) revert BurnDisabled();
+
+        if (from == address(0)) {
+            // Checked arithmetic deliberately: this is the one place supply is bounded.
+            if (startTokenId + quantity - 1 > MAX_BEARS) revert ExceedsMaxBears();
+            // Record before checking `to`, so minting a bear into its own account is
+            // caught by the same rule as every other case.
+            unchecked {
                 for (uint256 i; i < quantity; ++i) {
                     isBearAccount[accountOf(startTokenId + i)] = true;
                 }
-            } else {
+            }
+        } else {
+            unchecked {
                 for (uint256 i; i < quantity; ++i) {
                     ++transferNonce[startTokenId + i];
                 }

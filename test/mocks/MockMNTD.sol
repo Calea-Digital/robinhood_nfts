@@ -32,6 +32,14 @@ contract MockMNTD {
         return true;
     }
 
+    /// @dev Present so a bear's account can be shown moving $MNTD out through `execute`.
+    function transfer(address to, uint256 amount) external returns (bool) {
+        if (balanceOf[msg.sender] < amount) revert InsufficientBalance();
+        balanceOf[msg.sender] -= amount;
+        balanceOf[to] += amount;
+        return true;
+    }
+
     function burnFrom(address account, uint256 amount) external {
         uint256 allowed = allowance[account][msg.sender];
         if (allowed < amount) revert InsufficientAllowance();

@@ -78,6 +78,18 @@ contract Activation is Ownable {
     error ContractPaused();
     error ThresholdsNotAscending();
 
+    /// @notice Neither the collection nor the token may be the zero address.
+    error ZeroAddress();
+
+    /// @notice The token's `decimals()` is too large for its unit to fit in a uint128.
+    error DecimalsOutOfRange();
+
+    /// @notice Levels run 0 to 5; nothing else has a threshold.
+    error InvalidLevel();
+
+    /// @notice Ownership may not be given up while burning and linking are suspended.
+    error CannotRenounceWhilePaused();
+
     modifier whenNotPaused() {
         _requireNotPaused();
         _;
@@ -95,11 +107,18 @@ contract Activation is Ownable {
      *                    token's decimals at construction and fixed thereafter.
      */
     constructor(address bears_, address mntd_, uint128[5] memory thresholds_) {
+        if (bears_ == address(0) || mntd_ == address(0)) revert ZeroAddress();
+
         _initializeOwner(msg.sender);
         BEARS = IMintABear(bears_);
         MNTD = IMNTD(mntd_);
 
-        uint128 unit = uint128(10 ** IMNTD(mntd_).decimals());
+        // Widened deliberately: the downcast is only safe once the value is known to fit,
+        // and a silently truncated unit would bake wrong thresholds in permanently.
+        uint256 scale = 10 ** IMNTD(mntd_).decimals();
+        if (scale > type(uint128).max) revert DecimalsOutOfRange();
+        uint128 unit = uint128(scale);
+
         for (uint256 i = 1; i < 5; ++i) {
             if (thresholds_[i] <= thresholds_[i - 1]) revert ThresholdsNotAscending();
         }
@@ -154,9 +173,15 @@ contract Activation is Ownable {
         emit BearLinked(msg.sender, tokenId);
     }
 
-    /// @notice Removes this wallet's nomination without transferring the bear.
+    /**
+     * @notice Removes this wallet's nomination without transferring the bear.
+     * @dev    A wallet with no nomination is left alone rather than reverting, so the portal
+     *         can call this unconditionally. No event is emitted in that case: an indexer
+     *         should never see an unlink that did not correspond to a link.
+     */
     function unlinkBear() external {
         uint256 tokenId = _linkedBear[msg.sender];
+        if (tokenId == 0) return;
         delete _linkedBear[msg.sender];
         delete _linkedAtNonce[msg.sender];
         emit BearUnlinked(msg.sender, tokenId);
@@ -205,13 +230,24 @@ contract Activation is Ownable {
         if (level == 3) return THRESHOLD_3;
         if (level == 4) return THRESHOLD_4;
         if (level == 5) return THRESHOLD_5;
-        revert AlreadyAtMaxLevel();
+        revert InvalidLevel();
     }
 
     /// @notice Suspends burning and linking. Transfers and bear wallets are never affected.
     function setPaused(bool paused_) external onlyOwner {
         paused = paused_;
         emit PausedSet(paused_);
+    }
+
+    /**
+     * @notice Gives up ownership permanently.
+     * @dev    Refused while paused. `setPaused` is the only power the owner has, so
+     *         renouncing under a pause would leave burning and linking suspended with
+     *         nobody able to lift it — for the life of the collection.
+     */
+    function renounceOwnership() public payable override onlyOwner {
+        if (paused) revert CannotRenounceWhilePaused();
+        super.renounceOwnership();
     }
 
     function _levelFor(uint128 cumulative) internal view returns (uint8) {

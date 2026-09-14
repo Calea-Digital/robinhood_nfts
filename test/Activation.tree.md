@@ -56,7 +56,10 @@ linkBear
         └── it replaces the previous nomination
 
 unlinkBear
-└── it clears the nomination without moving the bear
+├── it clears the nomination without moving the bear
+└── when the wallet has no nomination
+    ├── it does nothing and does not revert
+    └── it emits no event, so an unlink is never seen without a link
 ```
 
 ## Views
@@ -70,19 +73,49 @@ costToReach
 
 thresholdFor
 ├── level 0 returns 0
-└── levels 1 to 5 return the configured thresholds
+├── levels 1 to 5 return the configured thresholds
+└── above level 5 it reverts with InvalidLevel, surfaced through costToReach too
 ```
+
+Note for the portal: `burn` accepts any amount and banks all of it, including the part
+above level 5, which is destroyed for nothing. `costToReach` exists to prevent that and the
+client is expected to use it on every activation.
 
 ## Construction
 
 ```
 constructor
+├── when the collection address is zero
+│   └── it reverts with ZeroAddress
+├── when the token address is zero
+│   └── it reverts with ZeroAddress
+├── when the token's decimals put its unit past uint128
+│   └── it reverts with DecimalsOutOfRange, rather than truncating the unit silently
 ├── when the thresholds are not strictly ascending
 │   └── it reverts with ThresholdsNotAscending
 ├── when the first threshold is zero
 │   └── it reverts with ThresholdsNotAscending
 └── otherwise
-    └── it scales every threshold by the token's decimals
+    ├── it scales every threshold by the token's decimals
+    └── it does so for decimals other than 18
+```
+
+## Ownership
+
+```
+setPaused
+└── only the owner may suspend or resume
+
+renounceOwnership
+├── when paused
+│   └── it reverts with CannotRenounceWhilePaused, because setPaused is the only owner
+│       power and nobody could ever lift the suspension
+├── when not paused
+│   └── it succeeds, and burning and linking carry on with no owner
+├── when paused and then unpaused
+│   └── it succeeds; the guard blocks the trap, not the exit
+└── when the caller is not the owner
+    └── it reverts
 ```
 
 ## Auditor obligations (not implemented here)
@@ -91,3 +124,10 @@ constructor
 - INV-5: `lifetimeBurned` never decreases.
 - INV-6: the sum of all burns equals the reduction in $MNTD total supply.
 - INV-7: a level recorded before a transfer is never readable after it.
+- INV-8: `linkOf(wallet)` returns a non-zero bear only while that wallet owns it. Holds
+  because every transfer advances the counter the link is pinned to.
+- **Reviewed and clean, stated so the reviewer can re-derive it:** `burn` writes its record
+  before calling `MNTD.burnFrom`, and $MNTD is untrusted — it is not deployed yet. Reentering
+  `burn` still requires each `burnFrom` to succeed, so no level can be obtained without the
+  matching burn; transferring the bear from inside `burnFrom` voids the caller's own record.
+  Slither's `reentrancy-events` on this function is event ordering only.

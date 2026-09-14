@@ -3,6 +3,7 @@ pragma solidity 0.8.17;
 
 import {BaseTest} from "./BaseTest.t.sol";
 import {Activation} from "../src/Activation.sol";
+import {MockMNTD} from "./mocks/MockMNTD.sol";
 
 contract ActivationTest is BaseTest {
     function setUp() public override {
@@ -362,15 +363,6 @@ contract ActivationBranchTest is BaseTest {
         assertEq(activation.thresholdFor(5), 250_000 * UNIT);
     }
 
-    function test_thresholdFor_aboveMaxLevel_reverts() public {
-        /* Scenario:
-           Given a level that does not exist
-           When its threshold is queried
-           Then the call reverts rather than returning a misleading zero */
-        vm.expectRevert(Activation.AlreadyAtMaxLevel.selector);
-        activation.thresholdFor(6);
-    }
-
     function test_linkOf_withNoNomination_readsEmpty() public {
         /* Scenario:
            Given a wallet that has never nominated a bear
@@ -433,5 +425,132 @@ contract ActivationBranchTest is BaseTest {
         activation.unlinkBear();
         (uint256 tokenId,) = activation.linkOf(bob);
         assertEq(tokenId, 0);
+    }
+
+    function test_unlinkBear_withNoNomination_emitsNothing() public {
+        /* Scenario:
+           Given a wallet with no nomination
+           When it unlinks anyway
+           Then no event is recorded, so an indexer never sees an unlink without a link */
+        vm.recordLogs();
+        vm.prank(bob);
+        activation.unlinkBear();
+        assertEq(vm.getRecordedLogs().length, 0, "no-op should be silent");
+    }
+
+    function test_thresholdFor_aboveMaxLevel_revertsWithInvalidLevel() public {
+        /* Scenario:
+           Given a level that does not exist
+           When its threshold is queried
+           Then it is refused by name, not as an already-at-max condition */
+        vm.expectRevert(Activation.InvalidLevel.selector);
+        activation.thresholdFor(6);
+    }
+
+    function test_costToReach_aboveMaxLevel_revertsWithInvalidLevel() public {
+        /* Scenario:
+           Given the portal asks the cost of a level that does not exist
+           When costToReach runs
+           Then the same named error surfaces */
+        _mint(alice, 1);
+        vm.expectRevert(Activation.InvalidLevel.selector);
+        activation.costToReach(1, 6);
+    }
+}
+
+/// @dev The constructor bakes in the collection, the token and the five thresholds, all
+///      immutable. Nothing here can be corrected after deployment, so each input is guarded.
+contract ActivationConstructionTest is BaseTest {
+    function test_constructor_rejectsZeroBears() public {
+        /* Scenario:
+           Given a deployment that forgets the collection address
+           When the contract is constructed
+           Then it is refused, rather than deploying clean and failing on every read */
+        vm.expectRevert(Activation.ZeroAddress.selector);
+        new Activation(address(0), address(mntd), _thresholds());
+    }
+
+    function test_constructor_rejectsZeroToken() public {
+        /* Scenario:
+           Given a deployment that forgets the $MNTD address
+           When the contract is constructed
+           Then it is refused */
+        vm.expectRevert(Activation.ZeroAddress.selector);
+        new Activation(address(bears), address(0), _thresholds());
+    }
+
+    function test_constructor_rejectsUnrepresentableDecimals() public {
+        /* Scenario:
+           Given a token whose decimals put its unit past uint128
+           When the thresholds are scaled
+           Then it is refused rather than silently truncating the unit */
+        MockMNTD absurd = new MockMNTD(39);
+        vm.expectRevert(Activation.DecimalsOutOfRange.selector);
+        new Activation(address(bears), address(absurd), _thresholds());
+    }
+
+    function test_constructor_acceptsNonEighteenDecimals() public {
+        /* Scenario:
+           Given a six-decimal token
+           When the thresholds are scaled
+           Then they follow that token's unit */
+        MockMNTD sixDecimals = new MockMNTD(6);
+        Activation a = new Activation(address(bears), address(sixDecimals), _thresholds());
+        assertEq(a.THRESHOLD_1(), 5_000 * 1e6);
+        assertEq(a.THRESHOLD_5(), 250_000 * 1e6);
+    }
+
+    function _thresholds() internal pure returns (uint128[5] memory) {
+        return [uint128(5_000), uint128(15_000), uint128(40_000), uint128(100_000), uint128(250_000)];
+    }
+}
+
+/// @dev `setPaused` is the owner's only power. Solady's `Ownable` also lets the owner walk
+///      away, and doing that mid-pause would suspend burning and linking permanently.
+contract ActivationOwnershipTest is BaseTest {
+    function test_renounce_whilePaused_reverts() public {
+        /* Scenario:
+           Given activation is paused
+           When the owner tries to renounce
+           Then it is refused, because nobody could ever lift the pause */
+        activation.setPaused(true);
+        vm.expectRevert(Activation.CannotRenounceWhilePaused.selector);
+        activation.renounceOwnership();
+    }
+
+    function test_renounce_whileUnpaused_succeeds() public {
+        /* Scenario:
+           Given activation is running normally
+           When the owner renounces
+           Then it succeeds, and burning and linking carry on without an owner */
+        activation.renounceOwnership();
+        assertEq(activation.owner(), address(0));
+
+        _mint(alice, 1);
+        _fund(alice, 10_000);
+        vm.prank(alice);
+        activation.burn(1, 5_000 * UNIT);
+        assertEq(activation.levelOf(1), 1, "burning still works with no owner");
+    }
+
+    function test_renounce_afterUnpausing_succeeds() public {
+        /* Scenario:
+           Given activation was paused and then unpaused
+           When the owner renounces
+           Then it succeeds: the guard blocks the trap, not the exit */
+        activation.setPaused(true);
+        activation.setPaused(false);
+        activation.renounceOwnership();
+        assertEq(activation.owner(), address(0));
+    }
+
+    function test_renounce_byNonOwner_reverts() public {
+        /* Scenario:
+           Given a wallet that does not own the contract
+           When it tries to renounce
+           Then it is refused */
+        vm.prank(alice);
+        vm.expectRevert();
+        activation.renounceOwnership();
     }
 }
