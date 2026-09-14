@@ -81,10 +81,10 @@ the critical path** because the renderer is replaceable.
    prose until someone writes it as `forge script`.
 2. **Testnet rehearsal** on chain 46630, including the two OpenSea unknowns below and a
    gas-limit check on `recordAccounts`.
-3. **Integration docs** for the getminted.io portal team — ABIs, addresses, and the
-   read/write paths for activate, link, unlink, deploy wallet, read level. Agreed
-   deliverable is interfaces plus a typed client library. One item in there is a
-   requirement rather than a note: see `costToReach` below.
+3. **Integration docs** for the getminted.io portal team — ABIs, addresses, and a typed
+   client library, which is the agreed deliverable. The call surface and the four
+   constraints that must survive into it are in "For the portal team" below; what is left
+   is packaging them.
 4. **The real renderer** — blocked on artwork that does not exist yet.
 
 ## Deploy runbook
@@ -107,6 +107,55 @@ Order matters, and two steps are easy to miss because nothing fails loudly witho
 7. Separately, after TGE: `Activation(bears, mntd, thresholds)`. $MNTD must already exist —
    the constructor reads `decimals()`.
 8. At reveal: `MintABear.setRenderer(realRenderer)`.
+
+## For the portal team
+
+The NFT tab on getminted.io drives everything below. Four of these are constraints rather
+than notes: nothing on-chain enforces them, and each one is a way for the portal to lose a
+user's money or confuse them.
+
+**1. Always size an activation with `costToReach`.** `Activation.burn` accepts any amount
+and banks all of it. The part above the level-5 threshold buys nothing and is destroyed.
+Call `costToReach(tokenId, targetLevel)` for the exact remainder and offer that. The
+contract cannot tell a deliberate overshoot from a fat finger, so this cannot be enforced
+on-chain and the portal is the only thing standing between a holder and a pointless burn.
+
+**2. Activation is two steps, not one.** `burn` uses `burnFrom`, so the holder must first
+`approve` the `Activation` contract on $MNTD. Confirm the burn interface against open
+question 1 before building this — a self-burn-only token changes the flow.
+
+**3. Metadata comes from the renderer, never from `baseURI`.** Do not read or display
+`baseURI`; it is stored and never served. `tokenURI` is the only source.
+
+**4. A bear's wallet does not advertise the receiver interfaces.** `supportsInterface` on a
+`BearAccount` returns false for `IERC721Receiver` and `IERC1155Receiver` even though receipt
+of both works. Anything in the portal that gates a deposit on ERC-165 will refuse to send to
+a bear wallet; do not gate on it.
+
+### Call surface
+
+Reads are free and safe to poll. Everything that writes is one transaction from the holder.
+
+| Purpose | Call |
+|---|---|
+| Bear's wallet address, deployed or not | `MintABear.accountOf(tokenId)` |
+| Bring the wallet into existence | `MintABear.deployAccount(tokenId)` — anyone, any time, idempotent |
+| Who controls a wallet | `BearAccount.owner()` |
+| Move assets out of a wallet | `BearAccount.execute(target, value, data, 0)` — operation **must** be 0; batch with `executeBatch` |
+| Current level | `Activation.levelOf(tokenId)` — reads 0 after a sale |
+| Burned so far by this owner | `Activation.cumulativeOf(tokenId)` |
+| Burned ever, across all owners | `Activation.lifetimeBurned(tokenId)` |
+| Cost of the next level | `Activation.costToReach(tokenId, level)` |
+| Price of a level outright | `Activation.thresholdFor(level)` |
+| Activate | `Activation.burn(tokenId, amount)` — owner only, after approving $MNTD |
+| Nominate a bear for Status | `Activation.linkBear(tokenId)` — owner only, one per wallet |
+| Remove the nomination | `Activation.unlinkBear()` — safe to call unconditionally |
+| A wallet's nominated bear and its level | `Activation.linkOf(wallet)` — returns `(0, 0)` once sold |
+| Is activation suspended | `Activation.paused()` |
+
+Indexing: `BearActivated`, `BearLinked` and `BearUnlinked` on `Activation`, plus the token's
+own `Transfer`. **There is no reset event** — derive a reset from `Transfer`, because nothing
+executes at reset time. That is the property that makes the reset impossible to skip.
 
 ## What OpenSea Studio still owns
 
