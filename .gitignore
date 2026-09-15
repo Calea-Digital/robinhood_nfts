@@ -15,3 +15,6 @@ docs/src/
 
 # Dotenv file
 .env
+
+# Python bytecode from docs/tools
+__pycache__/
