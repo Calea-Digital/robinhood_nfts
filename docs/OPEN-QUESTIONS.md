@@ -16,7 +16,7 @@ document; recorded so it is not re-asked).
 | CQ-2 | ACT | $MNTD burn route and the shape of $MNTD's level-up function | (b) Base burn + attested credit | 25 Sep | Open |
 | CQ-3 | ACT | Confirm the token-agnostic `credit` design | proceed | 25 Sep | Open |
 | CQ-4 | ACT | Five burn thresholds | 5k / 15k / 40k / 100k / 250k | Activation deploy | Open |
-| CQ-5 | ACT | Confirm weights, immutable | 1.00–2.00 as proposed | Activation deploy | Open |
+| CQ-5 | ACT | Which weight table: the brief's five (1.00–3.50) or the SoW's six (1.00–2.00); immutable | SoW's six, 1.00–2.00 | Activation deploy | Open |
 | CQ-6 | COL | May holders burn bears? | standard burn available | 18 Sep | Open |
 | CQ-7 | COL | Enforce royalties via the transfer validator, and when | deploy unset | non-blocking | Open |
 | CQ-8 | RAF | Raffle chain; where the prize assets live | Base | 25 Sep | Open |
@@ -24,7 +24,7 @@ document; recorded so it is not re-asked).
 | CQ-10 | RAF | Claim window | 30 days | vault deploy | Open |
 | CQ-11 | RAF | May the owner sweep unreserved inventory? | yes, evented | vault deploy | Open |
 | CQ-12 | OPS | Admin, worker, attester, treasury addresses; Safe on 4663 | Safe admin, EOA worker | collection deploy | Open |
-| CQ-13 | DEL | Existing-contract review target | not started | 18 Sep | Open |
+| CQ-13 | DEL | Existing smart-contract review: which contract, source, line limit | not started | 18 Sep | Open |
 | CQ-14 | DEL | Monorepo placement, `lib/` handling, CI ownership | `packages/contracts`, submodules | before migration | Open |
 | CQ-15 | COL | Royalty rate and receiver | — | collection deploy | Open |
 | CQ-16 | OPS | Compliance requirements (freeze / clawback) | none | 18 Sep | Open |
@@ -92,10 +92,18 @@ constructor values with no setter and cannot be changed after deployment.
 - **Section:** ACT
 - **Needed by:** before `Activation` is deployed
 - **Status:** Open
-- **Default if unanswered:** 1.00 / 1.10 / 1.25 / 1.45 / 1.70 / 2.00.
+- **Default if unanswered:** the SoW table, 1.00 / 1.10 / 1.25 / 1.45 / 1.70 / 2.00.
 
-**Question.** Confirm the six weights for levels 0–5. They are constructor values and
-immutable; MINT's accounting reads them from the contract at every closing block.
+**Question.** The two documents Calea received state different weight tables. MINT's original
+brief lists five weight levels: 1.00 / 1.30 / 1.75 / 2.40 / 3.50 (100–350 share units). The
+statement of work of 14 September lists six, one per level 0–5: 1.00 / 1.10 / 1.25 / 1.45 /
+1.70 / 2.00, "proposed for launch". Please confirm which table applies, or supply the final
+one. The weights are constructor values and immutable; MINT's accounting reads them from the
+contract at every closing block.
+
+**Why it matters.** The table's length is also the number of levels. The specification
+(ACT-2, ACT-3) and the thresholds in CQ-4 are written for six levels, 0–5; a five-entry table
+changes both.
 
 ### CQ-6 — May holders burn bears?
 - **Section:** COL
@@ -173,14 +181,14 @@ key (route b), and the royalty treasury. Calea recommends a Safe for the admin; 
 contracts are deployed on Robinhood Chain but whether its web interface supports chain 4663 is
 unverified — has MINT used one there?
 
-### CQ-13 — Existing-contract review target
+### CQ-13 — Existing smart-contract review: which contract, source, line limit
 - **Section:** DEL
 - **Needed by:** 18 September 2026
 - **Status:** Open
 - **Default if unanswered:** not started.
 
-**Question.** Which existing contract should Calea review, where is its source, and what is the
-agreed line limit? It is not in the `NFT` monorepo.
+**Question.** Which existing smart contract should Calea review, where is its source, and what
+is the agreed line limit? It is not in the `NFT` monorepo.
 
 ### CQ-14 — Monorepo placement and CI
 - **Section:** DEL
