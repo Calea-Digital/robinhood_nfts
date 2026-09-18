@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
 """Build the client-facing MintABear specification.
 
-Merges docs/SPECIFICATION.md and docs/OPEN-QUESTIONS.md into one document: each open
-question is appended, as a shaded callout, to the specification section it belongs to
-(matched on the tag in parentheses at the end of the `## ` heading, e.g. `(ACT)`); the
-register table is appended as an appendix; the sign-off block stays last. The merged
-document is written as .docx (WordprocessingML built here, no third-party library) and
-saved as .pages by Pages through AppleScript. Tables carry no fixed row heights, so Pages
-sizes rows to their content.
+Merges docs/SPECIFICATION.md and docs/OPEN-QUESTIONS.md into one document: each question
+is appended, as a shaded callout, to the specification section it belongs to (matched on
+the tag in parentheses at the end of the `## ` heading, e.g. `(ACT)`). A question whose
+Status is Answered or Closed renders as a green "Confirmed" callout; any other status as a
+yellow "Decision for MINT" callout. The specification section whose heading contains
+"Decisions for the" is hoisted to directly after the front matter, so the agenda opens the
+document. The register table is appended as an appendix in two parts (open, then settled);
+the sign-off block stays last. The output name carries the version read from the
+specification's `**Version** X.Y` line. The merged document is written as .docx
+(WordprocessingML built here, no third-party library) and saved as .pages by Pages through
+AppleScript. Tables carry no fixed row heights, so Pages sizes rows to their content.
 
 Usage (from the repository root):
 
@@ -32,13 +36,14 @@ ROOT = Path(__file__).resolve().parents[2]
 SPEC = ROOT / "docs" / "SPECIFICATION.md"
 QUESTIONS = ROOT / "docs" / "OPEN-QUESTIONS.md"
 OUT_DIR = ROOT / "docs" / "client"
-OUT_NAME = "MintABear-Specification-v1.0"
+VERSION = re.compile(r"\*\*Version\*\*\s+(?P<ver>\d+\.\d+)")
+SETTLED = {"answered", "closed"}
 
 # A4 with 2.54 cm margins → 9,026 twips of text width.
 PAGE_W, PAGE_H, MARGIN = 11906, 16838, 1440
 TEXT_W = PAGE_W - 2 * MARGIN
 
-SECTION_TAG = re.compile(r"^## .*\((?P<tag>[A-Z]{3})\)\s*$")
+SECTION_TAG = re.compile(r"^## .*\((?P<tag>[A-Z]{2,3})\)\s*$")
 QUESTION_HEAD = re.compile(r"^### (?P<id>CQ-\d+) — (?P<title>.+)$")
 FIELD = re.compile(r"^- \*\*(?P<key>[^*]+):\*\* (?P<value>.+)$")
 INLINE = re.compile(
@@ -186,16 +191,29 @@ def para_xml(
     return f"<w:p><w:pPr>{''.join(ppr)}</w:pPr>{content}</w:p>"
 
 
+CHAR_W, CELL_PAD = 120, 220  # twips per 10 pt character, and the two cell margins plus slack
+LONG_TABLE = 8  # rows; above this a heading is not tied to the table that follows it
+
+
 def column_widths(header: list[str], rows: list[list[str]]) -> list[int]:
-    """Distribute the text width by the longest content in each column, clamped."""
+    """Distribute the text width so that no column is narrower than its longest word.
+
+    Each column gets at least the width of its longest word (so nothing breaks mid-word);
+    whatever remains is shared in proportion to how much more each column would like,
+    measured by its longest cell, clamped.
+    """
     ncol = len(header)
-    scores: list[float] = []
-    for c in range(ncol):
-        lengths = [len(header[c])] + [len(r[c]) for r in rows if c < len(r)]
-        longest = max(lengths) if lengths else 8
-        scores.append(min(max(longest, 12), 50))
-    total = sum(scores)
-    widths = [int(TEXT_W * s / total) for s in scores]
+    cells = [[header[c]] + [r[c] for r in rows if c < len(r)] for c in range(ncol)]
+    plain = lambda t: t.replace("`", "").replace("*", "")
+    minimum = [max(len(w) for cell in col for w in plain(cell).split() or [""]) * CHAR_W + CELL_PAD for col in cells]
+    preferred = [min(max(len(plain(cell)) for cell in col), 45) * CHAR_W + CELL_PAD for col in cells]
+    if sum(minimum) >= TEXT_W:
+        widths = [int(TEXT_W * m / sum(minimum)) for m in minimum]
+    else:
+        wants = [max(pf - mn, 0) for pf, mn in zip(preferred, minimum)]
+        spare = TEXT_W - sum(minimum)
+        share = [spare * w / sum(wants) if sum(wants) else spare / ncol for w in wants]
+        widths = [int(mn + sh) for mn, sh in zip(minimum, share)]
     widths[-1] += TEXT_W - sum(widths)
     return widths
 
@@ -244,16 +262,20 @@ def data_table_xml(header: list[str], rows: list[list[str]]) -> str:
 def blocks_xml(blocks: list[dict], in_callout: bool = False) -> str:
     out: list[str] = []
     size = 21 if in_callout else None
-    for blk in blocks:
+    for n, blk in enumerate(blocks):
         kind = blk["kind"]
         if kind == "heading":
             level = blk["level"]
             if in_callout:
                 out.append(para_xml(runs_xml(blk["text"], b=True), after=80))
             else:
+                # Pages keeps a heading with the *whole* following table, so a long table would
+                # be pushed to a fresh page and leave the heading alone; release the tie then.
+                following = blocks[n + 1] if n + 1 < len(blocks) else None
+                long_table = following is not None and following["kind"] == "table" and len(following["rows"]) > LONG_TABLE
                 out.append(para_xml(runs_xml(blk["text"]), style=f"Heading{level}", after=120,
                                     before=(360 if level == 2 else 240 if level == 3 else 160),
-                                    keep_next=True))
+                                    keep_next=not long_table))
         elif kind == "para":
             out.append(para_xml(runs_xml(blk["text"], size=size), after=(80 if in_callout else 120)))
         elif kind == "list":
@@ -269,17 +291,23 @@ def blocks_xml(blocks: list[dict], in_callout: bool = False) -> str:
     return "".join(out)
 
 
-def callout_xml(title: str, body_blocks: list[dict]) -> str:
-    """A question for MINT: one shaded, bordered cell holding the whole block."""
+def callout_xml(title: str, body_blocks: list[dict], settled: bool = False) -> str:
+    """One shaded, bordered cell holding a question: green once settled, yellow while open."""
+    fill, border = ("E8F5E9", "5B9A5B") if settled else ("FFF8DC", "C9A227")
     inner = para_xml(runs_xml(title, b=True, size=22), after=80, keep_next=True) + blocks_xml(body_blocks, in_callout=True)
-    row = "<w:tr>" + cell_xml(inner, TEXT_W, fill="FFF8DC") + "</w:tr>"
-    return table_xml([TEXT_W], [row], border="C9A227")
+    row = "<w:tr>" + cell_xml(inner, TEXT_W, fill=fill) + "</w:tr>"
+    return table_xml([TEXT_W], [row], border=border)
+
+
+def is_settled(status: str) -> bool:
+    first = status.strip().strip("*").split()[0].rstrip(":").lower() if status.strip() else ""
+    return first in SETTLED
 
 
 # --------------------------------------------------------------------------- merge
 
-def parse_questions(md: str) -> tuple[dict[str, list[tuple[str, list[dict]]]], list[dict] | None]:
-    """Return {section tag: [(title, body blocks)]} and the register table block."""
+def parse_questions(md: str) -> tuple[dict[str, list[tuple[str, list[dict], bool]]], list[dict] | None]:
+    """Return {section tag: [(title, body blocks, settled)]} and the register table block."""
     lines = md.splitlines()
     register: list[dict] | None = None
     in_register = False
@@ -295,25 +323,29 @@ def parse_questions(md: str) -> tuple[dict[str, list[tuple[str, list[dict]]]], l
     if reg_lines:
         register = parse_blocks("\n".join(reg_lines))[0]
 
-    by_section: dict[str, list[tuple[str, list[dict]]]] = {}
+    by_section: dict[str, list[tuple[str, list[dict], bool]]] = {}
     i = 0
     while i < len(lines):
         head = QUESTION_HEAD.match(lines[i])
         if not head:
             i += 1
             continue
-        title = f"Question for MINT · {head.group('id')} — {head.group('title')}"
         i += 1
         body: list[str] = []
         while i < len(lines) and not lines[i].startswith("### ") and not lines[i].startswith("## "):
             body.append(lines[i])
             i += 1
-        section = "OTHER"
+        section, status = "OTHER", "Open"
         for b in body:
             f = FIELD.match(b.strip())
             if f and f.group("key") == "Section":
                 section = f.group("value").strip()
-        by_section.setdefault(section, []).append((title, parse_blocks("\n".join(body))))
+            elif f and f.group("key") == "Status":
+                status = f.group("value").strip()
+        settled = is_settled(status)
+        label = "Confirmed" if settled else "Decision for MINT"
+        title = f"{label} · {head.group('id')} — {head.group('title')}"
+        by_section.setdefault(section, []).append((title, parse_blocks("\n".join(body)), settled))
     return by_section, register
 
 
@@ -330,6 +362,12 @@ def merge(spec_md: str, by_section: dict, register: list[dict] | None) -> str:
             current[1].append(line)
     chunks.append(current)
 
+    # The agenda opens the client document: hoist the decisions section behind the front matter.
+    front, rest = chunks[0], chunks[1:]
+    agenda = [c for c in rest if c[0] and "Decisions for the" in c[0]]
+    rest = [c for c in rest if c not in agenda]
+    chunks = [front] + agenda + rest
+
     used: set[str] = set()
     parts: list[str] = []
     signoff: str | None = None
@@ -345,23 +383,34 @@ def merge(spec_md: str, by_section: dict, register: list[dict] | None) -> str:
         tag_match = SECTION_TAG.match(heading)
         if tag_match:
             tag = tag_match.group("tag")
-            for title, qblocks in by_section.get(tag, []):
-                part += callout_xml(title, qblocks)
+            for title, qblocks, settled in by_section.get(tag, []):
+                part += callout_xml(title, qblocks, settled)
             used.add(tag)
         parts.append(part)
 
     leftovers = [q for tag, qs in by_section.items() if tag not in used for q in qs]
     if leftovers:
         parts.append(blocks_xml([{"kind": "heading", "level": 2, "text": "Other questions for MINT"}]))
-        parts.extend(callout_xml(t, b) for t, b in leftovers)
+        parts.extend(callout_xml(t, b, s) for t, b, s in leftovers)
 
     parts.append(blocks_xml([
-        {"kind": "heading", "level": 2, "text": "Appendix — Register of open questions"},
-        {"kind": "para", "text": "One line per question, for answering in one place. Each question "
-                                 "also appears in full under the section it affects."},
+        {"kind": "heading", "level": 2, "text": "Appendix — Register of questions"},
+        {"kind": "para", "text": "One line per question. Open items first, for deciding in one place; "
+                                 "then the settled ones. Each question also appears in full under the "
+                                 "section it affects."},
     ]))
     if register:
-        parts.append(data_table_xml(register["header"], register["rows"]))
+        header = register["header"]
+        status_col = next((c for c, h in enumerate(header) if h.strip().lower() == "status"), None)
+        if status_col is None:
+            parts.append(data_table_xml(header, register["rows"]))
+        else:
+            open_rows = [r for r in register["rows"] if not is_settled(r[status_col])]
+            settled_rows = [r for r in register["rows"] if is_settled(r[status_col])]
+            parts.append(blocks_xml([{"kind": "heading", "level": 3, "text": "Open for the call"}]))
+            parts.append(data_table_xml(header, open_rows))
+            parts.append(blocks_xml([{"kind": "heading", "level": 3, "text": "Settled"}]))
+            parts.append(data_table_xml(header, settled_rows))
     if signoff:
         parts.append(signoff)
     return "".join(parts)
@@ -444,11 +493,14 @@ def main(argv: list[str]) -> int:
     keep_docx = docx_only or "--docx" in argv
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
+    spec_md = SPEC.read_text(encoding="utf-8")
     by_section, register = parse_questions(QUESTIONS.read_text(encoding="utf-8"))
-    body = merge(SPEC.read_text(encoding="utf-8"), by_section, register)
+    body = merge(spec_md, by_section, register)
 
-    docx_path = OUT_DIR / f"{OUT_NAME}.docx"
-    pages_path = OUT_DIR / f"{OUT_NAME}.pages"
+    version = VERSION.search(spec_md)
+    out_name = f"MintABear-Specification-v{version.group('ver') if version else 'draft'}"
+    docx_path = OUT_DIR / f"{out_name}.docx"
+    pages_path = OUT_DIR / f"{out_name}.pages"
     write_docx(docx_path, body)
     if docx_only:
         print(f"wrote {docx_path}")
