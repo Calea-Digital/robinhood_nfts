@@ -1,6 +1,6 @@
 # MintABear — Specification
 
-**Version** 2.1-draft · **Date** 21 September 2026 · **Status** records the decisions of the
+**Version** 2.1 · **Date** 21 September 2026 · **Status** records the decisions of the
 MINT–Calea call of 21 September 2026; sign-off follows the open items in §10
 
 Prepared by Calea for MINT. Sources: *MINTaBear development statement of work* (MINT, 14 September
@@ -562,7 +562,9 @@ nominated recipient; an unclaimed prize expires and can be withdrawn after the g
 ownership snapshot) → RAF-28; RAF-9 (draw over calldata entries) → RAF-30; RAF-10 (carry forward
 between rounds) → RAF-31; RAF-12 (round cancellation) → RAF-31; RAF-13 (per-round `minLevel`
 eligibility) → RAF-27; RAF-20 (rounds on the hub) → RAF-26; RAF-21 (entry into a round) →
-RAF-28; RAF-22 (one seed per round) → RAF-29; RAF-23 (the per-round draw) → RAF-30.
+RAF-28; RAF-22 (one seed per round) → RAF-29; RAF-23 (the per-round draw) → RAF-30; DEL-4
+(verified testnet addresses) → OPS-3, OPS-4; DEL-5 (deployment scripts and runbook) → OPS-2,
+OPS-5.
 
 ## 7. Operations, roles and handover (OPS)
 
@@ -611,7 +613,10 @@ listed and sold on OpenSea (COL-7).
 
 **OPS-5 Handover.** Calea deploys, configures, transfers ownership, verifies source, and delivers
 the runbook; after that it holds no key and no role. Technical support runs through
-19 November 2026 with agreed response hours (DEL-10).
+19 November 2026 with agreed response hours (DEL-10). The runbook is one document, produced via
+`forge script` tooling, covering deploy order (OPS-2), the enforcement toggle (OPS-6) and
+Activation's pause/unpause around the burn switch-on date (ACT-11), the whitelist export (WL-4),
+and the mystery-box worker sequence (RAF-18).
 
 **OPS-6 Enforcement runbook.** Enabled at deployment: `MintABear.setTransferValidator(0x721C002B…)`
 with the validator's zero-state policy. Optional, from the admin: `createList`,
@@ -672,16 +677,9 @@ accepted Medium documented.
 **DEL-2 Tests.** Deterministic unit and integration tests with a branching tree per contract;
 at least 90% line coverage.
 
-**DEL-3 Review report.** Static and manual review, plus fuzzing and invariant harnesses written
-and run by Calea's internal auditor independently of the developer; every Critical and High
-finding fixed before mainnet deployment; report delivered with the tranche.
-
-**DEL-4 Testnet.** Verified addresses on 46630, Sepolia, Curtis and Base Sepolia for every
-contract.
-
-**DEL-5 Scripts and runbook.** `forge script` deployments and configuration for each chain,
-source verification, and a runbook covering deploy order, role handover, enforcement toggle,
-pause, the whitelist export, and the worker sequence.
+**DEL-3 Review report.** Static and manual review, plus fuzzing and invariant harnesses, written
+and run by Calea's internal auditor independently of the developer; report delivered with each
+tranche.
 
 **DEL-6 Integration package.** Interfaces, events, roles and calldata examples for every
 contract; a **TypeScript** client library for getminted.io, typed against the ABIs and covering
@@ -721,6 +719,9 @@ burn and level-up — in TypeScript, served from **getminted.io** (MINT, CQ-19).
 Solidity and the TypeScript client library of DEL-6, and reviews every change that touches a
 contract call before it merges. The Framer landing page stays where it is and is neither built
 nor reviewed by Calea. Which repository holds these packages is `→ CQ-14`.
+
+**DEL-12 Review sign-off.** Every Critical and High finding from DEL-3's review is fixed before
+mainnet deployment.
 
 ## 10. Decisions
 
@@ -806,6 +807,6 @@ what the registry guarantees.
 | Calea | Bojan Jovin | | |
 | Rayco | | | |
 
-Version 2.1-draft, 21 September 2026. The version signed carries the open items of §10 resolved;
+Version 2.1, 21 September 2026. The version signed carries the open items of §10 resolved;
 amendments are issued as new versions of this document; requirement identifiers are never
 reused.

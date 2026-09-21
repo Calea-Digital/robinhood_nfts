@@ -223,10 +223,10 @@ published; if OpenSea cannot fill orders, one owner call lifts enforcement until
 **Answer (MINT).** "The prize assets will be held on different EVM chains — some on Robinhood,
 others on Ethereum, some on ApeChain — and these will vary in token and NFT."
 
-**Recorded as.** §6: `MysteryBox` on Robinhood Chain, where ownership is checked and the id is
-spent; `PrizeDraw` on the Chainlink chain, which decides each open; and a `PrizeVault` on every
-chain that holds prizes. A prize can only be handed over where it sits, so the outcome travels
-to that chain as one award the worker posts and anyone can check.
+**Recorded as.** RAF-24: one `PrizeVault` on every chain that holds prizes, alongside
+`MysteryBox` on Robinhood Chain, where ownership is checked and the id is spent, and `PrizeDraw`
+on the Chainlink chain, which decides each open. A prize can only be handed over where it sits,
+so the outcome travels to that chain as one award the worker posts and anyone can check.
 
 **Answer (call, 21 September 2026).** Confirmed and widened: "Token prizes may span multiple
 chains, and consist of various NFTs (not to be confused with MintABear NFT) and tokens." The
@@ -250,10 +250,10 @@ explicit opt-in?
 for the raffle entry. Once they click we do the relevant ownership/spend checks — he might have
 already opened twice and holds 10 bears, so we would say 8/10 lucky tries left, for example."
 
-**Recorded as.** RAF-21: a holder enters bears during the round's entry window; each bear enters
-once per round; the entry belongs to the wallet that made it; a bear that has entered is "spent"
-for that round, stays transferable, and cannot be entered again by its new owner. `triesLeft`
-gives the 8/10.
+**Recorded as.** RAF-28: a holder opens a box with a bear they own and learns the outcome then;
+one bear is one shot; the outcome belongs to the wallet that opened it; an opened bear is
+"spent" for good, stays freely transferable, and cannot be opened again by its buyer.
+`shotsLeft` gives the 8/10.
 
 **Answer (call, 21 September 2026).** "Rewards are immediate upon opening a mystery box by a
 user that owns an NFT or multiple NFTs. One NFT — one shot at prize, consuming one ID per
@@ -441,7 +441,7 @@ an admin blacklist for that. MINT's answer is no, which is what Calea recommends
 stays without an admin path into a holder's bear. A "spent" bear is a raffle notion, not a
 freeze: it has entered the current round, cannot enter it again, and moves freely (RAF-21).
 
-**Recorded as.** ACT-12 and RAF-14: no admin path into a holder's bear anywhere; RAF-21
+**Recorded as.** ACT-12 and RAF-14: no admin path into a holder's bear anywhere; RAF-28
 defines *spent*.
 
 ### CQ-17 — VRF subscription
