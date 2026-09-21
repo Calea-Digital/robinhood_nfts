@@ -6,10 +6,11 @@ is appended, as a shaded callout, to the specification section it belongs to (ma
 the tag in parentheses at the end of the `## ` heading, e.g. `(ACT)`). A question whose
 Status is Answered or Closed renders as a green "Confirmed" callout; any other status as a
 yellow "Decision for MINT" callout. The specification section whose heading contains
-"Decisions for the" is hoisted to directly after the front matter, so the agenda opens the
-document. The register table is appended as an appendix in two parts (open, then settled);
-the sign-off block stays last. The output name carries the version read from the
-specification's `**Version** X.Y` line. The merged document is written as .docx
+"Decisions" is hoisted to directly after the front matter, so the agenda opens the
+document. The register table is appended as an appendix in three parts — open, settled, then
+the questions settled outside the register; the sign-off block stays last. The output name
+carries the version read from the specification's `**Version**` line, suffix included, so a
+draft and the version signed after it are separate files. The merged document is written as .docx
 (WordprocessingML built here, no third-party library) and saved as .pages by Pages through
 AppleScript. Tables carry no fixed row heights, so Pages sizes rows to their content.
 
@@ -36,7 +37,7 @@ ROOT = Path(__file__).resolve().parents[2]
 SPEC = ROOT / "docs" / "SPECIFICATION.md"
 QUESTIONS = ROOT / "docs" / "OPEN-QUESTIONS.md"
 OUT_DIR = ROOT / "docs" / "client"
-VERSION = re.compile(r"\*\*Version\*\*\s+(?P<ver>\d+\.\d+)")
+VERSION = re.compile(r"\*\*Version\*\*\s+(?P<ver>\d+\.\d+[\w.-]*)")
 SETTLED = {"answered", "closed"}
 
 # A4 with 2.54 cm margins → 9,026 twips of text width.
@@ -306,22 +307,26 @@ def is_settled(status: str) -> bool:
 
 # --------------------------------------------------------------------------- merge
 
-def parse_questions(md: str) -> tuple[dict[str, list[tuple[str, list[dict], bool]]], list[dict] | None]:
-    """Return {section tag: [(title, body blocks, settled)]} and the register table block."""
-    lines = md.splitlines()
-    register: list[dict] | None = None
-    in_register = False
-    reg_lines: list[str] = []
+def table_under(lines: list[str], heading: str) -> dict | None:
+    """The first pipe table under a `## ` heading, as a table block."""
+    rows: list[str] = []
+    inside = False
     for line in lines:
-        if line.startswith("## Register"):
-            in_register = True
+        if line.startswith(heading):
+            inside = True
             continue
-        if in_register and line.startswith("## "):
+        if inside and line.startswith("## "):
             break
-        if in_register and line.strip().startswith("|"):
-            reg_lines.append(line)
-    if reg_lines:
-        register = parse_blocks("\n".join(reg_lines))[0]
+        if inside and line.strip().startswith("|"):
+            rows.append(line)
+    return parse_blocks("\n".join(rows))[0] if rows else None
+
+
+def parse_questions(md: str) -> tuple[dict[str, list[tuple[str, list[dict], bool]]], dict | None, dict | None]:
+    """Return {section tag: [(title, body blocks, settled)]}, the register table and the closed table."""
+    lines = md.splitlines()
+    register = table_under(lines, "## Register")
+    closed = table_under(lines, "## Closed")
 
     by_section: dict[str, list[tuple[str, list[dict], bool]]] = {}
     i = 0
@@ -346,10 +351,10 @@ def parse_questions(md: str) -> tuple[dict[str, list[tuple[str, list[dict], bool
         label = "Confirmed" if settled else "Decision for MINT"
         title = f"{label} · {head.group('id')} — {head.group('title')}"
         by_section.setdefault(section, []).append((title, parse_blocks("\n".join(body)), settled))
-    return by_section, register
+    return by_section, register, closed
 
 
-def merge(spec_md: str, by_section: dict, register: list[dict] | None) -> str:
+def merge(spec_md: str, by_section: dict, register: dict | None, closed: dict | None = None) -> str:
     """Body XML: spec sections with their questions appended; register appendix; sign-off last."""
     lines = spec_md.splitlines()
     chunks: list[tuple[str | None, list[str]]] = []
@@ -364,7 +369,7 @@ def merge(spec_md: str, by_section: dict, register: list[dict] | None) -> str:
 
     # The agenda opens the client document: hoist the decisions section behind the front matter.
     front, rest = chunks[0], chunks[1:]
-    agenda = [c for c in rest if c[0] and "Decisions for the" in c[0]]
+    agenda = [c for c in rest if c[0] and "Decisions" in c[0]]
     rest = [c for c in rest if c not in agenda]
     chunks = [front] + agenda + rest
 
@@ -411,6 +416,14 @@ def merge(spec_md: str, by_section: dict, register: list[dict] | None) -> str:
             parts.append(data_table_xml(header, open_rows))
             parts.append(blocks_xml([{"kind": "heading", "level": 3, "text": "Settled"}]))
             parts.append(data_table_xml(header, settled_rows))
+    if closed:
+        parts.append(blocks_xml([
+            {"kind": "heading", "level": 3, "text": "Settled outside the register"},
+            {"kind": "para", "text": "Decided in the statement of work, the meeting of 15 September "
+                                     "2026 or MINT's written answers, and recorded here so that they "
+                                     "are not re-opened."},
+        ]))
+        parts.append(data_table_xml(closed["header"], closed["rows"]))
     if signoff:
         parts.append(signoff)
     return "".join(parts)
@@ -494,8 +507,8 @@ def main(argv: list[str]) -> int:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
     spec_md = SPEC.read_text(encoding="utf-8")
-    by_section, register = parse_questions(QUESTIONS.read_text(encoding="utf-8"))
-    body = merge(spec_md, by_section, register)
+    by_section, register, closed = parse_questions(QUESTIONS.read_text(encoding="utf-8"))
+    body = merge(spec_md, by_section, register, closed)
 
     version = VERSION.search(spec_md)
     out_name = f"MintABear-Specification-v{version.group('ver') if version else 'draft'}"
