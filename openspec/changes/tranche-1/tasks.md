@@ -6,7 +6,7 @@ becomes a Task with Spec Ref `NONE` when picked.
 
 ## 1. MintABear — take `main` to the specification
 
-- [ ] 1.1 COL-9 — remove ERC-6551: `BearAccount`, `accountOf`, `deployAccount`, `recordAccounts`, `isBearAccount`, `TransferToBearAccount`, the PoC and tests that depend on them
+- [x] 1.1 COL-9 — remove ERC-6551: `BearAccount`, `accountOf`, `deployAccount`, `recordAccounts`, `isBearAccount`, `TransferToBearAccount`, the PoC and tests that depend on them
 - [ ] 1.2 COL-5 — remove the renderer: `IBearRenderer`, `PlaceholderRenderer`, `setRenderer`, the `tokenURI` override, their tests and mock; metadata is stock `baseURI`
 - [ ] 1.3 COL-8 — burn refused (`BurnDisabled` stays; dead-address exclusion lives in the split script, not the contract)
 - [ ] 1.4 COL-4 — emit `TransferNonceAdvanced(tokenId, nonce)` in the transfer hook
