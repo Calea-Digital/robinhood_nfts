@@ -30,7 +30,7 @@ for arg in "$@"; do
   esac
 done
 
-if [ "$PROJECT" = "MNT" ]; then echo "board.sh: set BOARD_PROJECT (install.sh normally substitutes it)" >&2; exit 2; fi
+if [ -z "$PROJECT" ] || [ "$PROJECT" = "__PROJECT""__" ]; then echo "board.sh: set BOARD_PROJECT (install.sh normally substitutes it)" >&2; exit 2; fi
 if [ ! -d "$BRIDGE" ]; then echo "board.sh: ai-stack bridge not found at $BRIDGE (set AI_STACK)" >&2; exit 2; fi
 
 step() { printf '\n\033[1m== %s\033[0m\n' "$1"; }
