@@ -86,6 +86,18 @@ reads
     └── it stays true after a transfer: it follows minting, not ownership
 ```
 
+## Events (COL-13)
+
+```
+events
+├── Transfer(from, to, tokenId), Approval(owner, approved, tokenId) and
+│   ApprovalForAll(owner, operator, approved) are ERC721A's, unchanged
+├── TransferNonceAdvanced(tokenId, nonce) fires with Transfer on every non-mint transfer (COL-4)
+├── TransferValidatorUpdated(oldValidator, newValidator) fires on every validator change (COL-7)
+│   └── setting the same value again reverts with SameTransferValidator, so no empty event
+└── SeaDrop configuration events are the base's own and are not re-tested here
+```
+
 ## Supply and numbering
 
 ```

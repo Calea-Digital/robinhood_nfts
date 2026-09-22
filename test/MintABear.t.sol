@@ -4,11 +4,13 @@ pragma solidity 0.8.17;
 import {LibERC6551} from "solady/accounts/LibERC6551.sol";
 import {IERC721A} from "ERC721A/IERC721A.sol";
 import {TwoStepOwnable} from "utility-contracts/TwoStepOwnable.sol";
+import {ERC721TransferValidator} from "seadrop/lib/ERC721TransferValidator.sol";
 
 import {Vm} from "forge-std/Vm.sol";
 
 import {BaseTest} from "./BaseTest.t.sol";
 import {MintABear} from "../src/MintABear.sol";
+import {MockTransferValidator} from "./mocks/MockTransferValidator.sol";
 
 contract MintABearTest is BaseTest {
     function test_startTokenId_isOne() public {
@@ -329,6 +331,77 @@ contract MintABearResetEventTest is BaseTest {
             assertTrue(logs[i].topics[0] != topic, "reset event on mint");
         }
         assertEq(logs.length, 3, "three Transfer events and nothing else");
+    }
+}
+
+/// @dev COL-13. The events and their arguments: ERC721A's `Transfer`, `Approval` and
+///      `ApprovalForAll`, SeaDrop's `TransferValidatorUpdated`, and `TransferNonceAdvanced`.
+contract MintABearEventsTest is BaseTest {
+    /// @dev Local mirrors, because solc 0.8.17 cannot qualify an event by contract in `emit`.
+    event Transfer(address indexed from, address indexed to, uint256 indexed tokenId);
+    event Approval(address indexed owner, address indexed approved, uint256 indexed tokenId);
+    event ApprovalForAll(address indexed owner, address indexed operator, bool approved);
+    event TransferNonceAdvanced(uint256 indexed tokenId, uint64 nonce);
+    event TransferValidatorUpdated(address oldValidator, address newValidator);
+
+    MockTransferValidator internal validator;
+
+    function setUp() public override {
+        super.setUp();
+        validator = new MockTransferValidator();
+    }
+
+    function test_events_carryTheDocumentedArguments() public {
+        /* Scenario: COL-13 — Events carry the documented arguments
+           When a bear is transferred and the validator is changed
+           Then Transfer, TransferNonceAdvanced and TransferValidatorUpdated are emitted with the
+             documented arguments */
+        _mint(alice, 1);
+
+        vm.expectEmit(false, false, false, true, address(bears));
+        emit TransferValidatorUpdated(address(0), address(validator));
+        bears.setTransferValidator(address(validator));
+
+        vm.expectEmit(true, false, false, true, address(bears));
+        emit TransferNonceAdvanced(1, 1);
+        vm.expectEmit(true, true, true, false, address(bears));
+        emit Transfer(alice, bob, 1);
+        vm.prank(alice);
+        bears.transferFrom(alice, bob, 1);
+
+        vm.expectEmit(false, false, false, true, address(bears));
+        emit TransferValidatorUpdated(address(validator), address(0));
+        bears.setTransferValidator(address(0));
+    }
+
+    function test_approvalEvents_carryTheDocumentedArguments() public {
+        /* Scenario: COL-13 — Events carry the documented arguments
+           When a holder approves one address for a bear and an operator for all
+           Then Approval(owner, approved, tokenId) and ApprovalForAll(owner, operator, approved) are emitted */
+        _mint(alice, 1);
+
+        vm.expectEmit(true, true, true, false, address(bears));
+        emit Approval(alice, bob, 1);
+        vm.prank(alice);
+        bears.approve(bob, 1);
+
+        vm.expectEmit(true, true, false, true, address(bears));
+        emit ApprovalForAll(alice, operator, true);
+        vm.prank(alice);
+        bears.setApprovalForAll(operator, true);
+    }
+
+    function test_setTransferValidator_toTheSameValue_reverts() public {
+        /* Scenario:
+           Given the validator already at a value
+           When the owner sets it to that same value
+           Then it reverts with SameTransferValidator and no event is emitted */
+        vm.expectRevert(ERC721TransferValidator.SameTransferValidator.selector);
+        bears.setTransferValidator(address(0));
+
+        bears.setTransferValidator(address(validator));
+        vm.expectRevert(ERC721TransferValidator.SameTransferValidator.selector);
+        bears.setTransferValidator(address(validator));
     }
 }
 
