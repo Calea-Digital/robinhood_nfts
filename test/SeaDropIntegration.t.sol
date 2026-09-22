@@ -6,6 +6,7 @@ import {MintABear} from "../src/MintABear.sol";
 import {IERC2981} from "openzeppelin-contracts/interfaces/IERC2981.sol";
 import {ISeaDropTokenContractMetadata} from "seadrop/interfaces/ISeaDropTokenContractMetadata.sol";
 import {INonFungibleSeaDropToken} from "seadrop/interfaces/INonFungibleSeaDropToken.sol";
+import {TwoStepOwnable} from "utility-contracts/TwoStepOwnable.sol";
 
 /**
  * @title  SeaDropIntegrationTest
@@ -34,13 +35,65 @@ contract SeaDropIntegrationTest is BaseTest {
     }
 
     function test_mintSeaDrop_fromDisallowedAddress_reverts() public {
-        /* Scenario:
-           Given an address that is not an allowed SeaDrop
-           When it tries to mint
-           Then SeaDrop's own guard refuses it, unchanged by anything here */
+        /* Scenario: COL-1 — Only SeaDrop mints
+           Given the collection deployed with canonical SeaDrop as its only allowed minter
+           When any other address calls the mint path
+           Then the call reverts and no bear is minted */
         vm.prank(alice);
-        vm.expectRevert();
+        vm.expectRevert(INonFungibleSeaDropToken.OnlyAllowedSeaDrop.selector);
         bears.mintSeaDrop(alice, 1);
+
+        vm.prank(operator);
+        vm.expectRevert(INonFungibleSeaDropToken.OnlyAllowedSeaDrop.selector);
+        bears.mintSeaDrop(bob, 3);
+
+        assertEq(bears.totalSupply(), 0, "nothing minted");
+    }
+
+    function test_mintSeaDrop_byTheContractOwner_reverts() public {
+        /* Scenario: COL-1 — Only SeaDrop mints
+           Given the contract owner, who configures the drop but is not a SeaDrop
+           When they call the mint path directly
+           Then the call reverts and no bear is minted */
+        assertEq(bears.owner(), address(this));
+        vm.expectRevert(INonFungibleSeaDropToken.OnlyAllowedSeaDrop.selector);
+        bears.mintSeaDrop(address(this), 1);
+        assertEq(bears.totalSupply(), 0);
+    }
+
+    function test_noOtherMintEntryPoint() public {
+        /* Scenario: COL-1 — Only SeaDrop mints
+           When the usual public mint selectors are called on the collection
+           Then none exists: mintSeaDrop is the only way a bear comes into being */
+        string[4] memory signatures = [
+            "mint(address,uint256)", "mint(uint256)", "safeMint(address,uint256)", "mint(address)"
+        ];
+        for (uint256 i; i < signatures.length; ++i) {
+            (bool ok, bytes memory ret) = address(bears)
+                .call(abi.encodePacked(bytes4(keccak256(bytes(signatures[i]))), abi.encode(alice, uint256(1))));
+            assertFalse(ok, signatures[i]);
+            assertEq(ret.length, 0, signatures[i]);
+        }
+        assertEq(bears.totalSupply(), 0);
+    }
+
+    function test_updateAllowedSeaDrop_isOwnerOnly() public {
+        /* Scenario: COL-1 — Only SeaDrop mints
+           Given the allowed-SeaDrop list is the owner's setting
+           When a non-owner tries to add itself as a minter
+           Then it reverts, and the owner can still change the list */
+        address[] memory allowed = new address[](1);
+        allowed[0] = alice;
+
+        vm.prank(alice);
+        vm.expectRevert(TwoStepOwnable.OnlyOwner.selector);
+        bears.updateAllowedSeaDrop(allowed);
+
+        bears.updateAllowedSeaDrop(allowed);
+        vm.prank(alice);
+        bears.mintSeaDrop(alice, 1);
+        assertEq(bears.ownerOf(1), alice);
+        assertEq(bears.transferNonce(1), 0);
     }
 
     function test_getMintStats_tracksPerWalletMinting() public {
