@@ -5,6 +5,7 @@ import {LibERC6551} from "solady/accounts/LibERC6551.sol";
 import {IERC721A} from "ERC721A/IERC721A.sol";
 import {TwoStepOwnable} from "utility-contracts/TwoStepOwnable.sol";
 import {ERC721TransferValidator} from "seadrop/lib/ERC721TransferValidator.sol";
+import {ERC721SeaDropStructsErrorsAndEvents} from "seadrop/lib/ERC721SeaDropStructsErrorsAndEvents.sol";
 
 import {Vm} from "forge-std/Vm.sol";
 
@@ -539,10 +540,10 @@ contract MintABearSupplyCapTest is BaseTest {
     }
 
     function test_mint_pastTheCap_reverts_evenWhenMaxSupplyIsRaised() public {
-        /* Scenario:
-           Given an owner who raises maxSupply past the stated supply
-           When they try to mint the 4,445th bear
-           Then the hard cap refuses it */
+        /* Scenario: COL-2 — A mint past the cap reverts
+           Given 4,444 bears minted
+           When SeaDrop mints one more, whatever maxSupply says
+           Then the transaction reverts with ExceedsMaxBears */
         bears.setMaxSupply(10_000);
         _mint(alice, MAX_SUPPLY);
 
@@ -552,10 +553,10 @@ contract MintABearSupplyCapTest is BaseTest {
     }
 
     function test_mint_batchStraddlingTheCap_reverts() public {
-        /* Scenario:
-           Given a batch that would start below the cap and end above it
+        /* Scenario: COL-2 — A mint past the cap reverts
+           Given a batch that would start below the cap and end above it, with maxSupply raised
            When it is minted
-           Then the whole batch is refused rather than partly filled */
+           Then the whole batch is refused with ExceedsMaxBears rather than partly filled */
         bears.setMaxSupply(10_000);
         _mint(alice, MAX_SUPPLY - 2);
 
@@ -564,6 +565,35 @@ contract MintABearSupplyCapTest is BaseTest {
         bears.mintSeaDrop(alice, 3);
 
         assertEq(bears.totalSupply(), MAX_SUPPLY - 2, "nothing minted");
+    }
+
+    function test_mint_pastTheCap_withMaxSupplyAtTheCap_reverts() public {
+        /* Scenario: COL-2 — A mint past the cap reverts
+           Given maxSupply set to exactly 4,444, as Studio configures it, and 4,444 bears minted
+           When SeaDrop mints one more
+           Then SeaDrop's own sold-out check refuses it first and the supply stays 4,444 */
+        assertEq(bears.maxSupply(), 4444);
+        _mint(alice, MAX_SUPPLY);
+
+        vm.prank(seaDrop);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ERC721SeaDropStructsErrorsAndEvents.MintQuantityExceedsMaxSupply.selector, 4445, 4444
+            )
+        );
+        bears.mintSeaDrop(alice, 1);
+        assertEq(bears.totalSupply(), 4444);
+    }
+
+    function test_supply_isExactlyMaxBears_onceMintedOut() public {
+        /* Scenario: COL-2 — A mint past the cap reverts
+           Given the collection minted out
+           When supply and existence are read
+           Then totalSupply is 4,444, bear 4,444 exists and bear 4,445 does not */
+        _mint(alice, MAX_SUPPLY);
+        assertEq(bears.totalSupply(), bears.MAX_BEARS());
+        assertTrue(bears.exists(4444));
+        assertFalse(bears.exists(4445));
     }
 
     function test_maxSupplyRemainsRaisable_butMeaningless() public {
