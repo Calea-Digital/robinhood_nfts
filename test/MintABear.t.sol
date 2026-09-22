@@ -26,19 +26,19 @@ contract MintABearTest is BaseTest {
     }
 
     function test_mint_doesNotAdvanceTransferNonce() public {
-        /* Scenario:
+        /* Scenario: COL-3 — A transfer advances the counter, a mint does not
            Given a freshly minted bear
            When its transfer counter is read
-           Then it is still zero, because minting is not a transfer */
+           Then it reads 0, because minting is not a transfer */
         _mint(alice, 1);
         assertEq(bears.transferNonce(1), 0);
     }
 
     function test_transfer_advancesTransferNonce() public {
-        /* Scenario:
-           Given a bear owned by alice
-           When alice transfers it to bob
-           Then the transfer counter advances by exactly one */
+        /* Scenario: COL-3 — A transfer advances the counter, a mint does not
+           Given a bear whose transferNonce reads n
+           When it is transferred to another wallet
+           Then transferNonce reads n + 1 */
         _mint(alice, 1);
         vm.prank(alice);
         bears.transferFrom(alice, bob, 1);
@@ -185,6 +185,82 @@ contract MintABearNoAccountsTest is BaseTest {
         (bool ok, bytes memory ret) = address(bears).call(abi.encodePacked(bytes4(keccak256(bytes(signature))), args));
         assertFalse(ok, signature);
         assertEq(ret.length, 0, signature);
+    }
+}
+
+/// @dev COL-3. `transferNonce` counts every ownership change except the mint and never resets.
+///      It is what makes ACT-5's reset a consequence of the transfer rather than an action.
+contract MintABearTransferCounterTest is BaseTest {
+    function test_counter_advancesOnEveryKindOfTransfer() public {
+        /* Scenario: COL-3 — A transfer advances the counter, a mint does not
+           Given a bear whose transferNonce reads n
+           When it is sold, given back to a previous owner, moved by its holder to itself and moved
+             by an approved operator
+           Then transferNonce reads n + 1 after each of them alike */
+        _mint(alice, 1);
+        assertEq(bears.transferNonce(1), 0);
+
+        vm.prank(alice);
+        bears.transferFrom(alice, bob, 1);
+        assertEq(bears.transferNonce(1), 1, "sale or gift");
+
+        vm.prank(bob);
+        bears.transferFrom(bob, alice, 1);
+        assertEq(bears.transferNonce(1), 2, "return to a previous owner");
+
+        vm.prank(alice);
+        bears.transferFrom(alice, alice, 1);
+        assertEq(bears.transferNonce(1), 3, "self-initiated move to the same wallet");
+
+        vm.prank(alice);
+        bears.setApprovalForAll(operator, true);
+        vm.prank(operator);
+        bears.safeTransferFrom(alice, bob, 1);
+        assertEq(bears.transferNonce(1), 4, "operator move");
+    }
+
+    function test_counter_isPerBear() public {
+        /* Scenario: COL-3 — A transfer advances the counter, a mint does not
+           Given several bears minted together
+           When one of them is transferred
+           Then only that bear's counter moves; the others still read 0 */
+        _mint(alice, 3);
+        vm.prank(alice);
+        bears.transferFrom(alice, bob, 2);
+
+        assertEq(bears.transferNonce(1), 0);
+        assertEq(bears.transferNonce(2), 1);
+        assertEq(bears.transferNonce(3), 0);
+    }
+
+    function test_counter_neverDecreases() public {
+        /* Scenario: COL-3 — A transfer advances the counter, a mint does not
+           Given a bear that has moved several times
+           When each move is compared with the one before
+           Then the counter only ever grows by one, and nothing resets it */
+        _mint(alice, 1);
+        address[2] memory owners = [alice, bob];
+        uint64 last = bears.transferNonce(1);
+        for (uint256 i; i < 6; ++i) {
+            address from = owners[i % 2];
+            address to = owners[(i + 1) % 2];
+            vm.prank(from);
+            bears.transferFrom(from, to, 1);
+            uint64 now_ = bears.transferNonce(1);
+            assertEq(now_, last + 1, "grows by exactly one");
+            last = now_;
+        }
+        assertEq(last, 6);
+    }
+
+    function test_batchMint_readsZeroForEveryId() public {
+        /* Scenario: COL-3 — A transfer advances the counter, a mint does not
+           When a batch of bears is minted
+           Then every one of them reads 0 */
+        _mint(alice, 10);
+        for (uint256 id = 1; id <= 10; ++id) {
+            assertEq(bears.transferNonce(id), 0);
+        }
     }
 }
 
