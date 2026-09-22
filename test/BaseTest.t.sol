@@ -5,14 +5,12 @@ import {Test} from "forge-std/Test.sol";
 
 import {MintABear} from "../src/MintABear.sol";
 import {Activation} from "../src/Activation.sol";
-import {PlaceholderRenderer} from "../src/renderers/PlaceholderRenderer.sol";
 import {MockMNTD} from "./mocks/MockMNTD.sol";
 
-/// @dev Shared fixture: the collection with one allowed SeaDrop address, the placeholder
-///      renderer, a $MNTD stand-in and an Activation wired to both.
+/// @dev Shared fixture: the collection with one allowed SeaDrop address, a $MNTD stand-in and
+///      an Activation wired to both.
 abstract contract BaseTest is Test {
     MintABear internal bears;
-    PlaceholderRenderer internal renderer;
     Activation internal activation;
     MockMNTD internal mntd;
 
@@ -29,8 +27,7 @@ abstract contract BaseTest is Test {
         address[] memory allowed = new address[](1);
         allowed[0] = seaDrop;
 
-        renderer = new PlaceholderRenderer("A bear.", "https://mint.io", "ipfs://placeholder");
-        bears = new MintABear("MintABear", "BEAR", allowed, address(renderer));
+        bears = new MintABear("MintABear", "BEAR", allowed);
         bears.setMaxSupply(MAX_SUPPLY);
 
         mntd = new MockMNTD(DECIMALS);

@@ -3,7 +3,6 @@ pragma solidity 0.8.17;
 
 import {BaseTest} from "./BaseTest.t.sol";
 import {MintABear} from "../src/MintABear.sol";
-import {MockRenderer} from "./mocks/MockRenderer.sol";
 import {IERC2981} from "openzeppelin-contracts/interfaces/IERC2981.sol";
 import {ISeaDropTokenContractMetadata} from "seadrop/interfaces/ISeaDropTokenContractMetadata.sol";
 import {INonFungibleSeaDropToken} from "seadrop/interfaces/INonFungibleSeaDropToken.sol";
@@ -12,11 +11,12 @@ import {INonFungibleSeaDropToken} from "seadrop/interfaces/INonFungibleSeaDropTo
  * @title  SeaDropIntegrationTest
  * @notice Pins the boundary between what OpenSea Studio configures and what this collection
  *         enforces for itself.
- * @dev    Only one function on `ERC721SeaDrop` that matters here is `virtual`: `mintSeaDrop`
- *         and `tokenURI`. `getMintStats`, `setMaxSupply`, `setBaseURI`, `multiConfigure` and
- *         `burn` are all final, so anything this collection needs to enforce against them has
- *         to happen in `_beforeTokenTransfers`. These tests exist so that the consequences of
- *         that are written down rather than discovered during the drop.
+ * @dev    Two functions on `ERC721SeaDrop` that matter here are `virtual`, `mintSeaDrop` and
+ *         `tokenURI`, and the collection overrides neither. `getMintStats`, `setMaxSupply`,
+ *         `setBaseURI`, `multiConfigure` and `burn` are all final, so anything this collection
+ *         needs to enforce against them has to happen in `_beforeTokenTransfers`. These tests
+ *         exist so that the consequences of that are written down rather than discovered
+ *         during the drop.
  */
 contract SeaDropIntegrationTest is BaseTest {
     function test_mintSeaDrop_isUntouched() public {
@@ -139,21 +139,16 @@ contract SeaDropIntegrationTest is BaseTest {
         assertEq(bears.provenanceHash(), keccak256("manifest"));
     }
 
-    function test_baseURI_isSetButNeverUsed() public {
-        /* Scenario:
-           Given Studio sets a baseURI, which it does by default for a managed drop
-           When a bear's tokenURI is read
-           Then the renderer answers and the baseURI is ignored. This collection serves
-           metadata on-chain; anything configured through Studio's metadata fields has no
-           effect and the portal team needs to know that. */
+    function test_baseURI_isServed() public {
+        /* Scenario: COL-5 — Metadata is base URI plus id
+           Given baseURI set through Studio
+           When tokenURI(id) is read
+           Then it returns baseURI followed by id */
         _mint(alice, 1);
         bears.setBaseURI("https://api.example.com/");
 
-        MockRenderer mock = new MockRenderer("FROM_RENDERER");
-        bears.setRenderer(address(mock));
-
         assertEq(bears.baseURI(), "https://api.example.com/", "stored");
-        assertEq(bears.tokenURI(1), "FROM_RENDERER", "but not served");
+        assertEq(bears.tokenURI(1), "https://api.example.com/1", "served");
     }
 
     function test_provenanceHash_mustPrecedeTheFirstMint() public {

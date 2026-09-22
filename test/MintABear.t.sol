@@ -2,10 +2,11 @@
 pragma solidity 0.8.17;
 
 import {LibERC6551} from "solady/accounts/LibERC6551.sol";
+import {IERC721A} from "ERC721A/IERC721A.sol";
+import {TwoStepOwnable} from "utility-contracts/TwoStepOwnable.sol";
 
 import {BaseTest} from "./BaseTest.t.sol";
 import {MintABear} from "../src/MintABear.sol";
-import {MockRenderer} from "./mocks/MockRenderer.sol";
 
 contract MintABearTest is BaseTest {
     function test_startTokenId_isOne() public {
@@ -39,66 +40,6 @@ contract MintABearTest is BaseTest {
         assertEq(bears.transferNonce(1), 1);
     }
 
-    function test_tokenURI_delegatesToRenderer() public {
-        /* Scenario:
-           Given a renderer that returns an identifiable value
-           When tokenURI is read
-           Then the token returns exactly what the renderer returned */
-        _mint(alice, 1);
-        MockRenderer mock = new MockRenderer("RENDERED");
-        bears.setRenderer(address(mock));
-        assertEq(bears.tokenURI(1), "RENDERED");
-    }
-
-    function test_tokenURI_nonexistent_reverts() public {
-        /* Scenario:
-           Given a bear that was never minted
-           When its tokenURI is read
-           Then it reverts rather than rendering nothing */
-        vm.expectRevert();
-        bears.tokenURI(1);
-    }
-
-    function test_setRenderer_byNonOwner_reverts() public {
-        /* Scenario:
-           Given a wallet that does not own the contract
-           When it tries to replace the renderer
-           Then the call is refused */
-        MockRenderer mock = new MockRenderer("X");
-        vm.prank(alice);
-        vm.expectRevert();
-        bears.setRenderer(address(mock));
-    }
-
-    function test_constructor_zeroRenderer_reverts() public {
-        /* Scenario:
-           Given a deployment that forgets the renderer
-           When the collection is constructed
-           Then it is refused, so tokenURI can never point at nothing */
-        address[] memory allowed = new address[](1);
-        allowed[0] = seaDrop;
-
-        vm.expectRevert(MintABear.RendererIsZeroAddress.selector);
-        new MintABear("MintABear", "BEAR", allowed, address(0));
-    }
-
-    function test_constructor_recordsRenderer() public view {
-        /* Scenario:
-           Given a valid deployment
-           When the stored renderer is read
-           Then it is exactly what was passed in */
-        assertEq(address(bears.renderer()), address(renderer));
-    }
-
-    function test_setRenderer_zeroAddress_reverts() public {
-        /* Scenario:
-           Given the contract owner
-           When they try to set the renderer to the zero address
-           Then the call is refused, so tokenURI can never point at nothing */
-        vm.expectRevert(MintABear.RendererIsZeroAddress.selector);
-        bears.setRenderer(address(0));
-    }
-
     function test_maxSupply_isEnforced() public {
         /* Scenario:
            Given a collection capped at 4,444
@@ -130,6 +71,69 @@ contract MintABearBranchTest is BaseTest {
         vm.prank(alice);
         bears.transferFrom(alice, bob, 1);
         assertEq(bears.ownerOf(1), bob);
+    }
+}
+
+/// @dev COL-5. Metadata is SeaDrop's stock shape: `baseURI` set through Studio, `tokenURI(id)`
+///      is `baseURI` followed by `id`, and nothing about a bear's level reaches it.
+contract MintABearMetadataTest is BaseTest {
+    function test_tokenURI_isBaseURIPlusId() public {
+        /* Scenario: COL-5 — Metadata is base URI plus id
+           Given baseURI set through Studio
+           When tokenURI(id) is read
+           Then it returns baseURI followed by id
+           And raising the bear's level changes nothing in it */
+        _mint(alice, 2);
+        bears.setBaseURI("ipfs://bears/");
+        assertEq(bears.tokenURI(1), "ipfs://bears/1");
+        assertEq(bears.tokenURI(2), "ipfs://bears/2");
+
+        _fund(alice, 5_000);
+        vm.prank(alice);
+        activation.burn(1, 5_000 * UNIT);
+        assertEq(activation.levelOf(1), 1, "level rose");
+
+        assertEq(bears.tokenURI(1), "ipfs://bears/1", "metadata does not vary with level");
+    }
+
+    function test_tokenURI_withoutTrailingSlash_isTheBaseURIAlone() public {
+        /* Scenario:
+           Given a baseURI that does not end in a slash, SeaDrop's pre-reveal shape
+           When tokenURI is read for any bear
+           Then it returns the baseURI itself, without the id */
+        _mint(alice, 2);
+        bears.setBaseURI("ipfs://unrevealed");
+        assertEq(bears.tokenURI(1), "ipfs://unrevealed");
+        assertEq(bears.tokenURI(2), "ipfs://unrevealed");
+    }
+
+    function test_tokenURI_withEmptyBaseURI_isEmpty() public {
+        /* Scenario:
+           Given no baseURI has been set
+           When tokenURI is read
+           Then it returns the empty string rather than reverting */
+        _mint(alice, 1);
+        assertEq(bears.tokenURI(1), "");
+    }
+
+    function test_tokenURI_nonexistent_reverts() public {
+        /* Scenario:
+           Given a bear that was never minted
+           When its tokenURI is read
+           Then it reverts with URIQueryForNonexistentToken */
+        bears.setBaseURI("ipfs://bears/");
+        vm.expectRevert(IERC721A.URIQueryForNonexistentToken.selector);
+        bears.tokenURI(1);
+    }
+
+    function test_setBaseURI_byNonOwner_reverts() public {
+        /* Scenario:
+           Given a wallet that does not own the contract
+           When it tries to set the baseURI
+           Then the call is refused with OnlyOwner */
+        vm.prank(alice);
+        vm.expectRevert(TwoStepOwnable.OnlyOwner.selector);
+        bears.setBaseURI("ipfs://hijack/");
     }
 }
 

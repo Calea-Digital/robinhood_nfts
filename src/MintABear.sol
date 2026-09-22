@@ -2,14 +2,15 @@
 pragma solidity 0.8.17;
 
 import {ERC721SeaDrop} from "seadrop/ERC721SeaDrop.sol";
-import {IBearRenderer} from "./interfaces/IBearRenderer.sol";
 
 /**
  * @title  MintABear
  * @notice A 4,444-supply collection on Robinhood Chain, operated from OpenSea Studio.
  * @dev    Extends OpenSea's ERC721SeaDrop, which already implements ICreatorToken, so this is
- *         an ERC-721C contract. The SeaDrop mint path and `getMintStats` are untouched, per
- *         OpenSea's integration guidance.
+ *         an ERC-721C contract. The SeaDrop mint path, `getMintStats`, metadata and royalty
+ *         interfaces are untouched, per OpenSea's integration guidance: `tokenURI(id)` is the
+ *         stock `baseURI` followed by `id`, with `baseURI`, provenance and royalties set
+ *         through Studio.
  *
  *         Three behaviours are added on top:
  *
@@ -37,17 +38,8 @@ contract MintABear is ERC721SeaDrop {
     ///         code rather than of how the contract happens to be configured.
     uint256 public constant MAX_BEARS = 4444;
 
-    /// @notice Contract that builds the metadata document. Replaceable; holds no user state.
-    IBearRenderer public renderer;
-
     /// @notice How many times each bear has changed hands. Never incremented on mint.
     mapping(uint256 => uint64) public transferNonce;
-
-    /// @notice Emitted when the metadata renderer is replaced.
-    event RendererUpdated(address indexed previousRenderer, address indexed newRenderer);
-
-    /// @notice The renderer address may not be zero.
-    error RendererIsZeroAddress();
 
     /// @notice Bears cannot be burned. See `_beforeTokenTransfers`.
     error BurnDisabled();
@@ -60,30 +52,10 @@ contract MintABear is ERC721SeaDrop {
      * @param symbol_         Collection symbol. Permanent.
      * @param allowedSeaDrop_ SeaDrop contracts permitted to mint. Canonical SeaDrop on
      *                        Robinhood Chain is 0x00005EA00Ac477B1030CE78506496e8C2dE24bf5.
-     * @param renderer_       Initial renderer. Launches as the placeholder; replaced at reveal.
      */
-    constructor(string memory name_, string memory symbol_, address[] memory allowedSeaDrop_, address renderer_)
+    constructor(string memory name_, string memory symbol_, address[] memory allowedSeaDrop_)
         ERC721SeaDrop(name_, symbol_, allowedSeaDrop_)
-    {
-        if (renderer_ == address(0)) revert RendererIsZeroAddress();
-        renderer = IBearRenderer(renderer_);
-    }
-
-    /**
-     * @notice Replaces the metadata renderer.
-     * @dev    The reveal is performed by pointing at the real renderer once artwork exists.
-     */
-    function setRenderer(address newRenderer) external onlyOwner {
-        if (newRenderer == address(0)) revert RendererIsZeroAddress();
-        emit RendererUpdated(address(renderer), newRenderer);
-        renderer = IBearRenderer(newRenderer);
-    }
-
-    /// @inheritdoc ERC721SeaDrop
-    function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
-        if (!_exists(tokenId)) revert URIQueryForNonexistentToken();
-        return renderer.render(tokenId);
-    }
+    {}
 
     /**
      * @dev Bounds supply on mint and advances the transfer counter on every move.
