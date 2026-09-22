@@ -34,12 +34,20 @@ comment: the earliest wins. If ours is not the earliest, post `Yielded <nonce>` 
 next id. If ours wins, `update_issue` State → **In Progress** and `manage_issue_tags` add
 `MNT Claude`. Assignee stays human-owned.
 
-**Branch and work.** `git switch -c <ns>/<spec-ref>` from the current default branch. Read the
+**Branch and work.** The active change's name is the integration branch (`tranche-1`): create it
+from the default branch once if it does not exist, and branch each Task off it —
+`git switch <change> && git switch -c <ns>/<spec-ref>` — so a Task builds on the Tasks finished
+before it. The default branch is never touched by this loop; the human merges the integration
+branch. Read the
 Task body: the statement, `Done when` (the spec's Scenario — the definition of done) and
-`Gates`. Work per `CLAUDE.md`: a BTT tree leaf per Scenario, a `/* Scenario: */` block above
-each test quoting the spec's Scenario, deterministic tests only, never a fuzz or invariant
-harness. Tick plan steps in the claim comment as they complete (edit the comment or post a
-follow-up).
+`Gates`; then the family's spec file under `openspec/specs/` for the neighbours it cites. Work
+per `CLAUDE.md` and the stack's web3 manual (W7): `[SKILL: openzeppelin-skills:develop-secure-contracts]`
+for OpenZeppelin patterns, with the project's own libraries winning where they differ;
+`[SKILL: evm-internals]` for storage layout and gas; `/solidity` for style when in doubt. Tests:
+a BTT tree leaf per Scenario, a `/* Scenario: */` block above each test quoting the spec's
+Scenario, deterministic tests only — never a fuzz or invariant harness (a property that wants
+one becomes an INV-N line in the tree for the auditor). Tick plan steps in the claim comment
+as they complete (edit the comment or post a follow-up).
 
 **Subtask, exception path.** Only when a step has another owner or must be tracked on its own
 (a value MINT must supply, a human rehearsal step): `create_issue` with `parentIssue` = the

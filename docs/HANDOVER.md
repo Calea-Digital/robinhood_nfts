@@ -15,7 +15,8 @@ carries the version line in full, suffix included, so each draft is its own file
 is `MintABear-Specification-v2.1.pages`; `v1.0` and `v2.0` stay beside it as the records MINT
 answered and then decided against. **The board (YouTrack MNT) follows `openspec/`** through
 `docs/tools/board.sh`; the work loop that picks requirements off it is in `CLAUDE.md`
-("Specification and board") and its pick order is `openspec/changes/tranche-1/tasks.md`.
+("Specification and board") and its pick order is `openspec/changes/tranche-1/tasks.md`. A
+development session starts from `docs/prompts/tranche-1-kickoff.md`.
 The v2.0 document is 31 pages; to check a build without opening Pages, export it to PDF through
 `osascript` and render or count text per page with a short Swift PDFKit script — a table that does
 not fit the rest of a page moves whole to the next one in Pages, so a heading left alone on a page

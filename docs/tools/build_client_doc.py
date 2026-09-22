@@ -404,6 +404,10 @@ def merge(spec_md: str, by_section: dict, register: dict | None, closed: dict | 
         parts.append(blocks_xml([{"kind": "heading", "level": 2, "text": "Other questions for MINT"}]))
         parts.extend(callout_xml(t, b, s) for t, b, s in leftovers)
 
+    # The appendix starts on a fresh page: its first table is longer than the
+    # space left under the last callout, and Pages moves a table whole, which
+    # would strand the heading and its intro on an otherwise empty page.
+    parts.append('<w:p><w:r><w:br w:type="page"/></w:r></w:p>')
     parts.append(blocks_xml([
         {"kind": "heading", "level": 2, "text": "Appendix — Register of questions"},
         {"kind": "para", "text": "One line per question. Open items first, for deciding in one place; "

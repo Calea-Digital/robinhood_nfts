@@ -88,10 +88,25 @@ def cell(text: str | None) -> str:
     return (text or "—").replace("|", "\\|").replace("\n", " ").strip()
 
 
+ISO_PREFIX = re.compile(r"^(\d{4}-\d{2}-\d{2})\b")
+
+
+def needed_by_cell(needed_by: str | None) -> str:
+    """The table shows the date alone when `Needed by` starts with one; the
+    callout under the question carries the whole phrase."""
+    if not needed_by:
+        return "—"
+    m = ISO_PREFIX.match(needed_by.strip())
+    return m.group(1) if m else cell(needed_by)
+
+
 def render_register(parsed: ParsedSpec) -> str:
+    """One line per question: the table is an index, the callouts are the
+    record. `Summary` is the one-line column when `Resolution` is longer than
+    a table cell should be."""
     rows = ["| ID | Section | Question | Resolution / default | Needed by | Status |", "|---|---|---|---|---|---|"]
     for d in parsed.decisions:
-        rows.append(f"| {d.id} | {cell(d.section)} | {cell(d.statement)} | {cell(d.resolution or d.default_if_deferred)} | {cell(d.needed_by)} | {d.label} |")
+        rows.append(f"| {d.id} | {cell(d.section)} | {cell(d.statement)} | {cell(d.summary or d.resolution or d.default_if_deferred)} | {needed_by_cell(d.needed_by)} | {d.label} |")
     return "\n".join(rows)
 
 

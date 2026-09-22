@@ -125,6 +125,7 @@ class Decision:
     id: str                # "D-12" (native default) or "CQ-18" (a project keeping its own prefix)
     statement: str         # the short question/decision text (the register table's column)
     state: str              # one of DECISION_STATES
+    summary: str | None = None       # one line for a register table when Resolution is longer than a table cell
     rationale: str | None = None
     blocks: list[str] = field(default_factory=list)  # requirement ids this gates
     needed_by: str | None = None

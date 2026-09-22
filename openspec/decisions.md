@@ -14,6 +14,7 @@ verbatim in the tracker and in the client document.
 - **Section:** CAL
 - **Needed by:** 2026-10-29 — before the mint
 - **Resolution:** the three anchors stand — TGE 20 October, mint 29 October, burns and level-up from 29 October. Every other row of §8 is unconfirmed.
+- **Summary:** To be decided; the anchors stand, every other §8 row unconfirmed
 
 **Question.** The SoW schedule chains off a 15 October mint. With the mint at 29 October, which
 dates hold and which move?
@@ -42,6 +43,7 @@ makes that rehearsal independent of TGE (CQ-2).
 - **Section:** ACT
 - **Needed by:** 2026-10-20 — before `Activation` and `DirectBurnAdapter` are deployed
 - **Resolution:** option (a1) — $MNTD is **native** to Robinhood Chain, burned by `DirectBurnAdapter` in the same transaction as the credit.
+- **Summary:** Native on Robinhood Chain, with burning and staking beside it; token interface to confirm
 - **Blocks:** ACT-7
 
 **Question.** On which chain does the $MNTD burn happen, what does the token's level-up function
@@ -86,6 +88,7 @@ constructor's base units and is needed before `Activation` is deployed.
 - **Section:** RAF
 - **Needed by:** 2026-10-05 — before tranche 2 starts
 - **Resolution:** **instant reveal**. A holder opens a box with a bear they own and learns the outcome then; one bear is one shot and the id is spent by it. Rounds, entry windows and the scheduled draw are dropped.
+- **Summary:** Instant reveal on opening; one bear is one shot and the id is spent
 - **Blocks:** RAF-28
 
 **Question.** Every bear at a published block is a ticket and holders do nothing — or an
@@ -147,6 +150,7 @@ than inherits them:
 - **Status note:** MINT reply, September 2026; reopened by the call, 21 September 2026
 - **Section:** RAF
 - **Resolution:** no withdrawal while a prize is committed to the live game.
+- **Summary:** Not while a prize is committed to the live game
 - **Blocks:** RAF-14
 - **Needed by:** 2026-10-05 — before tranche 2 starts
 
@@ -203,6 +207,7 @@ owner-only: `Activation.setCrediter`, because the adapter's address is not known
 - **Section:** DEL
 - **Needed by:** whenever MINT names a contract
 - **Resolution:** none; no contract is available to review yet.
+- **Summary:** Not available; deferred until MINT names one
 
 **Question.** Which existing smart contract should Calea review, where is its source, and what is
 the agreed line limit?
@@ -248,6 +253,7 @@ default is unchanged. Note that the monorepo named in earlier drafts,
 - **Section:** COL
 - **Needed by:** 2026-10-02 — the receiver before the first sale (the team bear); the rate is settled
 - **Resolution:** 5% (500 basis points); receiver to follow.
+- **Summary:** 5%; receiver to follow
 - **Blocks:** COL-6
 
 **Question.** The ERC-2981 royalty percentage and the address that receives it.
@@ -269,6 +275,7 @@ Studio at any time before the first sale.
 - **Section:** RAF
 - **Needed by:** 2026-10-12 — before `PrizeDraw` is deployed
 - **Resolution:** option (a) — MINT creates, funds and owns the subscription from a wallet it controls; Calea adds `PrizeDraw` as a consumer during deployment. The network is still to pick.
+- **Summary:** MINT creates, funds and owns it; the network is Calea's to recommend
 
 **Question.** The Chainlink VRF v2.5 subscription on Base: MINT creates and funds it and adds the
 `PrizeDraw` as a consumer. Confirm, and name the account that will hold it.
@@ -341,6 +348,7 @@ burn thresholds are immutable once `Activation` is deployed.
 - **Section:** WL
 - **Needed by:** before the campaign opens
 - **Resolution:** option **(A)** — an on-chain registry on Robinhood Chain; the holder sends the claim and pays the gas. The CSV loaded into OpenSea is exported from that registry.
+- **Summary:** On-chain registry, holder pays gas (A); the OpenSea CSV is exported from it
 
 **Question.** MINT provides the Privy mirror login and an API for the signed-in account's
 wagering; Calea records the whitelist claims of those who meet the requirement. Where is the
@@ -398,6 +406,7 @@ with Calea recording only the result.
 - **Status note:** MINT reply, September 2026; superseded by CQ-2
 - **Section:** ACT
 - **Resolution:** the design stands; no decision remains.
+- **Summary:** Stands; MINT's reply concerned the royalty pot (§2)
 - **Blocks:** ACT-1
 
 **Question.** `Activation` never touches $MNTD; it accepts `credit(tokenId, burner, amount,
@@ -425,6 +434,7 @@ recorded in §2 under *Off-chain (MINT)*, where the accounts are getminted.io's 
 - **Status note:** call, 21 September 2026
 - **Section:** ACT
 - **Resolution:** 1,666 / 3,333 / 8,333 / 16,666 / 41,666 $MNTD, read **cumulatively**: level 5 costs 41,666 $MNTD in all.
+- **Summary:** 1,666 / 3,333 / 8,333 / 16,666 / 41,666, read cumulatively
 - **Blocks:** ACT-2
 
 **Question.** The five thresholds, in whole $MNTD, for levels 1–5.
@@ -458,6 +468,7 @@ units once `decimals` is known (CQ-2).
 - **Status note:** MINT reply, September 2026
 - **Section:** ACT
 - **Resolution:** 1.00 / 1.10 / 1.25 / 1.45 / 1.70 / 2.00 for levels 0–5; six levels.
+- **Summary:** 1.00 / 1.10 / 1.25 / 1.45 / 1.70 / 2.00, six levels
 - **Blocks:** ACT-3, CQ-4
 
 **Question.** MINT's brief lists five weights (1.00–3.50) and the SoW six (1.00–2.00). Which
@@ -473,6 +484,7 @@ applies?
 - **Status note:** MINT reply, September 2026
 - **Section:** COL
 - **Resolution:** no burn; supply is 4,444 forever.
+- **Summary:** No; supply stays 4,444
 - **Blocks:** COL-8
 
 **Question.** Should a holder be able to destroy their own bear? The choice is permanent.
@@ -492,6 +504,7 @@ does not dilute the pot (ACT-10).
 - **Status note:** MINT reply, September 2026
 - **Section:** COL
 - **Resolution:** enforced from deployment.
+- **Summary:** Yes, from deployment
 - **Blocks:** COL-7, OPS-6
 
 **Question.** Does MINT want creator earnings enforced on-chain, and from when?
@@ -512,6 +525,7 @@ published; if OpenSea cannot fill orders, one owner call lifts enforcement until
 - **Section:** RAF
 - **Needed by:** before the vaults are deployed
 - **Resolution:** prizes sit on several chains and are NFTs and tokens alike; each is claimed on the chain it sits on.
+- **Summary:** Several chains; NFTs and tokens alike
 - **Blocks:** RAF-24
 
 **Question.** On which chain are the prize assets held, and where should the vault live?
@@ -539,6 +553,7 @@ many prizes there are, and on which chains, is CQ-20.
 - **Status note:** MINT reply, September 2026; carried over at the call, 21 September 2026
 - **Section:** RAF
 - **Resolution:** 30 days, now running from the win rather than from a round's root; an unclaimed prize is renounced.
+- **Summary:** 30 days, from the win
 - **Blocks:** RAF-11
 
 **Question.** How long does a winner have to claim?
@@ -560,6 +575,7 @@ never won.
 - **Status note:** MINT reply, September 2026
 - **Section:** OPS
 - **Resolution:** no freeze, no clawback; no admin path into a holder's bear.
+- **Summary:** None
 - **Blocks:** ACT-12, RAF-14, RAF-28
 
 **Question.** Does any compliance requirement call for an admin ability to freeze a bear or claw
@@ -585,6 +601,7 @@ defines *spent*.
 - **Section:** DEL
 - **Needed by:** before the tranche 1 handover
 - **Resolution:** MINT builds the app that holders use, in TypeScript, on **getminted.io**; Calea delivers a typed, tested TypeScript library for every contract interaction. The Framer landing page stays and is out of scope. Where the code lives is CQ-14.
+- **Summary:** MINT builds the play page on getminted.io in TypeScript; Calea ships a tested typed client library
 
 **Question.** MINT: "Since the website is on Framer, it might be best if we create it as our own
 web app, separate from Framer. Considering all the things we want to add, Framer might not allow

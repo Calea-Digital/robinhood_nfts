@@ -22,26 +22,26 @@ are marked as such below. CQ-20 is new from that call.
 <!-- openspec:begin register -->
 | ID | Section | Question | Resolution / default | Needed by | Status |
 |---|---|---|---|---|---|
-| CQ-1 | CAL | Dates after the 29 Oct mint | the three anchors stand — TGE 20 October, mint 29 October, burns and level-up from 29 October. Every other row of §8 is unconfirmed. | 2026-10-29 — before the mint | Follow-up |
-| CQ-2 | ACT | $MNTD burn route | option (a1) — $MNTD is **native** to Robinhood Chain, burned by `DirectBurnAdapter` in the same transaction as the credit. | 2026-10-20 — before `Activation` and `DirectBurnAdapter` are deployed | Follow-up |
-| CQ-9 | RAF | Mystery box model | **instant reveal**. A holder opens a box with a bear they own and learns the outcome then; one bear is one shot and the id is spent by it. Rounds, entry windows and the scheduled draw are dropped. | 2026-10-05 — before tranche 2 starts | Follow-up |
-| CQ-11 | RAF | Owner withdrawals | no withdrawal while a prize is committed to the live game. | 2026-10-05 — before tranche 2 starts | Follow-up |
-| CQ-12 | OPS | Addresses; Safe on 4663 | Open; supplied on time, as constructor parameters where possible | 2026-10-02 — before anything is deployed to mainnet | Open |
-| CQ-13 | DEL | Existing-contract review target | none; no contract is available to review yet. | whenever MINT names a contract | Open |
+| CQ-1 | CAL | Dates after the 29 Oct mint | To be decided; the anchors stand, every other §8 row unconfirmed | 2026-10-29 | Follow-up |
+| CQ-2 | ACT | $MNTD burn route | Native on Robinhood Chain, with burning and staking beside it; token interface to confirm | 2026-10-20 | Follow-up |
+| CQ-9 | RAF | Mystery box model | Instant reveal on opening; one bear is one shot and the id is spent | 2026-10-05 | Follow-up |
+| CQ-11 | RAF | Owner withdrawals | Not while a prize is committed to the live game | 2026-10-05 | Follow-up |
+| CQ-12 | OPS | Addresses; Safe on 4663 | Open; supplied on time, as constructor parameters where possible | 2026-10-02 | Open |
+| CQ-13 | DEL | Existing-contract review target | Not available; deferred until MINT names one | whenever MINT names a contract | Open |
 | CQ-14 | DEL | Monorepo and CI | Undecided; `packages/contracts`, submodules, Calea owns CI | before the tranche 1 handover | Open |
-| CQ-15 | COL | Royalty rate and receiver | 5% (500 basis points); receiver to follow. | 2026-10-02 — the receiver before the first sale (the team bear); the rate is settled | Follow-up |
-| CQ-17 | RAF | VRF subscription and network | option (a) — MINT creates, funds and owns the subscription from a wallet it controls; Calea adds `PrizeDraw` as a consumer during deployment. The network is still to pick. | 2026-10-12 — before `PrizeDraw` is deployed | Follow-up |
-| CQ-20 | RAF | Prize count, odds and excluded ids | To supply: how many prizes, and which token ids are out of play | 2026-10-05 — before tranche 2 starts; the numbers are deployment values | Open |
-| CQ-18 | WL | Whitelist claim recording | option **(A)** — an on-chain registry on Robinhood Chain; the holder sends the claim and pays the gas. The CSV loaded into OpenSea is exported from that registry. | before the campaign opens | Follow-up |
-| CQ-3 | ACT | Token-agnostic `credit` design | the design stands; no decision remains. | — | Closed |
-| CQ-4 | ACT | Five burn thresholds | 1,666 / 3,333 / 8,333 / 16,666 / 41,666 $MNTD, read **cumulatively**: level 5 costs 41,666 $MNTD in all. | — | Answered |
-| CQ-5 | ACT | Weight table | 1.00 / 1.10 / 1.25 / 1.45 / 1.70 / 2.00 for levels 0–5; six levels. | — | Answered |
-| CQ-6 | COL | May holders burn bears? | no burn; supply is 4,444 forever. | — | Answered |
-| CQ-7 | COL | Enforce royalties on-chain | enforced from deployment. | — | Answered |
-| CQ-8 | RAF | Where the prize assets live | prizes sit on several chains and are NFTs and tokens alike; each is claimed on the chain it sits on. | before the vaults are deployed | Answered |
-| CQ-10 | RAF | Claim window | 30 days, now running from the win rather than from a round's root; an unclaimed prize is renounced. | — | Answered |
-| CQ-16 | OPS | Compliance (freeze / clawback) | no freeze, no clawback; no admin path into a holder's bear. | — | Answered |
-| CQ-19 | DEL | Frontend and integration | MINT builds the app that holders use, in TypeScript, on **getminted.io**; Calea delivers a typed, tested TypeScript library for every contract interaction. The Framer landing page stays and is out of scope. Where the code lives is CQ-14. | before the tranche 1 handover | Answered |
+| CQ-15 | COL | Royalty rate and receiver | 5%; receiver to follow | 2026-10-02 | Follow-up |
+| CQ-17 | RAF | VRF subscription and network | MINT creates, funds and owns it; the network is Calea's to recommend | 2026-10-12 | Follow-up |
+| CQ-20 | RAF | Prize count, odds and excluded ids | To supply: how many prizes, and which token ids are out of play | 2026-10-05 | Open |
+| CQ-18 | WL | Whitelist claim recording | On-chain registry, holder pays gas (A); the OpenSea CSV is exported from it | before the campaign opens | Follow-up |
+| CQ-3 | ACT | Token-agnostic `credit` design | Stands; MINT's reply concerned the royalty pot (§2) | — | Closed |
+| CQ-4 | ACT | Five burn thresholds | 1,666 / 3,333 / 8,333 / 16,666 / 41,666, read cumulatively | — | Answered |
+| CQ-5 | ACT | Weight table | 1.00 / 1.10 / 1.25 / 1.45 / 1.70 / 2.00, six levels | — | Answered |
+| CQ-6 | COL | May holders burn bears? | No; supply stays 4,444 | — | Answered |
+| CQ-7 | COL | Enforce royalties on-chain | Yes, from deployment | — | Answered |
+| CQ-8 | RAF | Where the prize assets live | Several chains; NFTs and tokens alike | before the vaults are deployed | Answered |
+| CQ-10 | RAF | Claim window | 30 days, from the win | — | Answered |
+| CQ-16 | OPS | Compliance (freeze / clawback) | None | — | Answered |
+| CQ-19 | DEL | Frontend and integration | MINT builds the play page on getminted.io in TypeScript; Calea ships a tested typed client library | before the tranche 1 handover | Answered |
 <!-- openspec:end -->
 
 ## Questions

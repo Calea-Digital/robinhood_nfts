@@ -29,6 +29,7 @@ Register shape:
     - **Section:** ACT                   (optional)
     - **Needed by:** 2026-10-20 — before … (optional; a leading ISO date projects as Due Date)
     - **Resolution:** …                  (optional)
+    - **Summary:** …                     (optional — one line for a register table when Resolution is long)
     - **Rationale:** …                   (optional)
     - **Blocks:** ACT-7, ACT-2           (optional)
     - **Default if deferred:** …         (optional)
@@ -334,6 +335,7 @@ def parse_openspec_decisions_file(path: Path) -> list[Decision]:
                 default_if_deferred=opt("default if deferred"),
                 status_label=opt("status label"), status_note=opt("status note"),
                 title=title or opt("title"), section=opt("section"), resolution=opt("resolution"),
+                summary=opt("summary"),
                 detail=detail or None,
                 source_file=str(path), source_line=line,
             )
