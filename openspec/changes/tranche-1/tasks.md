@@ -9,7 +9,7 @@ becomes a Task with Spec Ref `NONE` when picked.
 - [x] 1.1 COL-9 — remove ERC-6551: `BearAccount`, `accountOf`, `deployAccount`, `recordAccounts`, `isBearAccount`, `TransferToBearAccount`, the PoC and tests that depend on them
 - [x] 1.2 COL-5 — remove the renderer: `IBearRenderer`, `PlaceholderRenderer`, `setRenderer`, the `tokenURI` override, their tests and mock; metadata is stock `baseURI`
 - [x] 1.3 COL-8 — burn refused (`BurnDisabled` stays; dead-address exclusion lives in the split script, not the contract)
-- [ ] 1.4 COL-4 — emit `TransferNonceAdvanced(tokenId, nonce)` in the transfer hook
+- [x] 1.4 COL-4 — emit `TransferNonceAdvanced(tokenId, nonce)` in the transfer hook
 - [ ] 1.5 COL-12 — `exists(tokenId)` view; every listed read answers
 - [ ] 1.6 COL-13 — events carry the documented arguments
 - [ ] 1.7 COL-1 — only canonical SeaDrop mints
