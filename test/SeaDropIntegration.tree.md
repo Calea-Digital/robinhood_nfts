@@ -65,8 +65,14 @@ setProvenanceHash
 ## Secondary trading
 
 ```
-royaltyInfo
-└── it answers normally; nothing here touches ERC-2981
+royaltyInfo (COL-6)
+├── with 500 basis points and the pot set, it returns the pot and 5% of the sale price
+├── it answers the same for every id, minted or not: the rate is collection-wide
+├── royaltyAddress and royaltyBasisPoints read the setting back
+└── setRoyaltyInfo
+    ├── emits RoyaltyInfoUpdated(receiver, bps)
+    ├── refuses a rate above 10,000 basis points with InvalidRoyaltyBasisPoints
+    └── is owner-only
 
 operator transfers
 └── an approved-for-all operator can move a bear, which is how Seaport's conduit works
