@@ -61,7 +61,7 @@ effect. It is not an error and nothing reverts, which is what makes it worth wri
 
 ```
 setProvenanceHash
-├── recordAccounts does not count as minting, so provenance can still be set after it
+├── before the first mint it can be set
 └── after the first mint it reverts
 ```
 
@@ -73,10 +73,6 @@ royaltyInfo
 
 operator transfers
 └── an approved-for-all operator can move a bear, which is how Seaport's conduit works
-
-recordAccounts
-└── recording the full supply blocks only the derived account addresses; holders,
-    operators, marketplaces and fee recipients are unaffected
 
 transferValidator
 └── it stays unset, so the conduit and smart wallets can move bears

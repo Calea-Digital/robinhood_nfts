@@ -14,7 +14,7 @@ contract PlaceholderRendererTest is Test {
         renderer = new PlaceholderRenderer("A bear.", "https://mint.io", "ipfs://placeholder");
     }
 
-    function test_render_returnsBase64JsonDataUri() public {
+    function test_render_returnsBase64JsonDataUri() public view {
         /* Scenario:
            Given the pre-reveal renderer
            When a bear is rendered
@@ -23,7 +23,7 @@ contract PlaceholderRendererTest is Test {
         assertTrue(LibString.startsWith(uri, "data:application/json;base64,"));
     }
 
-    function test_render_isIdenticalAcrossBears() public {
+    function test_render_isIdenticalAcrossBears() public view {
         /* Scenario:
            Given the pre-reveal renderer
            When two different bears are rendered
@@ -34,7 +34,7 @@ contract PlaceholderRendererTest is Test {
         );
     }
 
-    function test_strings_areReadable() public {
+    function test_strings_areReadable() public view {
         /* Scenario:
            Given strings supplied at construction
            When they are read back
@@ -76,7 +76,7 @@ contract PlaceholderRendererTest is Test {
         return string(Base64.decode(string(tail)));
     }
 
-    function test_render_producesTheExpectedDocument() public {
+    function test_render_producesTheExpectedDocument() public view {
         /* Scenario:
            Given ordinary strings
            When a bear is rendered

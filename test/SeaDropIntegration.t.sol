@@ -159,9 +159,8 @@ contract SeaDropIntegrationTest is BaseTest {
     function test_provenanceHash_mustPrecedeTheFirstMint() public {
         /* Scenario:
            Given provenance may only be set before minting starts
-           When recordAccounts runs first, as the runbook requires
-           Then provenance can still be set, because recording is not minting */
-        bears.recordAccounts(1, 100);
+           When it is set on a collection with nothing minted
+           Then it succeeds, and once the first bear exists it is refused */
         bears.setProvenanceHash(keccak256("manifest"));
         assertEq(bears.provenanceHash(), keccak256("manifest"));
 
@@ -204,24 +203,7 @@ contract SeaDropIntegrationTest is BaseTest {
         assertEq(bears.transferNonce(1), 1);
     }
 
-    function test_recordedAccounts_doNotBlockOrdinaryCounterparties() public {
-        /* Scenario:
-           Given the whole supply of account addresses is recorded
-           When bears move between ordinary wallets and marketplace addresses
-           Then nothing is blocked; only the derived account addresses are refused */
-        bears.recordAccounts(1, MAX_SUPPLY);
-        _mint(alice, 1);
-
-        vm.prank(alice);
-        bears.transferFrom(alice, seaDrop, 1);
-        assertEq(bears.ownerOf(1), seaDrop);
-
-        assertFalse(bears.isBearAccount(seaDrop), "SeaDrop is not a bear account");
-        assertFalse(bears.isBearAccount(operator), "nor an operator");
-        assertFalse(bears.isBearAccount(alice), "nor a holder");
-    }
-
-    function test_supportsInterface_advertisesEverythingStudioLooksFor() public {
+    function test_supportsInterface_advertisesEverythingStudioLooksFor() public view {
         /* Scenario:
            Given OpenSea detects capability through ERC-165
            When the interfaces are queried
@@ -235,7 +217,7 @@ contract SeaDropIntegrationTest is BaseTest {
         assertTrue(bears.supportsInterface(type(INonFungibleSeaDropToken).interfaceId), "SeaDrop token");
     }
 
-    function test_transferValidator_staysUnset() public {
+    function test_transferValidator_staysUnset() public view {
         /* Scenario:
            Given ERC-721C enforcement is deliberately off
            When the validator is read
