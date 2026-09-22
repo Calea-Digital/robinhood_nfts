@@ -19,8 +19,10 @@ import {ERC721SeaDrop} from "seadrop/ERC721SeaDrop.sol";
  *            therefore a consequence of the transfer rather than an action that has to
  *            succeed, so it can neither be skipped nor block the transfer itself.
  *
- *         2. A refusal to burn. The inherited `ERC721SeaDrop.burn` cannot be overridden, so
- *            it is neutralised in the transfer hook instead. Supply is 4,444 for good.
+ *         2. A refusal to destroy a bear. The inherited `ERC721SeaDrop.burn` cannot be
+ *            overridden, so it is neutralised in the transfer hook; a transfer to the zero
+ *            address is refused with the same error in `transferFrom`. Supply is 4,444 for
+ *            good.
  *
  *         3. A hard supply ceiling of `MAX_BEARS`. The inherited `maxSupply` is an owner
  *            setting that can be raised at will; this one is a constant checked on the mint
@@ -41,7 +43,8 @@ contract MintABear is ERC721SeaDrop {
     /// @notice How many times each bear has changed hands. Never incremented on mint.
     mapping(uint256 => uint64) public transferNonce;
 
-    /// @notice Bears cannot be burned. See `_beforeTokenTransfers`.
+    /// @notice No bear can be destroyed: `burn` and any transfer to the zero address are
+    ///         refused with this error, by anyone, the bear's owner included.
     error BurnDisabled();
 
     /// @notice The mint would take the collection past `MAX_BEARS`.
@@ -58,12 +61,23 @@ contract MintABear is ERC721SeaDrop {
     {}
 
     /**
+     * @notice Transfers a bear. A transfer to the zero address is refused with `BurnDisabled`.
+     * @dev    The same error the hook gives `burn`, so every way of destroying a bear answers
+     *         alike; ERC721A would otherwise refuse it first with its own
+     *         `TransferToZeroAddress`. `safeTransferFrom` routes through here.
+     */
+    function transferFrom(address from, address to, uint256 tokenId) public virtual override {
+        if (to == address(0)) revert BurnDisabled();
+        super.transferFrom(from, to, tokenId);
+    }
+
+    /**
      * @dev Bounds supply on mint and advances the transfer counter on every move.
      *
      *      Also the only place a burn can be stopped. `ERC721SeaDrop` exposes a public
      *      `burn`, and declares it neither `virtual` nor internal, so it cannot be
      *      overridden — but every burn routes through this hook with `to` set to the zero
-     *      address, and `to` is zero in no other case.
+     *      address, which no transfer reaches.
      */
     function _beforeTokenTransfers(address from, address to, uint256 startTokenId, uint256 quantity)
         internal

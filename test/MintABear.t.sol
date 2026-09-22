@@ -183,25 +183,30 @@ contract MintABearNoAccountsTest is BaseTest {
     }
 }
 
-/// @dev `ERC721SeaDrop` exposes a public, non-virtual `burn`. It cannot be overridden, so it
-///      is refused in the transfer hook. Removing that refusal makes every test here fail.
+/// @dev COL-8. No bear can be destroyed. `ERC721SeaDrop` exposes a public, non-virtual `burn`
+///      that cannot be overridden, so it is refused in the transfer hook; a transfer to the
+///      zero address is refused in `transferFrom` with the same error. A bear sent to an
+///      address nobody controls stays in the supply.
 contract MintABearBurnGuardTest is BaseTest {
+    address internal constant DEAD = 0x000000000000000000000000000000000000dEaD;
+
     function test_burn_byOwner_reverts() public {
-        /* Scenario:
-           Given a bear owned by alice
-           When alice calls the inherited SeaDrop burn
-           Then it is refused with BurnDisabled */
+        /* Scenario: COL-8 — No bear can be destroyed
+           When anyone, the owner included, calls burn or transfers a bear to the zero address
+           Then it reverts with BurnDisabled
+           And totalSupply is unchanged */
         _mint(alice, 1);
         vm.prank(alice);
         vm.expectRevert(MintABear.BurnDisabled.selector);
         bears.burn(1);
+        assertEq(bears.totalSupply(), 1);
     }
 
     function test_burn_byApprovedOperator_reverts() public {
-        /* Scenario:
+        /* Scenario: COL-8 — No bear can be destroyed
            Given alice approved an operator for all her bears
            When the operator calls burn
-           Then it is refused, so an approval cannot destroy a holder's bear */
+           Then it reverts with BurnDisabled, so an approval cannot destroy a holder's bear */
         _mint(alice, 1);
         vm.prank(alice);
         bears.setApprovalForAll(operator, true);
@@ -209,12 +214,25 @@ contract MintABearBurnGuardTest is BaseTest {
         vm.prank(operator);
         vm.expectRevert(MintABear.BurnDisabled.selector);
         bears.burn(1);
+        assertEq(bears.totalSupply(), 1);
+    }
+
+    function test_burn_byStranger_reverts() public {
+        /* Scenario: COL-8 — No bear can be destroyed
+           When a wallet with no approval calls burn on someone else's bear
+           Then ERC721A's approval check refuses it before the hook is reached
+           And totalSupply is unchanged */
+        _mint(alice, 1);
+        vm.prank(bob);
+        vm.expectRevert(IERC721A.TransferCallerNotOwnerNorApproved.selector);
+        bears.burn(1);
+        assertEq(bears.totalSupply(), 1);
     }
 
     function test_burn_leavesSupplyAndOwnershipIntact() public {
-        /* Scenario:
+        /* Scenario: COL-8 — No bear can be destroyed
            Given a bear that someone has tried to burn
-           When supply and ownership are read
+           When supply, ownership and the counter are read
            Then nothing moved, so the id can never be orphaned */
         _mint(alice, 1);
         vm.prank(alice);
@@ -224,6 +242,55 @@ contract MintABearBurnGuardTest is BaseTest {
         assertEq(bears.totalSupply(), 1, "supply unchanged");
         assertEq(bears.ownerOf(1), alice, "owner unchanged");
         assertEq(bears.transferNonce(1), 0, "counter unchanged");
+    }
+
+    function test_transferToZeroAddress_reverts() public {
+        /* Scenario: COL-8 — No bear can be destroyed
+           When the owner transfers a bear to the zero address
+           Then it reverts with BurnDisabled
+           And totalSupply is unchanged */
+        _mint(alice, 1);
+        vm.prank(alice);
+        vm.expectRevert(MintABear.BurnDisabled.selector);
+        bears.transferFrom(alice, address(0), 1);
+
+        assertEq(bears.totalSupply(), 1, "supply unchanged");
+        assertEq(bears.ownerOf(1), alice, "owner unchanged");
+        assertEq(bears.transferNonce(1), 0, "counter unchanged");
+    }
+
+    function test_safeTransferToZeroAddress_reverts() public {
+        /* Scenario: COL-8 — No bear can be destroyed
+           When an approved operator safe-transfers a bear to the zero address
+           Then it reverts with BurnDisabled, because safeTransferFrom routes through transferFrom
+           And totalSupply is unchanged */
+        _mint(alice, 1);
+        vm.prank(alice);
+        bears.setApprovalForAll(operator, true);
+
+        vm.prank(operator);
+        vm.expectRevert(MintABear.BurnDisabled.selector);
+        bears.safeTransferFrom(alice, address(0), 1);
+
+        vm.prank(operator);
+        vm.expectRevert(MintABear.BurnDisabled.selector);
+        bears.safeTransferFrom(alice, address(0), 1, "");
+
+        assertEq(bears.totalSupply(), 1, "supply unchanged");
+    }
+
+    function test_transferToDeadAddress_keepsTheBearInSupply() public {
+        /* Scenario: COL-8 — No bear can be destroyed
+           Given the canonical dead address, which nobody controls
+           When a bear is sent there
+           Then it is an ordinary transfer: the bear stays in the supply and the counter advances */
+        _mint(alice, 1);
+        vm.prank(alice);
+        bears.transferFrom(alice, DEAD, 1);
+
+        assertEq(bears.ownerOf(1), DEAD);
+        assertEq(bears.totalSupply(), 1, "still in the supply");
+        assertEq(bears.transferNonce(1), 1);
     }
 }
 
