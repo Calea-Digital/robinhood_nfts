@@ -17,7 +17,7 @@ becomes a Task with Spec Ref `NONE` when picked.
 - [x] 1.9 COL-3 — transfer counter
 - [x] 1.10 COL-6 — royalty info reads 5% to the pot
 - [x] 1.11 COL-7 — creator token, validator set at deploy
-- [ ] 1.12 COL-10 — two-step ownership to MINT's admin
+- [x] 1.12 COL-10 — two-step ownership to MINT's admin
 
 ## 2. WhitelistClaim — live before the campaign
 
