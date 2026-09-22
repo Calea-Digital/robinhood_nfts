@@ -1,0 +1,87 @@
+# Calea house schema — per-project config.yaml template.
+# Copy this to <project>/openspec/config.yaml after `openspec init`, or after
+# copying this schema bundle into <project>/openspec/schemas/calea-house/.
+#
+# `schema`, `context`, `rules`, `operations` are OpenSpec-native fields, read
+# by OpenSpec's own CLI. `engagement` below is NOT an OpenSpec field — OpenSpec
+# ignores it. It exists so this project's traceability validator (see the
+# calea-ai-stack repo's bridge/validator scripts) can mechanically check
+# profile coherence: whether client-only artifacts (parties, calendar,
+# sign_off, deliverables) are appropriate here, without parsing free-text
+# prose. Keep it in sync with the `Client engagement:` line inside `context`
+# below — the structured field is what's machine-checked, the prose line is
+# for a human reading `context` and should say the same thing.
+
+schema: calea-house
+
+# Machine-checked: internal | client. Gates whether the validator warns on
+# non-empty parties.md / calendar.md / sign-off.md / deliverables.md.
+engagement: internal
+
+# Not an OpenSpec field either. The document version the tracker's issue
+# footers and the rendered client document cite — one source for both. Bump
+# it when a new version of the spec is issued to the counterparty.
+spec_version: "0.1"
+
+# Project context (optional, shown to the agent when creating artifacts).
+# Fill in the tech stack, domain, and any convention that isn't already
+# implied by the schema itself.
+context: |
+  Tech stack: <e.g. Foundry / Solidity ^0.8.24, or Python / FastAPI>
+  Domain: <one line>
+  Client engagement: <yes — name the client | no — internal (keep in sync with `engagement:` above)>
+
+# Per-artifact rules. These are advisory instructions layered on top of the
+# schema's own instruction text — use them for per-project specifics the
+# schema itself can't know (a concrete acceptance-artifact convention, a
+# diagram format preference, family prefixes already in use, etc.).
+rules:
+  specs:
+    # The schema's `acceptance` shape (Given/When/Then inside a Scenario
+    # block) is deliberately abstract — it doesn't mandate BTT trees,
+    # Foundry, or pytest. Say here what concretely implements it on THIS
+    # project. Two worked examples:
+    #
+    # Web3 / Foundry project:
+    #   - Every Scenario in a spec delta must have a matching leaf in
+    #     contracts/test/<Family>/<Family>.tree.md (BTT, Sablier-style) and a
+    #     `/* Scenario: ... */` comment above the matching unit test in
+    #     contracts/test/<Family>/<Family>.t.sol.
+    #   - Coverage gate: >=90% line / >=80% branch on the module's source.
+    #
+    # Non-Web3 project (e.g. Python backend):
+    #   - Every Scenario in a spec delta must have a matching pytest test
+    #     carrying a `"""Scenario: ..."""` docstring pulling the same
+    #     Given/When/Then from the spec.
+    - "<state the concrete acceptance-artifact convention for this project>"
+    - "Family prefixes already in use: <list them, e.g. COL, WL, ACT — keep new families' prefixes distinct>"
+    - "A MODIFIED delta repeats the **Kind:** line — openspec archive copies the block as written and drops Kind otherwise."
+  decisions:
+    - "Diagrams (state machines, flows) must be diffable text, not a binary asset — ASCII art or Mermaid, either is fine. (Relaxed from an earlier draft that mandated ASCII only; the real requirement is diffability, not a specific renderer.)"
+  proposal: []
+  design: []
+  tasks: []
+  # Client-engagement artifacts (parties, calendar, sign_off, deliverables)
+  # need no per-project rules beyond the schema's own "skip on internal work"
+  # instruction — delete unused sections rather than leaving empty rule lists
+  # if this project is internal-only.
+
+# Per-operation guidance (advisory, not enforced by the CLI).
+operations:
+  archive:
+    guidance:
+      - >
+        This schema's `decisions` artifact is NOT auto-merged by
+        `openspec archive` the way `specs` deltas are — that merge is
+        hardwired to the specs artifact specifically. Before finishing an
+        archive, check this change's decisions.md (ADDED/RESOLVED/DEFERRED)
+        and fold it into the project's persistent register at
+        openspec/decisions.md by hand: append ADDED entries, update the
+        State field (and add Rationale) for RESOLVED/DEFERRED ones. Do not
+        skip this — it's the only place a decision's history persists past
+        this change's archive.
+      - >
+        A REMOVED requirement is deleted from the main spec by archive and
+        written nowhere. Add its id to that family's `## Retired Requirements`
+        as `- ID (reason) → NEWID` so the id stays resolvable — the bridge,
+        the validator and the prose renderer all read that section.

@@ -1,7 +1,10 @@
+<!-- GENERATED sections between openspec markers are written by docs/tools/spec_tools/render_calea_prose.py from openspec/. Edit openspec/ and the narrative here, then run docs/tools/board.sh. -->
 # MintABear — Specification
 
+<!-- openspec:begin version -->
 **Version** 2.1 · **Date** 21 September 2026 · **Status** records the decisions of the
 MINT–Calea call of 21 September 2026; sign-off follows the open items in §10
+<!-- openspec:end -->
 
 Prepared by Calea for MINT. Sources: *MINTaBear development statement of work* (MINT, 14 September
 2026); *Mint <> Calea* meeting (15 September 2026); *MintABear questionnaire v2.0*; MINT's written
@@ -135,10 +138,16 @@ splits the pot off-chain.
 
 ## 3. Collection contract — MintABear (COL)
 
+
+<!-- openspec:begin family COL -->
+MINT needs a 4,444-bear collection on Robinhood Chain that its team runs from OpenSea Studio, that collects royalties on every sale, and whose every transfer visibly resets a bear's activation — so that everything else in the system can trust ownership and the transfer counter alone.
+
 **COL-1 Base.** `MintABear` extends OpenSea's `ERC721SeaDrop` with its mint path,
 `getMintStats`, metadata and royalty interfaces unchanged. Canonical SeaDrop
 `0x00005EA00Ac477B1030CE78506496e8C2dE24bf5` is the only allowed minter. The drop is configured
 and operated through OpenSea Studio by MINT (COL-11).
+
+*Acceptance.* Given the collection deployed with canonical SeaDrop as its only allowed minter; when any other address calls the mint path; then the call reverts and no bear is minted.
 
 **COL-2 Supply.** `MAX_BEARS = 4444` is a constant enforced on the mint path; a mint that would
 exceed it reverts with `ExceedsMaxBears`. The inherited `maxSupply` is a Studio setting (COL-11)
@@ -148,25 +157,35 @@ and buyers past the cap would pay for reverted transactions. Team, treasury, par
 bears all come out of the same 4,444. Because no bear can be destroyed (COL-8), the supply is
 exactly 4,444 once minted out.
 
+*Acceptance.* Given 4,444 bears minted; when SeaDrop mints one more, whatever `maxSupply` says; then the transaction reverts with `ExceedsMaxBears`.
+
 **COL-3 Transfer counter.** `transferNonce(tokenId)` increments on every transfer except mint —
 sales, gifts, self-initiated moves and return transfers to a previous owner alike — and never
 resets. It is the mechanism by which every ownership change resets level, weight and Status
 link (ACT-5).
+
+*Acceptance.* Given a bear whose `transferNonce` reads n; when it is transferred to another wallet; then `transferNonce` reads n + 1; and a freshly minted bear reads 0.
 
 **COL-4 Reset event.** `TransferNonceAdvanced(uint256 indexed tokenId, uint64 nonce)` is
 emitted for every non-mint transfer, in the same transaction as `Transfer`. It is the
 activation-reset event: anything `Activation` recorded at the previous counter value is void
 once it fires. It fires whether or not a level existed.
 
+*Acceptance.* When a bear is transferred, whether or not it has a level; then `TransferNonceAdvanced(tokenId, nonce)` is emitted in the same transaction as `Transfer`.
+
 **COL-5 Metadata.** Standard SeaDrop metadata: `baseURI` set through Studio,
 `tokenURI(id) = baseURI + id`, provenance hash committed with `setProvenanceHash` before the
 mint opens. Placeholder JSON, reveal and hosting are MINT's. Artwork is immutable and metadata
 does not vary with level.
 
+*Acceptance.* Given `baseURI` set through Studio; when `tokenURI(id)` is read; then it returns `baseURI` followed by `id`; and raising the bear's level changes nothing in it.
+
 **COL-6 Royalties.** ERC-2981 through SeaDrop's `setRoyaltyInfo`: **5% (500 basis points)**,
 receiver the royalty-pot address MINT names, distinct from the admin and from every vault. Set
 by Iñigo in Studio at any point before the first sale; it does not hold up deployment. `→ CQ-15`
 (receiver).
+
+*Acceptance.* Given royalty info set in Studio to 500 basis points and the pot address; when `royaltyInfo(id, salePrice)` is read; then it returns the pot address and 5% of `salePrice`.
 
 **COL-7 Creator token and enforced royalties.** `MintABear` implements `ICreatorToken` (ERC-721C)
 and is deployed with the transfer validator **set**:
@@ -184,11 +203,15 @@ team bear before the drop page is published. If OpenSea cannot fill orders, one 
 `setTransferValidator(address(0))`, lifts enforcement until OpenSea confirms, and one call
 restores it (OPS-6). Every change emits `TransferValidatorUpdated`.
 
+*Acceptance.* Given the validator set to V3 with the zero-state policy; when a holder transfers a bear directly; then the transfer passes; and a Seaport order from a venue other than OpenSea's SignedZone reverts.
+
 **COL-8 No burn.** The transfer hook refuses `to == address(0)` with `BurnDisabled`, so
 `ERC721SeaDrop.burn` always reverts and no bear can be destroyed by anyone, its owner included;
 `totalSupply` never falls. A bear sent to an address nobody controls (for example `0x…dEaD`)
 remains a bear in the supply: nobody can enter it in a raffle (RAF-21), and the royalty snapshot
 excludes the canonical dead address (ACT-10).
+
+*Acceptance.* When anyone, the owner included, calls `burn` or transfers a bear to the zero address; then it reverts with `BurnDisabled`; and `totalSupply` is unchanged.
 
 **COL-9 No token-bound accounts.** ERC-6551 is not part of the collection. It can be added later
 without any change to `MintABear`: the canonical registry
@@ -196,9 +219,13 @@ without any change to `MintABear`: the canonical registry
 `(chainId, tokenContract, tokenId)` for any ERC-721. The one property that cannot be retrofitted
 is a token-side guard against sending a bear into a bear's account.
 
+*Acceptance.* When the deployed `MintABear` is inspected; then it holds no ERC-6551 account code, no account guard and no registry call.
+
 **COL-10 Ownership.** Deployed by Calea; ownership transferred to MINT's admin address by the
 inherited two-step process (`transferOwnership`, then `acceptOwnership` from the admin) before
 the drop page is published. Calea retains no role.
+
+*Acceptance.* Given Calea has called `transferOwnership(admin)`; when the admin calls `acceptOwnership`; then the admin is the owner; and Calea holds no role.
 
 **COL-11 What Studio owns.** Mint stages, dates and pricing; allowlists and per-wallet limits,
 including the whitelist stage loaded from `WhitelistClaim` (WL-4); payout address; `maxSupply`
@@ -210,10 +237,19 @@ the next window opens — not by the contract.
 `transferNonce`, `tokenURI`, `royaltyInfo`, `getTransferValidator`, `getMintStats`, plus the
 ERC-721 and SeaDrop standard surface.
 
+*Acceptance.* When `ownerOf`, `exists`, `totalSupply`, `maxSupply`, `MAX_BEARS`, `transferNonce`, `tokenURI`, `royaltyInfo`, `getTransferValidator` and `getMintStats` are called for a minted bear; then each returns without reverting; and `exists(id)` is false for an unminted id.
+
 **COL-13 Events.** Standard `Transfer`, `Approval`, `ApprovalForAll`; SeaDrop configuration
 events; `TransferNonceAdvanced` (COL-4); `TransferValidatorUpdated` (COL-7).
 
+*Acceptance.* When a bear is transferred and the validator is changed; then `Transfer`, `TransferNonceAdvanced` and `TransferValidatorUpdated` are emitted with the documented arguments.
+<!-- openspec:end -->
+
 ## 4. Whitelist claim (WL)
+
+
+<!-- openspec:begin family WL -->
+MINT needs a first-come-first-served whitelist of 1,000 allocations that only wagering holders can claim, recorded where anyone can check it — so that the allowlist loaded into Studio is provably the list the campaign produced.
 
 **WL-1 Rules.** From MINT's brief, as the contract enforces them:
 
@@ -232,6 +268,8 @@ events; `TransferNonceAdvanced` (COL-4); `TransferValidatorUpdated` (COL-7).
   claims one now and the second later.
 - **Two per wallet, two per account.** A getminted.io account cannot spread more than two
   over several wallets.
+
+*Acceptance.* Given a wallet holding one claimed allocation and an account holding one; when the wallet claims allocation 2 with a valid voucher; then the claim succeeds and both counts read 2; and a third claim for either reverts.
 
 **WL-2 Division of work.** MINT: the Privy mirror login on getminted.io; the wager API that
 returns, for the logged-in account, historical wagering capped at $50 and in-campaign wagering;
@@ -260,23 +298,34 @@ same contract without the `NotClaimant` condition (`→ CQ-18`). Reads: `TOTAL_S
 admin): `setSigner`, `setWindow(openAt, closeAt)`, ownership transfer. Nobody can remove or
 reassign a claim.
 
+*Acceptance.* Given a voucher signed by the signer for wallet W, allocation 1, within its deadline and the campaign window; when W calls `claim`; then `spotsLeft` falls by one, `claimsOf(W)` reads 1 and `WhitelistClaimed` is emitted; and the same call from another wallet reverts with `NotClaimant`.
+
 **WL-4 Into the mint.** After the window closes or the spots sell out, MINT exports the claimant
 list — one row per wallet with its allocation count — and loads it as the whitelist stage's
 allowlist in Studio. SeaDrop allowlist entries carry a per-wallet mint limit, so "one or two" is
 enforced by the mint itself. The getminted.io mirror builds its Merkle proofs from the same list
 (DEL-6). The registry is public, so a loaded list that differs from it is detectable by anyone.
 
+*Acceptance.* Given a closed campaign; when `claimants(offset, limit)` is read across the whole list; then every wallet appears once with its allocation count, and the Studio allowlist loaded from it carries the same rows.
+
 **WL-5 Timing.** The registry is deployed and its signer set before the campaign opens; the
 campaign closes at least 48 hours before the whitelist stage opens, for the export, the Studio
 import and the publication of proofs. Dates `→ CQ-18`; calendar in §8.
+
+*Acceptance.* Given `openAt` and `closeAt` set with the close at least 48 hours before the whitelist stage; when a claim arrives before `openAt` or after `closeAt`; then it reverts with `CampaignClosed`.
 
 **WL-6 Alternative — off-chain register.** MINT's backend records claims in its database behind
 an atomic counter; Calea supplies the claim-API contract and the Studio export script and deploys
 nothing. Faster to build and free of gas for holders; the order of claims and the sell-out rest
 on MINT's server, nothing is publicly checkable, and the SeaDrop allowlist root is the only trace
 on-chain. `→ CQ-18`.
+<!-- openspec:end -->
 
 ## 5. Activation and burn route (ACT)
+
+
+<!-- openspec:begin family ACT -->
+Holders need to burn $MNTD to raise a bear's level and weight, and MINT needs to read those weights for the royalty split, in a way no key can forge and every transfer resets — so that a level is always evidence of a burn by the current owner.
 
 **ACT-1 Token-agnostic.** `Activation` holds no reference to $MNTD and never moves tokens. It
 records credited burn amounts per bear and derives level and weight from them. It reads
@@ -285,6 +334,8 @@ records credited burn amounts per bear and derives level and weight from them. I
 are two steps of one transaction. The adapter burns the holder's $MNTD, then tells `Activation`
 "this wallet burned this amount for this bear"; `Activation` accepts that message from the
 adapter alone. If $MNTD ever changes address or chain, only the adapter changes.
+
+*Acceptance.* When `Activation`'s code and constructor are inspected; then it holds no $MNTD reference and moves no tokens; and it reads only `MintABear`'s `ownerOf`, `transferNonce` and `exists`.
 
 **ACT-2 Thresholds.** Five cumulative thresholds `T1 < T2 < T3 < T4 < T5`, in $MNTD base units,
 supplied to the constructor and immutable. A bear's level is the highest `k` with
@@ -300,10 +351,14 @@ total a bear must have burned to stand at that level, so level 5 costs 41,666 $M
 The constructor receives this row in base units, which fixes $MNTD's `decimals` before
 deployment (`→ CQ-2`).
 
+*Acceptance.* Given the thresholds 1,666 / 3,333 / 8,333 / 16,666 / 41,666 in base units; when a bear's cumulative reaches 8,333; then `levelOf` reads 3 and `costToReach(id, 4)` reads 8,333.
+
 **ACT-3 Weights.** Six royalty weights for levels 0–5, basis 100, supplied to the constructor
 and immutable: `100 / 110 / 125 / 145 / 170 / 200` (1.00× to 2.00×), confirmed by MINT.
 `weightFor(level)` returns the table entry; `weightOf(tokenId)` returns the weight of the bear's
 current level.
+
+*Acceptance.* Given the weights 100 / 110 / 125 / 145 / 170 / 200; when a bear at level 3 is read; then `weightOf` returns 145 and `weightFor(5)` returns 200.
 
 **ACT-4 Credit.** `credit(uint256 tokenId, address burner, uint128 amount, uint64 nonce,
 bytes32 ref)` is callable only by the `crediter` (`NotCrediter`, ACT-7). It reverts unless: not
@@ -315,13 +370,19 @@ the cumulative for the current counter value increases by `amount`; `lifetimeBur
 `amount`; `ref` is marked used; `BearActivated(tokenId, burner, previousLevel, newLevel, amount,
 cumulative, ref)` is emitted.
 
+*Acceptance.* Given the crediter calls `credit` for a bear the burner owns, with the current nonce and a fresh `ref`; when the call executes; then the cumulative and `lifetimeBurned` grow by `amount` and `BearActivated` is emitted; and a second call with the same `ref` reverts with `RefAlreadyUsed`.
+
 **ACT-5 Reset.** Cumulative, level, weight and link read as zero whenever the counter value
 they were recorded at differs from the current `transferNonce`. The reset is a consequence of
 the transfer (COL-3), not an action: it cannot be skipped and cannot block a transfer. Return
 transfers reset like any other.
 
+*Acceptance.* Given a bear at level 2 with a Status link; when it is transferred to another wallet; then `levelOf`, `cumulativeOf` and `weightOf` read zero and `linkOf` reads `(0, 0)`, with no call into `Activation`.
+
 **ACT-6 Lifetime.** `lifetimeBurned(tokenId)` accumulates every credit ever made to a bear and
 never resets.
+
+*Acceptance.* Given a bear credited twice with a transfer in between; when `lifetimeBurned` is read; then it is the sum of both credits.
 
 **ACT-7 Crediter and route.** Exactly one `crediter` address, set by the owner (`setCrediter`,
 event `CrediterSet`). $MNTD is deployed on Robinhood Chain (MINT), so the crediter is the
@@ -342,15 +403,21 @@ beside the token on the same chain and touches nothing here: `Activation` reads 
 `MintABear`, and the adapter only $MNTD. The token's `burnFrom` and `decimals` are still to be
 confirmed against the deployed contract (`→ CQ-2`).
 
+*Acceptance.* Given the holder has approved the adapter on $MNTD; when the holder calls `burn(tokenId, amount)` for a bear below level 5; then `burnFrom` and `credit` execute in one transaction and `BurnedForBear` is emitted; and a call by a non-owner reverts with `NotOwner`.
+
 **ACT-8 Overshoot.** The adapter refuses any amount beyond what level 5 needs, so no $MNTD is
 destroyed for nothing. The portal sizes each burn with `costToReach(tokenId, targetLevel)`,
 which returns the exact remainder or zero.
+
+*Acceptance.* Given a bear whose `costToReach(id, 5)` reads x; when the holder calls `burn(id, x + 1)`; then it reverts with `Overshoot` and no $MNTD is burned.
 
 **ACT-9 Status link.** `linkBear(tokenId)`, owner of the bear only, one nomination per wallet,
 recorded with the current counter value; `unlinkBear()` clears it and is safe to call when
 nothing is linked; `linkOf(wallet) → (tokenId, level)` returns `(0, 0)` when nothing is linked
 or the bear has since moved. A wallet aggregates royalty weight across all its bears (ACT-10)
 but carries exactly one Status boost; the boost's value is MINT's, off-chain.
+
+*Acceptance.* Given a wallet owning a bear at level 2; when it calls `linkBear(tokenId)`; then `linkOf(wallet)` reads `(tokenId, 2)`; and after the bear moves it reads `(0, 0)`.
 
 **ACT-10 Snapshot view.** `snapshot(uint256[] ids) → (address owner, uint8 level, uint16
 weight)[]`, returning zeroes for ids that do not exist. MINT's royalty accounting reads it for
@@ -362,6 +429,8 @@ this view. A reference script reproducing the split, dead-address exclusion incl
 delivered (DEL-6); MINT credits the resulting shares to getminted.io accounts through its
 wallet (§2).
 
+*Acceptance.* When `snapshot([1, 2, 4445])` is read; then it returns owner, level and weight for ids 1 and 2 and zeroes for the id that does not exist.
+
 **ACT-11 Pause.** The owner may pause. While paused, `credit` and `linkBear` revert; reads,
 `unlinkBear` and every transfer are unaffected. The adapter's `burn` therefore reverts while
 paused and no $MNTD is burned; this is how burns stay closed between deployment and the
@@ -369,20 +438,31 @@ switch-on date (§8). The pause admits no exemption — no address may burn whil
 the mainnet rehearsal against real $MNTD runs in a window the owner opens and closes again
 (§8). `renounceOwnership` is refused while paused, so a pause can always be lifted.
 
+*Acceptance.* Given the owner has paused; when the crediter calls `credit` or a holder calls `linkBear`; then both revert with `ContractPaused`; and reads, `unlinkBear` and every transfer still succeed.
+
 **ACT-12 Roles.** Owner (MINT admin): `setCrediter`, `setPaused`, ownership transfer. Nothing
 else is administrable: thresholds, weights and records are immutable; the adapter has no owner.
 There is no freeze or clawback path into a bear anywhere (MINT, CQ-16).
+
+*Acceptance.* When a non-owner calls `setCrediter` or `setPaused`; then it reverts; and no function anywhere changes thresholds, weights or a bear's record.
 
 **ACT-13 Events.** `BearActivated` (ACT-4), `BearLinked(wallet, tokenId)`,
 `BearUnlinked(wallet, tokenId)`, `CrediterSet(previous, current)`, `PausedSet(paused)`;
 adapter: `BurnedForBear(ref, tokenId, burner, amount)`.
 
+*Acceptance.* When a credit, a link, an unlink, a crediter change and a pause happen; then `BearActivated`, `BearLinked`, `BearUnlinked`, `CrediterSet` and `PausedSet` are emitted with the documented arguments.
+
 **ACT-14 Reads.** `levelOf`, `cumulativeOf`, `lifetimeBurned`, `weightOf`, `weightFor`,
 `thresholdFor`, `costToReach`, `linkOf`, `snapshot`, `paused`, `crediter`, `BEARS`; adapter:
 `MNTD`, `ACTIVATION`, `burnCount`.
 
+*Acceptance.* When every listed read is called for a credited bear; then each returns without reverting; and `BEARS`, `MNTD` and `ACTIVATION` return the deployed addresses.
+<!-- openspec:end -->
+
 ## 6. Mystery box raffle (RAF)
 
+
+<!-- openspec:begin family RAF -->
 A holder opens a mystery box with a bear they own and learns the outcome there and then. One
 bear is one shot: the open spends that id for good, and nobody can play it again, whoever holds
 the bear afterwards. There are no rounds, no entry window and no scheduled draw (MINT, CQ-9).
@@ -395,6 +475,8 @@ can only be handed over where it sits.
 prizes deposited, registered and committed, excluded ids recorded, nothing openable; **Open** —
 holders open boxes; **Closed** — no further opens, prizes never won released. The owner makes
 each transition once and neither is reversible.
+
+*Acceptance.* Given the game in Setup with prizes committed and ids excluded; when the owner opens it and later closes it; then each transition happens once and a second call to either reverts.
 
 **RAF-27 Playable ids and the prize pool.** Two numbers fix the odds, and both freeze when the
 game opens (`→ CQ-20`). The **excluded ids** are recorded as ranges by the owner during Setup
@@ -411,6 +493,8 @@ another chain and cannot read the hub. The excluded ranges are therefore final b
 is deployed, and the hub's `GameOpened(playable, prizeCount, manifestHash)` publishes all three so
 that anyone can check the two chains were given the same game.
 
+*Acceptance.* Given ranges excluded during Setup and prizes committed; when the owner opens the game; then `GameOpened(playable, prizeCount, manifestHash)` publishes `MAX_BEARS − excluded`, the manifest length and its hash; and `excludeRange` after opening reverts.
+
 **RAF-28 Opening a box.** `open(uint256 tokenId)` on `MysteryBox`, by the wallet that is
 `ownerOf(tokenId)` at that moment. It reverts unless the game is Open (`GameNotOpen`),
 `ownerOf(tokenId) == msg.sender` (`NotBearOwner`), the id is not excluded (`IdExcluded`) and the
@@ -420,6 +504,8 @@ apart from gas. A spent bear stays freely transferable and its buyer cannot open
 `shotsLeft(wallet)` returns the wallet's bears that are playable and unopened — a holder of ten
 bears who has opened two sees eight.
 
+*Acceptance.* Given an open game and a holder of a playable, unopened bear; when the holder calls `open(tokenId)`; then `BoxOpened(openIndex, tokenId, opener)` is emitted and `shotsLeft(holder)` falls by one; and the buyer of that bear cannot open it again, reverting with `AlreadyOpened`.
+
 **RAF-29 Resolution, in order.** Each open is resolved on `PrizeDraw` by `resolve(uint64
 openIndex, address opener)`, which the worker relays from the `BoxOpened` event. `PrizeDraw`
 refuses any `openIndex` but the next unresolved one (`OutOfOrder`), so the worker cannot choose
@@ -428,6 +514,8 @@ as a `BoxOpened` with no `OutcomeRecorded`. `resolve` requests one Chainlink wor
 `DrawRequested(openIndex, requestId)`. Requests may be in flight at once, and outcomes are
 applied strictly in `openIndex` order as the words arrive, so an open waits on the words of the
 opens before it and on nothing else.
+
+*Acceptance.* Given opens 1 and 2 recorded and neither resolved; when the worker calls `resolve(2, opener)`; then it reverts with `OutOfOrder`; and `resolve(1, opener)` requests one Chainlink word and emits `DrawRequested`.
 
 **RAF-30 The win rule (normative).** Let `idsLeft` be the playable ids not yet resolved and
 `prizesLeft` the prizes not yet awarded, both starting at RAF-27's values. On the word `w` for
@@ -446,6 +534,8 @@ neither run dry early nor be left over if the game is played out; a wallet's cha
 proportional to the playable bears it holds; and there is no cap on how many prizes one wallet
 may win (MINT, CQ-9).
 
+*Acceptance.* Given `idsLeft` at 10, `prizesLeft` at 2 and a word w with `w mod 10 == 1`; when the open is resolved; then `won` is true, the next manifest prize is assigned, `prizesLeft` reads 1 and `idsLeft` reads 9.
+
 **RAF-31 Closing the game.** The owner closes the game once, after which `open` reverts. Prizes
 never won — because their ids were never opened — return to unreserved inventory when the worker
 posts the close to each vault, and the owner may then withdraw them (RAF-14).
@@ -453,8 +543,12 @@ posts the close to each vault, and the owner may then withdraw them (RAF-14).
 an outcome already recorded can change, and a prize already won stays the winner's until it is
 claimed or expires.
 
+*Acceptance.* Given an open game with one committed prize never won; when the owner closes the game and the worker posts the close to the vault; then `open` reverts, `GameClosed` and `PrizesReleased` are emitted and the prize is unreserved inventory again.
+
 **RAF-2 Addresses.** Each `PrizeVault` is the dedicated deposit address on its chain, separate
 from the royalty pot and from the admin. Neither `MysteryBox` nor `PrizeDraw` holds assets.
+
+*Acceptance.* When the deployed addresses are compared; then each vault differs from the royalty pot and the admin, and `MysteryBox` and `PrizeDraw` hold no assets.
 
 **RAF-3 Asset approval.** The owner approves each asset on each vault once: `approveAsset(token,
 kind, basketSize)` with `kind ∈ {ERC20, ERC721}`; `basketSize` is in base units for ERC-20 (for
@@ -462,15 +556,21 @@ $MNTD on Robinhood Chain, 5,000 × 10^decimals) and ignored for ERC-721, where e
 own prize. `revokeAsset` stops an asset entering the pool and never touches a committed or won
 prize. Unapproved assets never enter the pool. ERC-1155 is not supported.
 
+*Acceptance.* Given an ERC-20 approved with basket size b; when the vault holds 2b + 1 units and commits; then two baskets are committed; and a deposit of an unapproved token never enters the pool.
+
 **RAF-4 Intake.** Deposits are plain transfers to a vault. Nothing happens until the worker
 registers them: `registerERC721(token, id)` requires `ownerOf(id) == vault` and the id not yet
 tracked; `syncERC20(token)` adds `balanceOf(vault) − tracked` to unreserved inventory. Token
 transfers alone never change the game's state. Each registration emits `DepositRegistered`.
 
+*Acceptance.* Given an ERC-721 transferred to the vault; when the worker calls `registerERC721(token, id)`; then `DepositRegistered` is emitted and the prize is unreserved inventory; and before registration the game's state is unchanged.
+
 **RAF-5 Inventory states.** Unreserved → committed (to the game) → won → claimed; or won →
 expired → unreserved; or committed → unreserved when the game closes without the prize being
 won. A committed or won prize cannot be withdrawn, swept or moved by anyone but its winner,
 paused or not.
+
+*Acceptance.* Given a committed prize; when the owner calls `sweep` for it; then the call reverts; and once won and expired the prize is unreserved again.
 
 **RAF-6 Committing prizes.** During Setup the worker calls `commitToGame()` on each vault that
 holds prizes: every unreserved full basket of every approved ERC-20 and every unreserved
@@ -479,6 +579,8 @@ emits `PrizesCommitted(prizes[])` with its ordered list. The hub's manifest (RAF
 concatenation of those lists, and a manifest that differs from the vaults' events is detectable
 by anyone. MINT fills the vaults with exactly the prizes the game should carry, then the worker
 commits and the owner opens.
+
+*Acceptance.* Given a vault with approved baskets and registered ERC-721s; when the worker calls `commitToGame()`; then `PrizesCommitted(prizes[])` lists every full basket and every registered token in order; and remainders below a basket stay unreserved.
 
 **RAF-8 Randomness.** Chainlink VRF v2.5, one request and one word per open, with the
 subscription owned and funded by MINT and `PrizeDraw` as its consumer (MINT, CQ-17).
@@ -492,12 +594,16 @@ per open is what buys an outcome nobody can predict; the subscription has to car
 collection's worth of requests, so it is funded for `PLAYABLE` of them and topped up on a
 balance alarm, not on a schedule (`→ CQ-17`).
 
+*Acceptance.* When `resolve` runs; then exactly one VRF v2.5 request is made from MINT's subscription with `PrizeDraw` as consumer; and the outcome uses that request's word alone.
+
 **RAF-24 Prize vaults.** One `PrizeVault` code, deployed on every chain that holds prizes.
 Lifecycle: approval (RAF-3), intake (RAF-4), `commitToGame()` (RAF-6); `award(prizeIndex,
 recipient)` by the worker, once per prize and only for a prize the game recorded as won, which
 anyone can check against `PrizeDraw`'s `OutcomeRecorded`; `claim(prizeIndex)` by the recipient
 (RAF-11); `expirePrize` (RAF-11); `closeGame()` releasing the uncommitted remainder (RAF-31);
 `sweep` (RAF-14).
+
+*Acceptance.* Given a prize the draw recorded as won; when the worker calls `award(prizeIndex, recipient)` once; then `PrizeAwarded` is emitted; and a second `award` for the same prize, or one for a prize not recorded as won, reverts.
 
 **RAF-25 Recipient nomination.** A winner claims on the prize's chain from the address that
 opened the box on Robinhood Chain. An address that is a contract wallet on 4663 may not exist
@@ -506,6 +612,8 @@ winner may call `nominateRecipient(openIndex, recipient)` on `PrizeDraw`; the wo
 award only once that window has passed, and the recipient defaults to the opener. The UI warns
 contract-wallet holders before they open.
 
+*Acceptance.* Given a win recorded at time t and a nomination window of 24 hours; when the winner calls `nominateRecipient(openIndex, r)` before t + 24 hours; then `recipientOf(openIndex)` reads r; and `award` before the window has passed reverts.
+
 **RAF-11 Claims.** `claim(prizeIndex)` on the vault holding the prize: the caller is the
 recorded recipient; the prize is unclaimed; `block.timestamp ≤ awardedAt + claimWindow`, with
 `claimWindow` **30 days** (MINT, CQ-10). The prize — an ERC-20 basket or an ERC-721 — is
@@ -513,6 +621,8 @@ transferred to the caller. The right is single-use and non-transferable, and it 
 wallet that opened the box whatever it does with its bears afterwards. After the window
 `expirePrize` (anyone) returns the prize to unreserved inventory — MINT treats an unclaimed
 prize as renounced — and a claimed prize never expires.
+
+*Acceptance.* Given a prize awarded to r at time a; when r calls `claim(prizeIndex)` before a + 30 days; then the prize is transferred to r and `PrizeClaimed` is emitted; and after 30 days anyone may call `expirePrize` and the prize returns to inventory.
 
 **RAF-14 Roles.** Owner (MINT admin): `approveAsset`, `revokeAsset`, `setWorker`,
 `excludeRange`, `openGame`, `closeGame`, `setPaused`, `sweep`. `sweep` moves unapproved tokens
@@ -523,9 +633,13 @@ winners (MINT, CQ-11), and a won prize stays locked until claimed or expired reg
 `closeGame` on each vault. Anyone: `open` as a bear's owner, `nominateRecipient` as a winner,
 `claim` as a recipient, `expirePrize`, all reads.
 
+*Acceptance.* When a non-owner calls `excludeRange`, `openGame` or `sweep`, or a non-worker calls `resolve` or `award`; then each reverts; and `open`, `claim` and `expirePrize` need no role.
+
 **RAF-15 Pause.** Pausing the hub blocks `open`; pausing `PrizeDraw` blocks `resolve`, so no new
 word is requested while outcomes already paid for are settled; pausing a vault blocks
 registration and committing. None of them blocks `claim`, `expirePrize` or `nominateRecipient`.
+
+*Acceptance.* Given the hub, the draw and a vault each paused; when `open`, `resolve` and `registerERC721` are called; then each reverts; and `claim`, `expirePrize` and `nominateRecipient` still succeed.
 
 **RAF-16 Events.** Hub: `IdsExcluded(from, to)`, `GameOpened(playable, prizeCount, manifestHash)`,
 `BoxOpened(openIndex, tokenId, opener)`, `GameClosed(openCount, prizesAwarded)`, `WorkerSet`,
@@ -535,6 +649,8 @@ Vault: `AssetApproved`, `AssetRevoked`, `DepositRegistered`, `PrizesCommitted`,
 `PrizeAwarded(prizeIndex, recipient)`, `PrizeClaimed`, `PrizeExpired`, `PrizesReleased`,
 `Swept`, `WorkerSet`, `PausedSet`.
 
+*Acceptance.* When the game runs through exclusion, opening, an open, a resolution, an award, a claim and closing; then every listed event fires with the documented arguments.
+
 **RAF-17 Reads.** Hub: game state, `PLAYABLE`, `MAX_BEARS`, `isExcluded(tokenId)`,
 `opened(tokenId)`, `openIndexOf(tokenId)`, `openCount()`, `shotsLeft(wallet)`, the manifest and
 its hash. `PrizeDraw`: `idsLeft()`, `prizesLeft()`, `nextToResolve()`, `outcomeOf(openIndex)`,
@@ -542,12 +658,16 @@ its hash. `PrizeDraw`: `idsLeft()`, `prizesLeft()`, `nextToResolve()`, `outcomeO
 unreserved inventory per asset, prize by index (asset, id or amount, state, recipient),
 `awardedAt(prizeIndex)`, `claimable(wallet)`, `isApproved(token)`.
 
+*Acceptance.* When every listed read is called during an open game; then each returns without reverting and `odds()` returns `(prizesLeft, idsLeft)`.
+
 **RAF-18 Worker sequence.** Register deposits → commit each vault → owner records the excluded
 ids and opens the game → holders open boxes → relay each `BoxOpened` to `PrizeDraw` in order →
 words arrive and outcomes are recorded → nomination window → post each award to its vault →
 winners claim → after the claim window, expire what is unclaimed → owner closes the game → post
 the close to each vault. MINT's UI shows the pool, the live odds, a wallet's shots left, its
 outcomes and its claims.
+
+*Acceptance.* When the worker sequence runs on the testnets from registration to posting the close; then each step succeeds in the listed order and a relay offered out of turn is refused.
 
 **RAF-19 Acceptance cases.** Token baskets group correctly; two NFTs from one collection can go
 to two different wallets; a deposit registered after the game opens cannot enter the pool; a
@@ -558,15 +678,18 @@ is played; the pool neither empties early nor is left over; a relay out of order
 award that does not match `OutcomeRecorded` is detectable; a prize on ApeChain is claimed by a
 nominated recipient; an unclaimed prize expires and can be withdrawn after the game closes.
 
-**Retired identifiers.** RAF-1 (a single raffle chain) → RAF-24 and RAF-26; RAF-7 (passive
-ownership snapshot) → RAF-28; RAF-9 (draw over calldata entries) → RAF-30; RAF-10 (carry forward
-between rounds) → RAF-31; RAF-12 (round cancellation) → RAF-31; RAF-13 (per-round `minLevel`
-eligibility) → RAF-27; RAF-20 (rounds on the hub) → RAF-26; RAF-21 (entry into a round) →
-RAF-28; RAF-22 (one seed per round) → RAF-29; RAF-23 (the per-round draw) → RAF-30; DEL-4
-(verified testnet addresses) → OPS-3, OPS-4; DEL-5 (deployment scripts and runbook) → OPS-2,
-OPS-5.
+*Acceptance.* When the tranche-2 test suite runs; then every listed case has a passing deterministic test.
+<!-- openspec:end -->
+
+<!-- openspec:begin retired -->
+**Retired identifiers.** DEL-4 (verified testnet addresses) → OPS-3 and OPS-4; DEL-5 (deployment scripts and runbook) → OPS-2 and OPS-5; RAF-1 (a single raffle chain) → RAF-24 and RAF-26; RAF-7 (passive ownership snapshot) → RAF-28; RAF-9 (draw over calldata entries) → RAF-30; RAF-10 (carry forward between rounds) → RAF-31; RAF-12 (round cancellation) → RAF-31; RAF-13 (per-round `minLevel` eligibility) → RAF-27; RAF-20 (rounds on the hub) → RAF-26; RAF-21 (entry into a round) → RAF-28; RAF-22 (one seed per round) → RAF-29; RAF-23 (the per-round draw) → RAF-30.
+<!-- openspec:end -->
 
 ## 7. Operations, roles and handover (OPS)
+
+
+<!-- openspec:begin family OPS -->
+MINT needs to receive contracts that are correct from their first block, verified on every chain, and handed over with every key, role and a runbook — so that operating them after 19 November needs nothing from Calea.
 
 **OPS-1 Addresses.** The three control keys are recorded before mainnet deployment; the
 royalty receiver follows, before the first sale (COL-6). `→ CQ-12`, `→ CQ-15`.
@@ -580,6 +703,8 @@ royalty receiver follows, before the first sale (COL-6). `→ CQ-12`, `→ CQ-15
 | Prize vaults | the `PrizeVault` contracts, one per prize chain | — |
 
 `DirectBurnAdapter` has no role.
+
+*Acceptance.* When the mainnet deploy scripts run; then the admin, worker and signer addresses they read are the ones MINT recorded; and the royalty receiver is set in Studio before the first sale.
 
 **OPS-2 Deployment order.** Every address a contract needs at birth is a constructor argument,
 so a contract is correct from its first block and is never deployed-but-unconfigured (MINT,
@@ -598,9 +723,13 @@ ApeChain: `PrizeVault(worker)` → approvals → ownership. The Chainlink chain:
 added as consumer → ownership. Each contract is deployed
 before the page that depends on it is published.
 
+*Acceptance.* When the deploy script runs on a fresh chain; then each contract is created with its constructor arguments in the listed order and is never left deployed-but-unconfigured; and only `setCrediter` and `setSigner` are called after construction.
+
 **OPS-3 Verification.** Sourcify for 4663 and 46630 (mainnet Blockscout's API sits behind a bot
 challenge); Etherscan for Ethereum and Sepolia; Apescan for ApeChain and Curtis; Basescan for
 Base and Base Sepolia.
+
+*Acceptance.* When a contract is deployed on 4663 or 46630; then its source is verified through Sourcify and readable there.
 
 **OPS-4 Rehearsal on testnets (46630, Sepolia, Curtis, Base Sepolia).** Studio attaches to and
 manages a self-deployed, validated `MintABear`; both mint paths (OpenSea and the getminted.io
@@ -611,6 +740,8 @@ awards, claims and expiry, including one open that wins and one that does not; a
 listing of the validated collection. On mainnet, before the drop page is published: one team bear
 listed and sold on OpenSea (COL-7).
 
+*Acceptance.* When the rehearsal runs on 46630, Sepolia, Curtis and Base Sepolia; then each listed path completes end to end, including one open that wins and one that does not.
+
 **OPS-5 Handover.** Calea deploys, configures, transfers ownership, verifies source, and delivers
 the runbook; after that it holds no key and no role. Technical support runs through
 19 November 2026 with agreed response hours (DEL-10). The runbook is one document, produced via
@@ -618,11 +749,15 @@ the runbook; after that it holds no key and no role. Technical support runs thro
 Activation's pause/unpause around the burn switch-on date (ACT-11), the whitelist export (WL-4),
 and the mystery-box worker sequence (RAF-18).
 
+*Acceptance.* When handover completes; then every contract's owner is MINT's admin, every source is verified and the runbook is delivered; and Calea holds no key and no role.
+
 **OPS-6 Enforcement runbook.** Enabled at deployment: `MintABear.setTransferValidator(0x721C002B…)`
 with the validator's zero-state policy. Optional, from the admin: `createList`,
 `addAccountsToWhitelist`, `addAccountsToAuthorizers`, `applyListToCollection`,
 `setTransferSecurityLevelOfCollection` (never level 5 or above). Disable:
 `setTransferValidator(address(0))`. Every step is an owner call and reversible.
+
+*Acceptance.* Given enforcement enabled; when the admin calls `setTransferValidator(address(0))` and then sets V3 again; then each call emits `TransferValidatorUpdated` and the policy follows the current value.
 
 **OPS-7 Chain constraints.** On Robinhood Chain `block.number` is the L1 height — contracts and
 scripts key on timestamps. Sequencer-level compliance screening can block an individual
@@ -633,6 +768,7 @@ applies an Arbitrum-style per-transaction gas limit, which is why no call in thi
 over the collection.
 Randomness is not available on Robinhood Chain or ApeChain, which is why the seed comes from
 Base.
+<!-- openspec:end -->
 
 ## 8. Calendar (CAL)
 
@@ -671,6 +807,10 @@ technical support; the worker has to keep posting awards after both.
 
 ## 9. Deliverables and acceptance (DEL)
 
+
+<!-- openspec:begin family DEL -->
+The engagement needs each deliverable and the bar it is accepted against written down — so that both parties can tell when the work is done and what remains.
+
 **DEL-1 Source.** Warning-free `forge build`; Slither with no High or Critical finding, every
 accepted Medium documented.
 
@@ -680,6 +820,8 @@ at least 90% line coverage.
 **DEL-3 Review report.** Static and manual review, plus fuzzing and invariant harnesses, written
 and run by Calea's internal auditor independently of the developer; report delivered with each
 tranche.
+
+*Acceptance.* When a tranche is delivered; then the internal auditor's report, with the fuzzing and invariant results, is delivered with it.
 
 **DEL-6 Integration package.** Interfaces, events, roles and calldata examples for every
 contract; a **TypeScript** client library for getminted.io, typed against the ABIs and covering
@@ -691,9 +833,13 @@ ABI (`→ CQ-19`); a reference script that reproduces the royalty split from `Ac
 dead-address exclusion included, so that "allocations plus carried rounding equal funding" is
 testable by MINT.
 
+*Acceptance.* When MINT integrates the play page; then every contract call it makes is covered by the typed TypeScript library, with passing tests and documented revert reasons, and the reference script reproduces the royalty split.
+
 **DEL-7 Existing-contract review.** A read of the contract MINT names, within the agreed line
 limit; findings only, no remediation. Unscheduled: no contract has been named, so it books no
 time until one is (`→ CQ-13`).
+
+*Acceptance.* Given MINT has named a contract within the line limit; when the review is delivered; then it lists findings only, with no remediation.
 
 **DEL-8 Audit tranches.** Tranche 1: `MintABear`, `WhitelistClaim`, `Activation` and
 `DirectBurnAdapter`. Tranche 2: `MysteryBox`, `PrizeVault` and `PrizeDraw`, once CQ-9's remaining
@@ -706,6 +852,8 @@ accepted stays disabled in the UI.
 checks out; CI runs `forge fmt --check`, `forge build --sizes`, `forge test`, and Calea owns
 that configuration. This is Calea's recommendation and what it builds if the decision is
 deferred (`→ CQ-14`, `→ CQ-19`).
+
+*Acceptance.* When the contracts land in the monorepo; then `pnpm -r build|test|check` reach the Foundry package and CI runs the three forge gates.
 
 **DEL-10 Commercial items for Rayco's agreement.** Listed here so nothing is implied: prize
 intake and unique-winner logic; weight interfaces; Studio and frontend assistance; mainnet
@@ -722,6 +870,7 @@ nor reviewed by Calea. Which repository holds these packages is `→ CQ-14`.
 
 **DEL-12 Review sign-off.** Every Critical and High finding from DEL-3's review is fixed before
 mainnet deployment.
+<!-- openspec:end -->
 
 ## 10. Decisions
 

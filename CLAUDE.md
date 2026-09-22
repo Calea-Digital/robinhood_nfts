@@ -8,6 +8,18 @@ MintABear — a 4,444-supply free-mint NFT collection on **Robinhood Chain (chai
 
 Start any session by reading `docs/HANDOVER.md` — it carries current state, what is done, what is next, and the open questions waiting on the client.
 
+## Specification and board
+
+**The specification lives in `openspec/`**, in the calea-house OpenSpec format: `openspec/specs/<family>/spec.md` (one file per family — `collection` COL, `whitelist` WL, `activation` ACT, `mystery-box` RAF, `operations` OPS, `deliverables` DEL), `openspec/decisions.md` (the `CQ-n` register) and `openspec/config.yaml` (`spec_version`). Every requirement carries `**Kind:**` (work-item, acceptance-standard, commercial or informative) and one `#### Scenario:` — the Scenario is the requirement's definition of done and the text a unit test's `/* Scenario: */` block quotes. A MODIFIED delta must repeat the Kind line; `openspec archive` drops it otherwise.
+
+**`docs/SPECIFICATION.md` and `docs/OPEN-QUESTIONS.md` are generated views** where their markers say so (`<!-- openspec:begin … -->` … `<!-- openspec:end -->`): the narrative between markers is edited in place, the requirement and register blocks are written by `docs/tools/spec_tools/render_calea_prose.py` from `openspec/`. CI fails when they are stale. `docs/tools/build_client_doc.py` reads them unchanged to build the client document.
+
+**The board (YouTrack project MNT) is a function of `openspec/`.** After any spec or register edit: commit, then run `docs/tools/board.sh` (or `/mnt:board`). It validates, lints, checks the rendered prose, previews and writes the board through the ai-stack bridge (`~/trees/ai-stack/scripts/youtrack-bridge`, `/usr/bin/python3`), then reads it back with the validator's ten checks. Never edit a bridge-owned field in YouTrack by hand.
+
+**Who writes what on the board.** The bridge owns summary, body (statement, `Done when`, `Gates`), Type, Work Kind, Spec Ref, parent Milestone, tranche tags, decision State and Due Date, and gating links. Claude owns a requirement Task's State from Open to In Review, the claim comment, the `MNT Claude` tag, Spent time, Subtasks (only when a step has another owner), Defects (Work Kind Defect, Spec Ref = the violated requirement or `NONE`, body with `Reproduce` / `Expected` / `Observed`) and `NONE` Tasks for non-spec work. The human owns Done and Canceled, Priority, Estimation, Assignee, and picks DEL and OPS-1/5 work. Nobody targets project KNI; Claude deletes nothing.
+
+**The work loop.** The active OpenSpec change is `openspec/changes/tranche-1/`; its `tasks.md` is the pick order, one requirement id per line. `/mnt:next` takes the first unticked id, confirms the Task is Open and not hard-gated (a `depends on` link to a decision in State Open), claims it comment-first (`Claim <nonce> …` with the plan as a checklist; the earliest claim wins, the loser yields), sets In Progress, tags `MNT Claude`, branches `mnt/<spec-ref>` and works. `/mnt:done` runs `forge fmt --check`, `forge build --sizes`, `forge test`, the coverage gate, ticks `tasks.md`, sets In Review, comments a summary and logs time; a human sets Done. `/mnt:resume` finds the live claim (a Task In Progress with no claim comment is a human's; a claim older than 24 h with no commits is released). A spec edit goes through `/opsx:propose` → lint → `/opsx:archive` (then fold the decisions delta into `openspec/decisions.md` and any REMOVED id into `## Retired Requirements` by hand) → commit → `/mnt:board`. New command names need a Claude Code restart before first use.
+
 ## Architecture
 
 Four contracts. The token never calls the activation contract; the dependency runs one way only.

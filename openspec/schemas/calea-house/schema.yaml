@@ -1,0 +1,477 @@
+name: calea-house
+version: 1
+description: >
+  Calea house spec-driven workflow. Forked from OpenSpec's native spec-driven
+  schema; keeps proposal/design/tasks close to native, adds stable per-family
+  requirement IDs to specs, and adds a single-namespace decision register.
+  Project-agnostic — no artifact here assumes a blockchain, a contract, or a
+  client engagement. Client-only artifacts are present but explicitly
+  skip-if-internal, the same pattern the native schema already uses for
+  design.md's own conditional inclusion.
+
+artifacts:
+  - id: proposal
+    generates: proposal.md
+    description: Why this change is needed and what it touches
+    template: proposal.md
+    instruction: |
+      Create the proposal document that establishes WHY this change is needed.
+      This is native OpenSpec's proposal artifact, unchanged in shape — Phase 1
+      evidence found nothing Calea-specific to add here.
+
+      Sections:
+      - **Why**: 1-2 sentences on the problem or opportunity.
+      - **What Changes**: Bullet list. Mark breaking changes with **BREAKING**.
+      - **Capabilities**: New/Modified capabilities (families). Each family is
+        a `specs/<family-path>/spec.md`. `<family-path>` is a kebab-case
+        directory name; the family's requirement ID prefix (see the `specs`
+        artifact) is derived from it — e.g. a `collection` capability uses the
+        `COL-` prefix. Name the prefix here if it is not obvious from the path.
+      - **Impact**: Affected code, APIs, dependencies, systems.
+
+      Run `openspec list --specs` for the existing family inventory before
+      inventing a new one. Reuse an existing family's exact path and prefix;
+      never introduce a near-duplicate.
+
+      Every change must declare at least one capability or set `skip_specs:
+      true` in `.openspec.yaml` when no requirement-level behavior changes
+      (pure refactor, tooling, docs).
+
+      Keep it concise (1-2 pages). Why, not how — how belongs in design.md.
+    requires: []
+
+  - id: decisions
+    generates: decisions.md
+    description: >
+      Decisions this change opens, resolves, or defers. One stable ID per
+      decision; lifecycle lives in a state field, never in the ID.
+    template: decisions.md
+    instruction: |
+      Record every non-trivial decision this change touches — whether it is
+      being opened for the first time, resolved, or explicitly deferred.
+
+      **One namespace, one ID, one lifecycle.** Every decision gets a single
+      `<PREFIX>-n` ID, sequential within the project (check
+      `openspec/decisions.md` — the persistent register, see below — for the
+      next free number; do not restart numbering per change or per family).
+      The prefix is `D` on a new project; a project whose register already
+      carries another prefix (MintABear's `CQ-n`, cited by twenty tracked
+      issues and three signed document versions) keeps it — the rule is one
+      namespace for life, not the letter. The ID never changes and is never
+      reused, including after the decision resolves. This collapses what
+      earlier practice split into a "question" ID and a separate "decision" ID
+      for the same item (evidence: an actual Calea spec had `CQ-18` and `D4`
+      as two identifiers for one decision) — a blocking reference from a
+      requirement or a tracked issue must survive the decision resolving
+      without being rewritten. A decision id is never also a requirement id.
+
+      **Fields, per decision** — the contiguous bullet block right under the
+      heading. Everything after the first blank line that follows it is the
+      decision's own record (the question as put, the answer as given,
+      options weighed, what remains), verbatim in the tracker body and in a
+      client document. A bullet inside that record is prose, not a field.
+      - `id` — `<PREFIX>-n`, in the heading. The heading may carry a longer
+        title after the id (`### CQ-3 — Confirm the token-agnostic credit
+        design`); the `Statement` field stays the short form a register table
+        shows.
+      - `statement` — the question/decision text. One field, not two: it reads
+        as a question while open, as a decision once resolved. Do not rewrite
+        it into past tense on resolution — append the resolution instead (see
+        format below).
+      - `state` — `open` / `follow-up` / `resolved` / `deferred`. Nothing
+        else. `follow-up` is "answered in part": the shape is settled, a
+        remaining question is stated in the record. A tracker shows it as in
+        progress; a client document shows it as still open.
+      - `status label` — optional. The word a reader sees when it should not
+        be the state's default (`Open`, `Follow-up`, `Answered`, `Deferred`):
+        `Closed` for a question with no decision left, recorded so it is not
+        re-asked.
+      - `status note` — optional provenance for the label (`call, 21 September
+        2026`).
+      - `section` — optional. The spec section or family the decision belongs
+        to, for a register table and for placing it in a client document.
+      - `resolution` — optional. The answer or the default, one line, as a
+        register table shows it.
+      - `rationale` — filled in on resolution. Why this and not an alternative.
+      - `blocks` — the requirement ID(s) this decision gates, e.g. `COL-6,
+        WL-3`. Empty while the decision doesn't yet gate a specific
+        requirement. This is what a bridge or tracker turns into a "blocks"
+        relationship — do not use prose here, use a comma-separated ID list.
+      - `needed_by` — optional. When it starts with an ISO date
+        (`2026-10-20 — before Activation is deployed`) the bridge projects it
+        as the tracker's Due Date while the decision is open; free text is a
+        reader's phrase and projects nothing.
+      - `default_if_deferred` — optional. Only meaningful when there is an
+        external party whose non-answer has to be planned around (a client
+        engagement): what gets built if nobody decides. Omit entirely on
+        internal work — there is no one else's silence to insure against; the
+        practitioner just decides. This should agree with this project's
+        `openspec/config.yaml` `engagement:` field (`internal` / `client`) —
+        that field is what a validator checks mechanically; this instruction
+        is what guides you while writing.
+
+      **Format** (mirrors the specs delta convention — ADDED / RESOLVED /
+      DEFERRED headers, so a reviewer reads a decisions.md delta the same way
+      they read a specs delta):
+
+      ```markdown
+      ## ADDED Decisions
+
+      ### D-12
+      - **Statement:** Which chain does the whitelist registry live on?
+      - **State:** open
+      - **Blocks:** WL-3
+      - **Needed by:** 2026-10-01
+      - **Default if deferred:** on-chain registry, holder pays gas (client-engagement only — omit on internal work)
+
+      ## RESOLVED Decisions
+
+      ### D-4
+      - **Statement:** What does $MNTD on Robinhood Chain is; the adapter needs the token's address, decimals and burnFrom.
+      - **State:** resolved
+      - **Rationale:** MINT confirmed native issuance on Robinhood Chain (not a bridged mirror) — burnFrom reduces canonical supply directly, no bridge-lock ambiguity.
+      - **Blocks:** ACT-7
+
+      ## DEFERRED Decisions
+
+      ### D-9
+      - **Statement:** Should later mystery-box rounds gate on an off-chain loyalty tier?
+      - **State:** deferred
+      - **Rationale:** Off-chain data no chain can verify; would need a signed, published eligibility list and a visibly different trust model. Not needed for round 1.
+      ```
+
+      **Archive note — read before assuming this auto-merges.** Unlike the
+      `specs` artifact, OpenSpec's native archive command does not know how to
+      merge a `decisions` delta into a persistent register — that merge logic
+      is hardwired to `specs` specifically. This project's persistent decision
+      register lives at `openspec/decisions.md` (project root, outside the
+      per-change/per-capability tree) and must be updated by hand, or by
+      following the operator guidance this project's `config.yaml` should
+      carry under `operations.archive.guidance` (see the config.yaml
+      template). Do not assume `openspec archive` did this for you — check
+      `openspec/decisions.md` after archiving and merge if it wasn't done.
+
+      **Where the link lives.** A decision's `blocks` field is the machine-read
+      gating link: a bridge turns it into the tracker relation, a validator
+      checks it. A requirement may point the other way as a reader's cue —
+      `(→ CQ-18)` inside its statement is how a client document says "this
+      waits on your answer" — and the bridge unions those pointers into
+      `blocks`, so the two never contradict. Do not restate a decision's
+      resolution prose inside the requirement; the pointer is an arrow, not a
+      second record.
+
+      **No revision narrative.** State the decision as it stands now. Do not
+      narrate the history of how the number changed, what an earlier draft
+      said, or a diff against a prior revision inside this file's prose — that
+      belongs to git history, never to hand-written prose in the document
+      body.
+    requires: []
+
+  - id: specs
+    generates: "specs/**/*.md"
+    description: Requirement deltas per family, each requirement carrying a stable ID
+    template: spec.md
+    instruction: |
+      Create specification files that define WHAT the system should do. A
+      spec is a behavior contract, not an implementation plan — same rule as
+      native OpenSpec. Avoid internal names, library choices, step-by-step
+      plans; those belong in design.md or tasks.md.
+
+      **Stable, family-prefixed requirement IDs — the one hard rule this
+      schema adds.** Every requirement's heading is:
+
+      ```
+      ### Requirement: <FAMILY>-<n> — <short name>
+      ```
+
+      `<FAMILY>` is a short uppercase code derived from the capability path
+      (e.g. capability `collection` → prefix `COL`; capability `whitelist` →
+      prefix `WL`). `<n>` is sequential within the family, never reused —
+      not even after the requirement is retired. This heading text is what
+      OpenSpec's own archive/sync matches on for MODIFIED requirements
+      (exact text match, whitespace-insensitive) — keep the ID inside the
+      existing native heading mechanism rather than inventing a parallel one
+      it can't see.
+
+      A requirement is **a single testable statement.** If a requirement
+      needs "and" to state, it is probably two requirements.
+
+      **Kind — mandatory, never guessed.** Not everything carrying a stable
+      ID under a family prefix is projectable work. A real spec mixes real
+      requirements with acceptance standards (quality gates that define done
+      for other work, and could never themselves be closed as a ticket — a
+      coverage threshold, a "warning-free build" gate, a required review
+      report), commercial/process scope (contractual terms, billing,
+      sequencing that has no engineering content of its own) and informative
+      statements (a boundary — what a third party's tool owns; a division of
+      work; an alternative considered and not chosen; a fact about the
+      platform the design honours — kept under a stable id because other
+      requirements and the client cite it). This is deliberately generic — no
+      artifact name, no domain vocabulary; any family in any Calea spec can
+      contain all four kinds side by side. State it as the first line of the
+      requirement body, before the statement prose:
+
+      ```
+      ### Requirement: <FAMILY>-<n> — <short name>
+      **Kind:** work-item
+      <statement text>
+      ```
+
+      One of exactly four values, every time — there is no default:
+      - `work-item` — a real requirement. The bridge projects it as a Task,
+        with its Scenario as the Task's definition of done and the spec's
+        acceptance standards listed as its gates.
+      - `acceptance-standard` — a quality gate other work is measured
+        against. Never projected as a Task; a bridge run reports it as
+        skipped, with its Kind as the reason, never silently.
+      - `commercial` — contractual, billing, or process/administrative scope
+        with no engineering content. Also never projected, also always
+        reported when skipped.
+      - `informative` — a statement kept for reference: never work, never a
+        gate. Also never projected, also always reported. Prefer it to
+        deleting a paragraph other requirements cite, and to a tracker-side
+        exclusion list: the spec itself says what is not work.
+
+      A requirement missing `**Kind:**`, or carrying a value outside these
+      four, is a hard parse error — same treatment as a missing Scenario,
+      not a warning. Guessing which kind an unlabelled item is would
+      reproduce exactly the silent-drop failure mode this schema exists to
+      prevent (see the `decisions` artifact's own no-silent-skip principle).
+
+      **A MODIFIED delta repeats the Kind line.** `openspec archive` replaces
+      the main spec's requirement block with the delta's block as written;
+      it does not know Kind exists (confirmed against the CLI: a MODIFIED
+      block without the line silently strips Kind from the main spec, and
+      `openspec validate` does not notice). The bridge then refuses the whole
+      spec — loud, but late. Lint the delta before archiving (calea-ai-stack
+      ships `lint_spec.py` for exactly this).
+
+      **Kind does not exempt a requirement from the Scenario requirement
+      below.** That is a hard OpenSpec CLI constraint, independent of Kind.
+      For an `acceptance-standard`, `commercial` or `informative` item, the
+      Scenario describes how you'd confirm the statement holds (e.g. a
+      coverage-gate requirement's Scenario: GIVEN the test suite, WHEN it
+      runs, THEN line coverage is at least 90%; an informative boundary:
+      WHEN a setting in that tool changes, THEN no contract code is
+      involved) — not a system behavior.
+
+      **Retirement, not deletion.** A superseded requirement is never
+      silently removed and its ID is never reassigned to a new requirement.
+      In a delta, use `## REMOVED Requirements` with **Reason** and
+      **Migration** per native OpenSpec, and name the replacement:
+
+      ```markdown
+      ## REMOVED Requirements
+
+      ### Requirement: RAF-1 — Single raffle chain
+      **Reason:** Superseded by the multi-chain hub/vault architecture.
+      **Migration:** See RAF-20 (hub) and RAF-24 (prize vaults).
+      ```
+
+      In the **main spec**, a retired id lives on under `## Retired
+      Requirements`, one bullet per id in the clause form the bridge, the
+      validator and the prose renderer all read:
+
+      ```markdown
+      ## Retired Requirements
+
+      - RAF-1 (a single raffle chain) → RAF-24, RAF-26
+      ```
+
+      `openspec archive` deletes a REMOVED block from the main spec and
+      writes nothing in its place (confirmed against the CLI), so adding the
+      bullet is a hand step after every archive that removed something — the
+      project's `config.yaml` `operations.archive.guidance` says so, next to
+      the decisions-register merge that archive also does not do. The section
+      survives archive untouched.
+
+      **Scenarios — at least one is MANDATORY, not a house-style choice.**
+      Confirmed empirically (Session 2, GATE 3 follow-up): `openspec
+      validate` hard-fails any requirement with zero `#### Scenario:`
+      blocks — "must include at least one scenario" — even without
+      `--strict`. This is a real OpenSpec CLI constraint on the `specs`
+      artifact specifically, not a preference. Native OpenSpec also requires
+      exactly 4 hashtags (`#### Scenario: <name>`) and a WHEN/THEN body; 3
+      hashtags or bullets fail silently. This schema adds an optional GIVEN
+      line before WHEN, staying compatible with the native parser:
+
+      ```markdown
+      #### Scenario: <name>
+      - **GIVEN** <precondition — omit if the requirement's own statement
+        already establishes it>
+      - **WHEN** <condition>
+      - **THEN** <expected outcome>
+      - **AND** <additional outcome, as needed>
+      ```
+
+      **Keep it minimal — one representative scenario, not the full
+      acceptance surface.** Neither of the two Calea spec families this
+      schema was built from ever embedded Given/When/Then in the main spec
+      text (acceptance criteria lived entirely in separate BTT trees /
+      `.feature` files). Embedding one scenario per requirement here is a
+      genuine departure from that practice — small, and worth it for what it
+      buys (a spec `openspec validate`/`archive` can actually mechanically
+      check), but real, so don't try to make it carry more than proof that
+      the requirement is testable. Every OTHER scenario — every edge case,
+      every revert path — belongs in the project's own concrete
+      test-artifact convention (a Foundry BTT tree + `/* Scenario: */`
+      comment for a Web3 project, a pytest scenario for a Python one, or
+      whatever else), named in `config.yaml`'s `rules.specs`. This is
+      deliberately the abstract shape for THAT full surface — which concrete
+      artifact realizes it is a per-project matter, not this schema's, per
+      Phase 1 evidence that this varies even across Calea's own Web3
+      projects. What's no longer optional is the one minimal scenario
+      embedded here — that's what makes the requirement OpenSpec-valid at
+      all.
+
+      **Delta operations** (unchanged from native): `## ADDED Requirements`,
+      `## MODIFIED Requirements` (paste the ENTIRE existing requirement block
+      and edit it — partial content loses detail at archive time), `##
+      REMOVED Requirements`, `## RENAMED Requirements` (`FROM:`/`TO:`,
+      preserves the stable ID — a rename changes the short name only, never
+      the `<FAMILY>-<n>` prefix+number).
+
+      **Split by family, never by length.** A family's spec file may live at
+      `specs/<family-path>/spec.md` on its own once the project has more than
+      one family, or several families may share one file early on — but an
+      ID is never renumbered or reassigned by a later split. Requirement IDs
+      must stay globally unique across however many files make up the spec;
+      treat a split spec as one logical document (the bridge and the
+      traceability validator do). Split when a family becomes uncomfortable
+      to read in one sitting, not on a line-count threshold — the payoff is
+      context economy: an agent working one family loads that family's file,
+      not the whole spec.
+
+      New capabilities only: first section is `## Purpose` (50+ characters —
+      `openspec validate --strict` flags anything shorter). Do not add
+      `## Purpose` to a delta for an existing capability.
+
+      There must be at least one spec file unless `.openspec.yaml` sets
+      `skip_specs: true`.
+    requires:
+      - proposal
+
+  - id: design
+    generates: design.md
+    description: Technical design document with implementation details
+    template: design.md
+    instruction: |
+      Native OpenSpec design.md, unchanged — Phase 1 evidence found nothing
+      Calea-specific to add to the design artifact itself.
+
+      Create only if any apply: cross-cutting change, new external dependency
+      or data-model change, security/performance/migration complexity, or
+      ambiguity that benefits from a technical decision before coding.
+
+      Sections: Context, Goals/Non-Goals, Decisions (technical, with
+      alternatives considered), Risks/Trade-offs, Migration Plan, Open
+      Questions.
+
+      **Boundary with the `decisions` artifact:** design.md's own "Open
+      Questions" section is for genuinely deferrable technical unknowns that
+      do NOT block a requirement and do NOT need a stable cross-referenceable
+      ID — pure implementation-detail questions ("which library version"). A
+      question that blocks a requirement, has an external stakeholder waiting
+      on it, or needs to survive being referenced by a tracked issue belongs
+      in `decisions.md` instead, with a real `D-n` ID. If in doubt, it
+      belongs in `decisions.md` — design.md's Open Questions is the narrower
+      case, not the default.
+    requires:
+      - proposal
+
+  - id: tasks
+    generates: tasks.md
+    description: Implementation checklist with trackable tasks
+    template: tasks.md
+    instruction: |
+      Native OpenSpec tasks.md, unchanged. Reference specs for what needs to
+      be built, design for how. Each task is a checkbox with a stated
+      verification step.
+
+      Group related tasks under numbered headings; order by dependency; keep
+      tasks small enough for one session.
+    requires:
+      - specs
+      - design
+
+  - id: parties
+    generates: parties.md
+    description: >
+      Named stakeholders and their responsibilities. Client-engagement only —
+      create only when there is an external counterparty; skip entirely on
+      internal work.
+    template: parties.md
+    instruction: |
+      **Skip this artifact on internal work.** Create it only when this
+      project has an external client or counterparty whose named individuals
+      hold real responsibilities (approvals, funding, UI ownership, etc.).
+      An internal project's people live in the org chart or the tracker's
+      assignee field, not here.
+
+      One row per named individual: who they are, which party they represent,
+      what they are responsible for. Keep it to responsibilities that matter
+      to the spec's requirements or decisions — not a general org chart.
+    requires: []
+
+  - id: calendar
+    generates: calendar.md
+    description: >
+      Dated external milestones. Client-engagement only — create only when
+      real external commitments (a launch date, a campaign window) exist
+      outside this project's own control.
+    template: calendar.md
+    instruction: |
+      **Skip this artifact on internal work.** Internal roadmaps belong in a
+      tracker's milestones, not spec prose. Create this only when real dates
+      are fixed by an external party or a contract (a token generation event,
+      a campaign open/close, a contracted handover date).
+
+      Mark each row's basis: fixed (confirmed by the external party),
+      proposed (derived, not yet confirmed), or derived (computed from a
+      fixed anchor). Do not narrate how a date changed from a previous
+      revision — state the current calendar only.
+    requires: []
+
+  - id: sign_off
+    generates: sign-off.md
+    description: >
+      Party / name / date / signature record. Client-engagement only — a
+      literal contract-signing artifact, meaningless without a counterparty.
+    template: sign-off.md
+    instruction: |
+      **Skip this artifact on internal work.** Create only when this spec (or
+      a specific version of it) requires a recorded sign-off from an external
+      party. One row per required signature.
+    requires: []
+
+  - id: deliverables
+    generates: deliverables.md
+    description: >
+      Contracted deliverables, each with a concrete acceptance bar.
+      Client-engagement only — distinct from ordinary functional
+      requirements, which apply on any project.
+    template: deliverables.md
+    instruction: |
+      **Skip this artifact on internal work.** An internal project's
+      definition of done lives inside its own requirements and design docs
+      (a measurable acceptance bar there is still expected — see the `specs`
+      artifact — it just isn't framed as a separate deliverable owed to
+      someone else). Create this artifact only when deliverables are owed to
+      an external party under a contract or SoW, distinct from what the
+      system itself must do.
+
+      Each deliverable: a stable ID (`DEL-n`), what is delivered, and a
+      concrete, verifiable acceptance bar (a coverage percentage, a clean
+      static-analysis run, a specific document handed over, etc.) — not a
+      vague "done when reviewed."
+    requires: []
+
+apply:
+  requires: [tasks]
+  tracks: tasks.md
+  instruction: |
+    Read context files, work through pending tasks, mark complete as you go.
+    Pause if you hit blockers or need clarification. Unchanged from native
+    OpenSpec — Phase 1 evidence found nothing Calea-specific to add to apply
+    itself; the bridge (a separate script, not this schema) is what turns a
+    completed task into tracked work.

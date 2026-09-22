@@ -36,3 +36,12 @@ jobs:
 
       - name: Run Forge tests
         run: forge test -vvv
+
+      # The specification lives in openspec/; the prose documents under docs/
+      # carry generated blocks between markers. Both gates run from the copies
+      # installed in docs/tools/spec_tools/, so they need nothing outside this
+      # repository. See CLAUDE.md, "Specification and board".
+      - name: Spec — generated prose is current and lint is clean
+        run: |
+          python3 docs/tools/spec_tools/lint_spec.py --root .
+          python3 docs/tools/spec_tools/render_calea_prose.py --root . --check

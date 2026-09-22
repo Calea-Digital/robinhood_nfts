@@ -38,7 +38,7 @@ SPEC = ROOT / "docs" / "SPECIFICATION.md"
 QUESTIONS = ROOT / "docs" / "OPEN-QUESTIONS.md"
 OUT_DIR = ROOT / "docs" / "client"
 VERSION = re.compile(r"\*\*Version\*\*\s+(?P<ver>\d+\.\d+[\w.-]*)")
-SETTLED = {"answered", "closed"}
+SETTLED = {"answered", "closed", "deferred"}  # first word of a Status; deferred = nothing left for MINT to decide
 
 # A4 with 2.54 cm margins → 9,026 twips of text width.
 PAGE_W, PAGE_H, MARGIN = 11906, 16838, 1440
@@ -95,6 +95,12 @@ def parse_blocks(md: str) -> list[dict]:
         line = lines[i]
         stripped = line.strip()
         if not stripped:
+            flush()
+            i += 1
+            continue
+        if stripped.startswith("<!--") and stripped.endswith("-->"):
+            # A whole-line HTML comment — the openspec markers and the GENERATED
+            # notice — is plumbing, never content.
             flush()
             i += 1
             continue

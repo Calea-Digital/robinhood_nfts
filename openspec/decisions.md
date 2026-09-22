@@ -1,57 +1,18 @@
-<!-- GENERATED sections between openspec markers are written by docs/tools/spec_tools/render_calea_prose.py from openspec/. Edit openspec/ and the narrative here, then run docs/tools/board.sh. -->
-# MintABear — Open questions for MINT
+# Decisions
 
-Register of decisions that belong to MINT. Each entry names the specification section it
-affects, the date by which Calea needs the answer, and the resolution — MINT's answer where one
-exists, otherwise the default Calea builds if none arrives. `docs/tools/build_client_doc.py`
-inserts these entries into the client document under the sections they belong to: settled
-entries as green confirmations, open ones as yellow decisions.
+Persistent register. One namespace, one id for life; the lifecycle lives in `State`
+(open → follow-up → resolved | deferred), never in the id. Fields are the bullets right
+under each heading; everything after the first blank line is the decision's own record,
+verbatim in the tracker and in the client document.
 
-Status values: **Open** · **Follow-up** (answered in part; the remaining question is stated) ·
-**Answered** (with source) · **Closed** (no decision left; recorded so it is not re-asked).
+## ADDED Decisions
 
-Answers come from two sources. MINT's written reply to specification v1.0, September 2026,
-answered the questions in the order they appear in that document (1–17); CQ-18 and CQ-19 were
-added afterwards from the *WL Wager Based Checker* brief and MINT's frontend proposal. The
-**call of 21 September 2026** then worked through D1–D9 in §10 of the specification; its answers
-are marked as such below. CQ-20 is new from that call.
-
-## Register
-
-
-<!-- openspec:begin register -->
-| ID | Section | Question | Resolution / default | Needed by | Status |
-|---|---|---|---|---|---|
-| CQ-1 | CAL | Dates after the 29 Oct mint | the three anchors stand — TGE 20 October, mint 29 October, burns and level-up from 29 October. Every other row of §8 is unconfirmed. | 2026-10-29 — before the mint | Follow-up |
-| CQ-2 | ACT | $MNTD burn route | option (a1) — $MNTD is **native** to Robinhood Chain, burned by `DirectBurnAdapter` in the same transaction as the credit. | 2026-10-20 — before `Activation` and `DirectBurnAdapter` are deployed | Follow-up |
-| CQ-9 | RAF | Mystery box model | **instant reveal**. A holder opens a box with a bear they own and learns the outcome then; one bear is one shot and the id is spent by it. Rounds, entry windows and the scheduled draw are dropped. | 2026-10-05 — before tranche 2 starts | Follow-up |
-| CQ-11 | RAF | Owner withdrawals | no withdrawal while a prize is committed to the live game. | 2026-10-05 — before tranche 2 starts | Follow-up |
-| CQ-12 | OPS | Addresses; Safe on 4663 | Open; supplied on time, as constructor parameters where possible | 2026-10-02 — before anything is deployed to mainnet | Open |
-| CQ-13 | DEL | Existing-contract review target | none; no contract is available to review yet. | whenever MINT names a contract | Open |
-| CQ-14 | DEL | Monorepo and CI | Undecided; `packages/contracts`, submodules, Calea owns CI | before the tranche 1 handover | Open |
-| CQ-15 | COL | Royalty rate and receiver | 5% (500 basis points); receiver to follow. | 2026-10-02 — the receiver before the first sale (the team bear); the rate is settled | Follow-up |
-| CQ-17 | RAF | VRF subscription and network | option (a) — MINT creates, funds and owns the subscription from a wallet it controls; Calea adds `PrizeDraw` as a consumer during deployment. The network is still to pick. | 2026-10-12 — before `PrizeDraw` is deployed | Follow-up |
-| CQ-20 | RAF | Prize count, odds and excluded ids | To supply: how many prizes, and which token ids are out of play | 2026-10-05 — before tranche 2 starts; the numbers are deployment values | Open |
-| CQ-18 | WL | Whitelist claim recording | option **(A)** — an on-chain registry on Robinhood Chain; the holder sends the claim and pays the gas. The CSV loaded into OpenSea is exported from that registry. | before the campaign opens | Follow-up |
-| CQ-3 | ACT | Token-agnostic `credit` design | the design stands; no decision remains. | — | Closed |
-| CQ-4 | ACT | Five burn thresholds | 1,666 / 3,333 / 8,333 / 16,666 / 41,666 $MNTD, read **cumulatively**: level 5 costs 41,666 $MNTD in all. | — | Answered |
-| CQ-5 | ACT | Weight table | 1.00 / 1.10 / 1.25 / 1.45 / 1.70 / 2.00 for levels 0–5; six levels. | — | Answered |
-| CQ-6 | COL | May holders burn bears? | no burn; supply is 4,444 forever. | — | Answered |
-| CQ-7 | COL | Enforce royalties on-chain | enforced from deployment. | — | Answered |
-| CQ-8 | RAF | Where the prize assets live | prizes sit on several chains and are NFTs and tokens alike; each is claimed on the chain it sits on. | before the vaults are deployed | Answered |
-| CQ-10 | RAF | Claim window | 30 days, now running from the win rather than from a round's root; an unclaimed prize is renounced. | — | Answered |
-| CQ-16 | OPS | Compliance (freeze / clawback) | no freeze, no clawback; no admin path into a holder's bear. | — | Answered |
-| CQ-19 | DEL | Frontend and integration | MINT builds the app that holders use, in TypeScript, on **getminted.io**; Calea delivers a typed, tested TypeScript library for every contract interaction. The Framer landing page stays and is out of scope. Where the code lives is CQ-14. | before the tranche 1 handover | Answered |
-<!-- openspec:end -->
-
-## Questions
-
-
-<!-- openspec:begin questions -->
 ### CQ-1 — Dates after the 29 October mint
+- **Statement:** Dates after the 29 Oct mint
+- **State:** follow-up
+- **Status note:** call, 21 September 2026
 - **Section:** CAL
 - **Needed by:** 2026-10-29 — before the mint
-- **Status:** Follow-up (call, 21 September 2026)
 - **Resolution:** the three anchors stand — TGE 20 October, mint 29 October, burns and level-up from 29 October. Every other row of §8 is unconfirmed.
 
 **Question.** The SoW schedule chains off a 15 October mint. With the mint at 29 October, which
@@ -74,11 +35,14 @@ aware of: burns open nine days after TGE, so the adapter is rehearsed against re
 Robinhood Chain between 20 and 28 October, and a $MNTD deployment on testnet 46630 by 5 October
 makes that rehearsal independent of TGE (CQ-2).
 
-### CQ-2 — $MNTD burn route
+### CQ-2
+- **Statement:** $MNTD burn route
+- **State:** follow-up
+- **Status note:** call, 21 September 2026
 - **Section:** ACT
 - **Needed by:** 2026-10-20 — before `Activation` and `DirectBurnAdapter` are deployed
-- **Status:** Follow-up (call, 21 September 2026)
 - **Resolution:** option (a1) — $MNTD is **native** to Robinhood Chain, burned by `DirectBurnAdapter` in the same transaction as the credit.
+- **Blocks:** ACT-7
 
 **Question.** On which chain does the $MNTD burn happen, what does the token's level-up function
 do, and does it call our contract?
@@ -116,10 +80,13 @@ testnet 46630 for the adapter rehearsal? Is it live on 4663 at TGE? `decimals` f
 constructor's base units and is needed before `Activation` is deployed.
 
 ### CQ-9 — Raffle entry model
+- **Statement:** Mystery box model
+- **State:** follow-up
+- **Status note:** call, 21 September 2026
 - **Section:** RAF
 - **Needed by:** 2026-10-05 — before tranche 2 starts
-- **Status:** Follow-up (call, 21 September 2026)
 - **Resolution:** **instant reveal**. A holder opens a box with a bear they own and learns the outcome then; one bear is one shot and the id is spent by it. Rounds, entry windows and the scheduled draw are dropped.
+- **Blocks:** RAF-28
 
 **Question.** Every bear at a published block is a ticket and holders do nothing — or an
 explicit opt-in?
@@ -175,10 +142,13 @@ than inherits them:
 (CQ-20).
 
 ### CQ-11 — May the owner withdraw inventory?
+- **Statement:** Owner withdrawals
+- **State:** follow-up
+- **Status note:** MINT reply, September 2026; reopened by the call, 21 September 2026
 - **Section:** RAF
-- **Needed by:** 2026-10-05 — before tranche 2 starts
-- **Status:** Follow-up (MINT reply, September 2026; reopened by the call, 21 September 2026)
 - **Resolution:** no withdrawal while a prize is committed to the live game.
+- **Blocks:** RAF-14
+- **Needed by:** 2026-10-05 — before tranche 2 starts
 
 **Question.** May the admin withdraw *unreserved* inventory, or is everything that enters the
 vault committed to future rounds?
@@ -197,10 +167,13 @@ is committed to the pool until it is won and claimed, or the game is closed. Con
 reading with CQ-9.
 
 ### CQ-12 — Addresses and the admin wallet
+- **Statement:** Addresses; Safe on 4663
+- **State:** open
+- **Status note:** call, 21 September 2026: still to be supplied
 - **Section:** OPS
 - **Needed by:** 2026-10-02 — before anything is deployed to mainnet
-- **Status:** Open (call, 21 September 2026: still to be supplied)
 - **Resolution:** Open; supplied on time, as constructor parameters where possible
+- **Default if deferred:** a Safe for the admin; EOAs for worker and signer.
 
 **Question.** Four addresses, as OPS-1 records them: the **admin** (owner of every contract on
 every chain), the **worker** key (raffle lifecycle, seed relay, winners root), the **eligibility
@@ -224,9 +197,11 @@ owner-only: `Activation.setCrediter`, because the adapter's address is not known
 `Activation` exists, and `WhitelistClaim.setSigner`, because a signer key must be rotatable.
 
 ### CQ-13 — Existing smart-contract review: which contract, source, line limit
+- **Statement:** Existing-contract review target
+- **State:** open
+- **Status note:** call, 21 September 2026
 - **Section:** DEL
 - **Needed by:** whenever MINT names a contract
-- **Status:** Open (call, 21 September 2026)
 - **Resolution:** none; no contract is available to review yet.
 
 **Question.** Which existing smart contract should Calea review, where is its source, and what is
@@ -245,10 +220,13 @@ size in lines, so the line limit in Rayco's agreement can be set. Findings only,
 (DEL-7).
 
 ### CQ-14 — Monorepo placement and CI
+- **Statement:** Monorepo and CI
+- **State:** open
+- **Status note:** call, 21 September 2026: not reached
 - **Section:** DEL
 - **Needed by:** before the tranche 1 handover
-- **Status:** Open (call, 21 September 2026: not reached)
 - **Resolution:** Undecided; `packages/contracts`, submodules, Calea owns CI
+- **Default if deferred:** `packages/contracts` as `@mint/contracts`; Foundry dependencies as git submodules; Calea ports its CI workflow.
 
 **Question.** Confirm the package location; whether `lib/` dependencies are git submodules or
 vendored copies; and who owns the CI configuration.
@@ -263,11 +241,14 @@ Foundry dependencies are git submodules or vendored; who owns the CI configurati
 default is unchanged. Note that the monorepo named in earlier drafts,
 `github.com/mintdotio/NFT`, needs confirming against the getminted.io split in CQ-19.
 
-### CQ-15 — Royalty rate and receiver
+### CQ-15
+- **Statement:** Royalty rate and receiver
+- **State:** follow-up
+- **Status note:** MINT reply, September 2026
 - **Section:** COL
 - **Needed by:** 2026-10-02 — the receiver before the first sale (the team bear); the rate is settled
-- **Status:** Follow-up (MINT reply, September 2026)
 - **Resolution:** 5% (500 basis points); receiver to follow.
+- **Blocks:** COL-6
 
 **Question.** The ERC-2981 royalty percentage and the address that receives it.
 
@@ -282,9 +263,11 @@ the admin is a control key that should hold nothing. Either works technically; i
 Studio at any time before the first sale.
 
 ### CQ-17 — VRF subscription
+- **Statement:** VRF subscription and network
+- **State:** follow-up
+- **Status note:** call, 21 September 2026
 - **Section:** RAF
 - **Needed by:** 2026-10-12 — before `PrizeDraw` is deployed
-- **Status:** Follow-up (call, 21 September 2026)
 - **Resolution:** option (a) — MINT creates, funds and owns the subscription from a wallet it controls; Calea adds `PrizeDraw` as a consumer during deployment. The network is still to pick.
 
 **Question.** The Chainlink VRF v2.5 subscription on Base: MINT creates and funds it and adds the
@@ -326,10 +309,13 @@ subscription has to hold depends on how often a word is requested, which is CQ-9
 question.
 
 ### CQ-20 — Prize count, odds and the token ids out of play
+- **Statement:** Prize count, odds and excluded ids
+- **State:** open
+- **Status note:** new; from the call, 21 September 2026
 - **Section:** RAF
 - **Needed by:** 2026-10-05 — before tranche 2 starts; the numbers are deployment values
-- **Status:** Open (new; from the call, 21 September 2026)
 - **Resolution:** To supply: how many prizes, and which token ids are out of play
+- **Default if deferred:** none; the game cannot be deployed without them.
 
 **Question.** The instant mystery box (CQ-9) needs three numbers that only MINT can give.
 
@@ -349,9 +335,11 @@ and the odds are the product. They are also immutable once the game opens, in th
 burn thresholds are immutable once `Activation` is deployed.
 
 ### CQ-18 — How whitelist claims are recorded
+- **Statement:** Whitelist claim recording
+- **State:** follow-up
+- **Status note:** call, 21 September 2026; the export direction and any owner bulk-add still to confirm (§10 O8)
 - **Section:** WL
 - **Needed by:** before the campaign opens
-- **Status:** Follow-up (call, 21 September 2026; the export direction and any owner bulk-add still to confirm (§10 O8))
 - **Resolution:** option **(A)** — an on-chain registry on Robinhood Chain; the holder sends the claim and pays the gas. The CSV loaded into OpenSea is exported from that registry.
 
 **Question.** MINT provides the Privy mirror login and an API for the signed-in account's
@@ -401,11 +389,16 @@ key; the other mint stages (team and treasury, public) and their order, so the w
 place in Studio is known; and that Season 1 wagering and the $50 back-credit are MINT's data,
 with Calea recording only the result.
 
+## RESOLVED Decisions
+
 ### CQ-3 — Confirm the token-agnostic `credit` design
+- **Statement:** Token-agnostic `credit` design
+- **State:** resolved
+- **Status label:** Closed
+- **Status note:** MINT reply, September 2026; superseded by CQ-2
 - **Section:** ACT
-- **Needed by:** —
-- **Status:** Closed (MINT reply, September 2026; superseded by CQ-2)
 - **Resolution:** the design stands; no decision remains.
+- **Blocks:** ACT-1
 
 **Question.** `Activation` never touches $MNTD; it accepts `credit(tokenId, burner, amount,
 nonce, ref)` from one crediter and requires that the burner still owns the bear and that the
@@ -427,10 +420,12 @@ adapter changes. With MINT's answer to CQ-2 this is settled without a further de
 recorded in §2 under *Off-chain (MINT)*, where the accounts are getminted.io's (CQ-19).
 
 ### CQ-4 — Burn thresholds
+- **Statement:** Five burn thresholds
+- **State:** resolved
+- **Status note:** call, 21 September 2026
 - **Section:** ACT
-- **Needed by:** —
-- **Status:** Answered (call, 21 September 2026)
 - **Resolution:** 1,666 / 3,333 / 8,333 / 16,666 / 41,666 $MNTD, read **cumulatively**: level 5 costs 41,666 $MNTD in all.
+- **Blocks:** ACT-2
 
 **Question.** The five thresholds, in whole $MNTD, for levels 1–5.
 
@@ -458,10 +453,12 @@ per-level reading it would have been 71,664. The figures are in whole $MNTD and 
 units once `decimals` is known (CQ-2).
 
 ### CQ-5 — Royalty weights
+- **Statement:** Weight table
+- **State:** resolved
+- **Status note:** MINT reply, September 2026
 - **Section:** ACT
-- **Needed by:** —
-- **Status:** Answered (MINT reply, September 2026)
 - **Resolution:** 1.00 / 1.10 / 1.25 / 1.45 / 1.70 / 2.00 for levels 0–5; six levels.
+- **Blocks:** ACT-3, CQ-4
 
 **Question.** MINT's brief lists five weights (1.00–3.50) and the SoW six (1.00–2.00). Which
 applies?
@@ -470,11 +467,13 @@ applies?
 
 **Recorded as.** ACT-3, final; six levels 0–5 confirmed, which fixes five thresholds in CQ-4.
 
-### CQ-6 — May holders burn bears?
+### CQ-6
+- **Statement:** May holders burn bears?
+- **State:** resolved
+- **Status note:** MINT reply, September 2026
 - **Section:** COL
-- **Needed by:** —
-- **Status:** Answered (MINT reply, September 2026)
 - **Resolution:** no burn; supply is 4,444 forever.
+- **Blocks:** COL-8
 
 **Question.** Should a holder be able to destroy their own bear? The choice is permanent.
 
@@ -488,10 +487,12 @@ can enter it in a raffle, and the royalty snapshot excludes the canonical dead a
 does not dilute the pot (ACT-10).
 
 ### CQ-7 — Enforce royalties via the transfer validator
+- **Statement:** Enforce royalties on-chain
+- **State:** resolved
+- **Status note:** MINT reply, September 2026
 - **Section:** COL
-- **Needed by:** —
-- **Status:** Answered (MINT reply, September 2026)
 - **Resolution:** enforced from deployment.
+- **Blocks:** COL-7, OPS-6
 
 **Question.** Does MINT want creator earnings enforced on-chain, and from when?
 
@@ -504,11 +505,14 @@ validated collection on Robinhood Chain has not yet been observed, so it is prov
 with Studio and then with one team bear listed and sold on mainnet before the drop page is
 published; if OpenSea cannot fill orders, one owner call lifts enforcement until it can.
 
-### CQ-8 — Where the prize assets live
+### CQ-8
+- **Statement:** Where the prize assets live
+- **State:** resolved
+- **Status note:** call, 21 September 2026
 - **Section:** RAF
 - **Needed by:** before the vaults are deployed
-- **Status:** Answered (call, 21 September 2026)
 - **Resolution:** prizes sit on several chains and are NFTs and tokens alike; each is claimed on the chain it sits on.
+- **Blocks:** RAF-24
 
 **Question.** On which chain are the prize assets held, and where should the vault live?
 
@@ -529,11 +533,13 @@ list has to be closed before tranche 2 is deployed.
 on a chain with Chainlink VRF, and the holder claims each prize on the chain it sits on. How
 many prizes there are, and on which chains, is CQ-20.
 
-### CQ-10 — Claim window
+### CQ-10
+- **Statement:** Claim window
+- **State:** resolved
+- **Status note:** MINT reply, September 2026; carried over at the call, 21 September 2026
 - **Section:** RAF
-- **Needed by:** —
-- **Status:** Answered (MINT reply, September 2026; carried over at the call, 21 September 2026)
 - **Resolution:** 30 days, now running from the win rather than from a round's root; an unclaimed prize is renounced.
+- **Blocks:** RAF-11
 
 **Question.** How long does a winner have to claim?
 
@@ -549,10 +555,12 @@ draws from. Where it goes once the game is over is part of CQ-9's remaining ques
 never won.
 
 ### CQ-16 — Compliance requirements
+- **Statement:** Compliance (freeze / clawback)
+- **State:** resolved
+- **Status note:** MINT reply, September 2026
 - **Section:** OPS
-- **Needed by:** —
-- **Status:** Answered (MINT reply, September 2026)
 - **Resolution:** no freeze, no clawback; no admin path into a holder's bear.
+- **Blocks:** ACT-12, RAF-14, RAF-28
 
 **Question.** Does any compliance requirement call for an admin ability to freeze a bear or claw
 one back?
@@ -571,9 +579,11 @@ freeze: it has entered the current round, cannot enter it again, and moves freel
 defines *spent*.
 
 ### CQ-19 — Frontend and repository
+- **Statement:** Frontend and integration
+- **State:** resolved
+- **Status note:** call, 21 September 2026
 - **Section:** DEL
 - **Needed by:** before the tranche 1 handover
-- **Status:** Answered (call, 21 September 2026)
 - **Resolution:** MINT builds the app that holders use, in TypeScript, on **getminted.io**; Calea delivers a typed, tested TypeScript library for every contract interaction. The Framer landing page stays and is out of scope. Where the code lives is CQ-14.
 
 **Question.** MINT: "Since the website is on Framer, it might be best if we create it as our own
@@ -615,18 +625,3 @@ belongs to, the wagering history, the two-per-account whitelist cap and the roya
 *mint.io accounts*. Since nothing in this project is to touch mint.io, all four are now
 getminted.io accounts — recorded in §2, WL-1, WL-3 and ACT-10. Please confirm the reading, since
 it also says where the wager API and the splitter wallet read and write.
-<!-- openspec:end -->
-
-## Closed
-
-| Item | Resolution | Source |
-|---|---|---|
-| Who gates the mint | Iñigo configures stages and allowlists in Studio | SoW |
-| Status uplift semantics | A 2% multiplier on platform reward rates; off-chain | Meeting 15 Sep |
-| Vector-source artwork | Moot: the on-chain renderer is excluded | SoW |
-| Artwork progression by level | Artwork is immutable; no on-chain progression | Meeting 15 Sep |
-| Fuzzing deliverable | Written by Calea's internal auditor, not the developer | Calea, 15 Sep |
-| ERC-6551 | Out of the initial release; separate scope later | Meeting 15 Sep, SoW |
-| Daily pool vs stake-based Status | MINT-side product question; nothing on-chain depends on it | Handover |
-| CQ-3 token-agnostic `credit` | Design stands; settled by the CQ-2 answer | MINT reply, Sep 2026 |
-| Royalty pot mechanics | ETH cap or countdown; half the ETH buys $MNTD; a splitter wallet credits getminted.io accounts; MINT-side | MINT reply, Sep 2026 |
