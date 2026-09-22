@@ -75,6 +75,17 @@ setBaseURI
     └── it reverts with OnlyOwner
 ```
 
+## Reads (COL-12)
+
+```
+reads
+├── ownerOf, exists, totalSupply, maxSupply, MAX_BEARS, transferNonce, tokenURI, royaltyInfo,
+│   getTransferValidator and getMintStats all answer for a minted bear
+└── exists
+    ├── it is false for id 0, for the next unminted id and for ids beyond the supply
+    └── it stays true after a transfer: it follows minting, not ownership
+```
+
 ## Supply and numbering
 
 ```

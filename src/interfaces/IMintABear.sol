@@ -9,8 +9,11 @@ pragma solidity 0.8.17;
  *         defect can silently skip a reset.
  */
 interface IMintABear {
-    /// @notice Returns the current owner of a bear.
+    /// @notice Returns the current owner of a bear. Reverts for an id that was never minted.
     function ownerOf(uint256 tokenId) external view returns (address);
+
+    /// @notice Whether a bear with this id has been minted. Never reverts.
+    function exists(uint256 tokenId) external view returns (bool);
 
     /**
      * @notice Counts how many times a bear has changed hands.

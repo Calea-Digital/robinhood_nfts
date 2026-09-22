@@ -65,6 +65,12 @@ contract MintABear is ERC721SeaDrop {
         ERC721SeaDrop(name_, symbol_, allowedSeaDrop_)
     {}
 
+    /// @notice Whether a bear with this id has been minted. No bear is ever destroyed, so once
+    ///         true it stays true; ownership is `ownerOf`'s business.
+    function exists(uint256 tokenId) external view returns (bool) {
+        return _exists(tokenId);
+    }
+
     /**
      * @notice Transfers a bear. A transfer to the zero address is refused with `BurnDisabled`.
      * @dev    The same error the hook gives `burn`, so every way of destroying a bear answers
