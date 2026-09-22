@@ -5,6 +5,8 @@ import {LibERC6551} from "solady/accounts/LibERC6551.sol";
 import {IERC721A} from "ERC721A/IERC721A.sol";
 import {TwoStepOwnable} from "utility-contracts/TwoStepOwnable.sol";
 import {ERC721TransferValidator} from "seadrop/lib/ERC721TransferValidator.sol";
+import {ICreatorToken, ILegacyCreatorToken} from "seadrop/interfaces/ICreatorToken.sol";
+import {ITransferValidator721} from "seadrop/interfaces/ITransferValidator.sol";
 import {ERC721SeaDropStructsErrorsAndEvents} from "seadrop/lib/ERC721SeaDropStructsErrorsAndEvents.sol";
 
 import {Vm} from "forge-std/Vm.sol";
@@ -57,11 +59,12 @@ contract MintABearTest is BaseTest {
         assertEq(bears.totalSupply(), MAX_SUPPLY);
     }
 
-    function test_transferValidator_defaultsToUnset() public view {
+    function test_transferValidator_startsUnset_theDeployScriptSetsIt() public view {
         /* Scenario:
-           Given a freshly deployed collection
+           Given a freshly constructed collection
            When the transfer validator is read
-           Then it is unset, so transfers are free and cost no extra gas */
+           Then it is unset: enforcement is the deploy script's setTransferValidator(V3) call (OPS-2),
+             an owner setting rather than a constructor argument */
         assertEq(bears.getTransferValidator(), address(0));
     }
 }
@@ -408,6 +411,130 @@ contract MintABearResetEventTest is BaseTest {
             assertTrue(logs[i].topics[0] != topic, "reset event on mint");
         }
         assertEq(logs.length, 3, "three Transfer events and nothing else");
+    }
+}
+
+/// @dev COL-7. ERC-721C: the validator is set at deployment to Limit Break V3 with its zero-state
+///      policy. `MockTransferValidator` models that policy deterministically — holder-initiated
+///      transfers pass, whitelisted operators (OpenSea's SignedZone, Payment Processor venues) pass,
+///      any other operator is refused. The real V3 on 4663 is the auditor's Fork-2.
+contract MintABearCreatorTokenTest is BaseTest {
+    event TransferValidatorUpdated(address oldValidator, address newValidator);
+
+    MockTransferValidator internal validator;
+    address internal signedZone = makeAddr("openSeaSignedZone");
+    address internal foreignVenue = makeAddr("foreignSeaportVenue");
+
+    function setUp() public override {
+        super.setUp();
+        validator = new MockTransferValidator();
+        validator.setWhitelisted(signedZone, true);
+        bears.setTransferValidator(address(validator));
+    }
+
+    function test_holderTransfersPass_foreignSeaportOrdersRevert() public {
+        /* Scenario: COL-7 — Holder transfers pass, foreign Seaport orders revert
+           Given the validator set to V3 with the zero-state policy
+           When a holder transfers a bear directly
+           Then the transfer passes
+           And a Seaport order from a venue other than OpenSea's SignedZone reverts */
+        _mint(alice, 2);
+
+        vm.prank(alice);
+        bears.transferFrom(alice, bob, 1);
+        assertEq(bears.ownerOf(1), bob, "holder-initiated transfer passes");
+
+        vm.prank(alice);
+        bears.setApprovalForAll(foreignVenue, true);
+        vm.prank(foreignVenue);
+        vm.expectRevert(abi.encodeWithSelector(MockTransferValidator.OperatorNotWhitelisted.selector, foreignVenue));
+        bears.transferFrom(alice, bob, 2);
+        assertEq(bears.ownerOf(2), alice, "foreign venue refused");
+        assertEq(bears.transferNonce(2), 0, "a refused transfer does not move the counter");
+    }
+
+    function test_openSeaOrdersSettle() public {
+        /* Scenario: COL-7 — Holder transfers pass, foreign Seaport orders revert
+           Given the validator's list 0 with OpenSea's SignedZone as authorizer
+           When a SignedZone-restricted order moves a bear
+           Then the sale settles, and creator earnings are collected on it */
+        _mint(alice, 1);
+        vm.prank(alice);
+        bears.setApprovalForAll(signedZone, true);
+
+        vm.prank(signedZone);
+        bears.transferFrom(alice, bob, 1);
+        assertEq(bears.ownerOf(1), bob);
+        assertEq(bears.transferNonce(1), 1);
+    }
+
+    function test_validator_isNotConsultedOnMint() public {
+        /* Scenario: COL-7 — Holder transfers pass, foreign Seaport orders revert
+           Given the validator set and SeaDrop not on any operator list
+           When SeaDrop mints
+           Then the mint passes: the validator is consulted for transfers only */
+        _mint(alice, 3);
+        assertEq(bears.totalSupply(), 3);
+    }
+
+    function test_validator_doesNotChangeTheBurnRefusal() public {
+        /* Scenario: COL-7 — Holder transfers pass, foreign Seaport orders revert
+           Given the validator set
+           When the holder calls burn
+           Then it is still refused with BurnDisabled, ahead of any validator call */
+        _mint(alice, 1);
+        vm.prank(alice);
+        vm.expectRevert(MintABear.BurnDisabled.selector);
+        bears.burn(1);
+    }
+
+    function test_enforcement_isLiftedAndRestoredByOneOwnerCall() public {
+        /* Scenario: COL-7 — Holder transfers pass, foreign Seaport orders revert
+           Given enforcement enabled
+           When the owner calls setTransferValidator(address(0)) and then sets V3 again
+           Then each call emits TransferValidatorUpdated and the policy follows the current value */
+        _mint(alice, 2);
+        vm.prank(alice);
+        bears.setApprovalForAll(foreignVenue, true);
+
+        vm.expectEmit(false, false, false, true, address(bears));
+        emit TransferValidatorUpdated(address(validator), address(0));
+        bears.setTransferValidator(address(0));
+
+        vm.prank(foreignVenue);
+        bears.transferFrom(alice, bob, 1);
+        assertEq(bears.ownerOf(1), bob, "enforcement lifted");
+
+        vm.expectEmit(false, false, false, true, address(bears));
+        emit TransferValidatorUpdated(address(0), address(validator));
+        bears.setTransferValidator(address(validator));
+
+        vm.prank(foreignVenue);
+        vm.expectRevert(abi.encodeWithSelector(MockTransferValidator.OperatorNotWhitelisted.selector, foreignVenue));
+        bears.transferFrom(alice, bob, 2);
+    }
+
+    function test_setTransferValidator_isOwnerOnly() public {
+        /* Scenario: COL-7 — Holder transfers pass, foreign Seaport orders revert
+           When a non-owner tries to lift enforcement
+           Then it reverts with OnlyOwner and the validator is unchanged */
+        vm.prank(alice);
+        vm.expectRevert(TwoStepOwnable.OnlyOwner.selector);
+        bears.setTransferValidator(address(0));
+        assertEq(bears.getTransferValidator(), address(validator));
+    }
+
+    function test_creatorTokenSurface() public view {
+        /* Scenario: COL-7 — Holder transfers pass, foreign Seaport orders revert
+           When the ERC-721C surface is read
+           Then getTransferValidator is V3, getTransferValidationFunction names validateTransfer as a
+             non-view call, and ERC-165 advertises ICreatorToken */
+        assertEq(bears.getTransferValidator(), address(validator));
+        (bytes4 selector, bool isView) = bears.getTransferValidationFunction();
+        assertEq(selector, ITransferValidator721.validateTransfer.selector);
+        assertFalse(isView);
+        assertTrue(bears.supportsInterface(type(ICreatorToken).interfaceId));
+        assertTrue(bears.supportsInterface(type(ILegacyCreatorToken).interfaceId));
     }
 }
 

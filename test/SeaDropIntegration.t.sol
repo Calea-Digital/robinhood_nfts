@@ -325,11 +325,11 @@ contract SeaDropIntegrationTest is BaseTest {
         assertTrue(bears.supportsInterface(type(INonFungibleSeaDropToken).interfaceId), "SeaDrop token");
     }
 
-    function test_transferValidator_staysUnset() public view {
+    function test_transferValidator_startsUnset_deployScriptSetsIt() public view {
         /* Scenario:
-           Given ERC-721C enforcement is deliberately off
+           Given a freshly constructed collection
            When the validator is read
-           Then it is unset, so OpenSea's conduit and smart wallets can move bears */
+           Then it is unset: the deploy script sets Limit Break V3 right after setMaxSupply (OPS-2, COL-7) */
         assertEq(bears.getTransferValidator(), address(0));
     }
 }
