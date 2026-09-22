@@ -13,7 +13,7 @@ becomes a Task with Spec Ref `NONE` when picked.
 - [x] 1.5 COL-12 — `exists(tokenId)` view; every listed read answers
 - [x] 1.6 COL-13 — events carry the documented arguments
 - [x] 1.7 COL-1 — only canonical SeaDrop mints
-- [ ] 1.8 COL-2 — `MAX_BEARS` on the mint path
+- [x] 1.8 COL-2 — `MAX_BEARS` on the mint path
 - [ ] 1.9 COL-3 — transfer counter
 - [ ] 1.10 COL-6 — royalty info reads 5% to the pot
 - [ ] 1.11 COL-7 — creator token, validator set at deploy
