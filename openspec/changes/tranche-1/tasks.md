@@ -11,7 +11,7 @@ becomes a Task with Spec Ref `NONE` when picked.
 - [x] 1.3 COL-8 — burn refused (`BurnDisabled` stays; dead-address exclusion lives in the split script, not the contract)
 - [x] 1.4 COL-4 — emit `TransferNonceAdvanced(tokenId, nonce)` in the transfer hook
 - [x] 1.5 COL-12 — `exists(tokenId)` view; every listed read answers
-- [ ] 1.6 COL-13 — events carry the documented arguments
+- [x] 1.6 COL-13 — events carry the documented arguments
 - [ ] 1.7 COL-1 — only canonical SeaDrop mints
 - [ ] 1.8 COL-2 — `MAX_BEARS` on the mint path
 - [ ] 1.9 COL-3 — transfer counter
