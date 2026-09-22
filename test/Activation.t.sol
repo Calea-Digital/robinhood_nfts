@@ -323,7 +323,7 @@ contract ActivationTest is BaseTest {
         assertEq(activation.costToReach(1, 1), 0);
     }
 
-    function test_thresholds_areScaledByDecimals() public {
+    function test_thresholds_areScaledByDecimals() public view {
         /* Scenario:
            Given thresholds supplied in whole tokens
            When they are read back
@@ -351,7 +351,7 @@ contract ActivationBranchTest is BaseTest {
         _fund(alice, 500_000);
     }
 
-    function test_thresholdFor_everyLevel() public {
+    function test_thresholdFor_everyLevel() public view {
         /* Scenario:
            Given the configured tier table
            When each level's threshold is queried
@@ -363,7 +363,7 @@ contract ActivationBranchTest is BaseTest {
         assertEq(activation.thresholdFor(5), 250_000 * UNIT);
     }
 
-    function test_linkOf_withNoNomination_readsEmpty() public {
+    function test_linkOf_withNoNomination_readsEmpty() public view {
         /* Scenario:
            Given a wallet that has never nominated a bear
            When its link is read

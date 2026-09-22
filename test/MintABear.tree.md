@@ -1,7 +1,8 @@
 # MintABear — branching tree
 
 Scope note: invariants (INV-N) and fork tests are recorded here as obligations for the
-auditor. They are deliberately not implemented as developer unit leaves.
+auditor. They are deliberately not implemented as developer unit leaves. Leaves that satisfy
+a requirement's Scenario cite it (`COL-n`, `openspec/specs/collection/spec.md`).
 
 ## _beforeTokenTransfers
 
@@ -17,51 +18,22 @@ _beforeTokenTransfers
 │   │   └── it reverts with BurnDisabled
 │   ├── and the caller is an approved operator
 │   │   └── it reverts with BurnDisabled
-│   ├── it leaves supply, ownership and the transfer counter untouched
-│   └── it leaves the bear's account owned and its contents reachable
+│   └── it leaves supply, ownership and the transfer counter untouched
 ├── when from is the zero address (mint)
-│   ├── it records each minted bear's canonical account address
-│   ├── it does not advance the transfer counter
-│   └── when the destination is an already-recorded bear account
-│       └── it reverts with TransferToBearAccount
+│   └── it does not advance the transfer counter
 └── when from is not the zero address (transfer)
     ├── it advances that bear's transfer counter by exactly one
-    ├── when the destination is a deployed bear account
-    │   └── it reverts with TransferToBearAccount
-    └── when the destination is a bear account that was never deployed
-        └── it reverts with TransferToBearAccount
+    └── it accepts any non-zero destination; there is no account guard (COL-9)
 ```
 
-## accountOf / deployAccount / recordAccounts
+## Token-bound accounts (COL-9)
 
 ```
-accountOf
-└── it returns the canonical ERC-6551 address for the pinned implementation and salt
-
-deployAccount
-├── when the bear does not exist
-│   └── it reverts with BearDoesNotExist
-├── when the account has never been deployed
-│   └── it deploys at exactly the address accountOf predicted
-└── when the account already exists
-    └── it returns the same address without reverting
-
-recordAccounts
-├── when the range starts at zero
-│   └── it reverts with InvalidTokenRange
-├── when the range end precedes its start
-│   └── it reverts with InvalidTokenRange
-├── when the range runs past maxSupply
-│   └── it reverts with InvalidTokenRange
-├── when maxSupply has not been set yet
-│   └── it still works, because the bound is MAX_BEARS and not the setting
-└── when the range is valid
-    ├── it marks every id in the range and none outside it
-    ├── it emits AccountsRecorded with the range
-    ├── it accepts any caller, not only the owner
-    ├── it is idempotent across repeat calls
-    ├── it closes the pre-mint window for ids that have not minted yet
-    └── it does not block ordinary minting or transfers
+no token-bound accounts
+├── the entry points accountOf, deployAccount, recordAccounts, isBearAccount,
+│   ACCOUNT_IMPLEMENTATION and ACCOUNT_SALT are not in the ABI
+├── the canonical registry address appears nowhere in the deployed bytecode
+└── an address the registry would derive for a bear is an ordinary destination
 ```
 
 ## tokenURI / setRenderer
@@ -86,12 +58,10 @@ setRenderer
 
 ```
 constructor
-├── when the account implementation is the zero address
-│   └── it reverts with AccountImplementationIsZeroAddress
 ├── when the renderer is the zero address
 │   └── it reverts with RendererIsZeroAddress
 └── otherwise
-    └── it stores both addresses exactly as passed
+    └── it stores the renderer exactly as passed
 ```
 
 ## Supply and numbering
@@ -109,11 +79,7 @@ supply
 
 ## Auditor obligations (not implemented here)
 
-- INV-1: no bear is ever owned by any address in `isBearAccount`. Holds once
-  `recordAccounts` has covered the full supply; before that, a bear can be sent to the
-  account address of an id that has not minted yet. `test_withoutRecording_preMintWindowIsOpen`
-  pins the untreated behaviour deliberately. Because the range is bounded by `MAX_BEARS`
-  rather than by `maxSupply`, one pass covers the collection for good.
+- INV-1: retired with the account guard (COL-9); the number is not reused.
 - INV-2: `transferNonce` is monotonically non-decreasing for every bear.
 - INV-3: `totalSupply` never exceeds `MAX_BEARS` and never decreases, for any value of the
   owner-settable `maxSupply`.
