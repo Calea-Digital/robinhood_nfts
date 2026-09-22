@@ -185,6 +185,68 @@ contract MintABearNoAccountsTest is BaseTest {
     }
 }
 
+/// @dev COL-12. Every listed read answers for a minted bear; `exists` is the one read that is
+///      safe on any id.
+contract MintABearReadsTest is BaseTest {
+    function test_everyReadAnswers() public {
+        /* Scenario: COL-12 — Every read answers
+           When ownerOf, exists, totalSupply, maxSupply, MAX_BEARS, transferNonce, tokenURI,
+             royaltyInfo, getTransferValidator and getMintStats are called for a minted bear
+           Then each returns without reverting
+           And exists(id) is false for an unminted id */
+        _mint(alice, 1);
+        bears.setBaseURI("ipfs://bears/");
+        MintABear.RoyaltyInfo memory info;
+        info.royaltyAddress = bob;
+        info.royaltyBps = 500;
+        bears.setRoyaltyInfo(info);
+
+        assertEq(bears.ownerOf(1), alice);
+        assertTrue(bears.exists(1));
+        assertEq(bears.totalSupply(), 1);
+        assertEq(bears.maxSupply(), MAX_SUPPLY);
+        assertEq(bears.MAX_BEARS(), 4444);
+        assertEq(bears.transferNonce(1), 0);
+        assertEq(bears.tokenURI(1), "ipfs://bears/1");
+        (address receiver, uint256 amount) = bears.royaltyInfo(1, 1 ether);
+        assertEq(receiver, bob);
+        assertEq(amount, 0.05 ether);
+        assertEq(bears.getTransferValidator(), address(0));
+        (uint256 minted, uint256 supply, uint256 cap) = bears.getMintStats(alice);
+        assertEq(minted, 1);
+        assertEq(supply, 1);
+        assertEq(cap, MAX_SUPPLY);
+
+        assertFalse(bears.exists(2), "unminted id");
+    }
+
+    function test_exists_isFalseOutsideTheMintedRange() public {
+        /* Scenario: COL-12 — Every read answers
+           Given three bears minted
+           When exists is read for id 0, the minted ids, the next id and ids far beyond
+           Then it is true for the minted ids and false everywhere else, never reverting */
+        _mint(alice, 3);
+        assertFalse(bears.exists(0));
+        assertTrue(bears.exists(1));
+        assertTrue(bears.exists(3));
+        assertFalse(bears.exists(4));
+        assertFalse(bears.exists(MAX_SUPPLY));
+        assertFalse(bears.exists(type(uint256).max));
+    }
+
+    function test_exists_followsMintingNotOwnership() public {
+        /* Scenario: COL-12 — Every read answers
+           Given a minted bear
+           When it changes hands
+           Then exists stays true, because it answers whether the bear was minted */
+        _mint(alice, 1);
+        vm.prank(alice);
+        bears.transferFrom(alice, bob, 1);
+        assertTrue(bears.exists(1));
+        assertEq(bears.ownerOf(1), bob);
+    }
+}
+
 /// @dev COL-4. `TransferNonceAdvanced(tokenId, nonce)` is the activation-reset event: it fires
 ///      for every non-mint transfer, in the same transaction as `Transfer`, whether or not a
 ///      level existed.
