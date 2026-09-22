@@ -5,6 +5,8 @@ import {LibERC6551} from "solady/accounts/LibERC6551.sol";
 import {IERC721A} from "ERC721A/IERC721A.sol";
 import {TwoStepOwnable} from "utility-contracts/TwoStepOwnable.sol";
 
+import {Vm} from "forge-std/Vm.sol";
+
 import {BaseTest} from "./BaseTest.t.sol";
 import {MintABear} from "../src/MintABear.sol";
 
@@ -180,6 +182,91 @@ contract MintABearNoAccountsTest is BaseTest {
         (bool ok, bytes memory ret) = address(bears).call(abi.encodePacked(bytes4(keccak256(bytes(signature))), args));
         assertFalse(ok, signature);
         assertEq(ret.length, 0, signature);
+    }
+}
+
+/// @dev COL-4. `TransferNonceAdvanced(tokenId, nonce)` is the activation-reset event: it fires
+///      for every non-mint transfer, in the same transaction as `Transfer`, whether or not a
+///      level existed.
+contract MintABearResetEventTest is BaseTest {
+    /// @dev Mirrors `MintABear.TransferNonceAdvanced` and ERC721A's `Transfer`; solc 0.8.17
+    ///      cannot qualify an event by contract name in an `emit`, which `expectEmit` needs.
+    event TransferNonceAdvanced(uint256 indexed tokenId, uint64 nonce);
+    event Transfer(address indexed from, address indexed to, uint256 indexed tokenId);
+
+    function test_transfer_emitsTheResetEvent_withoutALevel() public {
+        /* Scenario: COL-4 — The reset event fires on every non-mint transfer
+           When a bear is transferred, whether or not it has a level
+           Then TransferNonceAdvanced(tokenId, nonce) is emitted in the same transaction as Transfer */
+        _mint(alice, 1);
+
+        vm.expectEmit(true, false, false, true, address(bears));
+        emit TransferNonceAdvanced(1, 1);
+        vm.expectEmit(true, true, true, false, address(bears));
+        emit Transfer(alice, bob, 1);
+
+        vm.prank(alice);
+        bears.transferFrom(alice, bob, 1);
+        assertEq(bears.transferNonce(1), 1, "the event carries the counter after the transfer");
+    }
+
+    function test_transfer_emitsTheResetEvent_withALevel() public {
+        /* Scenario: COL-4 — The reset event fires on every non-mint transfer
+           Given a bear that has a level
+           When it is transferred
+           Then TransferNonceAdvanced fires in the same transaction as Transfer
+           And what Activation recorded at the previous counter value is void */
+        _mint(alice, 1);
+        _fund(alice, 5_000);
+        vm.prank(alice);
+        activation.burn(1, 5_000 * UNIT);
+        assertEq(activation.levelOf(1), 1, "level before");
+
+        vm.expectEmit(true, false, false, true, address(bears));
+        emit TransferNonceAdvanced(1, 1);
+        vm.expectEmit(true, true, true, false, address(bears));
+        emit Transfer(alice, bob, 1);
+
+        vm.prank(alice);
+        bears.transferFrom(alice, bob, 1);
+        assertEq(activation.levelOf(1), 0, "void after the reset event");
+    }
+
+    function test_everyTransfer_emitsTheNextNonce() public {
+        /* Scenario: COL-4 — The reset event fires on every non-mint transfer
+           Given a bear that has already moved once
+           When it moves back to a previous owner, and then by an operator
+           Then each transfer emits the event with the next counter value */
+        _mint(alice, 1);
+        vm.prank(alice);
+        bears.transferFrom(alice, bob, 1);
+
+        vm.expectEmit(true, false, false, true, address(bears));
+        emit TransferNonceAdvanced(1, 2);
+        vm.prank(bob);
+        bears.transferFrom(bob, alice, 1);
+
+        vm.prank(alice);
+        bears.setApprovalForAll(operator, true);
+        vm.expectEmit(true, false, false, true, address(bears));
+        emit TransferNonceAdvanced(1, 3);
+        vm.prank(operator);
+        bears.safeTransferFrom(alice, bob, 1);
+    }
+
+    function test_mint_emitsNoResetEvent() public {
+        /* Scenario: COL-4 — The reset event fires on every non-mint transfer
+           When bears are minted
+           Then no TransferNonceAdvanced is emitted, because a mint is not a transfer */
+        vm.recordLogs();
+        _mint(alice, 3);
+
+        bytes32 topic = keccak256("TransferNonceAdvanced(uint256,uint64)");
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+        for (uint256 i; i < logs.length; ++i) {
+            assertTrue(logs[i].topics[0] != topic, "reset event on mint");
+        }
+        assertEq(logs.length, 3, "three Transfer events and nothing else");
     }
 }
 

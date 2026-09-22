@@ -43,6 +43,11 @@ contract MintABear is ERC721SeaDrop {
     /// @notice How many times each bear has changed hands. Never incremented on mint.
     mapping(uint256 => uint64) public transferNonce;
 
+    /// @notice Emitted for every non-mint transfer, in the same transaction as `Transfer`. It is
+    ///         the activation-reset event: anything `Activation` recorded at the previous counter
+    ///         value is void once it fires, whether or not a level existed.
+    event TransferNonceAdvanced(uint256 indexed tokenId, uint64 nonce);
+
     /// @notice No bear can be destroyed: `burn` and any transfer to the zero address are
     ///         refused with this error, by anyone, the bear's owner included.
     error BurnDisabled();
@@ -72,7 +77,8 @@ contract MintABear is ERC721SeaDrop {
     }
 
     /**
-     * @dev Bounds supply on mint and advances the transfer counter on every move.
+     * @dev Bounds supply on mint; advances the transfer counter and emits the reset event on
+     *      every move.
      *
      *      Also the only place a burn can be stopped. `ERC721SeaDrop` exposes a public
      *      `burn`, and declares it neither `virtual` nor internal, so it cannot be
@@ -92,7 +98,8 @@ contract MintABear is ERC721SeaDrop {
         } else {
             unchecked {
                 for (uint256 i; i < quantity; ++i) {
-                    ++transferNonce[startTokenId + i];
+                    uint256 tokenId = startTokenId + i;
+                    emit TransferNonceAdvanced(tokenId, ++transferNonce[tokenId]);
                 }
             }
         }

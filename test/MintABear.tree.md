@@ -22,9 +22,14 @@ _beforeTokenTransfers
 │   │   └── ERC721A's approval check refuses it before the hook
 │   └── it leaves supply, ownership and the transfer counter untouched
 ├── when from is the zero address (mint)
-│   └── it does not advance the transfer counter
+│   ├── it does not advance the transfer counter
+│   └── it emits no TransferNonceAdvanced
 └── when from is not the zero address (transfer)
     ├── it advances that bear's transfer counter by exactly one
+    ├── it emits TransferNonceAdvanced(tokenId, nonce) in the same transaction as Transfer (COL-4)
+    │   ├── whether or not the bear has a level
+    │   ├── with nonce equal to the counter after the transfer
+    │   └── on every transfer: sale, gift, return to a previous owner, operator move
     └── it accepts any non-zero destination; there is no account guard (COL-9)
 ```
 
