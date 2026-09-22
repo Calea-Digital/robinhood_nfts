@@ -20,6 +20,12 @@ import {TwoStepOwnable} from "utility-contracts/TwoStepOwnable.sol";
  *         during the drop.
  */
 contract SeaDropIntegrationTest is BaseTest {
+    /// @dev Mirrors SeaDrop's `RoyaltyInfoUpdated`; solc 0.8.17 cannot qualify an event in `emit`.
+    event RoyaltyInfoUpdated(address receiver, uint256 bps);
+
+    /// @dev Stand-in for the royalty pot MINT names (CQ-15): distinct from the admin and every vault.
+    address internal pot = makeAddr("royaltyPot");
+
     function test_mintSeaDrop_isUntouched() public {
         /* Scenario:
            Given the canonical SeaDrop mint entry point
@@ -219,20 +225,74 @@ contract SeaDropIntegrationTest is BaseTest {
 
     /*                  SECONDARY TRADING SURFACE                     */
 
-    function test_royalties_areUntouched() public {
-        /* Scenario:
-           Given royalties configured through the SeaDrop base
-           When royaltyInfo is queried the way a marketplace queries it
-           Then it answers normally */
-        MintABear.RoyaltyInfo memory info;
-        info.royaltyAddress = bob;
-        info.royaltyBps = 500;
-        bears.setRoyaltyInfo(info);
-
+    function test_royaltyInfo_readsFivePercentToThePot() public {
+        /* Scenario: COL-6 — Royalty info reads 5% to the pot
+           Given royalty info set in Studio to 500 basis points and the pot address
+           When royaltyInfo(id, salePrice) is read
+           Then it returns the pot address and 5% of salePrice */
+        bears.setRoyaltyInfo(_royalty(pot, 500));
         _mint(alice, 1);
+
         (address receiver, uint256 amount) = bears.royaltyInfo(1, 10 ether);
-        assertEq(receiver, bob);
+        assertEq(receiver, pot);
         assertEq(amount, 0.5 ether);
+
+        assertEq(bears.royaltyAddress(), pot);
+        assertEq(bears.royaltyBasisPoints(), 500);
+    }
+
+    function test_royaltyInfo_isTheSameForEveryBear() public {
+        /* Scenario: COL-6 — Royalty info reads 5% to the pot
+           Given royalty info set to 500 basis points and the pot
+           When royaltyInfo is read for the first bear, the last bear and an id that does not exist
+           Then every answer is the pot and 5%, because the rate is collection-wide */
+        bears.setRoyaltyInfo(_royalty(pot, 500));
+        _mint(alice, 1);
+
+        (address r1, uint256 a1) = bears.royaltyInfo(1, 1 ether);
+        (address r2, uint256 a2) = bears.royaltyInfo(4444, 1 ether);
+        (address r3, uint256 a3) = bears.royaltyInfo(9999, 1 ether);
+        assertEq(r1, pot);
+        assertEq(r2, pot);
+        assertEq(r3, pot);
+        assertEq(a1, 0.05 ether);
+        assertEq(a2, 0.05 ether);
+        assertEq(a3, 0.05 ether);
+    }
+
+    function test_setRoyaltyInfo_emitsRoyaltyInfoUpdated() public {
+        /* Scenario: COL-6 — Royalty info reads 5% to the pot
+           When the owner sets royalty info
+           Then RoyaltyInfoUpdated(receiver, bps) is emitted with the pot and 500 */
+        vm.expectEmit(false, false, false, true, address(bears));
+        emit RoyaltyInfoUpdated(pot, 500);
+        bears.setRoyaltyInfo(_royalty(pot, 500));
+    }
+
+    function test_setRoyaltyInfo_aboveTenThousandBps_reverts() public {
+        /* Scenario: COL-6 — Royalty info reads 5% to the pot
+           When the owner sets a rate above 100%
+           Then SeaDrop refuses it with InvalidRoyaltyBasisPoints */
+        vm.expectRevert(
+            abi.encodeWithSelector(ISeaDropTokenContractMetadata.InvalidRoyaltyBasisPoints.selector, 10_001)
+        );
+        bears.setRoyaltyInfo(_royalty(pot, 10_001));
+    }
+
+    function test_setRoyaltyInfo_isOwnerOnly() public {
+        /* Scenario: COL-6 — Royalty info reads 5% to the pot
+           When a wallet that does not own the contract sets royalty info
+           Then it reverts with OnlyOwner and nothing changes */
+        vm.prank(alice);
+        vm.expectRevert(TwoStepOwnable.OnlyOwner.selector);
+        bears.setRoyaltyInfo(_royalty(alice, 1_000));
+        assertEq(bears.royaltyAddress(), address(0));
+        assertEq(bears.royaltyBasisPoints(), 0);
+    }
+
+    function _royalty(address receiver, uint96 bps) internal pure returns (MintABear.RoyaltyInfo memory info) {
+        info.royaltyAddress = receiver;
+        info.royaltyBps = bps;
     }
 
     function test_operatorTransfer_worksLikeAConduit() public {
