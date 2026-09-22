@@ -10,15 +10,18 @@ Two functions on `ERC721SeaDrop` that matter here are `virtual`, `mintSeaDrop` a
 final. Anything the collection needs to enforce against them happens in
 `_beforeTokenTransfers`, which is the one hook ERC721A leaves open.
 
-## Mint path
+## Mint path (COL-1)
 
 ```
 mintSeaDrop
 ├── when the caller is not an allowed SeaDrop
-│   └── SeaDrop's own guard refuses it
-└── when the caller is allowed
-    ├── it mints sequentially from id 1
-    └── it does not advance the transfer counter
+│   ├── it reverts with OnlyAllowedSeaDrop and nothing is minted
+│   └── the contract owner is no exception
+├── when the caller is allowed
+│   ├── it mints sequentially from id 1
+│   └── it does not advance the transfer counter
+├── it is the only mint entry point: no public mint or safeMint exists
+└── the allowed list is the owner's (updateAllowedSeaDrop); a non-owner cannot add itself
 
 getMintStats
 ├── it reports each wallet's own minted count, which drives per-wallet limits
