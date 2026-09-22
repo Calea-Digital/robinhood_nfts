@@ -102,6 +102,23 @@ events
 └── SeaDrop configuration events are the base's own and are not re-tested here
 ```
 
+## Creator token and enforced royalties (COL-7)
+
+```
+transfer validator
+├── it starts unset; the deploy script sets Limit Break V3 (OPS-2)
+├── setTransferValidator is owner-only and emits TransferValidatorUpdated(old, new)
+├── getTransferValidationFunction returns validateTransfer's selector, not a view
+├── supportsInterface advertises ICreatorToken and the legacy id
+└── with V3's zero-state policy set (modelled by MockTransferValidator)
+    ├── a transfer the holder initiates passes
+    ├── a whitelisted operator — OpenSea's SignedZone, a Payment Processor venue — settles a sale
+    ├── an operator from any other venue reverts, and the counter does not move
+    ├── minting is unaffected: the validator is consulted for transfers only
+    ├── the burn refusal is unaffected
+    └── setTransferValidator(address(0)) lifts enforcement and setting V3 again restores it (OPS-6)
+```
+
 ## Supply and numbering (COL-2)
 
 ```
@@ -122,3 +139,8 @@ supply
 - INV-3: `totalSupply` never exceeds `MAX_BEARS` and never decreases, for any value of the
   owner-settable `maxSupply`.
 - Fork-1: minting through the real SeaDrop contract on Robinhood Chain.
+- Fork-2: the real Limit Break validator V3 at `0x721C002B0059009a671D00aD1700c9748146cd1B` on
+  chain 4663 with its zero-state policy (security level 0, list 0, OpenSea's SignedZone
+  `0x000056F7000000EcE9003ca63978907a00FFD100` as authorizer): a holder transfer passes, a
+  SignedZone-restricted Seaport fill passes, a Seaport fill from another venue reverts. The unit
+  leaves above model the policy with `MockTransferValidator`; only a fork can confirm the real one.

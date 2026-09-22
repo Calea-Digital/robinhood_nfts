@@ -7,9 +7,12 @@ import {ERC721SeaDrop} from "seadrop/ERC721SeaDrop.sol";
  * @title  MintABear
  * @notice A 4,444-supply collection on Robinhood Chain, operated from OpenSea Studio.
  * @dev    Extends OpenSea's ERC721SeaDrop, which already implements ICreatorToken, so this is
- *         an ERC-721C contract. The SeaDrop mint path, `getMintStats`, metadata and royalty
- *         interfaces are untouched, per OpenSea's integration guidance: `tokenURI(id)` is the
- *         stock `baseURI` followed by `id`, with `baseURI`, provenance and royalties set
+ *         an ERC-721C contract: the transfer validator is set at deployment to Limit Break's
+ *         validator V3 with its zero-state policy, so a holder's own transfers always pass and
+ *         a sale settles only through OpenSea or a Payment Processor venue; one owner call
+ *         lifts or restores enforcement. The SeaDrop mint path, `getMintStats`, metadata and
+ *         royalty interfaces are untouched, per OpenSea's integration guidance: `tokenURI(id)`
+ *         is the stock `baseURI` followed by `id`, with `baseURI`, provenance and royalties set
  *         through Studio.
  *
  *         Three behaviours are added on top:
