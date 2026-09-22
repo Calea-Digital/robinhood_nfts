@@ -36,32 +36,23 @@ no token-bound accounts
 └── an address the registry would derive for a bear is an ordinary destination
 ```
 
-## tokenURI / setRenderer
+## Metadata (COL-5)
 
 ```
 tokenURI
 ├── when the bear does not exist
 │   └── it reverts with URIQueryForNonexistentToken
-└── when the bear exists
-    └── it returns whatever the renderer returns
+├── when baseURI ends with a slash
+│   ├── it returns baseURI followed by the id
+│   └── raising the bear's level changes nothing in it
+├── when baseURI has no trailing slash
+│   └── it returns baseURI alone — SeaDrop's pre-reveal shape
+└── when baseURI is empty
+    └── it returns the empty string
 
-setRenderer
-├── when the caller is not the owner
-│   └── it reverts
-├── when the new renderer is the zero address
-│   └── it reverts with RendererIsZeroAddress
-└── when the caller is the owner
-    └── it replaces the renderer and emits RendererUpdated
-```
-
-## Construction
-
-```
-constructor
-├── when the renderer is the zero address
-│   └── it reverts with RendererIsZeroAddress
-└── otherwise
-    └── it stores the renderer exactly as passed
+setBaseURI
+└── when the caller is not the owner
+    └── it reverts with OnlyOwner
 ```
 
 ## Supply and numbering

@@ -1,14 +1,14 @@
 # SeaDrop integration — branching tree
 
 Scope note: this tree covers the boundary between what OpenSea Studio configures and what
-the collection enforces for itself. It is not a fifth contract; it pins behaviour that spans
-`MintABear` and its `ERC721SeaDrop` base.
+the collection enforces for itself. It is not a separate contract; it pins behaviour that
+spans `MintABear` and its `ERC721SeaDrop` base.
 
-Only two functions on `ERC721SeaDrop` that matter here are `virtual`: `mintSeaDrop` and
-`tokenURI`. `getMintStats`, `setMaxSupply`, `setBaseURI`, `setProvenanceHash`,
-`setRoyaltyInfo`, `multiConfigure` and `burn` are all final. Anything the collection needs
-to enforce against them happens in `_beforeTokenTransfers`, which is the one hook ERC721A
-leaves open.
+Two functions on `ERC721SeaDrop` that matter here are `virtual`, `mintSeaDrop` and
+`tokenURI`, and the collection overrides neither. `getMintStats`, `setMaxSupply`,
+`setBaseURI`, `setProvenanceHash`, `setRoyaltyInfo`, `multiConfigure` and `burn` are all
+final. Anything the collection needs to enforce against them happens in
+`_beforeTokenTransfers`, which is the one hook ERC721A leaves open.
 
 ## Mint path
 
@@ -44,7 +44,7 @@ reverting transaction. The collection cannot be inflated either way — that is 
 guarantees — but the deploy runbook must set `maxSupply` to exactly 4,444, and nobody may
 raise it afterwards.
 
-## Metadata
+## Metadata (COL-5)
 
 ```
 multiConfigure
@@ -52,14 +52,8 @@ multiConfigure
 
 baseURI
 ├── it is stored and readable
-└── it is never served: tokenURI is overridden and answers from the renderer
-```
+└── it is served: tokenURI is baseURI followed by the id
 
-**Known clash.** A Studio-managed drop configures metadata through `baseURI`. This collection
-serves metadata on-chain through a replaceable renderer, so `setBaseURI` succeeds and has no
-effect. It is not an error and nothing reverts, which is what makes it worth writing down.
-
-```
 setProvenanceHash
 ├── before the first mint it can be set
 └── after the first mint it reverts
@@ -75,7 +69,7 @@ operator transfers
 └── an approved-for-all operator can move a bear, which is how Seaport's conduit works
 
 transferValidator
-└── it stays unset, so the conduit and smart wallets can move bears
+└── it starts unset; the deploy script sets it (COL-7, OPS-2)
 ```
 
 ## ERC-165
@@ -90,6 +84,5 @@ supportsInterface
 
 - Fork-1: a real mint through the canonical SeaDrop at
   `0x00005EA00Ac477B1030CE78506496e8C2dE24bf5` on chain 4663, with a configured drop stage.
-- **Unanswerable off-chain:** whether OpenSea Studio will attach to a self-deployed contract,
-  and whether an on-chain `tokenURI` renders inside a Studio-managed drop. Both are listed in
-  `docs/HANDOVER.md` as testnet unknowns.
+- **Unanswerable off-chain:** whether OpenSea Studio attaches to and manages a self-deployed
+  contract. Listed in `docs/HANDOVER.md` as a testnet unknown (OPS-4).
