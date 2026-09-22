@@ -414,6 +414,118 @@ contract MintABearResetEventTest is BaseTest {
     }
 }
 
+/// @dev COL-10. Ownership is SeaDrop's `TwoStepOwnable`: Calea deploys, calls
+///      `transferOwnership(admin)`, and MINT's admin accepts. Afterwards the deployer holds no role.
+contract MintABearOwnershipTest is BaseTest {
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+    event PotentialOwnerUpdated(address newPotentialAdministrator);
+
+    address internal admin = makeAddr("mintAdmin");
+
+    function test_twoStepTransferToTheAdmin() public {
+        /* Scenario: COL-10 — Two-step transfer to MINT's admin
+           Given Calea has called transferOwnership(admin)
+           When the admin calls acceptOwnership
+           Then the admin is the owner
+           And Calea holds no role */
+        assertEq(bears.owner(), address(this), "Calea deployed and owns at construction");
+
+        vm.expectEmit(false, false, false, true, address(bears));
+        emit PotentialOwnerUpdated(admin);
+        bears.transferOwnership(admin);
+        assertEq(bears.owner(), address(this), "nothing moves until the admin accepts");
+
+        vm.expectEmit(true, true, false, false, address(bears));
+        emit OwnershipTransferred(address(this), admin);
+        vm.prank(admin);
+        bears.acceptOwnership();
+        assertEq(bears.owner(), admin, "the admin is the owner");
+
+        // Calea holds no role: every owner function refuses the deployer.
+        vm.expectRevert(TwoStepOwnable.OnlyOwner.selector);
+        bears.setMaxSupply(1);
+        vm.expectRevert(TwoStepOwnable.OnlyOwner.selector);
+        bears.setTransferValidator(address(1));
+        vm.expectRevert(TwoStepOwnable.OnlyOwner.selector);
+        bears.setBaseURI("ipfs://calea/");
+        MintABear.RoyaltyInfo memory royalty;
+        royalty.royaltyAddress = address(this);
+        royalty.royaltyBps = 500;
+        vm.expectRevert(TwoStepOwnable.OnlyOwner.selector);
+        bears.setRoyaltyInfo(royalty);
+        address[] memory allowed = new address[](1);
+        allowed[0] = address(this);
+        vm.expectRevert(TwoStepOwnable.OnlyOwner.selector);
+        bears.updateAllowedSeaDrop(allowed);
+        vm.expectRevert(TwoStepOwnable.OnlyOwner.selector);
+        bears.transferOwnership(address(this));
+        vm.expectRevert(TwoStepOwnable.NotNextOwner.selector);
+        bears.acceptOwnership();
+    }
+
+    function test_theAdminOperatesTheDrop_andSeaDropStillMints() public {
+        /* Scenario: COL-10 — Two-step transfer to MINT's admin
+           Given the admin has accepted ownership
+           When the admin configures the drop and SeaDrop mints
+           Then both work: ownership moved the controls, not the mint path */
+        bears.transferOwnership(admin);
+        vm.prank(admin);
+        bears.acceptOwnership();
+
+        vm.prank(admin);
+        bears.setBaseURI("ipfs://bears/");
+        _mint(alice, 1);
+        assertEq(bears.tokenURI(1), "ipfs://bears/1");
+        assertEq(bears.ownerOf(1), alice);
+    }
+
+    function test_acceptOwnership_byAnyoneElse_reverts() public {
+        /* Scenario: COL-10 — Two-step transfer to MINT's admin
+           Given transferOwnership(admin) has been called, or nothing has
+           When a wallet other than the admin calls acceptOwnership
+           Then it reverts with NotNextOwner and the owner is unchanged */
+        vm.prank(alice);
+        vm.expectRevert(TwoStepOwnable.NotNextOwner.selector);
+        bears.acceptOwnership();
+
+        bears.transferOwnership(admin);
+        vm.prank(alice);
+        vm.expectRevert(TwoStepOwnable.NotNextOwner.selector);
+        bears.acceptOwnership();
+        assertEq(bears.owner(), address(this));
+    }
+
+    function test_cancelOwnershipTransfer_withdrawsTheOffer() public {
+        /* Scenario: COL-10 — Two-step transfer to MINT's admin
+           Given transferOwnership(admin) has been called
+           When the owner cancels before the admin accepts
+           Then PotentialOwnerUpdated(0) is emitted and the admin's acceptOwnership reverts */
+        bears.transferOwnership(admin);
+
+        vm.expectEmit(false, false, false, true, address(bears));
+        emit PotentialOwnerUpdated(address(0));
+        bears.cancelOwnershipTransfer();
+
+        vm.prank(admin);
+        vm.expectRevert(TwoStepOwnable.NotNextOwner.selector);
+        bears.acceptOwnership();
+        assertEq(bears.owner(), address(this));
+    }
+
+    function test_transferOwnership_refusesZeroAndNonOwners() public {
+        /* Scenario: COL-10 — Two-step transfer to MINT's admin
+           When ownership is offered to the zero address, or by a wallet that is not the owner
+           Then it reverts with NewOwnerIsZeroAddress or OnlyOwner */
+        vm.expectRevert(TwoStepOwnable.NewOwnerIsZeroAddress.selector);
+        bears.transferOwnership(address(0));
+
+        vm.prank(alice);
+        vm.expectRevert(TwoStepOwnable.OnlyOwner.selector);
+        bears.transferOwnership(alice);
+        assertEq(bears.owner(), address(this));
+    }
+}
+
 /// @dev COL-7. ERC-721C: the validator is set at deployment to Limit Break V3 with its zero-state
 ///      policy. `MockTransferValidator` models that policy deterministically — holder-initiated
 ///      transfers pass, whitelisted operators (OpenSea's SignedZone, Payment Processor venues) pass,

@@ -119,6 +119,21 @@ transfer validator
     └── setTransferValidator(address(0)) lifts enforcement and setting V3 again restores it (OPS-6)
 ```
 
+## Ownership (COL-10)
+
+```
+ownership
+├── the deployer (Calea) is the owner at construction
+├── transferOwnership(admin) emits PotentialOwnerUpdated and moves nothing until acceptance
+│   ├── to the zero address it reverts with NewOwnerIsZeroAddress
+│   └── by a non-owner it reverts with OnlyOwner
+├── acceptOwnership by the admin emits OwnershipTransferred and makes the admin the owner
+│   ├── by anyone else it reverts with NotNextOwner
+│   └── after cancelOwnershipTransfer it reverts with NotNextOwner
+└── afterwards Calea holds no role: every owner function refuses the deployer, and the admin
+    operates the drop while SeaDrop still mints
+```
+
 ## Supply and numbering (COL-2)
 
 ```
