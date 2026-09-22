@@ -8,9 +8,10 @@ a requirement's Scenario cite it (`COL-n`, `openspec/specs/collection/spec.md`).
 
 ```
 _beforeTokenTransfers
-├── when the mint would pass MAX_BEARS
+├── when the mint would pass MAX_BEARS (COL-2)
 │   ├── it reverts with ExceedsMaxBears
 │   ├── it reverts even when the owner has raised maxSupply
+│   ├── when maxSupply is at exactly 4,444, SeaDrop's own sold-out check refuses first
 │   └── when a batch straddles the cap
 │       └── the whole batch is refused, never partly filled
 ├── when to is the zero address (burn, COL-8)
@@ -98,13 +99,13 @@ events
 └── SeaDrop configuration events are the base's own and are not re-tested here
 ```
 
-## Supply and numbering
+## Supply and numbering (COL-2)
 
 ```
 supply
 ├── it starts token ids at 1
 ├── MAX_BEARS reads 4,444 and is a constant
-├── minting exactly to the cap succeeds
+├── minting exactly to the cap succeeds, and the supply is then exactly 4,444
 ├── when a mint would exceed maxSupply
 │   └── it reverts
 └── maxSupply stays owner-settable, which is why MAX_BEARS and not maxSupply is the
