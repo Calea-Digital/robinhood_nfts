@@ -26,7 +26,7 @@ import {MintABear} from "../../src/MintABear.sol";
  */
 contract BurnStrandsAccountRegression is BaseTest {
     function test_regression_ownerCannotBurn() public {
-        /* Scenario:
+        /* Scenario: COL-8 — No bear can be destroyed
            Given a bear owned by alice
            When alice calls the inherited SeaDrop burn
            Then the burn is refused and the bear is exactly as it was */
@@ -41,7 +41,7 @@ contract BurnStrandsAccountRegression is BaseTest {
     }
 
     function test_regression_approvedOperatorCannotBurn() public {
-        /* Scenario:
+        /* Scenario: COL-8 — No bear can be destroyed
            Given alice approved an operator for her bear
            When the operator calls burn
            Then it is refused, so an approval cannot destroy a holder's bear */
@@ -58,7 +58,7 @@ contract BurnStrandsAccountRegression is BaseTest {
     }
 
     function test_regression_supplyCannotBeReduced() public {
-        /* Scenario:
+        /* Scenario: COL-8 — No bear can be destroyed
            Given one bear minted
            When a burn is attempted
            Then supply holds, so ids are never orphaned and the cap keeps its meaning */

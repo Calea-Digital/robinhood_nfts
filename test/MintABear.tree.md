@@ -13,17 +13,32 @@ _beforeTokenTransfers
 │   ├── it reverts even when the owner has raised maxSupply
 │   └── when a batch straddles the cap
 │       └── the whole batch is refused, never partly filled
-├── when to is the zero address (burn)
+├── when to is the zero address (burn, COL-8)
 │   ├── and the caller is the owner
 │   │   └── it reverts with BurnDisabled
 │   ├── and the caller is an approved operator
 │   │   └── it reverts with BurnDisabled
+│   ├── and the caller is neither
+│   │   └── ERC721A's approval check refuses it before the hook
 │   └── it leaves supply, ownership and the transfer counter untouched
 ├── when from is the zero address (mint)
 │   └── it does not advance the transfer counter
 └── when from is not the zero address (transfer)
     ├── it advances that bear's transfer counter by exactly one
     └── it accepts any non-zero destination; there is no account guard (COL-9)
+```
+
+## transferFrom / safeTransferFrom (COL-8)
+
+```
+transferFrom
+├── when to is the zero address
+│   ├── it reverts with BurnDisabled, ahead of ERC721A's own TransferToZeroAddress
+│   ├── safeTransferFrom, both overloads, answers the same because it routes through here
+│   └── totalSupply, the owner and the transfer counter are unchanged
+└── when to is the canonical dead address
+    └── it is an ordinary transfer: the bear stays in the supply (the royalty split
+        excludes the address off-chain, ACT-10)
 ```
 
 ## Token-bound accounts (COL-9)
