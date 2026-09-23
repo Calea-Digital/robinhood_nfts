@@ -31,7 +31,7 @@ becomes a Task with Spec Ref `NONE` when picked.
 - [x] 3.1 ACT-1 — token-agnostic `Activation`
 - [x] 3.2 ACT-2 — cumulative thresholds, `thresholdFor`, `costToReach`
 - [x] 3.3 ACT-3 — weights, `weightFor`, `weightOf`
-- [ ] 3.4 ACT-4 — `credit` with `NotCrediter`, `ContractPaused`, `ZeroAmount`, `NotBearOwner`, `StaleNonce`, `RefAlreadyUsed`; `BearActivated`
+- [x] 3.4 ACT-4 — `credit` with `NotCrediter`, `ContractPaused`, `ZeroAmount`, `NotBearOwner`, `StaleNonce`, `RefAlreadyUsed`; `BearActivated`
 - [ ] 3.5 ACT-5 — reset by counter
 - [ ] 3.6 ACT-6 — `lifetimeBurned`
 - [ ] 3.7 ACT-7 — `DirectBurnAdapter.burn`: `NotOwner`, `AlreadyAtMaxLevel`, `Overshoot`, `burnFrom` + `credit`, `BurnedForBear`
