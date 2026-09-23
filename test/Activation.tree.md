@@ -134,6 +134,9 @@ setCrediter
 
 setPaused
 ├── by the owner: PausedSet each time; credits resume after unpausing
+├── while paused, credit and linkBear revert with ContractPaused; reads, unlinkBear and a transfer
+│   succeed (ACT-11)
+├── no exemption: the owner's own linkBear and any credit revert while paused
 └── by anyone else: Unauthorized
 
 renounceOwnership
