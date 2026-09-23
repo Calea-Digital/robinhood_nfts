@@ -22,7 +22,7 @@ becomes a Task with Spec Ref `NONE` when picked.
 ## 2. WhitelistClaim — live before the campaign
 
 - [x] 2.1 WL-3 — the registry: EIP-712 voucher, `claim`, reverts, reads, owner functions
-- [ ] 2.2 WL-1 — two per wallet, two per account, allocations in order
+- [x] 2.2 WL-1 — two per wallet, two per account, allocations in order
 - [ ] 2.3 WL-4 — `claimants(offset, limit)` export equals the Studio allowlist
 - [ ] 2.4 WL-5 — window gates claims; close ≥ 48 h before the stage
 
