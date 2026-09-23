@@ -41,7 +41,7 @@ becomes a Task with Spec Ref `NONE` when picked.
 - [x] 3.11 ACT-11 — pause semantics, `renounceOwnership` refused while paused
 - [x] 3.12 ACT-12 — roles
 - [x] 3.13 ACT-13 — events
-- [ ] 3.14 ACT-14 — reads
+- [x] 3.14 ACT-14 — reads
 
 ## 4. Scripts, runbook material, rehearsal
 
