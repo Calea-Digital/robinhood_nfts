@@ -1,0 +1,50 @@
+# MintABear — Runbook
+
+Operating the MintABear contracts on Robinhood Chain (4663). Every action here is an owner call
+by MINT's admin, and every one is reversible. Scripts live in `script/`; each prints what it read
+and what it did.
+
+## Transfer enforcement (OPS-6, COL-7)
+
+**The deployed state.** `MintABear` is an ERC-721C collection. The deploy sets its transfer
+validator to Limit Break V3, `0x721C002B0059009a671D00aD1700c9748146cd1B`, and leaves the
+validator's zero-state policy in place: security level 0, list 0, OpenSea's SignedZone
+(`0x000056F7000000EcE9003ca63978907a00FFD100`) as authorizer. A holder's own transfer always
+passes; a sale settles only through OpenSea or a Payment Processor venue, so creator earnings are
+collected on it.
+
+**Read the current state.**
+
+```shell
+forge script script/Enforcement.s.sol --rpc-url $RPC --sig "status(address)" $BEARS
+# or: cast call $BEARS "getTransferValidator()(address)" --rpc-url $RPC
+```
+
+A non-zero validator means enforcement is on; `address(0)` means it is off.
+
+**Lift enforcement — one call.** For example, if a marketplace MINT needs is being refused, or
+OpenSea's handling of the validated collection on 4663 misbehaves.
+
+- Admin is an EOA:
+  `forge script script/Enforcement.s.sol --rpc-url $RPC --broadcast --sig "disable(address)" $BEARS`
+- Admin is a Safe: print the transaction and propose it in the Safe —
+  `forge script script/Enforcement.s.sol --rpc-url $RPC --sig "safeTransaction(address,bool)" $BEARS false`
+  (`to` = the collection, `value` = 0, `data` = `setTransferValidator(address(0))`).
+
+Afterwards any venue can settle a sale; whether creator earnings are paid is then the buyer's choice.
+
+**Restore enforcement — one call.** The same, with `enable(address)`, or `safeTransaction(…, true)`
+for a Safe (`data` = `setTransferValidator(V3)`). The zero-state policy applies again at once.
+
+The script refuses a call that would change nothing (`AlreadyInState`) before broadcasting.
+
+**Watch.** Every change emits `TransferValidatorUpdated(oldValidator, newValidator)` from the
+collection; an indexer alerting on it sees every lift and restore.
+
+**Optional list steps — on the validator, from the admin.** The zero-state policy needs no list of
+MINT's own. If MINT wants one, the admin calls V3 directly: `createList`, then
+`addAccountsToWhitelist` / `addAccountsToAuthorizers` on it, then `applyListToCollection` for the
+collection, and `setTransferSecurityLevelOfCollection` to tighten the level. **Never security level
+5 or above.** Each step is reversible by the admin on the validator. These calls go to Limit Break's
+contract, not to `MintABear`, and are made with Limit Break's tooling; this repository does not
+encode them.
