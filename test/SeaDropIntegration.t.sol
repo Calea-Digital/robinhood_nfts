@@ -219,7 +219,7 @@ contract SeaDropIntegrationTest is BaseTest {
         assertEq(bears.provenanceHash(), keccak256("manifest"));
 
         _mint(alice, 1);
-        vm.expectRevert();
+        vm.expectRevert(ISeaDropTokenContractMetadata.ProvenanceHashCannotBeSetAfterMintStarted.selector);
         bears.setProvenanceHash(keccak256("late"));
     }
 
