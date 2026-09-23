@@ -4,45 +4,58 @@ pragma solidity 0.8.17;
 import {Ownable} from "solady/auth/Ownable.sol";
 import {IMintABear} from "./interfaces/IMintABear.sol";
 
-/// @dev The subset of $MNTD this contract relies on.
-interface IMNTD {
-    function burnFrom(address account, uint256 amount) external;
-    function decimals() external view returns (uint8);
-}
-
 /**
  * @title  Activation
- * @notice Burning $MNTD raises a bear's activation level; selling the bear resets it.
- * @dev    Levels are derived from a running total rather than purchased a step at a time, so
- *         a holder may burn any amount and it accumulates. Reaching level 5 in one
- *         transaction and reaching it across twenty are the same thing.
+ * @notice The record of $MNTD burned into each bear: its level, its royalty weight and its
+ *         owner's Status link. A transfer resets all three.
+ * @dev    Token-agnostic. This contract holds no reference to $MNTD and never moves a token.
+ *         Burning and recording are two steps of one transaction: the crediter (the
+ *         `DirectBurnAdapter` on Robinhood Chain) burns the holder's $MNTD, then calls `credit`
+ *         with "this wallet burned this amount for this bear". Only the crediter can credit, and
+ *         a new token address means a new adapter and one `setCrediter` call — nothing here
+ *         changes.
  *
- *         This contract reads the token; the token never calls it. The reset works by the
- *         token advancing a per-bear counter on transfer, while this contract stores the
- *         counter value a level was set at. A stale counter means the level reads zero.
- *         Nothing executes at reset time, so there is no path by which a reset is skipped
- *         and none by which a defect here blocks a transfer. The cost of that is one
- *         requirement from the specification that cannot be met: there is no reset event,
- *         because no code runs. Indexers derive it from the token's Transfer event.
+ *         It reads `MintABear` — `ownerOf`, `transferNonce`, `exists` — and `MintABear` never
+ *         calls it. The reset works through the token's per-bear transfer counter: a record is
+ *         stored with the counter value it was made at, and reads as zero once the counter has
+ *         moved. Nothing executes at reset time, so a reset can be neither skipped nor made to
+ *         block a transfer; indexers key it on the token's `TransferNonceAdvanced`.
  *
- *         Thresholds are constructor arguments with no setter. Once deployed, the price of
- *         every level is fixed for good.
+ *         Levels are derived from a running total, so reaching level 5 in one credit and in
+ *         twenty is the same thing. Thresholds (base units) and weights (basis 100) are
+ *         constructor arguments with no setter; the owner can only set the crediter and pause.
+ *
+ *         Slither reports `locked-ether` because Solady's ownership functions are `payable`
+ *         (a gas saving). Only the owner can call them, so only the owner could lock their own
+ *         ETH by attaching value; nothing else here accepts ETH.
  */
 contract Activation is Ownable {
-    /// @notice Level reached at each cumulative burn, in $MNTD base units.
+    /// @notice Cumulative burn, in $MNTD base units, at which each level is reached.
     uint128 public immutable THRESHOLD_1;
     uint128 public immutable THRESHOLD_2;
     uint128 public immutable THRESHOLD_3;
     uint128 public immutable THRESHOLD_4;
     uint128 public immutable THRESHOLD_5;
 
+    /// @dev Royalty weight of each level 0–5, basis 100.
+    uint16 internal immutable WEIGHT_0;
+    uint16 internal immutable WEIGHT_1;
+    uint16 internal immutable WEIGHT_2;
+    uint16 internal immutable WEIGHT_3;
+    uint16 internal immutable WEIGHT_4;
+    uint16 internal immutable WEIGHT_5;
+
     /// @notice The collection this contract tracks.
     IMintABear public immutable BEARS;
 
-    /// @notice The token burned to activate.
-    IMNTD public immutable MNTD;
+    /// @notice One row of `snapshot`.
+    struct BearState {
+        address owner;
+        uint8 level;
+        uint16 weight;
+    }
 
-    /// @dev Level and the transfer count it was recorded at. Packs into one slot.
+    /// @dev A bear's cumulative burn and the transfer count it was recorded at. One slot.
     struct Record {
         uint128 cumulative;
         uint64 nonce;
@@ -50,44 +63,68 @@ contract Activation is Ownable {
 
     mapping(uint256 => Record) private _records;
 
-    /// @notice Total ever burned into a bear, across all owners. Never reset.
+    /// @notice Every amount ever credited to a bear, across all owners. Never reset.
     mapping(uint256 => uint256) public lifetimeBurned;
+
+    /// @dev Crediter references already recorded; each is accepted once.
+    mapping(bytes32 => bool) private _refUsed;
 
     /// @dev Wallet's nominated bear, and the transfer count it was nominated at.
     mapping(address => uint256) private _linkedBear;
     mapping(address => uint64) private _linkedAtNonce;
 
-    /// @notice When true, burning and linking are suspended. Never affects transfers.
+    /// @notice The one address allowed to call `credit`.
+    address public crediter;
+
+    /// @notice When true, `credit` and `linkBear` are suspended. Never affects a transfer.
     bool public paused;
 
+    /// @notice A credit was recorded. `cumulative` is the bear's total for its current owner.
     event BearActivated(
         uint256 indexed tokenId,
-        address indexed owner,
+        address indexed burner,
         uint8 previousLevel,
         uint8 newLevel,
-        uint256 amountBurned,
-        uint256 cumulative
+        uint256 amount,
+        uint256 cumulative,
+        bytes32 indexed ref
     );
     event BearLinked(address indexed wallet, uint256 indexed tokenId);
     event BearUnlinked(address indexed wallet, uint256 indexed tokenId);
+    event CrediterSet(address indexed previous, address indexed current);
     event PausedSet(bool paused);
 
-    error ZeroAmount();
-    error NotBearOwner();
-    error AlreadyAtMaxLevel();
+    /// @notice The caller is not the crediter.
+    error NotCrediter();
+
+    /// @notice `credit` and `linkBear` are suspended.
     error ContractPaused();
+
+    /// @notice A credit must be of a positive amount.
+    error ZeroAmount();
+
+    /// @notice The burner, or the caller, does not own the bear.
+    error NotBearOwner();
+
+    /// @notice The bear has changed hands since the crediter read its transfer count.
+    error StaleNonce();
+
+    /// @notice This crediter reference has already been recorded.
+    error RefAlreadyUsed();
+
+    /// @notice The five thresholds must be positive and strictly ascending.
     error ThresholdsNotAscending();
 
-    /// @notice Neither the collection nor the token may be the zero address.
+    /// @notice The six weights must be strictly ascending.
+    error WeightsNotAscending();
+
+    /// @notice The collection cannot be the zero address.
     error ZeroAddress();
 
-    /// @notice The token's `decimals()` is too large for its unit to fit in a uint128.
-    error DecimalsOutOfRange();
-
-    /// @notice Levels run 0 to 5; nothing else has a threshold.
+    /// @notice Levels run 0 to 5.
     error InvalidLevel();
 
-    /// @notice Ownership may not be given up while burning and linking are suspended.
+    /// @notice Ownership may not be given up while credits and links are suspended.
     error CannotRenounceWhilePaused();
 
     modifier whenNotPaused() {
@@ -101,70 +138,80 @@ contract Activation is Ownable {
 
     /**
      * @param bears_      The MintABear collection.
-     * @param mntd_       The $MNTD token. Must already be deployed: its decimals are read here.
-     * @param thresholds_ The five cumulative thresholds in whole tokens, ascending
-     *                    (5_000 / 15_000 / 40_000 / 100_000 / 250_000). Scaled by the
-     *                    token's decimals at construction and fixed thereafter.
+     * @param thresholds_ The five cumulative thresholds in $MNTD base units, positive and
+     *                    strictly ascending (1,666 / 3,333 / 8,333 / 16,666 / 41,666 whole
+     *                    $MNTD, scaled by its decimals before deployment).
+     * @param weights_    The six royalty weights of levels 0–5, basis 100, strictly ascending
+     *                    (100 / 110 / 125 / 145 / 170 / 200).
      */
-    constructor(address bears_, address mntd_, uint128[5] memory thresholds_) {
-        if (bears_ == address(0) || mntd_ == address(0)) revert ZeroAddress();
-
-        _initializeOwner(msg.sender);
-        BEARS = IMintABear(bears_);
-        MNTD = IMNTD(mntd_);
-
-        // Widened deliberately: the downcast is only safe once the value is known to fit,
-        // and a silently truncated unit would bake wrong thresholds in permanently.
-        uint256 scale = 10 ** IMNTD(mntd_).decimals();
-        if (scale > type(uint128).max) revert DecimalsOutOfRange();
-        uint128 unit = uint128(scale);
-
+    constructor(address bears_, uint128[5] memory thresholds_, uint16[6] memory weights_) {
+        if (bears_ == address(0)) revert ZeroAddress();
+        if (thresholds_[0] == 0) revert ThresholdsNotAscending();
         for (uint256 i = 1; i < 5; ++i) {
             if (thresholds_[i] <= thresholds_[i - 1]) revert ThresholdsNotAscending();
         }
-        if (thresholds_[0] == 0) revert ThresholdsNotAscending();
+        for (uint256 i = 1; i < 6; ++i) {
+            if (weights_[i] <= weights_[i - 1]) revert WeightsNotAscending();
+        }
 
-        THRESHOLD_1 = thresholds_[0] * unit;
-        THRESHOLD_2 = thresholds_[1] * unit;
-        THRESHOLD_3 = thresholds_[2] * unit;
-        THRESHOLD_4 = thresholds_[3] * unit;
-        THRESHOLD_5 = thresholds_[4] * unit;
+        _initializeOwner(msg.sender);
+        BEARS = IMintABear(bears_);
+
+        THRESHOLD_1 = thresholds_[0];
+        THRESHOLD_2 = thresholds_[1];
+        THRESHOLD_3 = thresholds_[2];
+        THRESHOLD_4 = thresholds_[3];
+        THRESHOLD_5 = thresholds_[4];
+
+        WEIGHT_0 = weights_[0];
+        WEIGHT_1 = weights_[1];
+        WEIGHT_2 = weights_[2];
+        WEIGHT_3 = weights_[3];
+        WEIGHT_4 = weights_[4];
+        WEIGHT_5 = weights_[5];
     }
 
     /**
-     * @notice Burns $MNTD into a bear, raising its level if a threshold is crossed.
-     * @dev    Only the current owner may call this. An operator approved to transfer the
-     *         bear is deliberately not permitted to spend the owner's $MNTD.
-     * @param  tokenId The bear to activate.
-     * @param  amount  Base units of $MNTD to burn. Any amount is accepted and accumulates.
+     * @notice Records that `burner` burned `amount` of $MNTD for `tokenId`.
+     * @dev    Crediter only. `burner` must own the bear and its transfer count must still be
+     *         `nonce`: both passing means the burner has held the bear continuously since the
+     *         crediter read the count, so a burn never lands on a bear that changed hands in
+     *         between. Reverts, in this order, with `NotCrediter`, `ContractPaused`,
+     *         `ZeroAmount`, `NotBearOwner`, `StaleNonce` or `RefAlreadyUsed`. Any positive
+     *         amount is accepted and accumulates; refusing amounts past level 5 is the
+     *         crediter's job.
+     * @param  tokenId The bear.
+     * @param  burner  The wallet whose $MNTD was burned.
+     * @param  amount  Base units burned.
+     * @param  nonce   The bear's `transferNonce` when the crediter read it.
+     * @param  ref     The crediter's reference for this burn, accepted once.
      */
-    function burn(uint256 tokenId, uint128 amount) external whenNotPaused {
+    function credit(uint256 tokenId, address burner, uint128 amount, uint64 nonce, bytes32 ref) external {
+        if (msg.sender != crediter) revert NotCrediter();
+        _requireNotPaused();
         if (amount == 0) revert ZeroAmount();
-        if (BEARS.ownerOf(tokenId) != msg.sender) revert NotBearOwner();
+        if (BEARS.ownerOf(tokenId) != burner) revert NotBearOwner();
+        if (BEARS.transferNonce(tokenId) != nonce) revert StaleNonce();
+        if (_refUsed[ref]) revert RefAlreadyUsed();
 
-        uint64 nonce = BEARS.transferNonce(tokenId);
         Record storage record = _records[tokenId];
         uint128 cumulative = record.nonce == nonce ? record.cumulative : 0;
-
-        if (cumulative >= THRESHOLD_5) revert AlreadyAtMaxLevel();
-
         uint8 previousLevel = _levelFor(cumulative);
         uint128 newCumulative = cumulative + amount;
-        uint8 newLevel = _levelFor(newCumulative);
 
         record.cumulative = newCumulative;
         record.nonce = nonce;
         lifetimeBurned[tokenId] += amount;
+        _refUsed[ref] = true;
 
-        MNTD.burnFrom(msg.sender, amount);
-
-        emit BearActivated(tokenId, msg.sender, previousLevel, newLevel, amount, newCumulative);
+        emit BearActivated(tokenId, burner, previousLevel, _levelFor(newCumulative), amount, newCumulative, ref);
     }
 
     /**
-     * @notice Nominates a bear to carry this wallet's Status multiplier. One per wallet.
-     * @dev    The nomination is voided automatically when the bear is transferred, so a
-     *         previous owner cannot keep the boost after selling.
+     * @notice Nominates a bear to carry this wallet's Status multiplier. One per wallet; a new
+     *         nomination replaces the previous one.
+     * @dev    Owner of the bear only. The nomination is void once the bear moves, so a previous
+     *         owner cannot keep the boost after selling.
      */
     function linkBear(uint256 tokenId) external whenNotPaused {
         if (BEARS.ownerOf(tokenId) != msg.sender) revert NotBearOwner();
@@ -174,10 +221,10 @@ contract Activation is Ownable {
     }
 
     /**
-     * @notice Removes this wallet's nomination without transferring the bear.
-     * @dev    A wallet with no nomination is left alone rather than reverting, so the portal
-     *         can call this unconditionally. No event is emitted in that case: an indexer
-     *         should never see an unlink that did not correspond to a link.
+     * @notice Removes this wallet's nomination without moving the bear.
+     * @dev    Works while paused. A wallet with no nomination is left alone rather than
+     *         reverting, so the portal can call this unconditionally, and no event is emitted:
+     *         an indexer never sees an unlink that did not follow a link.
      */
     function unlinkBear() external {
         uint256 tokenId = _linkedBear[msg.sender];
@@ -187,33 +234,54 @@ contract Activation is Ownable {
         emit BearUnlinked(msg.sender, tokenId);
     }
 
-    /// @notice The $MNTD burned into a bear by its current owner. Zero after a transfer.
+    /// @notice The $MNTD credited to a bear under its current owner. Zero after a transfer.
     function cumulativeOf(uint256 tokenId) public view returns (uint128) {
         Record memory record = _records[tokenId];
         return record.nonce == BEARS.transferNonce(tokenId) ? record.cumulative : 0;
     }
 
-    /// @notice A bear's current activation level, 0 to 5. Zero after a transfer.
+    /// @notice A bear's current level, 0 to 5. Zero after a transfer.
     function levelOf(uint256 tokenId) public view returns (uint8) {
         return _levelFor(cumulativeOf(tokenId));
     }
 
+    /// @notice A bear's current royalty weight, basis 100: the weight of its level.
+    function weightOf(uint256 tokenId) external view returns (uint16) {
+        return weightFor(levelOf(tokenId));
+    }
+
     /**
-     * @notice The bear currently carrying a wallet's Status multiplier.
-     * @return tokenId The nominated bear, or zero if there is none or it has been sold.
-     * @return level   That bear's activation level, or zero.
+     * @notice The bear carrying a wallet's Status multiplier.
+     * @return tokenId The nominated bear, or zero if there is none or it has moved since.
+     * @return level   That bear's level, or zero.
      */
     function linkOf(address wallet) external view returns (uint256 tokenId, uint8 level) {
         tokenId = _linkedBear[wallet];
         if (tokenId == 0) return (0, 0);
         if (_linkedAtNonce[wallet] != BEARS.transferNonce(tokenId)) return (0, 0);
-        return (tokenId, _levelFor(cumulativeOf(tokenId)));
+        return (tokenId, levelOf(tokenId));
+    }
+
+    /**
+     * @notice Owner, level and weight for each id, for MINT's royalty split at a closing block.
+     * @dev    An id that does not exist reads as zeroes. A wallet's weight is the sum over its
+     *         bears; the eligible total excludes bears held by `0x…dEaD`, summed off-chain. The
+     *         loop's calls go only to the immutable collection, and are views.
+     */
+    function snapshot(uint256[] calldata ids) external view returns (BearState[] memory rows) {
+        rows = new BearState[](ids.length);
+        for (uint256 i; i < ids.length; ++i) {
+            uint256 id = ids[i];
+            if (!BEARS.exists(id)) continue;
+            uint8 level = levelOf(id);
+            rows[i] = BearState({owner: BEARS.ownerOf(id), level: level, weight: weightFor(level)});
+        }
     }
 
     /**
      * @notice How much more $MNTD a bear needs to reach a level.
-     * @dev    Provided so the portal can offer an exact amount rather than letting a holder
-     *         overshoot into a tier they have already cleared.
+     * @dev    The portal sizes each burn with this, and the adapter refuses any amount above
+     *         `costToReach(tokenId, 5)`.
      * @return The remaining base units, or zero if the level is already reached.
      */
     function costToReach(uint256 tokenId, uint8 targetLevel) external view returns (uint128) {
@@ -233,7 +301,25 @@ contract Activation is Ownable {
         revert InvalidLevel();
     }
 
-    /// @notice Suspends burning and linking. Transfers and bear wallets are never affected.
+    /// @notice The royalty weight of a level, basis 100.
+    function weightFor(uint8 level) public view returns (uint16) {
+        if (level == 0) return WEIGHT_0;
+        if (level == 1) return WEIGHT_1;
+        if (level == 2) return WEIGHT_2;
+        if (level == 3) return WEIGHT_3;
+        if (level == 4) return WEIGHT_4;
+        if (level == 5) return WEIGHT_5;
+        revert InvalidLevel();
+    }
+
+    /// @notice Sets the one address allowed to call `credit`. The zero address, which can send
+    ///         no call, leaves no crediter at all: credits stop until one is set.
+    function setCrediter(address crediter_) external onlyOwner {
+        emit CrediterSet(crediter, crediter_);
+        crediter = crediter_;
+    }
+
+    /// @notice Suspends or resumes `credit` and `linkBear`. Transfers are never affected.
     function setPaused(bool paused_) external onlyOwner {
         paused = paused_;
         emit PausedSet(paused_);
@@ -241,9 +327,7 @@ contract Activation is Ownable {
 
     /**
      * @notice Gives up ownership permanently.
-     * @dev    Refused while paused. `setPaused` is the only power the owner has, so
-     *         renouncing under a pause would leave burning and linking suspended with
-     *         nobody able to lift it — for the life of the collection.
+     * @dev    Refused while paused, so a pause can always be lifted.
      */
     function renounceOwnership() public payable override onlyOwner {
         if (paused) revert CannotRenounceWhilePaused();
