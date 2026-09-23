@@ -28,7 +28,7 @@ becomes a Task with Spec Ref `NONE` when picked.
 
 ## 3. Activation and DirectBurnAdapter
 
-- [ ] 3.1 ACT-1 — token-agnostic `Activation`
+- [x] 3.1 ACT-1 — token-agnostic `Activation`
 - [ ] 3.2 ACT-2 — cumulative thresholds, `thresholdFor`, `costToReach`
 - [ ] 3.3 ACT-3 — weights, `weightFor`, `weightOf`
 - [ ] 3.4 ACT-4 — `credit` with `NotCrediter`, `ContractPaused`, `ZeroAmount`, `NotBearOwner`, `StaleNonce`, `RefAlreadyUsed`; `BearActivated`
