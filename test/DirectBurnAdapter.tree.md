@@ -14,7 +14,9 @@ burn
     ├── when the bear is at level 5
     │   └── it reverts with AlreadyAtMaxLevel and burns nothing
     ├── when amount > costToReach(tokenId, 5)
-    │   └── it reverts with Overshoot; exactly costToReach(tokenId, 5) passes and lands on level 5
+    │   ├── costToReach(id, 5) + 1 reverts with Overshoot: balance, supply and cumulative unchanged (ACT-8)
+    │   └── exactly costToReach(tokenId, 5) passes and lands on level 5
+    ├── burning costToReach(id, k) for k = 1…5 lands exactly on each level; 41,666 burned in all
     ├── when Activation is paused
     │   └── credit reverts with ContractPaused and no $MNTD is burned
     ├── when amount is zero
