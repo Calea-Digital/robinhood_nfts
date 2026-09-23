@@ -69,6 +69,8 @@ weights
 
 ```
 after the bear is transferred
+├── a bear at level 2 with a Status link: levelOf and cumulativeOf read 0, weightOf reads
+│   weightFor(0), linkOf reads (0, 0), and the transfer made no call into Activation (ACT-5)
 ├── cumulativeOf and levelOf read 0; weightOf reads the level-0 weight
 ├── lifetimeBurned is unchanged
 ├── the new owner's credits start from 0
