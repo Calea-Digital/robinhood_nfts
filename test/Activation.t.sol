@@ -273,6 +273,35 @@ contract ActivationResetTest is BaseTest {
         _mint(alice, 1);
     }
 
+    function test_transfer_resetsEverything_withNoCallIntoActivation() public {
+        /* Scenario: ACT-5 — A transfer resets everything
+           Given a bear at level 2 with a Status link
+           When it is transferred to another wallet
+           Then levelOf and cumulativeOf read zero, weightOf reads weightFor(0) and linkOf reads
+             (0, 0), with no call into Activation */
+        _credit(1, 3_333);
+        vm.prank(alice);
+        activation.linkBear(1);
+        assertEq(activation.levelOf(1), 2);
+        (uint256 linked,) = activation.linkOf(alice);
+        assertEq(linked, 1);
+
+        vm.startStateDiffRecording();
+        vm.prank(alice);
+        bears.transferFrom(alice, bob, 1);
+        VmSafe.AccountAccess[] memory accesses = vm.stopAndReturnStateDiff();
+        for (uint256 i; i < accesses.length; ++i) {
+            assertTrue(accesses[i].account != address(activation), "the transfer never touches Activation");
+        }
+
+        assertEq(activation.levelOf(1), 0);
+        assertEq(activation.cumulativeOf(1), 0);
+        assertEq(activation.weightOf(1), activation.weightFor(0));
+        (uint256 tokenId, uint8 level) = activation.linkOf(alice);
+        assertEq(tokenId, 0);
+        assertEq(level, 0);
+    }
+
     function test_transfer_resetsCumulativeLevelAndWeight() public {
         /* Scenario:
            Given a bear at level 5
