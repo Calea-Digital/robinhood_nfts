@@ -46,6 +46,8 @@ when burnFrom calls back into the holder, who burns again from inside it
 
 ```
 MNTD, ACTIVATION: the constructor's addresses; burnCount starts at 0
+every read of Activation and the adapter answers for a bear credited through the adapter, and
+BEARS, MNTD and ACTIVATION return the deployed addresses (ACT-14)
 constructor: a zero token or Activation address reverts with ZeroAddress
 no owner() and no setter exist
 ```
