@@ -32,7 +32,9 @@ credit
     ├── when this crediter already recorded ref
     │   └── it reverts with RefAlreadyUsed and records nothing twice
     └── otherwise
-        ├── cumulative and lifetimeBurned grow by amount; the level follows the cumulative
+        ├── cumulative and lifetimeBurned grow by amount, BearActivated is emitted, and the same
+        │   ref again reverts with RefAlreadyUsed, leaving both unchanged (ACT-4)
+        ├── the level follows the cumulative
         ├── BearActivated(tokenId, burner, previousLevel, newLevel, amount, cumulative, ref)
         ├── credits accumulate across calls
         ├── one credit spanning several thresholds jumps to the highest cleared
