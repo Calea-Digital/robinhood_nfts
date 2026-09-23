@@ -84,6 +84,32 @@ contract ActivationCreditTest is BaseTest {
         activation.credit(1, burner, amount, nonce, ref);
     }
 
+    function test_credit_isRecordedOnce() public {
+        /* Scenario: ACT-4 — A credit is recorded once
+           Given the crediter calls credit for a bear the burner owns, with the current nonce and
+             a fresh ref
+           When the call executes
+           Then the cumulative and lifetimeBurned grow by amount and BearActivated is emitted
+           And a second call with the same ref reverts with RefAlreadyUsed */
+        _credit(1, 1_000);
+        uint128 cumulativeBefore = activation.cumulativeOf(1);
+        uint256 lifetimeBefore = activation.lifetimeBurned(1);
+        bytes32 ref = keccak256("burn #42");
+        uint64 nonce = bears.transferNonce(1);
+
+        vm.expectEmit(true, true, true, true, address(activation));
+        emit BearActivated(1, alice, 0, 1, 2_000 * UNIT, 3_000 * UNIT, ref);
+        _creditAs(crediter, alice, 2_000 * UNIT, nonce, ref);
+
+        assertEq(activation.cumulativeOf(1), cumulativeBefore + 2_000 * UNIT);
+        assertEq(activation.lifetimeBurned(1), lifetimeBefore + 2_000 * UNIT);
+
+        vm.expectRevert(Activation.RefAlreadyUsed.selector);
+        _creditAs(crediter, alice, 2_000 * UNIT, nonce, ref);
+        assertEq(activation.cumulativeOf(1), cumulativeBefore + 2_000 * UNIT, "recorded once");
+        assertEq(activation.lifetimeBurned(1), lifetimeBefore + 2_000 * UNIT, "recorded once");
+    }
+
     function test_credit_recordsTheBurn_andEmitsBearActivated() public {
         /* Scenario:
            Given the crediter and a bear its burner owns at the current counter
