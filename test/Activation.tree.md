@@ -114,6 +114,16 @@ snapshot:     owner, level and weight for existing ids; zeroes for an id that do
               an empty list returns an empty array; id 0 reads zeroes
 ```
 
+## Events (ACT-13)
+
+```
+events, checked in the recorded logs against the documented signatures
+├── BearActivated(tokenId, burner, previousLevel, newLevel, amount, cumulative, ref) on a credit
+├── BearLinked(wallet, tokenId) on a link; BearUnlinked(wallet, tokenId) on an unlink
+├── CrediterSet(previous, current) on a crediter change
+└── PausedSet(paused) on a pause — each call emits exactly that one event (ACT-13)
+```
+
 ## Construction
 
 ```

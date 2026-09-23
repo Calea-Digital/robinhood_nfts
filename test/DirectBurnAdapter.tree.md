@@ -29,7 +29,8 @@ burn
     └── otherwise
         ├── credit and burnFrom execute in one transaction; BearActivated and BurnedForBear are
         │   emitted; the holder's balance and the token supply fall by amount (ACT-7)
-        └── ref is the adapter's burn number: 1, 2, … and burnCount follows
+        ├── ref is the adapter's burn number: 1, 2, … and burnCount follows
+        └── BurnedForBear(ref, tokenId, burner, amount) in the logs, after BearActivated (ACT-13)
 ```
 
 ## Hostile token

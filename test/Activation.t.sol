@@ -1207,3 +1207,66 @@ contract ActivationRolesTest is BaseTest {
         return false;
     }
 }
+
+/// @dev ACT-13. Each event is checked in the recorded logs against its documented signature: the
+///      first topic is the hash of the documented text, the indexed arguments are the remaining
+///      topics, and the rest decodes from the data.
+contract ActivationEventsTest is BaseTest {
+    function setUp() public override {
+        super.setUp();
+        _mint(alice, 1);
+    }
+
+    function test_events_carryTheDocumentedArguments() public {
+        /* Scenario: ACT-13 — Events carry the documented arguments
+           When a credit, a link, an unlink, a crediter change and a pause happen
+           Then BearActivated, BearLinked, BearUnlinked, CrediterSet and PausedSet are emitted with
+             the documented arguments */
+        vm.recordLogs();
+        bytes32 ref = _credit(1, 3_333);
+        VmSafe.Log memory log = _only(vm.getRecordedLogs());
+        assertEq(log.topics[0], keccak256("BearActivated(uint256,address,uint8,uint8,uint256,uint256,bytes32)"));
+        assertEq(uint256(log.topics[1]), 1, "tokenId");
+        assertEq(address(uint160(uint256(log.topics[2]))), alice, "burner");
+        assertEq(log.topics[3], ref, "ref");
+        (uint8 previousLevel, uint8 newLevel, uint256 amount, uint256 cumulative) =
+            abi.decode(log.data, (uint8, uint8, uint256, uint256));
+        assertEq(previousLevel, 0);
+        assertEq(newLevel, 2);
+        assertEq(amount, 3_333 * UNIT);
+        assertEq(cumulative, 3_333 * UNIT);
+
+        vm.prank(alice);
+        activation.linkBear(1);
+        log = _only(vm.getRecordedLogs());
+        assertEq(log.topics[0], keccak256("BearLinked(address,uint256)"));
+        assertEq(address(uint160(uint256(log.topics[1]))), alice, "wallet");
+        assertEq(uint256(log.topics[2]), 1, "tokenId");
+
+        vm.prank(alice);
+        activation.unlinkBear();
+        log = _only(vm.getRecordedLogs());
+        assertEq(log.topics[0], keccak256("BearUnlinked(address,uint256)"));
+        assertEq(address(uint160(uint256(log.topics[1]))), alice, "wallet");
+        assertEq(uint256(log.topics[2]), 1, "tokenId");
+
+        address next = makeAddr("nextCrediter");
+        activation.setCrediter(next);
+        log = _only(vm.getRecordedLogs());
+        assertEq(log.topics[0], keccak256("CrediterSet(address,address)"));
+        assertEq(address(uint160(uint256(log.topics[1]))), crediter, "previous");
+        assertEq(address(uint160(uint256(log.topics[2]))), next, "current");
+
+        activation.setPaused(true);
+        log = _only(vm.getRecordedLogs());
+        assertEq(log.topics[0], keccak256("PausedSet(bool)"));
+        assertTrue(abi.decode(log.data, (bool)), "paused");
+    }
+
+    /// @dev The one log the last call emitted, from Activation.
+    function _only(VmSafe.Log[] memory logs) internal view returns (VmSafe.Log memory) {
+        assertEq(logs.length, 1, "exactly one event");
+        assertEq(logs[0].emitter, address(activation));
+        return logs[0];
+    }
+}

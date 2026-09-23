@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
+import {VmSafe} from "forge-std/Vm.sol";
+
 import {BaseTest} from "./BaseTest.t.sol";
 import {Activation} from "../src/Activation.sol";
 import {DirectBurnAdapter} from "../src/DirectBurnAdapter.sol";
@@ -309,5 +311,39 @@ contract DirectBurnAdapterPauseTest is DirectBurnAdapterBase {
         assertEq(mntd.balanceOf(alice), (50_000 - 1_666) * UNIT);
         assertEq(activation.levelOf(1), 1);
         assertEq(adapter.burnCount(), 1);
+    }
+}
+
+/// @dev ACT-13 for the adapter: `BurnedForBear(ref, tokenId, burner, amount)` in the recorded logs.
+contract DirectBurnAdapterEventsTest is DirectBurnAdapterBase {
+    function test_burnedForBear_carriesTheDocumentedArguments() public {
+        /* Scenario:
+           Given a holder's burn through the adapter
+           When the logs are read
+           Then BurnedForBear(ref, tokenId, burner, amount) follows BearActivated, with ref the
+             adapter's burn number */
+        vm.recordLogs();
+        _burn(alice, 1, 500 * UNIT);
+        VmSafe.Log[] memory logs = vm.getRecordedLogs();
+
+        VmSafe.Log memory burned;
+        uint256 found;
+        for (uint256 i; i < logs.length; ++i) {
+            if (logs[i].topics[0] == keccak256("BurnedForBear(bytes32,uint256,address,uint256)")) {
+                burned = logs[i];
+                ++found;
+                assertEq(
+                    logs[i - 1].topics[0],
+                    keccak256("BearActivated(uint256,address,uint8,uint8,uint256,uint256,bytes32)"),
+                    "after the credit"
+                );
+            }
+        }
+        assertEq(found, 1);
+        assertEq(burned.emitter, address(adapter));
+        assertEq(burned.topics[1], bytes32(uint256(1)), "ref");
+        assertEq(uint256(burned.topics[2]), 1, "tokenId");
+        assertEq(address(uint160(uint256(burned.topics[3]))), alice, "burner");
+        assertEq(abi.decode(burned.data, (uint256)), 500 * UNIT, "amount");
     }
 }
