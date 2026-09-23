@@ -78,6 +78,22 @@ export
 Not a unit leaf: that OpenSea Studio's CSV import produces the same root as the rows above is
 rehearsal item 3 on 46630 (`docs/HANDOVER.md`, "Unknowns to settle by rehearsal").
 
+## Timing (WL-5)
+
+```
+window
+├── with the close at least 48 hours before the whitelist stage
+│   └── a claim before openAt, after closeAt, or at the stage's start reverts with CampaignClosed (WL-5)
+├── a claim at exactly openAt and at exactly closeAt succeeds
+├── setWindow moves the gate: a claim outside the old window and inside the new one succeeds;
+│   moving closeAt back closes the campaign; claims already made stay
+└── the registry is deployed with its signer and window set before openAt
+```
+
+The 48-hour gap and the dates themselves (proposed 6–26 October, CQ-1 / CQ-18) are deployment
+values: the registry does not know when the whitelist stage opens, so the gap is checked by the
+deploy script and the runbook (OPS-2), not by the contract.
+
 ## Reads
 
 ```
