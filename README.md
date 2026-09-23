@@ -1,26 +1,33 @@
 # MintABear
 
-A 4,444-supply free-mint NFT collection on **Robinhood Chain (chain id 4663)**. Every bear
-owns an ERC-6551 account. Holders burn $MNTD to raise a bear's activation level (0–5), which
-multiplies the reward rate their off-chain MINT Status already pays. Activation and the
-Status link reset when a bear changes hands.
+A 4,444-supply free-mint NFT collection on **Robinhood Chain (chain id 4663)**. Holders burn
+$MNTD to raise a bear's activation level (0–5), which multiplies the reward rate their
+off-chain MINT Status already pays. Activation and the Status link reset when a bear changes
+hands.
 
 **Start here: [`docs/HANDOVER.md`](docs/HANDOVER.md)** — current state, deploy runbook,
-settled decisions, accepted risks, and the questions still open with the client.
+settled decisions, accepted risks, and the questions still open with the client. The
+specification is in [`openspec/`](openspec/); the board (YouTrack `MNT`) follows it.
 
 ## Contracts
 
+The specification calls for seven contracts, four in tranche 1. On `tranche-1` today:
+
 | Contract | Base | Role |
 |---|---|---|
-| [`src/MintABear.sol`](src/MintABear.sol) | OpenSea `ERC721SeaDrop` | the collection. Transfer counter, bear-account guard, supply cap, renderer delegation |
-| [`src/BearAccount.sol`](src/BearAccount.sol) | Solady `ERC6551` | the wallet each bear owns. Immutable, no admin path |
-| [`src/Activation.sol`](src/Activation.sol) | standalone | cumulative burn, level derivation, MINT Status link |
-| [`src/renderers/PlaceholderRenderer.sol`](src/renderers/PlaceholderRenderer.sol) | standalone | pre-reveal metadata; replaced by the real renderer at reveal |
+| [`src/MintABear.sol`](src/MintABear.sol) | OpenSea `ERC721SeaDrop` | the collection. Transfer counter and reset event, burn refusal, `MAX_BEARS`, `exists`; ERC-721C with the validator set at deploy; stock SeaDrop metadata, royalties and two-step ownership |
+| [`src/interfaces/IMintABear.sol`](src/interfaces/IMintABear.sol) | — | the reads `Activation` depends on: `ownerOf`, `transferNonce`, `exists` |
+| [`src/Activation.sol`](src/Activation.sol) | Solady `Ownable` | cumulative burn, level derivation, MINT Status link — the pre-specification contract, rewritten in tranche 1 to take credits from one adapter |
+
+`WhitelistClaim` (the on-chain whitelist registry) and `DirectBurnAdapter` (the one crediter)
+are tranche-1 work still to land; `MysteryBox`, `PrizeDraw` and `PrizeVault` are tranche 2.
 
 The token never calls the activation contract. The dependency runs one way only, so no
-defect in `Activation` can block a transfer and none can silently skip a reset.
+defect in `Activation` can block a transfer and none can silently skip a reset: every
+non-mint transfer advances `transferNonce` and emits `TransferNonceAdvanced`, and a level
+recorded at an older counter value reads as zero.
 
-Mint pricing, stages, dates, per-wallet limits and primary sale settings are **not** in these
+Mint pricing, stages, dates, per-wallet limits, metadata and royalties are **not** in these
 contracts. They are configured through OpenSea Studio / SeaDrop.
 
 ## Setup
@@ -46,8 +53,8 @@ slither . --exclude-dependencies
 Targeting a single test:
 
 ```shell
-forge test --match-contract ActivationTest
-forge test --match-test test_transfer_resetsLevelAndCumulative -vvvv
+forge test --match-contract MintABearCreatorTokenTest
+forge test --match-test test_transfer_emitsTheResetEvent_withALevel -vvvv
 ```
 
 Reproduce a CI run locally: `FOUNDRY_PROFILE=ci forge test`.
@@ -55,12 +62,13 @@ Reproduce a CI run locally: `FOUNDRY_PROFILE=ci forge test`.
 ## Tests
 
 Deterministic unit tests only, with a branching tree per contract (`test/<Contract>.tree.md`)
-and a `Given / When / Then` block in every test. Coverage gate is ≥90% line and ≥80% branch;
-the suite currently sits at 100% on both.
+and a `Given / When / Then` block in every test that quotes the specification's Scenario for
+the requirement it satisfies. Coverage gate is ≥90% line and ≥80% branch; the suite sits at
+100% on both.
 
 Fuzz, invariant, mutation, formal-verification and fork harnesses are deliberately absent.
 They belong to the auditor and are run independently — a dev-authored invariant suite anchors
-the reviewer and creates a false "invariants done" signal. The trees document the INV-N
-obligations and leave them unimplemented, on purpose.
+the reviewer and creates a false "invariants done" signal. The trees document the INV-N and
+Fork-N obligations and leave them unimplemented, on purpose.
 
 `test/poc/` holds proofs of concept from security review, kept as regression guards.
