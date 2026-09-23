@@ -29,7 +29,8 @@ The specification calls for seven contracts, four of them in tranche 1: `MintABe
 | `src/MintABear.sol` | OpenSea `ERC721SeaDrop` | the collection (COL-1…COL-13). Transfer counter and reset event, burn refusal, `MAX_BEARS`, `exists`; ERC-721C with the validator set at deploy; stock SeaDrop metadata, royalties and two-step ownership |
 | `src/interfaces/IMintABear.sol` | — | the three reads `Activation` depends on: `ownerOf`, `transferNonce`, `exists` |
 | `src/Activation.sol` | Solady `Ownable` | still the pre-specification contract, which burns $MNTD itself. Tasks 3.1–3.14 rewrite it against ACT-1…ACT-14: token-agnostic, one `crediter`, `credit(tokenId, burner, amount, nonce, ref)`, weights, `snapshot` |
-| `WhitelistClaim` | — | not yet written: tasks 2.1–2.4 (WL-3 first — it must be live before the campaign) |
+| `src/WhitelistClaim.sol` | Solady `Ownable`, `EIP712`, `ECDSA` | the whitelist registry (WL-1, WL-3…WL-5): 1,000 allocations claimed with an EIP-712 voucher from MINT's eligibility signer, two per wallet and two per account, inside the campaign window; `claimants(offset, limit)` is the export to the Studio allowlist |
+| `script/WhitelistExport.s.sol` | forge-std `Script` | read-only: `export` writes the claimant CSV for Studio; `compare` fails unless the allowlist root on SeaDrop is the root of the registry's rows (tree in `script/lib/AllowListTree.sol`) |
 | `DirectBurnAdapter` | — | not yet written: tasks 3.7–3.8 (ACT-7, ACT-8); the one crediter, immutable, no owner |
 
 **The transfer counter is the load-bearing idea (COL-3, COL-4).** `MintABear` increments `transferNonce[tokenId]` on every transfer and never on mint, and emits `TransferNonceAdvanced(tokenId, nonce)` in the same transaction as `Transfer`. `Activation` stores a level alongside the counter value it was recorded at, and treats it as void once the counter moves. The reset is therefore a consequence of the transfer rather than an action that must succeed — it cannot be skipped, and a defect in `Activation` cannot block a transfer. Do not replace this with a callback from the token; that pattern fails open. Indexers key the reset on `TransferNonceAdvanced`.
@@ -44,6 +45,8 @@ The specification calls for seven contracts, four of them in tranche 1: `MintABe
 
 **ERC-721C (COL-7).** `ERC721SeaDrop` implements `ICreatorToken`. The deploy script (OPS-2) sets the validator to Limit Break V3 `0x721C002B0059009a671D00aD1700c9748146cd1B` with its zero-state policy — security level 0, list 0, OpenSea's SignedZone as authorizer — so a holder's own transfers always pass and a sale settles only through OpenSea or a Payment Processor venue. One owner call, `setTransferValidator(address(0))`, lifts enforcement and one restores it (OPS-6). Never security level 5 or above. OpenSea's handling of a validated collection on 4663 is proven on testnet and with one team-bear sale before the drop page is published. The unit tests model the policy with `test/mocks/MockTransferValidator.sol`; the real V3 is the auditor's fork obligation (Fork-2 in `test/MintABear.tree.md`).
 
+**The whitelist is an on-chain registry (WL-3, CQ-18 option A).** MINT's backend signs a short-lived voucher `Claim(wallet, allocationIndex, account, deadline)` when the wager API confirms a threshold; the wallet sends `claim` itself and pays the gas. `claim` checks, in order: `NotClaimant`, `BadSigner`, `Expired`, `CampaignClosed`, `SoldOut`, `WalletLimit`, `WrongAllocation`, `AccountLimit`. `allocationIndex` must be the wallet's next allocation, which makes every voucher single-use without a nonce. `account` is a hash of the getminted.io account id. The owner (MINT's admin, set in the constructor) can only `setSigner` and `setWindow`; nothing removes, reassigns or adds a claim. After the campaign, `script/WhitelistExport.s.sol` exports the CSV loaded into Studio and `compare` checks the root Studio set against the registry; `AllowListTree` builds the tree the way SeaDrop's reference tests do (merkletreejs, sorted leaves and pairs), which rehearsal item 3 confirms against Studio on 46630. The 48-hour gap between `closeAt` and the whitelist stage is a deploy value, not enforced on-chain.
+
 **Ownership (COL-10).** SeaDrop's `TwoStepOwnable`: Calea deploys, calls `transferOwnership(admin)`, and MINT's admin calls `acceptOwnership`. Afterwards Calea holds no role. Never call `renounceOwnership`: Studio configuration would freeze for good.
 
 ## Commands
@@ -54,6 +57,17 @@ forge test                 # full suite
 forge fmt --check          # format gate — run before pushing
 forge coverage --no-match-coverage 'test/|lib/'
 slither . --exclude-dependencies
+```
+
+The coverage filter `'test/|lib/'` also hides `script/lib/`; `forge coverage --no-match-coverage '^(test|lib)/'` shows `AllowListTree` as well.
+
+Whitelist export and check (read-only, nothing broadcast; writes under `exports/`, which is gitignored):
+
+```shell
+forge script script/WhitelistExport.s.sol --rpc-url $RPC --sig "export(address,string)" $REGISTRY exports/whitelist.csv
+forge script script/WhitelistExport.s.sol --rpc-url $RPC \
+  --sig "compare(address,address,address,(uint256,uint256,uint256,uint256,uint256,uint256,uint256,bool))" \
+  $REGISTRY 0x00005EA00Ac477B1030CE78506496e8C2dE24bf5 $COLLECTION "(0,0,$START,$END,1,4444,$FEE_BPS,$RESTRICT)"
 ```
 
 Targeting a single test:
