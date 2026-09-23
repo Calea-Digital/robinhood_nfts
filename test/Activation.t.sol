@@ -1018,3 +1018,65 @@ contract ActivationSnapshotTest is BaseTest {
         assertEq(rows[0].weight, 0);
     }
 }
+
+/// @dev ACT-11. The pause closes credits and links and nothing else; it admits no exemption.
+contract ActivationPauseTest is BaseTest {
+    function setUp() public override {
+        super.setUp();
+        _mint(alice, 2);
+    }
+
+    function test_pause_closesCreditsAndLinksOnly() public {
+        /* Scenario: ACT-11 — Pause closes credits and links only
+           Given the owner has paused
+           When the crediter calls credit or a holder calls linkBear
+           Then both revert with ContractPaused
+           And reads, unlinkBear and every transfer still succeed */
+        _credit(1, 3_333);
+        vm.prank(alice);
+        activation.linkBear(1);
+        activation.setPaused(true);
+
+        vm.prank(crediter);
+        vm.expectRevert(Activation.ContractPaused.selector);
+        activation.credit(1, alice, UNIT, 0, bytes32(uint256(99)));
+        vm.prank(alice);
+        vm.expectRevert(Activation.ContractPaused.selector);
+        activation.linkBear(2);
+
+        assertEq(activation.levelOf(1), 2);
+        assertEq(activation.cumulativeOf(1), 3_333 * UNIT);
+        assertEq(activation.weightOf(1), 125);
+        assertEq(activation.costToReach(1, 3), 5_000 * UNIT);
+        (uint256 linked,) = activation.linkOf(alice);
+        assertEq(linked, 1);
+        uint256[] memory ids = new uint256[](1);
+        ids[0] = 1;
+        assertEq(activation.snapshot(ids)[0].level, 2);
+
+        vm.prank(alice);
+        activation.unlinkBear();
+        (linked,) = activation.linkOf(alice);
+        assertEq(linked, 0);
+
+        vm.prank(alice);
+        bears.transferFrom(alice, bob, 2);
+        assertEq(bears.ownerOf(2), bob);
+    }
+
+    function test_pause_admitsNoExemption() public {
+        /* Scenario:
+           Given the owner has paused
+           When the owner tries to link its own bear, and the crediter credits for any bear
+           Then both revert with ContractPaused: no address is exempt */
+        activation.transferOwnership(alice);
+        vm.startPrank(alice);
+        activation.setPaused(true);
+        vm.expectRevert(Activation.ContractPaused.selector);
+        activation.linkBear(1);
+        vm.stopPrank();
+        vm.prank(crediter);
+        vm.expectRevert(Activation.ContractPaused.selector);
+        activation.credit(1, alice, UNIT, 0, bytes32(uint256(1)));
+    }
+}

@@ -18,7 +18,8 @@ burn
     │   └── exactly costToReach(tokenId, 5) passes and lands on level 5
     ├── burning costToReach(id, k) for k = 1…5 lands exactly on each level; 41,666 burned in all
     ├── when Activation is paused
-    │   └── credit reverts with ContractPaused and no $MNTD is burned
+    │   ├── credit reverts with ContractPaused and no $MNTD is burned
+    │   └── the rehearsal window: only a burn between the owner's unpause and pause lands (ACT-11)
     ├── when amount is zero
     │   └── credit reverts with ZeroAmount
     ├── when the adapter is no longer the crediter

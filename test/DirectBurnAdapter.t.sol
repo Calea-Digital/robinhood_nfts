@@ -287,3 +287,27 @@ contract DirectBurnAdapterOvershootTest is DirectBurnAdapterBase {
         assertEq(mntd.balanceOf(alice), (50_000 - 41_666) * UNIT, "exactly 41,666 burned in all");
     }
 }
+
+/// @dev ACT-11 through the adapter: burns stay closed while `Activation` is paused, and the
+///      mainnet rehearsal runs in a window the owner opens and closes again.
+contract DirectBurnAdapterPauseTest is DirectBurnAdapterBase {
+    function test_rehearsalWindow_opensAndClosesBurns() public {
+        /* Scenario:
+           Given Activation paused from deployment
+           When a holder burns, the owner opens the window, the holder burns, and the owner closes it
+           Then only the burn inside the window is burned and credited */
+        activation.setPaused(true);
+        vm.expectRevert(Activation.ContractPaused.selector);
+        _burn(alice, 1, UNIT);
+
+        activation.setPaused(false);
+        _burn(alice, 1, 1_666 * UNIT);
+        activation.setPaused(true);
+
+        vm.expectRevert(Activation.ContractPaused.selector);
+        _burn(alice, 1, UNIT);
+        assertEq(mntd.balanceOf(alice), (50_000 - 1_666) * UNIT);
+        assertEq(activation.levelOf(1), 1);
+        assertEq(adapter.burnCount(), 1);
+    }
+}
