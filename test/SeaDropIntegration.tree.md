@@ -4,6 +4,8 @@ Scope note: this tree covers the boundary between what OpenSea Studio configures
 the collection enforces for itself. It is not a separate contract; it pins behaviour that
 spans `MintABear` and its `ERC721SeaDrop` base.
 
+INV-N and Fork-N are numbered once across all trees and never reused: `MintABear` INV-1…3 (INV-1 retired), `Activation` INV-4…9, `WhitelistClaim` INV-10…14, `DirectBurnAdapter` INV-15…16; Fork-1 (real SeaDrop mint), Fork-2 (real validator V3), Fork-3 (real $MNTD `burnFrom`).
+
 Two functions on `ERC721SeaDrop` that matter here are `virtual`, `mintSeaDrop` and
 `tokenURI`, and the collection overrides neither. `getMintStats`, `setMaxSupply`,
 `setBaseURI`, `setProvenanceHash`, `setRoyaltyInfo`, `multiConfigure` and `burn` are all
@@ -91,7 +93,7 @@ supportsInterface
 
 ## Auditor obligations (not implemented here)
 
-- Fork-1: a real mint through the canonical SeaDrop at
+- Fork-1 (`test/MintABear.tree.md`): a real mint through the canonical SeaDrop at
   `0x00005EA00Ac477B1030CE78506496e8C2dE24bf5` on chain 4663, with a configured drop stage.
 - **Unanswerable off-chain:** whether OpenSea Studio attaches to and manages a self-deployed
   contract. Listed in `docs/HANDOVER.md` as a testnet unknown (OPS-4).

@@ -4,6 +4,8 @@ Scope note: invariants (INV-N) and fork tests are recorded here as obligations f
 auditor. They are deliberately not implemented as developer unit leaves. Leaves that satisfy
 a requirement's Scenario cite it (`COL-n`, `openspec/specs/collection/spec.md`).
 
+INV-N and Fork-N are numbered once across all trees and never reused: `MintABear` INV-1…3 (INV-1 retired), `Activation` INV-4…9, `WhitelistClaim` INV-10…14, `DirectBurnAdapter` INV-15…16; Fork-1 (real SeaDrop mint), Fork-2 (real validator V3), Fork-3 (real $MNTD `burnFrom`).
+
 ## _beforeTokenTransfers
 
 ```
@@ -48,6 +50,15 @@ transferFrom
 └── when to is the canonical dead address
     └── it is an ordinary transfer: the bear stays in the supply (the royalty split
         excludes the address off-chain, ACT-10)
+```
+
+## Regression (test/poc/BurnStrandsAccount.t.sol)
+
+```
+the pre-audit burn PoC, kept inverted (COL-8)
+├── the owner's burn reverts with BurnDisabled
+├── an approved operator's burn reverts with BurnDisabled
+└── supply and ownership are unchanged afterwards
 ```
 
 ## Token-bound accounts (COL-9)

@@ -4,6 +4,8 @@ Scope note: invariants (INV-N) and fork tests are recorded here as obligations f
 auditor. They are deliberately not implemented as developer unit leaves. Leaves that satisfy
 a requirement's Scenario cite it (`ACT-n`, `openspec/specs/activation/spec.md`).
 
+INV-N and Fork-N are numbered once across all trees and never reused: `MintABear` INV-1…3 (INV-1 retired), `Activation` INV-4…9, `WhitelistClaim` INV-10…14, `DirectBurnAdapter` INV-15…16; Fork-1 (real SeaDrop mint), Fork-2 (real validator V3), Fork-3 (real $MNTD `burnFrom`).
+
 ## burn(tokenId, amount)
 
 ```
@@ -54,8 +56,8 @@ no owner() and no setter exist
 
 ## Auditor obligations (not implemented here)
 
-- INV-1: the sum of `amount` over every `BurnedForBear` equals the fall in $MNTD total supply
+- INV-15: the sum of `amount` over every `BurnedForBear` equals the fall in $MNTD total supply
   caused by the adapter, and equals the sum of the adapter's credits in `Activation`.
-- INV-2: no `burn` leaves a bear's cumulative above `thresholdFor(5)`.
-- Fork-1: against the deployed $MNTD on 4663 (or its 46630 twin), `burnFrom` behaves as
+- INV-16: no `burn` leaves a bear's cumulative above `thresholdFor(5)`.
+- Fork-3: against the deployed $MNTD on 4663 (or its 46630 twin), `burnFrom` behaves as
   OpenZeppelin `ERC20Burnable` does — spends allowance, reduces supply (CQ-2).

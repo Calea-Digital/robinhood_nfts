@@ -4,6 +4,8 @@ Scope note: invariants (INV-N) and fork tests are recorded here as obligations f
 auditor. They are deliberately not implemented as developer unit leaves. Leaves that satisfy
 a requirement's Scenario cite it (`ACT-n`, `openspec/specs/activation/spec.md`).
 
+INV-N and Fork-N are numbered once across all trees and never reused: `MintABear` INV-1…3 (INV-1 retired), `Activation` INV-4…9, `WhitelistClaim` INV-10…14, `DirectBurnAdapter` INV-15…16; Fork-1 (real SeaDrop mint), Fork-2 (real validator V3), Fork-3 (real $MNTD `burnFrom`).
+
 ## Token-agnostic (ACT-1)
 
 ```

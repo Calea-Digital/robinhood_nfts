@@ -4,6 +4,8 @@ Scope note: invariants (INV-N) and fork tests are recorded here as obligations f
 auditor. They are deliberately not implemented as developer unit leaves. Leaves that satisfy
 a requirement's Scenario cite it (`WL-n`, `openspec/specs/whitelist/spec.md`).
 
+INV-N and Fork-N are numbered once across all trees and never reused: `MintABear` INV-1…3 (INV-1 retired), `Activation` INV-4…9, `WhitelistClaim` INV-10…14, `DirectBurnAdapter` INV-15…16; Fork-1 (real SeaDrop mint), Fork-2 (real validator V3), Fork-3 (real $MNTD `burnFrom`).
+
 ## claim(voucher, signature)
 
 ```
@@ -135,12 +137,12 @@ from the interface.
 
 ## Invariants (auditor's obligations — documented, not implemented)
 
-- INV-1: `TOTAL_SPOTS - spotsLeft()` equals the sum of `claimsOf` over every wallet, and the
+- INV-10: `TOTAL_SPOTS - spotsLeft()` equals the sum of `claimsOf` over every wallet, and the
   sum of `accountClaims` over every account.
-- INV-2: `spotsLeft()` never increases, and never goes below zero.
-- INV-3: `claimsOf(w) ≤ MAX_PER_WALLET` and `accountClaims(a) ≤ MAX_PER_ACCOUNT` for every
+- INV-11: `spotsLeft()` never increases, and never goes below zero.
+- INV-12: `claimsOf(w) ≤ MAX_PER_WALLET` and `accountClaims(a) ≤ MAX_PER_ACCOUNT` for every
   `w` and `a`.
-- INV-4: `claimants` lists each wallet with `claimsOf(w) > 0` exactly once, with
+- INV-13: `claimants` lists each wallet with `claimsOf(w) > 0` exactly once, with
   `allocations == claimsOf(w)`, and no other wallet.
-- INV-5: every successful claim was sent by `voucher.wallet` with a signature recovering to the
+- INV-14: every successful claim was sent by `voucher.wallet` with a signature recovering to the
   `signer` in force at that moment, inside the window and before the voucher's deadline.
