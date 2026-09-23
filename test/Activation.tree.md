@@ -72,7 +72,9 @@ after the bear is transferred
 ├── a bear at level 2 with a Status link: levelOf and cumulativeOf read 0, weightOf reads
 │   weightFor(0), linkOf reads (0, 0), and the transfer made no call into Activation (ACT-5)
 ├── cumulativeOf and levelOf read 0; weightOf reads the level-0 weight
-├── lifetimeBurned is unchanged
+├── lifetimeBurned is unchanged; credited twice with a transfer between, it is the sum of both (ACT-6)
+├── across several owners and a return, lifetimeBurned sums every credit while cumulativeOf holds
+│   only the current holding's
 ├── the new owner's credits start from 0
 ├── a transfer there and back does not restore the level
 └── linkOf for the previous owner reads (0, 0)

@@ -845,3 +845,48 @@ contract ActivationWeightsTest is BaseTest {
         assertEq(activation.weightOf(1), w[0]);
     }
 }
+
+/// @dev ACT-6. `lifetimeBurned` accumulates every credit ever made to a bear and never resets.
+contract ActivationLifetimeTest is BaseTest {
+    function setUp() public override {
+        super.setUp();
+        _mint(alice, 1);
+    }
+
+    function test_lifetime_neverResets() public {
+        /* Scenario: ACT-6 — Lifetime never resets
+           Given a bear credited twice with a transfer in between
+           When lifetimeBurned is read
+           Then it is the sum of both credits */
+        _credit(1, 2_000);
+        vm.prank(alice);
+        bears.transferFrom(alice, bob, 1);
+        _credit(1, 500);
+
+        assertEq(activation.lifetimeBurned(1), 2_500 * UNIT);
+        assertEq(activation.cumulativeOf(1), 500 * UNIT, "the cumulative did reset");
+    }
+
+    function test_lifetime_sumsAcrossOwnersAndAReturn() public {
+        /* Scenario:
+           Given a bear credited under alice, bob, and alice again after it came back
+           When lifetimeBurned and cumulativeOf are read after each step
+           Then lifetimeBurned only ever grows, to the sum of all three credits, while
+             cumulativeOf holds only the current holding's credit */
+        _credit(1, 1_666);
+        assertEq(activation.lifetimeBurned(1), 1_666 * UNIT);
+
+        vm.prank(alice);
+        bears.transferFrom(alice, bob, 1);
+        assertEq(activation.lifetimeBurned(1), 1_666 * UNIT, "a transfer leaves it");
+        _credit(1, 3_333);
+        assertEq(activation.lifetimeBurned(1), 4_999 * UNIT);
+        assertEq(activation.cumulativeOf(1), 3_333 * UNIT);
+
+        vm.prank(bob);
+        bears.transferFrom(bob, alice, 1);
+        _credit(1, 1);
+        assertEq(activation.lifetimeBurned(1), 5_000 * UNIT);
+        assertEq(activation.cumulativeOf(1), 1 * UNIT, "alice's earlier credit does not come back");
+    }
+}
