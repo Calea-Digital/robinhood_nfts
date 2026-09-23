@@ -672,3 +672,72 @@ contract ActivationOwnershipTest is BaseTest {
         activation.renounceOwnership();
     }
 }
+
+/// @dev ACT-2. Five cumulative thresholds, fixed at construction: a level is the highest `k`
+///      whose threshold the bear's cumulative has reached.
+contract ActivationThresholdsTest is BaseTest {
+    function setUp() public override {
+        super.setUp();
+        _mint(alice, 2);
+    }
+
+    function test_cumulativeThresholds_giveTheLevel() public {
+        /* Scenario: ACT-2 — Cumulative thresholds give the level
+           Given the thresholds 1,666 / 3,333 / 8,333 / 16,666 / 41,666 in base units
+           When a bear's cumulative reaches 8,333
+           Then levelOf reads 3 and costToReach(id, 4) reads 8,333 */
+        assertEq(activation.thresholdFor(1), 1_666 * UNIT);
+        assertEq(activation.thresholdFor(2), 3_333 * UNIT);
+        assertEq(activation.thresholdFor(3), 8_333 * UNIT);
+        assertEq(activation.thresholdFor(4), 16_666 * UNIT);
+        assertEq(activation.thresholdFor(5), 41_666 * UNIT);
+
+        _credit(1, 8_333);
+        assertEq(activation.cumulativeOf(1), 8_333 * UNIT);
+        assertEq(activation.levelOf(1), 3);
+        assertEq(activation.costToReach(1, 4), 8_333 * UNIT);
+    }
+
+    function test_theTable_isReadCumulatively() public {
+        /* Scenario:
+           Given one bear credited 41,666 at once and another credited level by level
+           When both are read
+           Then both stand at level 5 having been credited 41,666 in all: each figure is a
+             running total, not the price of one step */
+        _credit(1, 41_666);
+
+        uint128[5] memory t = _thresholds();
+        uint128 banked;
+        for (uint8 k; k < 5; ++k) {
+            _creditBase(2, t[k] - banked);
+            banked = t[k];
+        }
+
+        assertEq(activation.levelOf(1), 5);
+        assertEq(activation.levelOf(2), 5);
+        assertEq(activation.cumulativeOf(1), 41_666 * UNIT);
+        assertEq(activation.cumulativeOf(2), 41_666 * UNIT);
+    }
+
+    function test_costToReach_atEveryLevel() public {
+        /* Scenario:
+           Given a bear credited to 8,333
+           When costToReach is read for each level
+           Then levels 0-3 cost nothing and levels 4 and 5 cost their threshold less 8,333 */
+        _credit(1, 8_333);
+        for (uint8 k; k <= 3; ++k) {
+            assertEq(activation.costToReach(1, k), 0);
+        }
+        assertEq(activation.costToReach(1, 4), (16_666 - 8_333) * UNIT);
+        assertEq(activation.costToReach(1, 5), (41_666 - 8_333) * UNIT);
+    }
+
+    /// @dev Credits `amount` base units to `tokenId` for its owner.
+    function _creditBase(uint256 tokenId, uint128 amount) internal {
+        bytes32 ref = bytes32(++refCounter);
+        address burner = bears.ownerOf(tokenId);
+        uint64 nonce = bears.transferNonce(tokenId);
+        vm.prank(crediter);
+        activation.credit(tokenId, burner, amount, nonce, ref);
+    }
+}

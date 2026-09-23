@@ -43,6 +43,18 @@ credit
 When several checks fail at once, the first in the order `NotCrediter`, `ContractPaused`,
 `ZeroAmount`, `NotBearOwner`, `StaleNonce`, `RefAlreadyUsed` names the revert.
 
+## Thresholds (ACT-2)
+
+```
+thresholds
+├── 1,666 / 3,333 / 8,333 / 16,666 / 41,666 in base units: a cumulative of 8,333 reads level 3
+│   and costToReach(id, 4) reads 8,333 (ACT-2)
+├── read cumulatively: 41,666 in one credit and 41,666 level by level both stand at level 5
+└── costToReach at a cumulative of 8,333: 0 for levels 0–3, the threshold less 8,333 for 4 and 5
+```
+
+Thresholds are constructor values with no setter (ACT-12 pins that nothing changes them).
+
 ## Reset on transfer
 
 ```
