@@ -43,6 +43,22 @@ claim
 When several checks fail at once, the first in the order `NotClaimant`, `BadSigner`, `Expired`,
 `CampaignClosed`, `SoldOut`, `WalletLimit`, `WrongAllocation`, `AccountLimit` names the revert.
 
+## Campaign rules (WL-1)
+
+```
+rules
+├── two per wallet, two per account
+│   └── a wallet and an account each at one: allocation 2 succeeds, both read 2, a third for
+│       either reverts with WalletLimit / AccountLimit (WL-1)
+├── one call per allocation: allocation 1 now, allocation 2 days later; the wallet is listed once
+├── an account spread over wallets is capped at two, whichever wallets it uses
+├── a wallet's limit counts allocations, not accounts: two accounts may give one wallet its two
+└── the last spot: one claim takes spot 1,000, the next reverts with SoldOut and leaves nothing
+```
+
+The eligibility thresholds ($50 / $100, the Season 1 back-credit) are MINT's data (WL-2): the
+contract sees only the signed voucher, so a threshold has no leaf here.
+
 ## Reads
 
 ```

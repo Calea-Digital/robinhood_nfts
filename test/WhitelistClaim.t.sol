@@ -485,3 +485,95 @@ contract WhitelistClaimRegistryTest is WhitelistClaimBase {
         assertEq(wl.signer(), alice);
     }
 }
+
+/// @dev WL-1. The campaign rules as the contract enforces them: two per wallet, two per account,
+///      allocations in order, one call per allocation, and a sell-out that fails whole.
+contract WhitelistClaimRulesTest is WhitelistClaimBase {
+    function test_claim_secondAllocation_reachesBothLimits() public {
+        /* Scenario: WL-1 — Two per wallet, two per account
+           Given a wallet holding one claimed allocation and an account holding one
+           When the wallet claims allocation 2 with a valid voucher
+           Then the claim succeeds and both counts read 2
+           And a third claim for either reverts */
+        _claim(alice, 1, ACCOUNT_A);
+        assertEq(wl.claimsOf(alice), 1);
+        assertEq(wl.accountClaims(ACCOUNT_A), 1);
+
+        _claim(alice, 2, ACCOUNT_A);
+        assertEq(wl.claimsOf(alice), 2);
+        assertEq(wl.accountClaims(ACCOUNT_A), 2);
+
+        _expectClaimRevert(alice, 3, ACCOUNT_B, WhitelistClaim.WalletLimit.selector);
+        _expectClaimRevert(bob, 1, ACCOUNT_A, WhitelistClaim.AccountLimit.selector);
+        assertEq(wl.spotsLeft(), 998);
+    }
+
+    function test_claim_oneCallPerAllocation_theSecondLater() public {
+        /* Scenario:
+           Given a holder at $75 who has claimed allocation 1
+           When the holder reaches $100 later in the campaign and claims allocation 2
+           Then the wallet holds two allocations and appears once in the claimant list */
+        _claim(alice, 1, ACCOUNT_A);
+        vm.warp(block.timestamp + 5 days);
+        _claim(alice, 2, ACCOUNT_A);
+
+        WhitelistClaim.Claimant[] memory rows = wl.claimants(0, 10);
+        assertEq(rows.length, 1);
+        assertEq(rows[0].wallet, alice);
+        assertEq(rows[0].allocations, 2);
+    }
+
+    function test_claim_accountSpreadOverWallets_isCappedAtTwo() public {
+        /* Scenario:
+           Given an account that has claimed one allocation for each of two wallets
+           When it claims for either wallet again, or for a third wallet
+           Then every attempt reverts with AccountLimit */
+        _claim(alice, 1, ACCOUNT_A);
+        _claim(bob, 1, ACCOUNT_A);
+        _expectClaimRevert(alice, 2, ACCOUNT_A, WhitelistClaim.AccountLimit.selector);
+        _expectClaimRevert(bob, 2, ACCOUNT_A, WhitelistClaim.AccountLimit.selector);
+        _expectClaimRevert(carol, 1, ACCOUNT_A, WhitelistClaim.AccountLimit.selector);
+        assertEq(wl.accountClaims(ACCOUNT_A), 2);
+    }
+
+    function test_claim_walletCountsAllocations_notAccounts() public {
+        /* Scenario:
+           Given a wallet holding one allocation claimed under one account
+           When it claims allocation 2 under another account
+           Then the claim succeeds: the wallet holds two and each account one */
+        _claim(alice, 1, ACCOUNT_A);
+        _claim(alice, 2, ACCOUNT_B);
+        assertEq(wl.claimsOf(alice), 2);
+        assertEq(wl.accountClaims(ACCOUNT_A), 1);
+        assertEq(wl.accountClaims(ACCOUNT_B), 1);
+    }
+
+    function test_claim_afterTheLastSpot_failsWhole() public {
+        /* Scenario:
+           Given 999 allocations claimed and a wallet holding one
+           When two claims race for the last spot
+           Then the first takes spot 1,000, the second reverts with SoldOut and leaves no count,
+             claimant row or event behind */
+        for (uint256 i; i < 499; ++i) {
+            address wallet = makeAddr(string(abi.encode("claimant", i)));
+            bytes32 account = keccak256(abi.encode("account", i));
+            _claim(wallet, 1, account);
+            _claim(wallet, 2, account);
+        }
+        _claim(alice, 1, ACCOUNT_A);
+        assertEq(wl.spotsLeft(), 1);
+
+        WhitelistClaim.Claim memory v = _voucher(bob, 1, ACCOUNT_B);
+        bytes memory sig = _sign(signerKey, v);
+        vm.expectEmit(true, true, true, true, address(wl));
+        emit WhitelistClaimed(bob, 1, ACCOUNT_B, 1000);
+        vm.prank(bob);
+        wl.claim(v, sig);
+
+        _expectClaimRevert(alice, 2, ACCOUNT_A, WhitelistClaim.SoldOut.selector);
+        assertEq(wl.claimsOf(alice), 1);
+        assertEq(wl.accountClaims(ACCOUNT_A), 1);
+        assertEq(wl.spotsLeft(), 0);
+        assertEq(wl.claimants(0, 1000).length, 501);
+    }
+}
