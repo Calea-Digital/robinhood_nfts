@@ -1,6 +1,6 @@
 # MintABear — handover
 
-Written 2026-09-15, current as of 2026-09-22. Read this first when resuming.
+Written 2026-09-15, current as of 2026-09-23. Read this first when resuming.
 
 ## Where things stand
 
@@ -16,7 +16,7 @@ is `MintABear-Specification-v2.1.pages`; `v1.0` and `v2.0` stay beside it as the
 answered and then decided against. **The board (YouTrack MNT) follows `openspec/`** through
 `docs/tools/board.sh`; the work loop that picks requirements off it is in `CLAUDE.md`
 ("Specification and board") and its pick order is `openspec/changes/tranche-1/tasks.md`. A
-development session starts from `docs/prompts/tranche-1-kickoff.md`.
+The next development session starts from `docs/prompts/tranche-1-rehearsal.md`.
 The v2.0 document is 31 pages; to check a build without opening Pages, export it to PDF through
 `osascript` and render or count text per page with a short Swift PDFKit script — a table that does
 not fit the rest of a page moves whole to the next one in Pages, so a heading left alone on a page
@@ -35,33 +35,50 @@ Chainlink chain takes one VRF word per open, in `openIndex` order, and applies a
 without replacement; a `PrizeVault` on each prize chain pays out. RAF-26 to RAF-31 carry the
 game; RAF-10, 12, 13, 20, 21, 22 and 23 are retired with pointers to them.
 
-The code on `main` predates the specification and is the input to tranche 1, not the output.
+**Tranche 1's code is on branch `tranche-1`**, branched from `main` at `746acbe`, never pushed and
+not merged into `main`; `main` still carries the pre-specification code. Every requirement Task of
+tranche 1 is In Review on the board except OPS-4, the rehearsal, which is still ahead: COL-1…COL-13
+(MNT-7…16, 18, 19), WL-1, WL-3, WL-4, WL-5 (MNT-20, 22, 23, 24), ACT-1…ACT-14 (MNT-26…39), OPS-2,
+OPS-3, OPS-6 (MNT-62, 63, 66), with the non-spec Tasks MNT-92…94 and 96…98. Each carries a claim
+comment, a summary comment with its commits and gates, and logged time; the human sets Done and
+merges `tranche-1` into `main`. Subtask MNT-95 (Sourcify on 46630) waits for the rehearsal.
 
 | | |
 |---|---|
-| Contracts | 4 on `main`, all compiling; the spec calls for 7: `MintABear`, `WhitelistClaim`, `Activation`, `DirectBurnAdapter`, `MysteryBox`, `PrizeVault`, `PrizeDraw` |
-| Tests | 137, all passing; 100% line, branch and function coverage (gate ≥90 / ≥80) |
-| CI gates | `fmt --check`, `build --sizes`, `test` — all green |
-| Slither | no High or Critical; 2 accepted Mediums (below) |
+| Contracts | 4 of the 7 the spec calls for: `MintABear`, `WhitelistClaim`, `Activation`, `DirectBurnAdapter`; `MysteryBox`, `PrizeVault`, `PrizeDraw` are tranche 2 |
+| Scripts | `Deploy.s.sol` (OPS-2), `verify.sh` (OPS-3), `Enforcement.s.sol` (OPS-6), `WhitelistExport.s.sol` (WL-4); `docs/RUNBOOK.md` opens with transfer enforcement |
+| Tests | 218, all passing; 100% line, branch and function coverage (gate ≥90 / ≥80); every tranche-1 work-item Scenario has a test except the operational OPS-1, OPS-3 (live), OPS-4, OPS-5 |
+| CI gates | `fmt --check`, `build --sizes` (no warnings), `test`, spec lint, generated prose, `verify.sh` dry run — all green |
+| Slither | no High or Critical; 2 accepted Mediums, both `locked-ether` (below) |
+
+Two requirements were amended on 2026-09-23 because their Scenarios contradicted the rest of the
+spec, each through an archived OpenSpec change with the reviewer's go: ACT-5 (after a transfer the
+weight reads the level-0 weight, not zero) and OPS-2 (the crediter is the one address set after
+construction; `WhitelistClaim` takes MINT's admin as owner).
 
 Submodule pins: `forge-std` `bf647bd` (v1.16.2), `seadrop` `757590f`, `solady` `acd959a`
 (v0.1.26). The chain's contract size limit is ~96 KB; every contract clears even Ethereum's
 24,576.
 
-## Next session — fold the call's decisions in, then start tranche 1
+## Next session — review, then the rehearsal
 
-The call of 21 September is recorded. What is left before tranche 2 can start:
-
-1. **Tranche 1 is unblocked.** Only `decimals` on the deployed $MNTD is still needed, and that
-   is a constructor value, not structure (O5). Start it.
-2. **Tranche 2 waits on O1 (CQ-20)** — the prize count, the excluded token ids and the closed
-   list of prize chains. Those three numbers are the odds and they freeze when the game opens,
-   so nothing can be deployed without them.
-3. **O2 asks MINT to confirm the four design choices §6 makes** inside the shape MINT set: a
-   fresh VRF word per open, a fixed pool drawn without replacement, no per-wallet cap, and
-   unwon prizes returning to MINT at close.
-4. **The client document** is rebuilt from the two Markdown sources; its name follows the spec's
-   version line, suffix included, so each draft is its own file.
+1. **Review and merge.** The human reviews the In Review Tasks, sets Done, and merges `tranche-1`
+   into `main`. Points recorded for the reviewer in the Task comments: refs keyed per crediter
+   (MNT-26), `WeightsNotAscending` and `setCrediter(0)` allowed (MNT-26), the adapter's
+   record-then-burn order and event placement (MNT-32), the one-transaction window between
+   `setCrediter` and `setPaused(true)` in OPS-2's order (MNT-62), the Studio tree construction the
+   export assumes (MNT-93).
+2. **The OPS-4 rehearsal on 46630** (human-led; `tasks.md` 4.4). It needs from MINT the admin and
+   signer addresses (CQ-12), the campaign dates (CQ-1) and the testnet $MNTD with its `decimals`
+   (CQ-2), written into `script/config/46630.json` from `script/config/example.json`; and from the
+   operator a funded deployer key and OpenSea Studio access. It runs the three `Deploy.s.sol`
+   entry points with Sourcify verification (closing MNT-95), attaches Studio, completes
+   `acceptOwnership`, walks a whitelist claim through `WhitelistExport.s.sol`'s export and compare
+   into an allowlist mint, burns through the adapter, and toggles enforcement once.
+3. **The internal auditor** takes the tranche after the rehearsal: the trees' INV-N and Fork-N
+   obligations are theirs.
+4. **Tranche 2 waits on O1 (CQ-20)** — the prize count, the excluded token ids and the closed list
+   of prize chains.
 
 What each open item blocks:
 
@@ -70,11 +87,11 @@ What each open item blocks:
 | O1 prize count, excluded ids, prize chains (CQ-20) | All of tranche 2 — they are `PrizeDraw`'s constructor values |
 | O2 confirm the mystery box design (CQ-9) | Tranche 2's shape, if MINT wants it different |
 | O3 VRF network and subscription wallet (CQ-17) | `PrizeDraw` deployment; Calea recommends Base |
-| O4 addresses (CQ-12, CQ-15) | Mainnet deployment, not development |
-| O5 $MNTD `burnFrom` and `decimals` (CQ-2) | `Activation`'s constructor values |
+| O4 addresses (CQ-12, CQ-15) | The rehearsal's and mainnet's `script/config/<chain>.json`, not code |
+| O5 $MNTD `burnFrom` and `decimals` (CQ-2) | `Activation`'s deploy values; `Deploy.s.sol` refuses a token whose `decimals` differ from the config |
 | O6 calendar (CQ-1) | Scheduling; the campaign dates fix when `WhitelistClaim` must be live |
 | O7 repository and CI (CQ-14) | Where the packages land at handover |
-| O8 whitelist export direction and any owner bulk-add (CQ-18) | One `WhitelistClaim` function, if MINT needs it |
+| O8 whitelist export direction and any owner bulk-add (CQ-18) | One `WhitelistClaim` function, if MINT needs it; none is built |
 
 ## Sources and precedence
 
@@ -101,36 +118,13 @@ must be live before the campaign opens (proposed 6 October).
 
 ### Tranche 1 — `MintABear`, `WhitelistClaim`, `Activation`, `DirectBurnAdapter`, then the internal auditor
 
-The code changes that take `main` to the specification:
+The code is written and In Review (above). What remains before the internal auditor takes it:
 
-1. **Remove ERC-6551** (COL-9): `src/BearAccount.sol`, `ACCOUNT_IMPLEMENTATION`, `accountOf`,
-   `deployAccount`, `recordAccounts`, `isBearAccount`, `TransferToBearAccount`, the `LibERC6551`
-   import, `test/BearAccount.*`, `test/poc/BurnStrandsAccount.t.sol`.
-2. **Remove the renderer** (COL-5): `src/interfaces/IBearRenderer.sol`,
-   `src/renderers/PlaceholderRenderer.sol`, `setRenderer`, the `tokenURI` override,
-   `test/PlaceholderRenderer.*`, `test/mocks/MockRenderer.sol`. Metadata is stock `baseURI`.
-3. **Burn refused** (COL-8): the `BurnDisabled` refusal in `_beforeTokenTransfers` stays, with its
-   tests; the dead-address exclusion lives in the reference split script, not in the contract.
-4. **Add** `TransferNonceAdvanced(tokenId, nonce)` in the transfer hook and an `exists(tokenId)`
-   view (COL-4, COL-12).
-5. **`WhitelistClaim`** (WL-3, per D4): EIP-712 voucher `Claim(wallet, allocationIndex, account,
-   deadline)`, signer set by the owner, 1,000 spots, two per wallet and per account, campaign
-   window, `claimants(offset, limit)` for the export; `msg.sender == wallet` unless D4 picks (A′).
-   Needed first: it must be live before the campaign.
-6. **Activation** (ACT-1…ACT-14): no `IMNTD`, no `decimals()`; thresholds and weights as base-unit
-   / basis-100 constructor arrays; `credit(tokenId, burner, amount, nonce, ref)` behind a
-   `crediter` role with `NotCrediter`, `StaleNonce`, `RefAlreadyUsed`; `ref` on `BearActivated`;
-   `weightOf`, `weightFor`, `snapshot(ids)`; `AlreadyAtMaxLevel` moves to the adapter.
-7. **`DirectBurnAdapter`** (ACT-7, ACT-8): `burn(tokenId, amount)` with `NotOwner`,
-   `AlreadyAtMaxLevel`, `Overshoot` (amount above `costToReach(id, 5)` refused), then
-   `burnFrom` and `credit` in one transaction, `ref` = adapter burn number,
-   `BurnedForBear`. Immutable, no owner. The token's `burnFrom` and `decimals` come from D1.
-8. **Validator set at deploy** (COL-7): the deploy script calls `setTransferValidator(V3)`; the
-   runbook carries the one-call fallback.
-9. Trees and tests rewritten against the requirement IDs; coverage gate held.
-10. `CLAUDE.md` rewritten to the new architecture (it still describes the pre-spec code).
-11. `script/` — deploy and configuration scripts per OPS-2, Sourcify verification, the
-    whitelist export.
+1. **Review and merge** of `tranche-1` into `main` (the human's).
+2. **OPS-4 rehearsal on 46630** with MINT's values, closing Subtask MNT-95 and rehearsal items
+   1, 3 and 4 below.
+3. **Mainnet configs** `script/config/4663.json` once CQ-12, CQ-1 and CQ-2 are answered.
+4. **OPS-1 and OPS-5** — the recorded addresses and the handover — at deployment.
 
 ### Tranche 2 — after O1
 
@@ -202,11 +196,13 @@ RAF-17. Four constraints:
 
 ## Accepted risks
 
-- **Slither "locked ether"** on `Activation`: Solady marks ownership functions `payable`; only
-  the owner could lock their own ETH by attaching value. Accepted.
+- **Slither "locked ether"** on `Activation` and `WhitelistClaim`: Solady marks ownership
+  functions `payable`; only the owner could lock their own ETH by attaching value. Accepted, and
+  said in each contract's NatSpec.
 - **Event ordering in the adapter**: the record is written before `burnFrom`; the hostile paths
   were traced (re-entering still needs each `burnFrom` to succeed; transferring the bear from
-  inside `burnFrom` voids the caller's own record). Accepted.
+  inside `burnFrom` voids the caller's own record). Accepted; the adapter's hostile-token tests
+  pin both paths.
 - **The worker relays each open and each award.** It cannot change an outcome — Chainlink
   decides it — and it cannot reorder, because `PrizeDraw` refuses an `openIndex` out of turn. It
   can delay one, which is visible as a `BoxOpened` with no `OutcomeRecorded`. Accepted; the
@@ -264,15 +260,16 @@ Measured against chain 4663 on 2026-09-10 and 2026-09-15; Chainlink and ApeChain
 Twenty in `docs/OPEN-QUESTIONS.md`, each with the section it affects, when it is needed, the
 answer where one exists, and the default otherwise. After the call of 21 September: ten settled
 (CQ-3, 4, 5, 6, 7, 8, 10, 16, 18, 19), six in follow-up (CQ-1, 2, 9, 11, 15, 17) and four open
-(CQ-12, 13, 14, 20). They map onto O1–O8 in §10. Nothing now blocks tranche 1 but `decimals`
-(O5); tranche 2 waits on CQ-20.
+(CQ-12, 13, 14, 20). They map onto O1–O8 in §10. Tranche 1's code is written; its rehearsal and
+deployment wait on MINT's values (O4, O5, O6); tranche 2 waits on CQ-20.
 
 ## Related documents
 
 - `openspec/specs/`, `openspec/decisions.md`, `openspec/changes/tranche-1/` — the specification and the tranche's pick order.
 - `docs/SPECIFICATION.md`, `docs/OPEN-QUESTIONS.md` (generated views), `docs/client/`, `docs/tools/build_client_doc.py`, `docs/tools/board.sh`.
-- `test/<Contract>.tree.md` — one branching tree per contract, including the invariant
-  obligations left for the auditor. Rewritten against requirement IDs in tranche 1.
+- `test/<Suite>.tree.md` — one branching tree per test suite, leaves citing requirement IDs, with
+  the auditor's INV-N and Fork-N obligations numbered once across all trees.
+- `docs/RUNBOOK.md` — operating steps; opens with transfer enforcement (OPS-6).
 - `test/SeaDropIntegration.t.sol` and its tree — the boundary with OpenSea Studio.
 - `docs/MintABear-Questionnaire-v2.0.docx` — the client questionnaire the original build answered.
 - `~/.claude/plans/i-am-starting-a-tidy-sloth.md` — the original decision log, item by item.
