@@ -741,3 +741,52 @@ contract ActivationThresholdsTest is BaseTest {
         activation.credit(tokenId, burner, amount, nonce, ref);
     }
 }
+
+/// @dev ACT-3. Six royalty weights, basis 100, fixed at construction; a bear weighs what its
+///      current level weighs.
+contract ActivationWeightsTest is BaseTest {
+    function setUp() public override {
+        super.setUp();
+        _mint(alice, 1);
+    }
+
+    function test_weights_followTheLevel() public {
+        /* Scenario: ACT-3 — Weights follow the level
+           Given the weights 100 / 110 / 125 / 145 / 170 / 200
+           When a bear at level 3 is read
+           Then weightOf returns 145 and weightFor(5) returns 200 */
+        assertEq(activation.weightFor(0), 100);
+        assertEq(activation.weightFor(1), 110);
+        assertEq(activation.weightFor(2), 125);
+        assertEq(activation.weightFor(3), 145);
+        assertEq(activation.weightFor(4), 170);
+        assertEq(activation.weightFor(5), 200);
+
+        _credit(1, 8_333);
+        assertEq(activation.levelOf(1), 3);
+        assertEq(activation.weightOf(1), 145);
+        assertEq(activation.weightFor(5), 200);
+    }
+
+    function test_weightOf_risesWithEveryLevel_andResetsOnTransfer() public {
+        /* Scenario:
+           Given an unactivated bear
+           When it is credited to each threshold in turn, then sold
+           Then weightOf reads 100, 110, 125, 145, 170, 200, and 100 again after the sale */
+        uint16[6] memory w = _weights();
+        uint128[5] memory t = _thresholds();
+        assertEq(activation.weightOf(1), w[0]);
+        uint128 banked;
+        for (uint8 k; k < 5; ++k) {
+            bytes32 ref = bytes32(++refCounter);
+            vm.prank(crediter);
+            activation.credit(1, alice, t[k] - banked, 0, ref);
+            banked = t[k];
+            assertEq(activation.weightOf(1), w[k + 1]);
+        }
+
+        vm.prank(alice);
+        bears.transferFrom(alice, bob, 1);
+        assertEq(activation.weightOf(1), w[0]);
+    }
+}
