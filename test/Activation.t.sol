@@ -365,6 +365,55 @@ contract ActivationLinkTest is BaseTest {
         _mint(alice, 2);
     }
 
+    function test_linkBear_oneNominationPerWallet() public {
+        /* Scenario: ACT-9 — One nomination per wallet
+           Given a wallet owning a bear at level 2
+           When it calls linkBear(tokenId)
+           Then linkOf(wallet) reads (tokenId, 2)
+           And after the bear moves it reads (0, 0) */
+        _credit(1, 3_333);
+        vm.prank(alice);
+        activation.linkBear(1);
+        (uint256 tokenId, uint8 level) = activation.linkOf(alice);
+        assertEq(tokenId, 1);
+        assertEq(level, 2);
+
+        vm.prank(alice);
+        bears.transferFrom(alice, bob, 1);
+        (tokenId, level) = activation.linkOf(alice);
+        assertEq(tokenId, 0);
+        assertEq(level, 0);
+    }
+
+    function test_linkOf_levelFollowsLaterCredits() public {
+        /* Scenario:
+           Given a linked bear at level 1
+           When it is credited up to level 4
+           Then linkOf reads the new level without a new nomination */
+        _credit(1, 1_666);
+        vm.prank(alice);
+        activation.linkBear(1);
+        _credit(1, 15_000);
+        (uint256 tokenId, uint8 level) = activation.linkOf(alice);
+        assertEq(tokenId, 1);
+        assertEq(level, 4);
+    }
+
+    function test_walletWithSeveralBears_carriesOneLink() public {
+        /* Scenario:
+           Given a wallet holding two activated bears, one linked
+           When linkOf is read
+           Then it names the one linked bear; the other adds royalty weight (ACT-10) but no Status */
+        _credit(1, 1_666);
+        _credit(2, 41_666);
+        vm.prank(alice);
+        activation.linkBear(1);
+        (uint256 tokenId, uint8 level) = activation.linkOf(alice);
+        assertEq(tokenId, 1);
+        assertEq(level, 1);
+        assertEq(activation.weightOf(2), 200);
+    }
+
     function test_linkBear_recordsTheNomination() public {
         /* Scenario:
            Given a bear owner at level 1
