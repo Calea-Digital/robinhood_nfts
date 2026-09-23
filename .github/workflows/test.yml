@@ -45,3 +45,10 @@ jobs:
         run: |
           python3 docs/tools/spec_tools/lint_spec.py --root .
           python3 docs/tools/spec_tools/render_calea_prose.py --root . --check
+
+      # script/verify.sh (OPS-3) reads Deploy.s.sol broadcasts; its dry run over a fixture must
+      # list every created contract with its source path. No network is touched.
+      - name: Verification script — dry run over the fixture broadcast
+        run: |
+          bash script/verify.sh 46630 --dry-run --broadcast-dir test/fixtures/broadcast \
+            | diff - test/fixtures/verify-dry-run.expected
