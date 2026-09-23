@@ -21,9 +21,12 @@ interface IDecimals {
  *         contract is deployed before the page that depends on it and the three pages open at
  *         different times:
  *
- *             forge script script/Deploy.s.sol --rpc-url $RPC --broadcast --sig "runWhitelist(string)"  script/config/<chain>.json
- *             forge script script/Deploy.s.sol --rpc-url $RPC --broadcast --sig "runCollection(string)" script/config/<chain>.json
- *             forge script script/Deploy.s.sol --rpc-url $RPC --broadcast --sig "runActivation(string,address)" script/config/<chain>.json $BEARS
+ *             forge script script/Deploy.s.sol --rpc-url $RPC --broadcast --verify --verifier sourcify --sig "runWhitelist(string)"  script/config/<chain>.json
+ *             forge script script/Deploy.s.sol --rpc-url $RPC --broadcast --verify --verifier sourcify --sig "runCollection(string)" script/config/<chain>.json
+ *             forge script script/Deploy.s.sol --rpc-url $RPC --broadcast --verify --verifier sourcify --sig "runActivation(string,address)" script/config/<chain>.json $BEARS
+ *
+ *         `--verify --verifier sourcify` verifies each created contract as it is broadcast (OPS-3);
+ *         `script/verify.sh <chainId>` retries and checks afterwards.
  *
  *         After construction the only address set is `Activation`'s crediter; every other call is
  *         a listed setting (`setMaxSupply`, `setTransferValidator`, `setPaused(true)`) or an

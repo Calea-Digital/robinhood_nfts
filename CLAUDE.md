@@ -31,6 +31,7 @@ The specification calls for seven contracts, four of them in tranche 1: `MintABe
 | `src/Activation.sol` | Solady `Ownable` | the level record (ACT-1 and on): token-agnostic — no $MNTD reference, moves no tokens; one `crediter` calls `credit(tokenId, burner, amount, nonce, ref)`, accepted only while `burner` owns the bear at the counter value `nonce`; thresholds (base units) and weights (basis 100) fixed in the constructor; `weightOf`, `snapshot`, the Status link, pause, and `renounceOwnership` refused while paused |
 | `src/WhitelistClaim.sol` | Solady `Ownable`, `EIP712`, `ECDSA` | the whitelist registry (WL-1, WL-3…WL-5): 1,000 allocations claimed with an EIP-712 voucher from MINT's eligibility signer, two per wallet and two per account, inside the campaign window; `claimants(offset, limit)` is the export to the Studio allowlist |
 | `script/Deploy.s.sol` | forge-std `Script` | OPS-2: `runWhitelist`, `runCollection`, `runActivation` from `script/config/<chain>.json` (template `example.json`); every address a constructor needs is an argument, the crediter is the one address set afterwards, then `setMaxSupply`, `setTransferValidator(V3)`, `setPaused(true)` and ownership to MINT's admin; refuses a campaign close under 48 h before the stage and a $MNTD whose `decimals` differ from the config |
+| `script/verify.sh` | bash, `jq`, `curl` | OPS-3: Sourcify verification and check of every contract a `Deploy.s.sol` broadcast created; dry run checked in CI against `test/fixtures/broadcast` |
 | `script/WhitelistExport.s.sol` | forge-std `Script` | read-only: `export` writes the claimant CSV for Studio; `compare` fails unless the allowlist root on SeaDrop is the root of the registry's rows (tree in `script/lib/AllowListTree.sol`) |
 | `src/DirectBurnAdapter.sol` | — | the one crediter (ACT-7, ACT-8): immutable, no owner, no settings. `burn(tokenId, amount)` refuses `NotOwner`, `AlreadyAtMaxLevel`, `Overshoot` (above `costToReach(id, 5)`), then credits `Activation` and calls $MNTD's `burnFrom` in one transaction — the record first, so a re-entrant token cannot slip past the overshoot guard; `ref` is its own burn number |
 
@@ -65,10 +66,12 @@ The coverage filter `'test/|lib/'` also hides `script/lib/`; `forge coverage --n
 Deployment (OPS-2), each before the page that depends on it; config in `script/config/<chain>.json`:
 
 ```shell
-forge script script/Deploy.s.sol --rpc-url $RPC --broadcast --sig "runWhitelist(string)"  script/config/4663.json
-forge script script/Deploy.s.sol --rpc-url $RPC --broadcast --sig "runCollection(string)" script/config/4663.json
-forge script script/Deploy.s.sol --rpc-url $RPC --broadcast --sig "runActivation(string,address)" script/config/4663.json $BEARS
+forge script script/Deploy.s.sol --rpc-url $RPC --broadcast --verify --verifier sourcify --sig "runWhitelist(string)"  script/config/4663.json
+forge script script/Deploy.s.sol --rpc-url $RPC --broadcast --verify --verifier sourcify --sig "runCollection(string)" script/config/4663.json
+forge script script/Deploy.s.sol --rpc-url $RPC --broadcast --verify --verifier sourcify --sig "runActivation(string,address)" script/config/4663.json $BEARS
 ```
+
+Verification (OPS-3) happens as the deploy broadcasts (`--verify --verifier sourcify`; Sourcify is the route on 4663 and 46630). To retry or confirm afterwards: `script/verify.sh <chainId>` re-verifies every contract in the chain's `Deploy.s.sol` broadcasts and exits non-zero unless all read verified on Sourcify; `--check` only checks, `--dry-run` prints and sends nothing.
 
 Whitelist export and check (read-only, nothing broadcast; writes under `exports/`, which is gitignored):
 
