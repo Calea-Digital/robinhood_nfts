@@ -24,6 +24,9 @@ remappings = [
     "forge-std/=lib/forge-std/src/",
 ]
 
+# `script/WhitelistExport.s.sol` writes the whitelist CSV here; nothing else touches the disk.
+fs_permissions = [{ access = "read-write", path = "./exports" }]
+
 # CI profile — selected by FOUNDRY_PROFILE=ci in .github/workflows/test.yml.
 # Inherits every key from [profile.default]; only test thoroughness is raised, so
 # compilation stays byte-identical and `forge build --sizes` reports the same

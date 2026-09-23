@@ -21,3 +21,6 @@ __pycache__/
 
 # macOS Finder metadata
 .DS_Store
+
+# Whitelist CSVs written by script/WhitelistExport.s.sol — regenerated from the chain, never committed
+exports/
