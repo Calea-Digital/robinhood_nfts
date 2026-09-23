@@ -55,6 +55,14 @@ thresholds
 
 Thresholds are constructor values with no setter (ACT-12 pins that nothing changes them).
 
+## Weights (ACT-3)
+
+```
+weights
+├── 100 / 110 / 125 / 145 / 170 / 200: a bear at level 3 reads weightOf 145; weightFor(5) reads 200 (ACT-3)
+└── weightOf rises with each threshold crossed, and reads 100 again once the bear is sold
+```
+
 ## Reset on transfer
 
 ```
