@@ -17,7 +17,7 @@ The specification calls for seven contracts, four in tranche 1. On `tranche-1` t
 |---|---|---|
 | [`src/MintABear.sol`](src/MintABear.sol) | OpenSea `ERC721SeaDrop` | the collection. Transfer counter and reset event, burn refusal, `MAX_BEARS`, `exists`; ERC-721C with the validator set at deploy; stock SeaDrop metadata, royalties and two-step ownership |
 | [`src/interfaces/IMintABear.sol`](src/interfaces/IMintABear.sol) | — | the reads `Activation` depends on: `ownerOf`, `transferNonce`, `exists` |
-| [`src/Activation.sol`](src/Activation.sol) | Solady `Ownable` | cumulative burn, level derivation, MINT Status link — the pre-specification contract, rewritten in tranche 1 to take credits from one adapter |
+| [`src/Activation.sol`](src/Activation.sol) | Solady `Ownable` | the level record: credits from one adapter (the crediter), levels and royalty weights, the MINT Status link, `snapshot` for the royalty split; holds no token |
 | [`src/WhitelistClaim.sol`](src/WhitelistClaim.sol) | Solady `Ownable`, `EIP712`, `ECDSA` | the on-chain whitelist registry: 1,000 allocations claimed with a voucher from MINT's eligibility signer, two per wallet and per account, inside the campaign window; its claimant list is the Studio allowlist |
 | [`script/WhitelistExport.s.sol`](script/WhitelistExport.s.sol) | forge-std `Script` | read-only: exports the claimant CSV for Studio and checks the allowlist root Studio set against the registry |
 

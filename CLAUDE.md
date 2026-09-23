@@ -28,7 +28,7 @@ The specification calls for seven contracts, four of them in tranche 1: `MintABe
 |---|---|---|
 | `src/MintABear.sol` | OpenSea `ERC721SeaDrop` | the collection (COL-1…COL-13). Transfer counter and reset event, burn refusal, `MAX_BEARS`, `exists`; ERC-721C with the validator set at deploy; stock SeaDrop metadata, royalties and two-step ownership |
 | `src/interfaces/IMintABear.sol` | — | the three reads `Activation` depends on: `ownerOf`, `transferNonce`, `exists` |
-| `src/Activation.sol` | Solady `Ownable` | still the pre-specification contract, which burns $MNTD itself. Tasks 3.1–3.14 rewrite it against ACT-1…ACT-14: token-agnostic, one `crediter`, `credit(tokenId, burner, amount, nonce, ref)`, weights, `snapshot` |
+| `src/Activation.sol` | Solady `Ownable` | the level record (ACT-1 and on): token-agnostic — no $MNTD reference, moves no tokens; one `crediter` calls `credit(tokenId, burner, amount, nonce, ref)`, accepted only while `burner` owns the bear at the counter value `nonce`; thresholds (base units) and weights (basis 100) fixed in the constructor; `weightOf`, `snapshot`, the Status link, pause, and `renounceOwnership` refused while paused |
 | `src/WhitelistClaim.sol` | Solady `Ownable`, `EIP712`, `ECDSA` | the whitelist registry (WL-1, WL-3…WL-5): 1,000 allocations claimed with an EIP-712 voucher from MINT's eligibility signer, two per wallet and two per account, inside the campaign window; `claimants(offset, limit)` is the export to the Studio allowlist |
 | `script/WhitelistExport.s.sol` | forge-std `Script` | read-only: `export` writes the claimant CSV for Studio; `compare` fails unless the allowlist root on SeaDrop is the root of the registry's rows (tree in `script/lib/AllowListTree.sol`) |
 | `DirectBurnAdapter` | — | not yet written: tasks 3.7–3.8 (ACT-7, ACT-8); the one crediter, immutable, no owner |
@@ -89,7 +89,7 @@ Three submodules: `lib/forge-std`, `lib/seadrop`, `lib/solady`. After a fresh cl
 - **`evm_version = "london"` follows from that.** `paris` only arrived in solc 0.8.18, so london is the ceiling here. No PUSH0, no transient storage. Nothing in this codebase needs them and the bytecode is maximally portable as a result.
 - `optimizer_runs = 1_000_000` matches SeaDrop's own setting. Robinhood Chain's contract size limit is ~96 KB (four times Ethereum's), so size is not a constraint — `MintABear` is 20 KB and fits under even the Ethereum limit.
 - `[profile.ci]` raises only fuzz/invariant runs. Keep build settings in `[profile.default]` so `forge build --sizes` matches between local and CI.
-- **`forge build` prints forge-lint warnings and they count against the warning-free gate.** One is accepted until ACT-1 removes the code it sits on: `unsafe-typecast` at `src/Activation.sol:120`, the `decimals()` scaling of the pre-specification `Activation`. Do not silence it with a lint directive.
+- **`forge build` prints forge-lint warnings and they count against the warning-free gate.** There are none; forge-lint *notes* remain on the test mock `MockMNTD` (constant naming) and on the whitelist export's file I/O (`unsafe-cheatcode` — the I/O is the script's purpose). Do not silence a lint with a directive.
 
 ## Test conventions
 

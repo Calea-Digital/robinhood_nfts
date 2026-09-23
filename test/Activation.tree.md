@@ -1,44 +1,56 @@
 # Activation — branching tree
 
 Scope note: invariants (INV-N) and fork tests are recorded here as obligations for the
-auditor. They are deliberately not implemented as developer unit leaves.
+auditor. They are deliberately not implemented as developer unit leaves. Leaves that satisfy
+a requirement's Scenario cite it (`ACT-n`, `openspec/specs/activation/spec.md`).
 
-## burn
+## Token-agnostic (ACT-1)
 
 ```
-burn
-├── when the amount is zero
-│   └── it reverts with ZeroAmount
-├── when the caller is not the current owner
-│   ├── and the caller is an approved operator
-│   │   └── it reverts with NotBearOwner
-│   └── and the caller is unrelated
-│       └── it reverts with NotBearOwner
-├── when the contract is paused
-│   └── it reverts with ContractPaused
-├── when the bear is already at level 5
-│   └── it reverts with AlreadyAtMaxLevel
-└── when the caller is the current owner
-    ├── and the amount is below the first threshold
-    │   └── it banks the amount and the level stays 0
-    ├── and the amount reaches a threshold exactly
-    │   └── it raises the level to that threshold's level
-    ├── and the amount spans several thresholds at once
-    │   └── it raises the level to the highest threshold cleared
-    ├── it accumulates across separate calls
-    ├── it burns exactly the amount from the caller's balance
-    ├── it increases lifetimeBurned
-    └── it emits BearActivated with previous and new level
+Activation
+├── holds no $MNTD reference: no token getter, no burn entry point, no token in the constructor (ACT-1)
+├── moves no tokens and sends no value (ACT-1)
+└── calls nothing but MintABear, and only its views ownerOf, transferNonce and exists —
+    across construction, credit, link, unlink and every read (ACT-1)
 ```
+
+## credit(tokenId, burner, amount, nonce, ref)
+
+```
+credit
+├── when the caller is not the crediter (the owner and the holder included)
+│   └── it reverts with NotCrediter
+└── when the caller is the crediter
+    ├── when paused
+    │   └── it reverts with ContractPaused
+    ├── when amount is zero
+    │   └── it reverts with ZeroAmount
+    ├── when burner does not own the bear (an approved operator, an unrelated wallet)
+    │   └── it reverts with NotBearOwner
+    ├── when transferNonce ≠ nonce (the bear moved, even if it came back)
+    │   └── it reverts with StaleNonce
+    ├── when this crediter already recorded ref
+    │   └── it reverts with RefAlreadyUsed and records nothing twice
+    └── otherwise
+        ├── cumulative and lifetimeBurned grow by amount; the level follows the cumulative
+        ├── BearActivated(tokenId, burner, previousLevel, newLevel, amount, cumulative, ref)
+        ├── credits accumulate across calls
+        ├── one credit spanning several thresholds jumps to the highest cleared
+        ├── one base unit short of a threshold stays below it; the last unit crosses it
+        └── past level 5 it is still recorded — refusing it is the adapter's job (ACT-8)
+```
+
+When several checks fail at once, the first in the order `NotCrediter`, `ContractPaused`,
+`ZeroAmount`, `NotBearOwner`, `StaleNonce`, `RefAlreadyUsed` names the revert.
 
 ## Reset on transfer
 
 ```
 after the bear is transferred
-├── levelOf reads 0
-├── cumulativeOf reads 0
+├── cumulativeOf and levelOf read 0; weightOf reads the level-0 weight
 ├── lifetimeBurned is unchanged
-├── a burn by the new owner starts accumulating from 0
+├── the new owner's credits start from 0
+├── a transfer there and back does not restore the level
 └── linkOf for the previous owner reads (0, 0)
 ```
 
@@ -46,88 +58,64 @@ after the bear is transferred
 
 ```
 linkBear
-├── when the caller does not own the bear
-│   └── it reverts with NotBearOwner
-├── when the contract is paused
-│   └── it reverts with ContractPaused
-└── when the caller owns the bear
-    ├── it records the nomination against the current transfer count
-    └── when the wallet had already nominated another bear
-        └── it replaces the previous nomination
+├── when the caller does not own the bear: it reverts with NotBearOwner
+├── when paused: it reverts with ContractPaused
+└── otherwise: BearLinked; linkOf reads (tokenId, level); a second nomination replaces the first
 
 unlinkBear
-├── it clears the nomination without moving the bear
-└── when the wallet has no nomination
-    ├── it does nothing and does not revert
-    └── it emits no event, so an unlink is never seen without a link
+├── clears the nomination with BearUnlinked, without moving the bear
+├── works while paused
+└── with no nomination: does nothing, reverts nothing, emits nothing
+
+linkOf
+└── with no nomination: (0, 0)
 ```
 
 ## Views
 
 ```
-costToReach
-├── when the target level is already reached
-│   └── it returns 0
-└── otherwise
-    └── it returns the exact remaining amount
-
-thresholdFor
-├── level 0 returns 0
-├── levels 1 to 5 return the configured thresholds
-└── above level 5 it reverts with InvalidLevel, surfaced through costToReach too
+thresholdFor: level 0 → 0; levels 1–5 → the constructor's base units, unscaled; above 5 → InvalidLevel
+weightFor:    levels 0–5 → 100 / 110 / 125 / 145 / 170 / 200; above 5 → InvalidLevel
+weightOf:     the weight of the bear's current level (100 unactivated, 145 at level 3)
+costToReach:  the exact remainder, or 0 once reached; above 5 → InvalidLevel
+snapshot:     owner, level and weight for existing ids; zeroes for an id that does not exist
 ```
-
-Note for the portal: `burn` accepts any amount and banks all of it, including the part
-above level 5, which is destroyed for nothing. `costToReach` exists to prevent that and the
-client is expected to use it on every activation.
 
 ## Construction
 
 ```
 constructor
-├── when the collection address is zero
-│   └── it reverts with ZeroAddress
-├── when the token address is zero
-│   └── it reverts with ZeroAddress
-├── when the token's decimals put its unit past uint128
-│   └── it reverts with DecimalsOutOfRange, rather than truncating the unit silently
-├── when the thresholds are not strictly ascending
-│   └── it reverts with ThresholdsNotAscending
-├── when the first threshold is zero
-│   └── it reverts with ThresholdsNotAscending
-└── otherwise
-    ├── it scales every threshold by the token's decimals
-    └── it does so for decimals other than 18
+├── when the collection is the zero address: it reverts with ZeroAddress
+├── when the first threshold is zero, or thresholds are not strictly ascending: ThresholdsNotAscending
+├── when weights are not strictly ascending: WeightsNotAscending
+└── otherwise: BEARS is the collection, the deployer owns it, not paused, no crediter until set
 ```
 
 ## Ownership
 
 ```
+setCrediter
+├── by the owner: CrediterSet(previous, current); the new crediter credits, the old one cannot
+│   └── refs are per crediter: a replacement numbering from 1 is accepted; each crediter's spent refs stay spent
+└── by anyone else: Unauthorized
+
 setPaused
-└── only the owner may suspend or resume
+├── by the owner: PausedSet each time; credits resume after unpausing
+└── by anyone else: Unauthorized
 
 renounceOwnership
-├── when paused
-│   └── it reverts with CannotRenounceWhilePaused, because setPaused is the only owner
-│       power and nobody could ever lift the suspension
-├── when not paused
-│   └── it succeeds, and burning and linking carry on with no owner
-├── when paused and then unpaused
-│   └── it succeeds; the guard blocks the trap, not the exit
-└── when the caller is not the owner
-    └── it reverts
+├── while paused: CannotRenounceWhilePaused, so a pause can always be lifted
+├── while running: succeeds and the crediter still credits
+└── by anyone else: Unauthorized
 ```
 
 ## Auditor obligations (not implemented here)
 
 - INV-4: `levelOf(id)` always equals the highest threshold cleared by `cumulativeOf(id)`.
-- INV-5: `lifetimeBurned` never decreases.
-- INV-6: the sum of all burns equals the reduction in $MNTD total supply.
+- INV-5: `lifetimeBurned` never decreases, and equals the sum of all credits to the bear.
+- INV-6: every `(crediter, ref)` is credited at most once.
 - INV-7: a level recorded before a transfer is never readable after it.
 - INV-8: `linkOf(wallet)` returns a non-zero bear only while that wallet owns it. Holds
   because every transfer advances the counter the link is pinned to.
-- **Reviewed and clean, stated so the reviewer can re-derive it:** `burn` writes its record
-  before calling `MNTD.burnFrom`, and $MNTD is untrusted — it is not deployed yet. Reentering
-  `burn` still requires each `burnFrom` to succeed, so no level can be obtained without the
-  matching burn; transferring the bear from inside `burnFrom` voids the caller's own record.
-  Slither's `reentrancy-events` on this function is event ordering only.
+- INV-9: a credit is recorded only when `burner` owned the bear at counter value `nonce` and
+  still does; with the adapter (ACT-7), the sum of credits equals the $MNTD it burned.

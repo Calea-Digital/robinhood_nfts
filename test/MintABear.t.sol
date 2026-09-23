@@ -96,9 +96,7 @@ contract MintABearMetadataTest is BaseTest {
         assertEq(bears.tokenURI(1), "ipfs://bears/1");
         assertEq(bears.tokenURI(2), "ipfs://bears/2");
 
-        _fund(alice, 5_000);
-        vm.prank(alice);
-        activation.burn(1, 5_000 * UNIT);
+        _credit(1, 1_666);
         assertEq(activation.levelOf(1), 1, "level rose");
 
         assertEq(bears.tokenURI(1), "ipfs://bears/1", "metadata does not vary with level");
@@ -361,9 +359,7 @@ contract MintABearResetEventTest is BaseTest {
            Then TransferNonceAdvanced fires in the same transaction as Transfer
            And what Activation recorded at the previous counter value is void */
         _mint(alice, 1);
-        _fund(alice, 5_000);
-        vm.prank(alice);
-        activation.burn(1, 5_000 * UNIT);
+        _credit(1, 1_666);
         assertEq(activation.levelOf(1), 1, "level before");
 
         vm.expectEmit(true, false, false, true, address(bears));
