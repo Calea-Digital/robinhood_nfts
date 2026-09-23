@@ -1,0 +1,14 @@
+{
+  "_comment": "Template for script/config/<chainid>.json. Every value marked TBD waits on MINT: admin and signer (CQ-12, OPS-1), campaign dates (CQ-1; proposed 6-26 October, stage on 29 October), $MNTD address and decimals (CQ-2). Addresses here are placeholders and must be replaced before any broadcast.",
+  "name": "MintABear",
+  "symbol": "BEAR",
+  "admin": "0x00000000000000000000000000000000000a0001",
+  "signer": "0x00000000000000000000000000000000000a0002",
+  "openAt": 1791244800,
+  "closeAt": 1792972799,
+  "whitelistStageAt": 1793232000,
+  "mntd": "0x00000000000000000000000000000000000a0003",
+  "mntdDecimals": 18,
+  "thresholdsWhole": [1666, 3333, 8333, 16666, 41666],
+  "weights": [100, 110, 125, 145, 170, 200]
+}

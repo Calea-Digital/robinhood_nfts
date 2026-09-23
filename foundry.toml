@@ -25,8 +25,13 @@ remappings = [
 ]
 
 # `script/WhitelistExport.s.sol` writes the whitelist CSV to ./exports. The ACT-12 tests read the
-# compiled artifacts in ./out to pin each contract's complete external interface.
-fs_permissions = [{ access = "read-write", path = "./exports" }, { access = "read", path = "./out" }]
+# compiled artifacts in ./out to pin each contract's complete external interface. script/Deploy.s.sol
+# reads its per-chain config from ./script/config.
+fs_permissions = [
+    { access = "read-write", path = "./exports" },
+    { access = "read", path = "./out" },
+    { access = "read", path = "./script/config" },
+]
 
 # CI profile — selected by FOUNDRY_PROFILE=ci in .github/workflows/test.yml.
 # Inherits every key from [profile.default]; only test thoroughness is raised, so
