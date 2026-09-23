@@ -248,3 +248,42 @@ contract DirectBurnAdapterHostileTokenTest is BaseTest {
         assertEq(adapter.burnCount(), 2);
     }
 }
+
+/// @dev ACT-8. The adapter refuses any amount beyond what level 5 needs, so no $MNTD is destroyed
+///      for nothing; the portal sizes each burn with `costToReach`.
+contract DirectBurnAdapterOvershootTest is DirectBurnAdapterBase {
+    function test_burn_pastLevelFive_burnsNothing() public {
+        /* Scenario: ACT-8 — Nothing is burned for nothing
+           Given a bear whose costToReach(id, 5) reads x
+           When the holder calls burn(id, x + 1)
+           Then it reverts with Overshoot and no $MNTD is burned */
+        _burn(alice, 1, 2_000 * UNIT);
+        uint128 x = activation.costToReach(1, 5);
+        assertEq(x, (41_666 - 2_000) * UNIT);
+        uint256 balance = mntd.balanceOf(alice);
+        uint256 supply = mntd.totalSupply();
+        uint128 cumulative = activation.cumulativeOf(1);
+
+        vm.expectRevert(DirectBurnAdapter.Overshoot.selector);
+        _burn(alice, 1, x + 1);
+
+        assertEq(mntd.balanceOf(alice), balance, "no $MNTD burned");
+        assertEq(mntd.totalSupply(), supply);
+        assertEq(activation.cumulativeOf(1), cumulative, "nothing credited");
+    }
+
+    function test_costToReach_sizesABurnToEachLevelExactly() public {
+        /* Scenario:
+           Given an unactivated bear
+           When the holder burns costToReach(id, k) for k = 1 to 5 in turn
+           Then each burn lands the bear exactly on level k, and costToReach(id, k) then reads 0 */
+        for (uint8 k = 1; k <= 5; ++k) {
+            uint128 cost = activation.costToReach(1, k);
+            _burn(alice, 1, cost);
+            assertEq(activation.levelOf(1), k);
+            assertEq(activation.cumulativeOf(1), activation.thresholdFor(k));
+            assertEq(activation.costToReach(1, k), 0);
+        }
+        assertEq(mntd.balanceOf(alice), (50_000 - 41_666) * UNIT, "exactly 41,666 burned in all");
+    }
+}
