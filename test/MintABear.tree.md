@@ -67,6 +67,8 @@ the pre-audit burn PoC, kept inverted (COL-8)
 no token-bound accounts
 ├── the entry points accountOf, deployAccount, recordAccounts, isBearAccount,
 │   ACCOUNT_IMPLEMENTATION and ACCOUNT_SALT are not in the ABI
+├── the standard's account surface — token, state, isValidSigner, execute — is not in the ABI,
+│   and supportsInterface is false for IERC6551Account and IERC6551Executable
 ├── the canonical registry address appears nowhere in the deployed bytecode
 └── an address the registry would derive for a bear is an ordinary destination
 ```
