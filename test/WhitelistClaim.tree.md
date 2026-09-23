@@ -71,6 +71,7 @@ setWindow
 └── otherwise: WindowSet is emitted and openAt / closeAt read the new values
 
 constructor
+├── when the owner is the zero address: it reverts with NewOwnerIsZeroAddress
 ├── when the signer is the zero address: it reverts with ZeroSigner
 └── when openAt ≥ closeAt: it reverts with InvalidWindow
 

@@ -452,12 +452,14 @@ contract WhitelistClaimRegistryTest is WhitelistClaimBase {
         wl.setWindow(OPEN_AT, CLOSE_AT);
     }
 
-    function test_constructor_revertsForZeroSignerOrEmptyWindow() public {
+    function test_constructor_revertsForZeroOwnerZeroSignerOrEmptyWindow() public {
         /* Scenario:
-           Given deployment arguments with a zero signer, or a window that does not open before
-             it closes
+           Given deployment arguments with a zero owner, a zero signer, or a window that does not
+             open before it closes
            When the registry is deployed
-           Then it reverts with ZeroSigner or InvalidWindow */
+           Then it reverts with NewOwnerIsZeroAddress, ZeroSigner or InvalidWindow */
+        vm.expectRevert(Ownable.NewOwnerIsZeroAddress.selector);
+        new WhitelistClaim(address(0), signer, OPEN_AT, CLOSE_AT);
         vm.expectRevert(WhitelistClaim.ZeroSigner.selector);
         new WhitelistClaim(admin, address(0), OPEN_AT, CLOSE_AT);
         vm.expectRevert(WhitelistClaim.InvalidWindow.selector);

@@ -125,13 +125,16 @@ contract WhitelistClaim is Ownable, EIP712 {
     error InvalidWindow();
 
     /**
-     * @param owner_   MINT's admin: sets the signer and the window.
+     * @param owner_   MINT's admin: sets the signer and the window. Not the zero address.
      * @param signer_  The eligibility signer.
      * @param openAt_  First timestamp at which claims are accepted.
      * @param closeAt_ Last timestamp at which claims are accepted; at least 48 hours before the
      *                 whitelist stage opens.
      */
     constructor(address owner_, address signer_, uint40 openAt_, uint40 closeAt_) {
+        // Solady's `_initializeOwner` accepts the zero address; an ownerless registry could never
+        // rotate its signer or move its window, so it is refused as `transferOwnership` refuses it.
+        if (owner_ == address(0)) revert NewOwnerIsZeroAddress();
         _initializeOwner(owner_);
         _setSigner(signer_);
         _setWindow(openAt_, closeAt_);
