@@ -127,6 +127,13 @@ constructor
 ## Ownership
 
 ```
+Roles (ACT-12)
+├── a non-owner's setCrediter and setPaused revert (ACT-12)
+├── the complete external interface, read from the artifact, is exactly the pinned list — no
+│   setter for thresholds, weights or records, no freeze, no clawback (ACT-12)
+├── every owner function run in turn leaves thresholds, weights and a bear's record unchanged
+└── the adapter's interface is burn plus MNTD, ACTIVATION and burnCount: no owner, no settings
+
 setCrediter
 ├── by the owner: CrediterSet(previous, current); the new crediter credits, the old one cannot
 │   └── refs are per crediter: a replacement numbering from 1 is accepted; each crediter's spent refs stay spent

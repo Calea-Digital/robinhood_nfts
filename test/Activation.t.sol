@@ -1080,3 +1080,130 @@ contract ActivationPauseTest is BaseTest {
         activation.credit(1, alice, UNIT, 0, bytes32(uint256(1)));
     }
 }
+
+/// @dev ACT-12. The owner sets the crediter and the pause, and can hand ownership on; nothing else
+///      is administrable. The complete external interface of `Activation` and `DirectBurnAdapter`
+///      is read from the compiled artifacts and pinned here, so a function added later — a setter,
+///      a freeze, a clawback — fails this suite until the specification says so.
+contract ActivationRolesTest is BaseTest {
+    function setUp() public override {
+        super.setUp();
+        _mint(alice, 1);
+    }
+
+    function test_onlyTheOwnerAdministers() public {
+        /* Scenario: ACT-12 — Only the owner administers
+           When a non-owner calls setCrediter or setPaused
+           Then it reverts
+           And no function anywhere changes thresholds, weights or a bear's record */
+        vm.startPrank(alice);
+        vm.expectRevert(Ownable.Unauthorized.selector);
+        activation.setCrediter(alice);
+        vm.expectRevert(Ownable.Unauthorized.selector);
+        activation.setPaused(true);
+        vm.stopPrank();
+
+        _assertInterface(
+            "out/Activation.sol/Activation.json",
+            [
+                // reads
+                "BEARS()",
+                "THRESHOLD_1()",
+                "THRESHOLD_2()",
+                "THRESHOLD_3()",
+                "THRESHOLD_4()",
+                "THRESHOLD_5()",
+                "costToReach(uint256,uint8)",
+                "crediter()",
+                "cumulativeOf(uint256)",
+                "levelOf(uint256)",
+                "lifetimeBurned(uint256)",
+                "linkOf(address)",
+                "paused()",
+                "snapshot(uint256[])",
+                "thresholdFor(uint8)",
+                "weightFor(uint8)",
+                "weightOf(uint256)",
+                "owner()",
+                "ownershipHandoverExpiresAt(address)",
+                // the record: the crediter's credit and each holder's own link
+                "credit(uint256,address,uint128,uint64,bytes32)",
+                "linkBear(uint256)",
+                "unlinkBear()",
+                // the owner: crediter, pause, ownership (Solady)
+                "setCrediter(address)",
+                "setPaused(bool)",
+                "transferOwnership(address)",
+                "renounceOwnership()",
+                "requestOwnershipHandover()",
+                "cancelOwnershipHandover()",
+                "completeOwnershipHandover(address)"
+            ]
+        );
+    }
+
+    function test_ownerFunctions_leaveThresholdsWeightsAndRecordsAlone() public {
+        /* Scenario:
+           Given a bear credited to level 2 and linked
+           When the owner runs every owner function — setCrediter, setPaused on and off, a handover
+             and a transfer of ownership
+           Then thresholds, weights, the bear's cumulative, level, lifetime and link read as before */
+        _credit(1, 3_333);
+        vm.prank(alice);
+        activation.linkBear(1);
+
+        activation.setCrediter(makeAddr("other"));
+        activation.setPaused(true);
+        activation.setPaused(false);
+        address next = makeAddr("nextOwner");
+        vm.prank(next);
+        activation.requestOwnershipHandover();
+        activation.completeOwnershipHandover(next);
+        vm.prank(next);
+        activation.transferOwnership(address(this));
+
+        uint128[5] memory t = _thresholds();
+        uint16[6] memory w = _weights();
+        for (uint8 k; k < 5; ++k) {
+            assertEq(activation.thresholdFor(k + 1), t[k]);
+        }
+        for (uint8 k; k < 6; ++k) {
+            assertEq(activation.weightFor(k), w[k]);
+        }
+        assertEq(activation.cumulativeOf(1), 3_333 * UNIT);
+        assertEq(activation.levelOf(1), 2);
+        assertEq(activation.lifetimeBurned(1), 3_333 * UNIT);
+        (uint256 tokenId, uint8 level) = activation.linkOf(alice);
+        assertEq(tokenId, 1);
+        assertEq(level, 2);
+    }
+
+    function test_adapterInterface_isBurnAndReadsOnly() public view {
+        /* Scenario:
+           Given the DirectBurnAdapter
+           When its complete external interface is read from the artifact
+           Then it is burn and the reads MNTD, ACTIVATION and burnCount: no owner, no settings */
+        string[4] memory expected = ["ACTIVATION()", "MNTD()", "burn(uint256,uint128)", "burnCount()"];
+        string[] memory actual =
+            vm.parseJsonKeys(vm.readFile("out/DirectBurnAdapter.sol/DirectBurnAdapter.json"), ".methodIdentifiers");
+        assertEq(actual.length, expected.length, "DirectBurnAdapter: function count");
+        for (uint256 i; i < expected.length; ++i) {
+            assertTrue(_contains(actual, expected[i]), expected[i]);
+        }
+    }
+
+    function _assertInterface(string memory artifact, string[29] memory expected) internal view {
+        string[] memory actual = vm.parseJsonKeys(vm.readFile(artifact), ".methodIdentifiers");
+        assertEq(actual.length, expected.length, "function count");
+        for (uint256 i; i < expected.length; ++i) {
+            assertTrue(_contains(actual, expected[i]), expected[i]);
+        }
+    }
+
+    function _contains(string[] memory list, string memory item) internal pure returns (bool) {
+        for (uint256 i; i < list.length; ++i) {
+            if (keccak256(bytes(list[i])) == keccak256(bytes(item))) return true;
+        }
+        return false;
+    }
+}
