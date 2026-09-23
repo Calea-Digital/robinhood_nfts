@@ -87,6 +87,9 @@ linkBear
 ├── when the caller does not own the bear: it reverts with NotBearOwner
 ├── when paused: it reverts with ContractPaused
 └── otherwise: BearLinked; linkOf reads (tokenId, level); a second nomination replaces the first
+    ├── a wallet owning a bear at level 2 reads (tokenId, 2); after the bear moves, (0, 0) (ACT-9)
+    ├── the link's level follows later credits without a new nomination
+    └── a wallet with several bears carries one link; the others count only as weight
 
 unlinkBear
 ├── clears the nomination with BearUnlinked, without moving the bear
