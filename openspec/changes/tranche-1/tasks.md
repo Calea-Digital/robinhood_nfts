@@ -37,7 +37,7 @@ becomes a Task with Spec Ref `NONE` when picked.
 - [x] 3.7 ACT-7 — `DirectBurnAdapter.burn`: `NotOwner`, `AlreadyAtMaxLevel`, `Overshoot`, `burnFrom` + `credit`, `BurnedForBear`
 - [x] 3.8 ACT-8 — overshoot refused
 - [x] 3.9 ACT-9 — Status link
-- [ ] 3.10 ACT-10 — `snapshot(ids)`
+- [x] 3.10 ACT-10 — `snapshot(ids)`
 - [ ] 3.11 ACT-11 — pause semantics, `renounceOwnership` refused while paused
 - [ ] 3.12 ACT-12 — roles
 - [ ] 3.13 ACT-13 — events
