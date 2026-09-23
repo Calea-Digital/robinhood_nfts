@@ -34,7 +34,7 @@ becomes a Task with Spec Ref `NONE` when picked.
 - [x] 3.4 ACT-4 — `credit` with `NotCrediter`, `ContractPaused`, `ZeroAmount`, `NotBearOwner`, `StaleNonce`, `RefAlreadyUsed`; `BearActivated`
 - [x] 3.5 ACT-5 — reset by counter
 - [x] 3.6 ACT-6 — `lifetimeBurned`
-- [ ] 3.7 ACT-7 — `DirectBurnAdapter.burn`: `NotOwner`, `AlreadyAtMaxLevel`, `Overshoot`, `burnFrom` + `credit`, `BurnedForBear`
+- [x] 3.7 ACT-7 — `DirectBurnAdapter.burn`: `NotOwner`, `AlreadyAtMaxLevel`, `Overshoot`, `burnFrom` + `credit`, `BurnedForBear`
 - [ ] 3.8 ACT-8 — overshoot refused
 - [ ] 3.9 ACT-9 — Status link
 - [ ] 3.10 ACT-10 — `snapshot(ids)`
