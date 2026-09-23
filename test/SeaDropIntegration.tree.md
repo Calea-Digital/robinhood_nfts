@@ -61,7 +61,7 @@ baseURI
 
 setProvenanceHash
 ├── before the first mint it can be set
-└── after the first mint it reverts
+└── after the first mint it reverts with ProvenanceHashCannotBeSetAfterMintStarted
 ```
 
 ## Secondary trading
