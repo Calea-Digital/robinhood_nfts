@@ -5,7 +5,7 @@ $MNTD to raise a bear's activation level (0–5), which multiplies the reward ra
 off-chain MINT Status already pays. Activation and the Status link reset when a bear changes
 hands.
 
-**Start here: [`docs/HANDOVER.md`](docs/HANDOVER.md)** — current state, deploy runbook,
+**Start here: [`docs/HANDOVER.md`](docs/HANDOVER.md)** — current state,
 settled decisions, accepted risks, and the questions still open with the client. The
 specification is in [`openspec/`](openspec/); the board (YouTrack `MNT`) follows it.
 
@@ -20,7 +20,6 @@ The specification calls for seven contracts, four in tranche 1. On `tranche-1` t
 | [`src/Activation.sol`](src/Activation.sol) | Solady `Ownable` | the level record: credits from one adapter (the crediter), levels and royalty weights, the MINT Status link, `snapshot` for the royalty split; holds no token |
 | [`src/DirectBurnAdapter.sol`](src/DirectBurnAdapter.sol) | — | the one crediter: a holder burns $MNTD for a bear and the burn is credited to `Activation` in the same transaction; no owner, no settings, refuses amounts past level 5 |
 | [`src/WhitelistClaim.sol`](src/WhitelistClaim.sol) | Solady `Ownable`, `EIP712`, `ECDSA` | the on-chain whitelist registry: 1,000 allocations claimed with a voucher from MINT's eligibility signer, two per wallet and per account, inside the campaign window; its claimant list is the Studio allowlist |
-| [`script/WhitelistExport.s.sol`](script/WhitelistExport.s.sol) | forge-std `Script` | read-only: exports the claimant CSV for Studio and checks the allowlist root Studio set against the registry |
 
 `MysteryBox`, `PrizeDraw` and `PrizeVault` are tranche 2.
 
@@ -31,6 +30,17 @@ recorded at an older counter value reads as zero.
 
 Mint pricing, stages, dates, per-wallet limits, metadata and royalties are **not** in these
 contracts. They are configured through OpenSea Studio / SeaDrop.
+
+## Scripts
+
+| Script | Role |
+|---|---|
+| [`script/Deploy.s.sol`](script/Deploy.s.sol) | deploys the four contracts in the specified order from `script/config/<chain>.json` (template [`example.json`](script/config/example.json)), verifying on Sourcify as it broadcasts |
+| [`script/verify.sh`](script/verify.sh) | re-verifies and checks on Sourcify every contract a deploy created |
+| [`script/Enforcement.s.sol`](script/Enforcement.s.sol) | lifts or restores royalty enforcement with one owner call; prints the Safe transaction for a Safe admin |
+| [`script/WhitelistExport.s.sol`](script/WhitelistExport.s.sol) | exports the claimant CSV for Studio and checks the allowlist root Studio set against the registry |
+
+Operating steps are in [`docs/RUNBOOK.md`](docs/RUNBOOK.md).
 
 ## Setup
 
