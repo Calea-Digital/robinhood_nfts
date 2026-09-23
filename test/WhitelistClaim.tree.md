@@ -59,6 +59,25 @@ rules
 The eligibility thresholds ($50 / $100, the Season 1 back-credit) are MINT's data (WL-2): the
 contract sees only the signed voucher, so a threshold has no leaf here.
 
+## Export into the mint (WL-4)
+
+```
+export
+├── when the campaign has closed
+│   ├── claimants read page by page returns every wallet once, in order of its first claim,
+│   │   with allocations == claimsOf, totalling TOTAL_SPOTS - spotsLeft (WL-4)
+│   └── the allowlist built from those rows (leaf = keccak256(abi.encode(wallet, mintParams)),
+│       maxTotalMintableByWallet = allocations) and set on SeaDrop carries the same rows (WL-4)
+│       ├── each wallet mints exactly its allocations; one more is refused per wallet
+│       ├── a wallet not in the export is refused with InvalidProof
+│       └── a row claimed with a higher limit than exported is refused with InvalidProof
+└── when the campaign sold out before closing
+    └── 500 rows of two allocations, totalling 1,000
+```
+
+Not a unit leaf: that OpenSea Studio's CSV import produces the same root as the rows above is
+rehearsal item 3 on 46630 (`docs/HANDOVER.md`, "Unknowns to settle by rehearsal").
+
 ## Reads
 
 ```

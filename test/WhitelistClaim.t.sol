@@ -4,6 +4,12 @@ pragma solidity 0.8.17;
 import {Test} from "forge-std/Test.sol";
 import {Ownable} from "solady/auth/Ownable.sol";
 
+import {MerkleTreeLib} from "solady/utils/MerkleTreeLib.sol";
+import {SeaDrop} from "seadrop/SeaDrop.sol";
+import {AllowListData, MintParams} from "seadrop/lib/SeaDropStructs.sol";
+import {SeaDropErrorsAndEvents} from "seadrop/lib/SeaDropErrorsAndEvents.sol";
+
+import {MintABear} from "../src/MintABear.sol";
 import {WhitelistClaim} from "../src/WhitelistClaim.sol";
 
 /// @dev Shared fixture: a registry owned by MINT's admin, a campaign window that is open, and an
@@ -575,5 +581,148 @@ contract WhitelistClaimRulesTest is WhitelistClaimBase {
         assertEq(wl.accountClaims(ACCOUNT_A), 1);
         assertEq(wl.spotsLeft(), 0);
         assertEq(wl.claimants(0, 1000).length, 501);
+    }
+}
+
+/// @dev WL-4. The claimant list is the whitelist stage's allowlist: exported page by page, turned
+///      into SeaDrop allowlist leaves `keccak256(abi.encode(minter, mintParams))` with each
+///      wallet's allocations as its per-wallet limit, and minted against on a SeaDrop deployed
+///      here. Studio's own step from CSV to root is rehearsal item 3 (`docs/HANDOVER.md`).
+contract WhitelistClaimExportTest is WhitelistClaimBase {
+    SeaDrop internal seaDrop;
+    MintABear internal bears;
+
+    address internal dave = makeAddr("dave");
+    address internal feeRecipient = makeAddr("feeRecipient");
+
+    function setUp() public override {
+        super.setUp();
+        seaDrop = new SeaDrop();
+        address[] memory allowed = new address[](1);
+        allowed[0] = address(seaDrop);
+        bears = new MintABear("MintABear", "BEAR", allowed);
+        bears.setMaxSupply(4444);
+    }
+
+    /// @dev The whitelist stage's parameters, with `allocations` as the per-wallet limit.
+    function _stage(uint256 allocations) internal pure returns (MintParams memory) {
+        return MintParams({
+            mintPrice: 0,
+            maxTotalMintableByWallet: allocations,
+            startTime: uint256(CLOSE_AT) + 2 days,
+            endTime: uint256(CLOSE_AT) + 3 days,
+            dropStageIndex: 1,
+            maxTokenSupplyForStage: 4444,
+            feeBps: 0,
+            restrictFeeRecipients: false
+        });
+    }
+
+    /// @dev Reads the whole claimant list in pages of `pageSize`, stopping at the first short page.
+    function _export(uint256 pageSize) internal view returns (WhitelistClaim.Claimant[] memory all) {
+        all = new WhitelistClaim.Claimant[](0);
+        for (uint256 offset;; offset += pageSize) {
+            WhitelistClaim.Claimant[] memory page = wl.claimants(offset, pageSize);
+            WhitelistClaim.Claimant[] memory grown = new WhitelistClaim.Claimant[](all.length + page.length);
+            for (uint256 i; i < all.length; ++i) {
+                grown[i] = all[i];
+            }
+            for (uint256 i; i < page.length; ++i) {
+                grown[all.length + i] = page[i];
+            }
+            all = grown;
+            if (page.length < pageSize) break;
+        }
+    }
+
+    function _mintAllowList(address minter, uint256 quantity, uint256 allocations, bytes32[] memory proof) internal {
+        vm.prank(minter);
+        seaDrop.mintAllowList(address(bears), feeRecipient, address(0), quantity, _stage(allocations), proof);
+    }
+
+    function test_export_isTheAllowlist() public {
+        /* Scenario: WL-4 — The export is the allowlist
+           Given a closed campaign
+           When claimants(offset, limit) is read across the whole list
+           Then every wallet appears once with its allocation count, and the Studio allowlist
+             loaded from it carries the same rows */
+        _claim(alice, 1, ACCOUNT_A);
+        _claim(bob, 1, ACCOUNT_B);
+        _claim(alice, 2, ACCOUNT_A);
+        _claim(carol, 1, keccak256("getminted:account-c"));
+        vm.warp(uint256(CLOSE_AT) + 1);
+
+        WhitelistClaim.Claimant[] memory rows = _export(2);
+        assertEq(rows.length, 3);
+        assertEq(rows[0].wallet, alice);
+        assertEq(rows[0].allocations, 2);
+        assertEq(rows[1].wallet, bob);
+        assertEq(rows[1].allocations, 1);
+        assertEq(rows[2].wallet, carol);
+        assertEq(rows[2].allocations, 1);
+        uint256 total;
+        for (uint256 i; i < rows.length; ++i) {
+            assertEq(rows[i].allocations, wl.claimsOf(rows[i].wallet));
+            total += rows[i].allocations;
+        }
+        assertEq(total, wl.TOTAL_SPOTS() - wl.spotsLeft());
+
+        bytes32[] memory leaves = new bytes32[](rows.length);
+        for (uint256 i; i < rows.length; ++i) {
+            leaves[i] = keccak256(abi.encode(rows[i].wallet, _stage(rows[i].allocations)));
+        }
+        bytes32[] memory tree = MerkleTreeLib.build(leaves);
+        bears.updateAllowList(
+            address(seaDrop),
+            AllowListData({merkleRoot: MerkleTreeLib.root(tree), publicKeyURIs: new string[](0), allowListURI: ""})
+        );
+        vm.warp(uint256(CLOSE_AT) + 2 days);
+
+        for (uint256 i; i < rows.length; ++i) {
+            bytes32[] memory proof = MerkleTreeLib.leafProof(tree, i);
+            _mintAllowList(rows[i].wallet, rows[i].allocations, rows[i].allocations, proof);
+            assertEq(bears.balanceOf(rows[i].wallet), rows[i].allocations);
+
+            vm.expectRevert(
+                abi.encodeWithSelector(
+                    SeaDropErrorsAndEvents.MintQuantityExceedsMaxMintedPerWallet.selector,
+                    rows[i].allocations + 1,
+                    rows[i].allocations
+                )
+            );
+            _mintAllowList(rows[i].wallet, 1, rows[i].allocations, proof);
+        }
+
+        bytes32[] memory aliceProof = MerkleTreeLib.leafProof(tree, 0);
+        vm.expectRevert(SeaDropErrorsAndEvents.InvalidProof.selector);
+        _mintAllowList(dave, 1, 2, aliceProof);
+        vm.expectRevert(SeaDropErrorsAndEvents.InvalidProof.selector);
+        _mintAllowList(bob, 1, 2, MerkleTreeLib.leafProof(tree, 1));
+
+        assertEq(bears.totalSupply(), total);
+    }
+
+    function test_export_afterASellOut_listsEveryClaimant() public {
+        /* Scenario:
+           Given a campaign that sold out before its window closed
+           When claimants is read in pages of 100
+           Then 500 rows come back, each wallet once with two allocations, totalling 1,000 */
+        for (uint256 i; i < 500; ++i) {
+            address wallet = makeAddr(string(abi.encode("claimant", i)));
+            bytes32 account = keccak256(abi.encode("account", i));
+            _claim(wallet, 1, account);
+            _claim(wallet, 2, account);
+        }
+        assertEq(wl.spotsLeft(), 0);
+
+        WhitelistClaim.Claimant[] memory rows = _export(100);
+        assertEq(rows.length, 500);
+        uint256 total;
+        for (uint256 i; i < rows.length; ++i) {
+            assertEq(rows[i].wallet, makeAddr(string(abi.encode("claimant", i))));
+            assertEq(rows[i].allocations, 2);
+            total += rows[i].allocations;
+        }
+        assertEq(total, 1000);
     }
 }
