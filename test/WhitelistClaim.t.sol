@@ -726,3 +726,73 @@ contract WhitelistClaimExportTest is WhitelistClaimBase {
         assertEq(total, 1000);
     }
 }
+
+/// @dev WL-5. The campaign window gates claims. The 48-hour gap between `closeAt` and the
+///      whitelist stage is a deployment value: the registry does not know when the stage opens.
+contract WhitelistClaimTimingTest is WhitelistClaimBase {
+    /// @dev The whitelist stage's proposed start, 48 hours after the campaign closes.
+    uint256 internal constant STAGE_START = uint256(CLOSE_AT) + 1 + 48 hours;
+
+    function test_window_gatesClaims() public {
+        /* Scenario: WL-5 — The window gates claims
+           Given openAt and closeAt set with the close at least 48 hours before the whitelist stage
+           When a claim arrives before openAt or after closeAt
+           Then it reverts with CampaignClosed */
+        assertGe(STAGE_START - wl.closeAt(), 48 hours);
+
+        vm.warp(uint256(OPEN_AT) - 1);
+        _expectClaimRevert(alice, 1, ACCOUNT_A, WhitelistClaim.CampaignClosed.selector);
+
+        vm.warp(uint256(CLOSE_AT) + 1);
+        _expectClaimRevert(alice, 1, ACCOUNT_A, WhitelistClaim.CampaignClosed.selector);
+
+        vm.warp(STAGE_START);
+        _expectClaimRevert(alice, 1, ACCOUNT_A, WhitelistClaim.CampaignClosed.selector);
+
+        assertEq(wl.spotsLeft(), 1000);
+        assertEq(wl.claimsOf(alice), 0);
+    }
+
+    function test_window_boundariesAreInclusive() public {
+        /* Scenario:
+           Given the campaign window
+           When claims arrive at exactly openAt and exactly closeAt
+           Then both succeed */
+        vm.warp(OPEN_AT);
+        _claim(alice, 1, ACCOUNT_A);
+        vm.warp(CLOSE_AT);
+        _claim(bob, 1, ACCOUNT_B);
+        assertEq(wl.spotsLeft(), 998);
+    }
+
+    function test_setWindow_movesTheGate() public {
+        /* Scenario:
+           Given a claim that arrives after closeAt
+           When the owner moves the window to include it, and later moves closeAt back before now
+           Then the claim succeeds while the window includes it, and the next reverts with
+             CampaignClosed once it does not */
+        vm.warp(uint256(CLOSE_AT) + 1 days);
+        _expectClaimRevert(alice, 1, ACCOUNT_A, WhitelistClaim.CampaignClosed.selector);
+
+        vm.prank(admin);
+        wl.setWindow(OPEN_AT, CLOSE_AT + 2 days);
+        _claim(alice, 1, ACCOUNT_A);
+
+        vm.prank(admin);
+        wl.setWindow(OPEN_AT, CLOSE_AT);
+        _expectClaimRevert(bob, 1, ACCOUNT_B, WhitelistClaim.CampaignClosed.selector);
+        assertEq(wl.claimsOf(alice), 1, "a claim already made stays");
+    }
+
+    function test_deployment_setsSignerAndWindowBeforeTheCampaign() public {
+        /* Scenario:
+           Given a registry deployed before the campaign opens
+           When it is read before openAt
+           Then its signer and window are already set, and a claim waits for openAt */
+        WhitelistClaim fresh = new WhitelistClaim(admin, signer, OPEN_AT + 30 days, CLOSE_AT + 30 days);
+        assertEq(fresh.signer(), signer);
+        assertEq(fresh.openAt(), OPEN_AT + 30 days);
+        assertEq(fresh.closeAt(), CLOSE_AT + 30 days);
+        assertLt(block.timestamp, fresh.openAt());
+    }
+}
