@@ -28,7 +28,7 @@ contract MintABearTest is BaseTest {
     }
 
     function test_mint_doesNotAdvanceTransferNonce() public {
-        /* Scenario: COL-3 — A transfer advances the counter, a mint does not
+        /* Scenario:
            Given a freshly minted bear
            When its transfer counter is read
            Then it reads 0, because minting is not a transfer */
@@ -40,11 +40,16 @@ contract MintABearTest is BaseTest {
         /* Scenario: COL-3 — A transfer advances the counter, a mint does not
            Given a bear whose transferNonce reads n
            When it is transferred to another wallet
-           Then transferNonce reads n + 1 */
+           Then transferNonce reads n + 1
+           And a freshly minted bear reads 0 */
         _mint(alice, 1);
+        uint64 n = bears.transferNonce(1);
         vm.prank(alice);
         bears.transferFrom(alice, bob, 1);
-        assertEq(bears.transferNonce(1), 1);
+        assertEq(bears.transferNonce(1), n + 1);
+
+        _mint(bob, 1);
+        assertEq(bears.transferNonce(2), 0, "a mint is not a transfer");
     }
 
     function test_maxSupply_isEnforced() public {
@@ -208,7 +213,7 @@ contract MintABearNoAccountsTest is BaseTest {
 ///      It is what makes ACT-5's reset a consequence of the transfer rather than an action.
 contract MintABearTransferCounterTest is BaseTest {
     function test_counter_advancesOnEveryKindOfTransfer() public {
-        /* Scenario: COL-3 — A transfer advances the counter, a mint does not
+        /* Scenario:
            Given a bear whose transferNonce reads n
            When it is sold, given back to a previous owner, moved by its holder to itself and moved
              by an approved operator
@@ -236,7 +241,7 @@ contract MintABearTransferCounterTest is BaseTest {
     }
 
     function test_counter_isPerBear() public {
-        /* Scenario: COL-3 — A transfer advances the counter, a mint does not
+        /* Scenario:
            Given several bears minted together
            When one of them is transferred
            Then only that bear's counter moves; the others still read 0 */
@@ -250,7 +255,7 @@ contract MintABearTransferCounterTest is BaseTest {
     }
 
     function test_counter_neverDecreases() public {
-        /* Scenario: COL-3 — A transfer advances the counter, a mint does not
+        /* Scenario:
            Given a bear that has moved several times
            When each move is compared with the one before
            Then the counter only ever grows by one, and nothing resets it */
@@ -270,7 +275,7 @@ contract MintABearTransferCounterTest is BaseTest {
     }
 
     function test_batchMint_readsZeroForEveryId() public {
-        /* Scenario: COL-3 — A transfer advances the counter, a mint does not
+        /* Scenario:
            When a batch of bears is minted
            Then every one of them reads 0 */
         _mint(alice, 10);
@@ -316,7 +321,7 @@ contract MintABearReadsTest is BaseTest {
     }
 
     function test_exists_isFalseOutsideTheMintedRange() public {
-        /* Scenario: COL-12 — Every read answers
+        /* Scenario:
            Given three bears minted
            When exists is read for id 0, the minted ids, the next id and ids far beyond
            Then it is true for the minted ids and false everywhere else, never reverting */
@@ -330,7 +335,7 @@ contract MintABearReadsTest is BaseTest {
     }
 
     function test_exists_followsMintingNotOwnership() public {
-        /* Scenario: COL-12 — Every read answers
+        /* Scenario:
            Given a minted bear
            When it changes hands
            Then exists stays true, because it answers whether the bear was minted */
@@ -368,7 +373,7 @@ contract MintABearResetEventTest is BaseTest {
     }
 
     function test_transfer_emitsTheResetEvent_withALevel() public {
-        /* Scenario: COL-4 — The reset event fires on every non-mint transfer
+        /* Scenario:
            Given a bear that has a level
            When it is transferred
            Then TransferNonceAdvanced fires in the same transaction as Transfer
@@ -388,7 +393,7 @@ contract MintABearResetEventTest is BaseTest {
     }
 
     function test_everyTransfer_emitsTheNextNonce() public {
-        /* Scenario: COL-4 — The reset event fires on every non-mint transfer
+        /* Scenario:
            Given a bear that has already moved once
            When it moves back to a previous owner, and then by an operator
            Then each transfer emits the event with the next counter value */
@@ -410,7 +415,7 @@ contract MintABearResetEventTest is BaseTest {
     }
 
     function test_mint_emitsNoResetEvent() public {
-        /* Scenario: COL-4 — The reset event fires on every non-mint transfer
+        /* Scenario:
            When bears are minted
            Then no TransferNonceAdvanced is emitted, because a mint is not a transfer */
         vm.recordLogs();
@@ -475,7 +480,7 @@ contract MintABearOwnershipTest is BaseTest {
     }
 
     function test_theAdminOperatesTheDrop_andSeaDropStillMints() public {
-        /* Scenario: COL-10 — Two-step transfer to MINT's admin
+        /* Scenario:
            Given the admin has accepted ownership
            When the admin configures the drop and SeaDrop mints
            Then both work: ownership moved the controls, not the mint path */
@@ -491,7 +496,7 @@ contract MintABearOwnershipTest is BaseTest {
     }
 
     function test_acceptOwnership_byAnyoneElse_reverts() public {
-        /* Scenario: COL-10 — Two-step transfer to MINT's admin
+        /* Scenario:
            Given transferOwnership(admin) has been called, or nothing has
            When a wallet other than the admin calls acceptOwnership
            Then it reverts with NotNextOwner and the owner is unchanged */
@@ -507,7 +512,7 @@ contract MintABearOwnershipTest is BaseTest {
     }
 
     function test_cancelOwnershipTransfer_withdrawsTheOffer() public {
-        /* Scenario: COL-10 — Two-step transfer to MINT's admin
+        /* Scenario:
            Given transferOwnership(admin) has been called
            When the owner cancels before the admin accepts
            Then PotentialOwnerUpdated(0) is emitted and the admin's acceptOwnership reverts */
@@ -524,7 +529,7 @@ contract MintABearOwnershipTest is BaseTest {
     }
 
     function test_transferOwnership_refusesZeroAndNonOwners() public {
-        /* Scenario: COL-10 — Two-step transfer to MINT's admin
+        /* Scenario:
            When ownership is offered to the zero address, or by a wallet that is not the owner
            Then it reverts with NewOwnerIsZeroAddress or OnlyOwner */
         vm.expectRevert(TwoStepOwnable.NewOwnerIsZeroAddress.selector);
@@ -577,7 +582,7 @@ contract MintABearCreatorTokenTest is BaseTest {
     }
 
     function test_openSeaOrdersSettle() public {
-        /* Scenario: COL-7 — Holder transfers pass, foreign Seaport orders revert
+        /* Scenario:
            Given the validator's list 0 with OpenSea's SignedZone as authorizer
            When a SignedZone-restricted order moves a bear
            Then the sale settles, and creator earnings are collected on it */
@@ -592,7 +597,7 @@ contract MintABearCreatorTokenTest is BaseTest {
     }
 
     function test_validator_isNotConsultedOnMint() public {
-        /* Scenario: COL-7 — Holder transfers pass, foreign Seaport orders revert
+        /* Scenario:
            Given the validator set and SeaDrop not on any operator list
            When SeaDrop mints
            Then the mint passes: the validator is consulted for transfers only */
@@ -601,7 +606,7 @@ contract MintABearCreatorTokenTest is BaseTest {
     }
 
     function test_validator_doesNotChangeTheBurnRefusal() public {
-        /* Scenario: COL-7 — Holder transfers pass, foreign Seaport orders revert
+        /* Scenario:
            Given the validator set
            When the holder calls burn
            Then it is still refused with BurnDisabled, ahead of any validator call */
@@ -612,7 +617,7 @@ contract MintABearCreatorTokenTest is BaseTest {
     }
 
     function test_enforcement_isLiftedAndRestoredByOneOwnerCall() public {
-        /* Scenario: COL-7 — Holder transfers pass, foreign Seaport orders revert
+        /* Scenario:
            Given enforcement enabled
            When the owner calls setTransferValidator(address(0)) and then sets V3 again
            Then each call emits TransferValidatorUpdated and the policy follows the current value */
@@ -638,7 +643,7 @@ contract MintABearCreatorTokenTest is BaseTest {
     }
 
     function test_setTransferValidator_isOwnerOnly() public {
-        /* Scenario: COL-7 — Holder transfers pass, foreign Seaport orders revert
+        /* Scenario:
            When a non-owner tries to lift enforcement
            Then it reverts with OnlyOwner and the validator is unchanged */
         vm.prank(alice);
@@ -648,7 +653,7 @@ contract MintABearCreatorTokenTest is BaseTest {
     }
 
     function test_creatorTokenSurface() public view {
-        /* Scenario: COL-7 — Holder transfers pass, foreign Seaport orders revert
+        /* Scenario:
            When the ERC-721C surface is read
            Then getTransferValidator is V3, getTransferValidationFunction names validateTransfer as a
              non-view call, and ERC-165 advertises ICreatorToken */
@@ -702,7 +707,7 @@ contract MintABearEventsTest is BaseTest {
     }
 
     function test_approvalEvents_carryTheDocumentedArguments() public {
-        /* Scenario: COL-13 — Events carry the documented arguments
+        /* Scenario:
            When a holder approves one address for a bear and an operator for all
            Then Approval(owner, approved, tokenId) and ApprovalForAll(owner, operator, approved) are emitted */
         _mint(alice, 1);
@@ -752,7 +757,7 @@ contract MintABearBurnGuardTest is BaseTest {
     }
 
     function test_burn_byApprovedOperator_reverts() public {
-        /* Scenario: COL-8 — No bear can be destroyed
+        /* Scenario:
            Given alice approved an operator for all her bears
            When the operator calls burn
            Then it reverts with BurnDisabled, so an approval cannot destroy a holder's bear */
@@ -767,7 +772,7 @@ contract MintABearBurnGuardTest is BaseTest {
     }
 
     function test_burn_byStranger_reverts() public {
-        /* Scenario: COL-8 — No bear can be destroyed
+        /* Scenario:
            When a wallet with no approval calls burn on someone else's bear
            Then ERC721A's approval check refuses it before the hook is reached
            And totalSupply is unchanged */
@@ -779,7 +784,7 @@ contract MintABearBurnGuardTest is BaseTest {
     }
 
     function test_burn_leavesSupplyAndOwnershipIntact() public {
-        /* Scenario: COL-8 — No bear can be destroyed
+        /* Scenario:
            Given a bear that someone has tried to burn
            When supply, ownership and the counter are read
            Then nothing moved, so the id can never be orphaned */
@@ -794,7 +799,7 @@ contract MintABearBurnGuardTest is BaseTest {
     }
 
     function test_transferToZeroAddress_reverts() public {
-        /* Scenario: COL-8 — No bear can be destroyed
+        /* Scenario:
            When the owner transfers a bear to the zero address
            Then it reverts with BurnDisabled
            And totalSupply is unchanged */
@@ -809,7 +814,7 @@ contract MintABearBurnGuardTest is BaseTest {
     }
 
     function test_safeTransferToZeroAddress_reverts() public {
-        /* Scenario: COL-8 — No bear can be destroyed
+        /* Scenario:
            When an approved operator safe-transfers a bear to the zero address
            Then it reverts with BurnDisabled, because safeTransferFrom routes through transferFrom
            And totalSupply is unchanged */
@@ -829,7 +834,7 @@ contract MintABearBurnGuardTest is BaseTest {
     }
 
     function test_transferToDeadAddress_keepsTheBearInSupply() public {
-        /* Scenario: COL-8 — No bear can be destroyed
+        /* Scenario:
            Given the canonical dead address, which nobody controls
            When a bear is sent there
            Then it is an ordinary transfer: the bear stays in the supply and the counter advances */
@@ -879,7 +884,7 @@ contract MintABearSupplyCapTest is BaseTest {
     }
 
     function test_mint_batchStraddlingTheCap_reverts() public {
-        /* Scenario: COL-2 — A mint past the cap reverts
+        /* Scenario:
            Given a batch that would start below the cap and end above it, with maxSupply raised
            When it is minted
            Then the whole batch is refused with ExceedsMaxBears rather than partly filled */
@@ -894,7 +899,7 @@ contract MintABearSupplyCapTest is BaseTest {
     }
 
     function test_mint_pastTheCap_withMaxSupplyAtTheCap_reverts() public {
-        /* Scenario: COL-2 — A mint past the cap reverts
+        /* Scenario:
            Given maxSupply set to exactly 4,444, as Studio configures it, and 4,444 bears minted
            When SeaDrop mints one more
            Then SeaDrop's own sold-out check refuses it first and the supply stays 4,444 */
@@ -912,7 +917,7 @@ contract MintABearSupplyCapTest is BaseTest {
     }
 
     function test_supply_isExactlyMaxBears_onceMintedOut() public {
-        /* Scenario: COL-2 — A mint past the cap reverts
+        /* Scenario:
            Given the collection minted out
            When supply and existence are read
            Then totalSupply is 4,444, bear 4,444 exists and bear 4,445 does not */

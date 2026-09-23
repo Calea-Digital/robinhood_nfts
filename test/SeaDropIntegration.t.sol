@@ -57,7 +57,7 @@ contract SeaDropIntegrationTest is BaseTest {
     }
 
     function test_mintSeaDrop_byTheContractOwner_reverts() public {
-        /* Scenario: COL-1 — Only SeaDrop mints
+        /* Scenario:
            Given the contract owner, who configures the drop but is not a SeaDrop
            When they call the mint path directly
            Then the call reverts and no bear is minted */
@@ -68,7 +68,7 @@ contract SeaDropIntegrationTest is BaseTest {
     }
 
     function test_noOtherMintEntryPoint() public {
-        /* Scenario: COL-1 — Only SeaDrop mints
+        /* Scenario:
            When the usual public mint selectors are called on the collection
            Then none exists: mintSeaDrop is the only way a bear comes into being */
         string[4] memory signatures = [
@@ -84,7 +84,7 @@ contract SeaDropIntegrationTest is BaseTest {
     }
 
     function test_updateAllowedSeaDrop_isOwnerOnly() public {
-        /* Scenario: COL-1 — Only SeaDrop mints
+        /* Scenario:
            Given the allowed-SeaDrop list is the owner's setting
            When a non-owner tries to add itself as a minter
            Then it reverts, and the owner can still change the list */
@@ -199,7 +199,7 @@ contract SeaDropIntegrationTest is BaseTest {
     }
 
     function test_baseURI_isServed() public {
-        /* Scenario: COL-5 — Metadata is base URI plus id
+        /* Scenario:
            Given baseURI set through Studio
            When tokenURI(id) is read
            Then it returns baseURI followed by id */
@@ -242,7 +242,7 @@ contract SeaDropIntegrationTest is BaseTest {
     }
 
     function test_royaltyInfo_isTheSameForEveryBear() public {
-        /* Scenario: COL-6 — Royalty info reads 5% to the pot
+        /* Scenario:
            Given royalty info set to 500 basis points and the pot
            When royaltyInfo is read for the first bear, the last bear and an id that does not exist
            Then every answer is the pot and 5%, because the rate is collection-wide */
@@ -261,7 +261,7 @@ contract SeaDropIntegrationTest is BaseTest {
     }
 
     function test_setRoyaltyInfo_emitsRoyaltyInfoUpdated() public {
-        /* Scenario: COL-6 — Royalty info reads 5% to the pot
+        /* Scenario:
            When the owner sets royalty info
            Then RoyaltyInfoUpdated(receiver, bps) is emitted with the pot and 500 */
         vm.expectEmit(false, false, false, true, address(bears));
@@ -270,7 +270,7 @@ contract SeaDropIntegrationTest is BaseTest {
     }
 
     function test_setRoyaltyInfo_aboveTenThousandBps_reverts() public {
-        /* Scenario: COL-6 — Royalty info reads 5% to the pot
+        /* Scenario:
            When the owner sets a rate above 100%
            Then SeaDrop refuses it with InvalidRoyaltyBasisPoints */
         vm.expectRevert(
@@ -280,7 +280,7 @@ contract SeaDropIntegrationTest is BaseTest {
     }
 
     function test_setRoyaltyInfo_isOwnerOnly() public {
-        /* Scenario: COL-6 — Royalty info reads 5% to the pot
+        /* Scenario:
            When a wallet that does not own the contract sets royalty info
            Then it reverts with OnlyOwner and nothing changes */
         vm.prank(alice);
