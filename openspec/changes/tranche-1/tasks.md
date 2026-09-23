@@ -53,5 +53,5 @@ becomes a Task with Spec Ref `NONE` when picked.
 ## 5. Non-spec work (Spec Ref `NONE`)
 
 - [x] 5.1 Rewrite `CLAUDE.md`'s architecture sections to the tranche-1 code
-- [ ] 5.2 Rewrite `test/*.tree.md` against the requirement ids; keep INV-N obligations documented, unimplemented
+- [x] 5.2 Rewrite `test/*.tree.md` against the requirement ids; keep INV-N obligations documented, unimplemented
 - [ ] 5.3 Update `docs/HANDOVER.md` "Where things stand" at tranche end
