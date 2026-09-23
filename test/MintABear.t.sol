@@ -151,6 +151,11 @@ contract MintABearNoAccountsTest is BaseTest {
     ///      `vm.toString(bytes)` renders bytecode.
     string internal constant REGISTRY_HEX = "000000006551c19487814612e58fe06813775758";
 
+    /// @dev ERC-6551's interface ids: `token() ^ state() ^ isValidSigner(address,bytes)`, and
+    ///      `execute(address,uint256,bytes,uint8)`.
+    bytes4 internal constant IERC6551_ACCOUNT_ID = 0x6faff5f1;
+    bytes4 internal constant IERC6551_EXECUTABLE_ID = 0x51945447;
+
     function test_noTokenBoundAccountCode() public {
         /* Scenario: COL-9 — No token-bound account code
            When the deployed MintABear is inspected
@@ -162,14 +167,24 @@ contract MintABearNoAccountsTest is BaseTest {
         _assertNoEntryPoint("ACCOUNT_IMPLEMENTATION()", "");
         _assertNoEntryPoint("ACCOUNT_SALT()", "");
 
+        // The standard's own account surface, so a re-added account fails whatever it is named.
+        _assertNoEntryPoint("token()", "");
+        _assertNoEntryPoint("state()", "");
+        _assertNoEntryPoint("isValidSigner(address,bytes)", abi.encode(alice, bytes("")));
+        _assertNoEntryPoint("execute(address,uint256,bytes,uint8)", abi.encode(alice, uint256(0), bytes(""), uint8(0)));
+        assertFalse(bears.supportsInterface(IERC6551_ACCOUNT_ID), "IERC6551Account");
+        assertFalse(bears.supportsInterface(IERC6551_EXECUTABLE_ID), "IERC6551Executable");
+
         string memory code = vm.toString(address(bears).code);
         assertFalse(vm.contains(code, REGISTRY_HEX), "registry address in bytecode");
     }
 
     function test_noAccountGuard_derivedAddressIsAnOrdinaryDestination() public {
         /* Scenario: COL-9 — No token-bound account code
-           When a bear is sent to the address the canonical registry would derive for a bear
-           Then the transfer passes, because there is no account guard to refuse it */
+           Given the address the canonical registry would derive for a bear
+           When the deployed MintABear is inspected
+           Then it holds no ERC-6551 account code, no account guard and no registry call */
+        // The guard clause: a bear sent to that address transfers as it would to any other.
         _mint(alice, 2);
         address derived = LibERC6551.account(makeAddr("implementation"), bytes32(0), block.chainid, address(bears), 2);
         assertEq(derived.code.length, 0, "nothing deployed there");
