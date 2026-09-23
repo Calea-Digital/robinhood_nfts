@@ -39,7 +39,7 @@ becomes a Task with Spec Ref `NONE` when picked.
 - [x] 3.9 ACT-9 — Status link
 - [x] 3.10 ACT-10 — `snapshot(ids)`
 - [x] 3.11 ACT-11 — pause semantics, `renounceOwnership` refused while paused
-- [ ] 3.12 ACT-12 — roles
+- [x] 3.12 ACT-12 — roles
 - [ ] 3.13 ACT-13 — events
 - [ ] 3.14 ACT-14 — reads
 
