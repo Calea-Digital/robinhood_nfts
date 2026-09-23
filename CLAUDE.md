@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-MintABear — a 4,444-supply free-mint NFT collection on **Robinhood Chain (chain id 4663)**, built for a third party as the TGE vehicle for their casino product. Every bear owns an ERC-6551 account. Holders burn $MNTD to raise a bear's activation level (0–5), which multiplies the reward rate their off-chain MINT Status already pays. Activation and the Status link reset when a bear changes hands.
+MintABear — a 4,444-supply free-mint NFT collection on **Robinhood Chain (chain id 4663)**, built for a third party as the TGE vehicle for their casino product. Holders burn $MNTD to raise a bear's activation level (0–5), which multiplies the reward rate their off-chain MINT Status already pays. Activation and the Status link reset when a bear changes hands.
 
 Start any session by reading `docs/HANDOVER.md` — it carries current state, what is done, what is next, and the open questions waiting on the client.
 
@@ -22,22 +22,29 @@ Start any session by reading `docs/HANDOVER.md` — it carries current state, wh
 
 ## Architecture
 
-Four contracts. The token never calls the activation contract; the dependency runs one way only.
+The specification calls for seven contracts, four of them in tranche 1: `MintABear`, `WhitelistClaim`, `Activation`, `DirectBurnAdapter`. The token never calls the activation contract; the dependency runs one way only. What is on `tranche-1` today:
 
 | Contract | Base | Role |
 |---|---|---|
-| `src/MintABear.sol` | OpenSea `ERC721SeaDrop` | the collection. Transfer counter, bear-account guard, supply cap, burn refusal, renderer delegation |
-| `src/BearAccount.sol` | Solady `ERC6551` | the wallet each bear owns. Immutable, no admin path |
-| `src/Activation.sol` | standalone | cumulative burn, level derivation, Status link |
-| `src/renderers/PlaceholderRenderer.sol` | standalone | pre-reveal metadata; replaced by the real renderer at reveal |
+| `src/MintABear.sol` | OpenSea `ERC721SeaDrop` | the collection (COL-1…COL-13). Transfer counter and reset event, burn refusal, `MAX_BEARS`, `exists`; ERC-721C with the validator set at deploy; stock SeaDrop metadata, royalties and two-step ownership |
+| `src/interfaces/IMintABear.sol` | — | the three reads `Activation` depends on: `ownerOf`, `transferNonce`, `exists` |
+| `src/Activation.sol` | Solady `Ownable` | still the pre-specification contract, which burns $MNTD itself. Tasks 3.1–3.14 rewrite it against ACT-1…ACT-14: token-agnostic, one `crediter`, `credit(tokenId, burner, amount, nonce, ref)`, weights, `snapshot` |
+| `WhitelistClaim` | — | not yet written: tasks 2.1–2.4 (WL-3 first — it must be live before the campaign) |
+| `DirectBurnAdapter` | — | not yet written: tasks 3.7–3.8 (ACT-7, ACT-8); the one crediter, immutable, no owner |
 
-**The transfer counter is the load-bearing idea.** `MintABear` increments `transferNonce[tokenId]` on every transfer and never on mint. `Activation` stores a level alongside the counter value it was recorded at, and treats it as void once the counter moves. The reset is therefore a consequence of the transfer rather than an action that must succeed — it cannot be skipped, and a defect in `Activation` cannot block a transfer. Do not replace this with a callback from the token; that pattern fails open, and we have a live example of it doing so.
+**The transfer counter is the load-bearing idea (COL-3, COL-4).** `MintABear` increments `transferNonce[tokenId]` on every transfer and never on mint, and emits `TransferNonceAdvanced(tokenId, nonce)` in the same transaction as `Transfer`. `Activation` stores a level alongside the counter value it was recorded at, and treats it as void once the counter moves. The reset is therefore a consequence of the transfer rather than an action that must succeed — it cannot be skipped, and a defect in `Activation` cannot block a transfer. Do not replace this with a callback from the token; that pattern fails open. Indexers key the reset on `TransferNonceAdvanced`.
 
-**Bear-account guard.** Each bear's canonical account address is recorded in `isBearAccount`, and `_beforeTokenTransfers` refuses any destination in that mapping, so a bear can never be sent into any bear's account — including accounts that have never been deployed. This blocks ownership cycles of every length, not just self-deposit. Addresses are recorded as each bear mints, and `recordAccounts` pre-records a range so the rule also covers bears that have not minted yet; it is bounded by `MAX_BEARS`, permissionless and idempotent, and belongs in the deploy sequence. See the runbook in `docs/HANDOVER.md`.
+**No bear can be destroyed (COL-8).** `ERC721SeaDrop.burn` is `external` and not `virtual`, so it cannot be overridden; `_beforeTokenTransfers` refuses `to == address(0)` with `BurnDisabled`. ERC721A's `transferFrom` checks the zero address before the hook runs, so `MintABear` overrides `transferFrom` to refuse it with the same error, and `safeTransferFrom` routes through it. A bear sent to `0x…dEaD` stays in the supply; the royalty split excludes that address off-chain (ACT-10). When something inherited needs disabling, the hook is the lever.
 
-**Two things the SeaDrop base cannot enforce.** `ERC721SeaDrop.burn` and `setMaxSupply` are both `external` and neither is `virtual`, so neither can be overridden. Both are handled on the mint/transfer path in `_beforeTokenTransfers` instead: `to == address(0)` is refused, because a burned bear's account would keep its contents while resolving its controller through an `ownerOf` that no longer answers; and `MAX_BEARS` caps supply, because the inherited `maxSupply` is an owner setting that OpenSea Studio can also write through `multiConfigure`. When something inherited needs disabling, that hook is the lever.
+**Supply is capped in code (COL-2).** `MAX_BEARS = 4444` is a constant checked on the mint path with `ExceedsMaxBears`, so raising the Studio-writable `maxSupply` cannot increase the supply delivered. `getMintStats` is final and advertises `maxSupply`, so the runbook sets `maxSupply` to exactly 4,444; at that value SeaDrop's own `MintQuantityExceedsMaxSupply` fires first, and `ExceedsMaxBears` binds only when Studio raises it.
 
-**ERC-721C.** `ERC721SeaDrop` already implements `ICreatorToken`, so this *is* an ERC-721C collection. The transfer validator is deliberately left unset: on 4663, OpenSea's conduit is not on the default allowlist, so enabling enforcement would make bears unsellable where they are actually listed, and smart wallets could not transfer them out. Do not point it at Limit Break's validator without re-reading `docs/HANDOVER.md` first.
+**Metadata is stock SeaDrop (COL-5).** `tokenURI(id)` is `baseURI` followed by `id` when `baseURI` ends in `/`, and `baseURI` alone otherwise (the pre-reveal shape). `baseURI`, provenance and royalties (5% to the pot, COL-6) are set through Studio. Nothing about a bear's level reaches its metadata.
+
+**No token-bound accounts (COL-9).** ERC-6551 is not part of the collection and there is no account guard. It can be added later without any change to `MintABear`, because the canonical registry derives an account address from `(chainId, tokenContract, tokenId)` for any ERC-721; the one property that cannot be retrofitted is a token-side guard against sending a bear into a bear's account.
+
+**ERC-721C (COL-7).** `ERC721SeaDrop` implements `ICreatorToken`. The deploy script (OPS-2) sets the validator to Limit Break V3 `0x721C002B0059009a671D00aD1700c9748146cd1B` with its zero-state policy — security level 0, list 0, OpenSea's SignedZone as authorizer — so a holder's own transfers always pass and a sale settles only through OpenSea or a Payment Processor venue. One owner call, `setTransferValidator(address(0))`, lifts enforcement and one restores it (OPS-6). Never security level 5 or above. OpenSea's handling of a validated collection on 4663 is proven on testnet and with one team-bear sale before the drop page is published. The unit tests model the policy with `test/mocks/MockTransferValidator.sol`; the real V3 is the auditor's fork obligation (Fork-2 in `test/MintABear.tree.md`).
+
+**Ownership (COL-10).** SeaDrop's `TwoStepOwnable`: Calea deploys, calls `transferOwnership(admin)`, and MINT's admin calls `acceptOwnership`. Afterwards Calea holds no role. Never call `renounceOwnership`: Studio configuration would freeze for good.
 
 ## Commands
 
@@ -52,8 +59,8 @@ slither . --exclude-dependencies
 Targeting a single test:
 
 ```shell
-forge test --match-contract ActivationTest
-forge test --match-test test_transfer_resetsLevelAndCumulative -vvvv
+forge test --match-contract MintABearCreatorTokenTest
+forge test --match-test test_transfer_emitsTheResetEvent_withALevel -vvvv
 ```
 
 Reproduce a CI run locally: `FOUNDRY_PROFILE=ci forge test`.
@@ -66,19 +73,20 @@ Three submodules: `lib/forge-std`, `lib/seadrop`, `lib/solady`. After a fresh cl
 
 - **`solc_version = "0.8.17"` is forced, not chosen.** SeaDrop declares `pragma solidity 0.8.17;` — an exact pin, not a caret range — so everything in its import graph must compile at that version. This deviates from the `^0.8.20+` convention in the global instructions; the mandated dependency is the justification. Do not "upgrade" it without removing SeaDrop.
 - **`evm_version = "london"` follows from that.** `paris` only arrived in solc 0.8.18, so london is the ceiling here. No PUSH0, no transient storage. Nothing in this codebase needs them and the bytecode is maximally portable as a result.
-- `optimizer_runs = 1_000_000` matches SeaDrop's own setting. Robinhood Chain's contract size limit is ~96 KB (four times Ethereum's), so size is not a constraint — `MintABear` is 21 KB and fits under even the Ethereum limit.
+- `optimizer_runs = 1_000_000` matches SeaDrop's own setting. Robinhood Chain's contract size limit is ~96 KB (four times Ethereum's), so size is not a constraint — `MintABear` is 20 KB and fits under even the Ethereum limit.
 - `[profile.ci]` raises only fuzz/invariant runs. Keep build settings in `[profile.default]` so `forge build --sizes` matches between local and CI.
+- **`forge build` prints forge-lint warnings and they count against the warning-free gate.** One is accepted until ACT-1 removes the code it sits on: `unsafe-typecast` at `src/Activation.sol:120`, the `decimals()` scaling of the pre-specification `Activation`. Do not silence it with a lint directive.
 
 ## Test conventions
 
-Developer scope is **deterministic unit tests only**, with a BTT tree per contract (`test/<Contract>.tree.md`) and a `/* Scenario: Given / When / Then */` block in every test. Coverage gate: **≥90% line, ≥80% branch**; the suite currently sits at 100% on both, so a drop means something was added without a test.
+Developer scope is **deterministic unit tests only**, with a BTT tree per contract (`test/<Contract>.tree.md`) and a `/* Scenario: Given / When / Then */` block in every test. A test that satisfies a requirement's Scenario opens its block with `Scenario: COL-n — <Scenario title>` and quotes the spec's lines; the tree leaf cites the same id. Tests that only read state are declared `view`: solc's mutability warning would otherwise fail the warning-free build gate. Coverage gate: **≥90% line, ≥80% branch**; the suite sits at 100% on both, so a drop means something was added without a test.
 
-`test/poc/` holds proofs of concept from security review, kept as regression guards with the finding written up in the contract's NatSpec. A PoC that gets fixed is inverted to assert the refusal rather than deleted.
+`test/poc/` holds proofs of concept from security review, kept as regression guards with the finding written up in the contract's NatSpec. A PoC that gets fixed is inverted to assert the refusal rather than deleted; when the code it depended on leaves, the PoC keeps the assertions that survive and its NatSpec says what changed.
 
-**Do not write fuzz, invariant, mutation, formal-verification or fork-test harnesses.** Those belong to the auditor and are run independently; dev-authored invariant suites anchor the reviewer and create a false "invariants done" signal. The trees may *document* INV-N obligations, and they do — leave them documented and unimplemented. Deterministic single-scenario tests that happen to pin an invariant are in scope.
+**Do not write fuzz, invariant, mutation, formal-verification or fork-test harnesses.** Those belong to the auditor and are run independently; dev-authored invariant suites anchor the reviewer and create a false "invariants done" signal. The trees may *document* INV-N and Fork-N obligations, and they do — leave them documented and unimplemented. Deterministic single-scenario tests that happen to pin an invariant are in scope.
 
 Write specs and docs as **final state, not changelog** — no "was X, now Y" in body prose.
 
 ## CI gates
 
-Push and PR run `forge fmt --check`, `forge build --sizes`, `forge test -vvv`. All three must pass.
+Push and PR run `forge fmt --check`, `forge build --sizes`, `forge test -vvv`, then the spec lint and the generated-prose check. All must pass.
