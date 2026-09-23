@@ -66,8 +66,10 @@ contract Activation is Ownable {
     /// @notice Every amount ever credited to a bear, across all owners. Never reset.
     mapping(uint256 => uint256) public lifetimeBurned;
 
-    /// @dev Crediter references already recorded; each is accepted once.
-    mapping(bytes32 => bool) private _refUsed;
+    /// @dev References already recorded, per crediter; each is accepted once from its crediter.
+    ///      Keyed by crediter because a ref is that crediter's own burn number: a replacement
+    ///      adapter counts from 1 again and must not collide with its predecessor's refs.
+    mapping(address => mapping(bytes32 => bool)) private _refUsed;
 
     /// @dev Wallet's nominated bear, and the transfer count it was nominated at.
     mapping(address => uint256) private _linkedBear;
@@ -109,7 +111,7 @@ contract Activation is Ownable {
     /// @notice The bear has changed hands since the crediter read its transfer count.
     error StaleNonce();
 
-    /// @notice This crediter reference has already been recorded.
+    /// @notice This crediter has already recorded this reference.
     error RefAlreadyUsed();
 
     /// @notice The five thresholds must be positive and strictly ascending.
@@ -184,7 +186,7 @@ contract Activation is Ownable {
      * @param  burner  The wallet whose $MNTD was burned.
      * @param  amount  Base units burned.
      * @param  nonce   The bear's `transferNonce` when the crediter read it.
-     * @param  ref     The crediter's reference for this burn, accepted once.
+     * @param  ref     The crediter's reference for this burn, accepted once per crediter.
      */
     function credit(uint256 tokenId, address burner, uint128 amount, uint64 nonce, bytes32 ref) external {
         if (msg.sender != crediter) revert NotCrediter();
@@ -192,7 +194,7 @@ contract Activation is Ownable {
         if (amount == 0) revert ZeroAmount();
         if (BEARS.ownerOf(tokenId) != burner) revert NotBearOwner();
         if (BEARS.transferNonce(tokenId) != nonce) revert StaleNonce();
-        if (_refUsed[ref]) revert RefAlreadyUsed();
+        if (_refUsed[msg.sender][ref]) revert RefAlreadyUsed();
 
         Record storage record = _records[tokenId];
         uint128 cumulative = record.nonce == nonce ? record.cumulative : 0;
@@ -202,7 +204,7 @@ contract Activation is Ownable {
         record.cumulative = newCumulative;
         record.nonce = nonce;
         lifetimeBurned[tokenId] += amount;
-        _refUsed[ref] = true;
+        _refUsed[msg.sender][ref] = true;
 
         emit BearActivated(tokenId, burner, previousLevel, _levelFor(newCumulative), amount, newCumulative, ref);
     }

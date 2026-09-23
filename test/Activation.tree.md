@@ -29,7 +29,7 @@ credit
     │   └── it reverts with NotBearOwner
     ├── when transferNonce ≠ nonce (the bear moved, even if it came back)
     │   └── it reverts with StaleNonce
-    ├── when ref was already recorded
+    ├── when this crediter already recorded ref
     │   └── it reverts with RefAlreadyUsed and records nothing twice
     └── otherwise
         ├── cumulative and lifetimeBurned grow by amount; the level follows the cumulative
@@ -96,6 +96,7 @@ constructor
 ```
 setCrediter
 ├── by the owner: CrediterSet(previous, current); the new crediter credits, the old one cannot
+│   └── refs are per crediter: a replacement numbering from 1 is accepted; each crediter's spent refs stay spent
 └── by anyone else: Unauthorized
 
 setPaused
@@ -112,7 +113,7 @@ renounceOwnership
 
 - INV-4: `levelOf(id)` always equals the highest threshold cleared by `cumulativeOf(id)`.
 - INV-5: `lifetimeBurned` never decreases, and equals the sum of all credits to the bear.
-- INV-6: every `ref` is credited at most once.
+- INV-6: every `(crediter, ref)` is credited at most once.
 - INV-7: a level recorded before a transfer is never readable after it.
 - INV-8: `linkOf(wallet)` returns a non-zero bear only while that wallet owns it. Holds
   because every transfer advances the counter the link is pinned to.

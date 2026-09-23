@@ -594,6 +594,25 @@ contract ActivationOwnershipTest is BaseTest {
         assertEq(activation.lifetimeBurned(1), UNIT);
     }
 
+    function test_setCrediter_replacementCountsItsRefsFromOne() public {
+        /* Scenario:
+           Given the first crediter has recorded refs 1 and 2
+           When the owner sets a replacement crediter that numbers its burns from 1 again
+           Then its ref 1 is accepted, and ref 1 stays spent for the first crediter */
+        _credit(1, 1);
+        _credit(1, 1);
+        address next = makeAddr("nextCrediter");
+        activation.setCrediter(next);
+        vm.prank(next);
+        activation.credit(1, alice, UNIT, 0, bytes32(uint256(1)));
+        assertEq(activation.lifetimeBurned(1), 3 * UNIT);
+
+        activation.setCrediter(crediter);
+        vm.prank(crediter);
+        vm.expectRevert(Activation.RefAlreadyUsed.selector);
+        activation.credit(1, alice, UNIT, 0, bytes32(uint256(1)));
+    }
+
     function test_setCrediterAndSetPaused_byNonOwner_revert() public {
         /* Scenario:
            Given a wallet that does not own Activation
