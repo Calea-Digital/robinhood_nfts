@@ -347,3 +347,41 @@ contract DirectBurnAdapterEventsTest is DirectBurnAdapterBase {
         assertEq(abi.decode(burned.data, (uint256)), 500 * UNIT, "amount");
     }
 }
+
+/// @dev ACT-14. Every listed read answers on the deployed pair, for a bear credited through the
+///      adapter.
+contract ActivationReadsTest is DirectBurnAdapterBase {
+    function test_everyReadAnswers() public {
+        /* Scenario: ACT-14 — Every read answers
+           When every listed read is called for a credited bear
+           Then each returns without reverting
+           And BEARS, MNTD and ACTIVATION return the deployed addresses */
+        _burn(alice, 1, 3_333 * UNIT);
+        vm.prank(alice);
+        activation.linkBear(1);
+
+        assertEq(activation.levelOf(1), 2);
+        assertEq(activation.cumulativeOf(1), 3_333 * UNIT);
+        assertEq(activation.lifetimeBurned(1), 3_333 * UNIT);
+        assertEq(activation.weightOf(1), 125);
+        assertEq(activation.weightFor(2), 125);
+        assertEq(activation.thresholdFor(3), 8_333 * UNIT);
+        assertEq(activation.costToReach(1, 3), 5_000 * UNIT);
+        (uint256 tokenId, uint8 level) = activation.linkOf(alice);
+        assertEq(tokenId, 1);
+        assertEq(level, 2);
+        uint256[] memory ids = new uint256[](1);
+        ids[0] = 1;
+        Activation.BearState[] memory rows = activation.snapshot(ids);
+        assertEq(rows[0].owner, alice);
+        assertEq(rows[0].level, 2);
+        assertEq(rows[0].weight, 125);
+        assertFalse(activation.paused());
+        assertEq(activation.crediter(), address(adapter));
+        assertEq(address(activation.BEARS()), address(bears));
+
+        assertEq(address(adapter.MNTD()), address(mntd));
+        assertEq(address(adapter.ACTIVATION()), address(activation));
+        assertEq(adapter.burnCount(), 1);
+    }
+}

@@ -107,6 +107,7 @@ thresholdFor: level 0 → 0; levels 1–5 → the constructor's base units, unsc
 weightFor:    levels 0–5 → 100 / 110 / 125 / 145 / 170 / 200; above 5 → InvalidLevel
 weightOf:     the weight of the bear's current level (100 unactivated, 145 at level 3)
 costToReach:  the exact remainder, or 0 once reached; above 5 → InvalidLevel
+every read answers for a credited bear, on the deployed pair: see DirectBurnAdapter.tree.md (ACT-14)
 snapshot:     owner, level and weight for existing ids; zeroes for an id that does not exist
               snapshot([1, 2, 4445]): owner, level and weight for 1 and 2, zeroes for 4445 (ACT-10)
               a bear at 0x…dEaD is reported with that owner; per-wallet sums and the eligible total
