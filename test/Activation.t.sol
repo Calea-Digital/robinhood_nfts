@@ -939,3 +939,82 @@ contract ActivationLifetimeTest is BaseTest {
         assertEq(activation.cumulativeOf(1), 1 * UNIT, "alice's earlier credit does not come back");
     }
 }
+
+/// @dev ACT-10. `snapshot(ids)` is what MINT's royalty accounting reads at each closing block;
+///      the sums — per wallet, and the eligible total without `0x…dEaD` — are taken off-chain.
+contract ActivationSnapshotTest is BaseTest {
+    address internal constant DEAD = 0x000000000000000000000000000000000000dEaD;
+
+    function setUp() public override {
+        super.setUp();
+        _mint(alice, 2);
+        _mint(bob, 2);
+    }
+
+    function test_snapshot_answersForAnyIds() public {
+        /* Scenario: ACT-10 — The snapshot answers for any ids
+           When snapshot([1, 2, 4445]) is read
+           Then it returns owner, level and weight for ids 1 and 2 and zeroes for the id that does
+             not exist */
+        _credit(1, 8_333);
+        uint256[] memory ids = new uint256[](3);
+        (ids[0], ids[1], ids[2]) = (1, 2, 4445);
+        Activation.BearState[] memory rows = activation.snapshot(ids);
+
+        assertEq(rows.length, 3);
+        assertEq(rows[0].owner, alice);
+        assertEq(rows[0].level, 3);
+        assertEq(rows[0].weight, 145);
+        assertEq(rows[1].owner, alice);
+        assertEq(rows[1].level, 0);
+        assertEq(rows[1].weight, 100);
+        assertEq(rows[2].owner, address(0));
+        assertEq(rows[2].level, 0);
+        assertEq(rows[2].weight, 0);
+    }
+
+    function test_snapshot_reproducesTheSplitInputs() public {
+        /* Scenario:
+           Given four bears — alice's at levels 5 and 0, bob's at level 2, and bob's other sent to
+             0x…dEaD at level 1 before it moved
+           When snapshot([1, 2, 3, 4]) is read and summed off-chain
+           Then alice weighs 300, bob 125, the dead address's bear is reported with that owner at
+             the level-0 weight, and the eligible total excluding it is 425 */
+        _credit(1, 41_666);
+        _credit(3, 3_333);
+        _credit(4, 1_666);
+        vm.prank(bob);
+        bears.transferFrom(bob, DEAD, 4);
+
+        uint256[] memory ids = new uint256[](4);
+        (ids[0], ids[1], ids[2], ids[3]) = (1, 2, 3, 4);
+        Activation.BearState[] memory rows = activation.snapshot(ids);
+
+        assertEq(rows[3].owner, DEAD, "the dead address stays visible; it is excluded off-chain");
+        assertEq(rows[3].weight, 100, "and its record was reset by the move");
+
+        uint256 aliceWeight;
+        uint256 bobWeight;
+        uint256 eligible;
+        for (uint256 i; i < rows.length; ++i) {
+            if (rows[i].owner == alice) aliceWeight += rows[i].weight;
+            if (rows[i].owner == bob) bobWeight += rows[i].weight;
+            if (rows[i].owner != DEAD) eligible += rows[i].weight;
+        }
+        assertEq(aliceWeight, 300);
+        assertEq(bobWeight, 125);
+        assertEq(eligible, 425);
+    }
+
+    function test_snapshot_edgeIds() public view {
+        /* Scenario:
+           Given the collection
+           When snapshot is read for no ids, and for id 0
+           Then it returns an empty array, and zeroes for id 0 (bears are numbered from 1) */
+        assertEq(activation.snapshot(new uint256[](0)).length, 0);
+        uint256[] memory zero = new uint256[](1);
+        Activation.BearState[] memory rows = activation.snapshot(zero);
+        assertEq(rows[0].owner, address(0));
+        assertEq(rows[0].weight, 0);
+    }
+}
