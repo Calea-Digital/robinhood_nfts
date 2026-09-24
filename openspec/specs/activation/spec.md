@@ -129,7 +129,8 @@ which returns the exact remainder or zero.
 recorded with the current counter value; `unlinkBear()` clears it and is safe to call when
 nothing is linked; `linkOf(wallet) → (tokenId, level)` returns `(0, 0)` when nothing is linked
 or the bear has since moved. A wallet aggregates royalty weight across all its bears (ACT-10)
-but carries exactly one Status boost; the boost's value is MINT's, off-chain.
+but carries exactly one Status boost; the boost's value, and how the links of an account's
+several wallets combine, are MINT's, off-chain (`→ CQ-21`).
 
 #### Scenario: One nomination per wallet
 - **GIVEN** a wallet owning a bear at level 2
