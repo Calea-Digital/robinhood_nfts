@@ -15,7 +15,7 @@ The specification calls for seven contracts, four in tranche 1. On `tranche-1` t
 
 | Contract | Base | Role |
 |---|---|---|
-| [`src/MintABear.sol`](src/MintABear.sol) | OpenSea `ERC721SeaDrop` | the collection. Transfer counter and reset event, burn refusal, `MAX_BEARS`, `exists`; ERC-721C with the validator set at deploy; stock SeaDrop metadata, royalties and two-step ownership |
+| [`src/MintABear.sol`](src/MintABear.sol) | OpenSea `ERC721SeaDrop` | the collection. Transfer counter and reset event, burn refusal, `MAX_BEARS`, `exists`; ERC-721C with the validator set at deploy; stock SeaDrop metadata, royalties and two-step ownership, never renounced |
 | [`src/interfaces/IMintABear.sol`](src/interfaces/IMintABear.sol) | — | the reads `Activation` depends on: `ownerOf`, `transferNonce`, `exists` |
 | [`src/Activation.sol`](src/Activation.sol) | Solady `Ownable` | the level record: credits from one adapter (the crediter), levels and royalty weights, the MINT Status link, `snapshot` for the royalty split; holds no token |
 | [`src/DirectBurnAdapter.sol`](src/DirectBurnAdapter.sol) | — | the one crediter: a holder burns $MNTD for a bear and the burn is credited to `Activation` in the same transaction; no owner, no settings, refuses amounts past level 5 |

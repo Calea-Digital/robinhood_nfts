@@ -33,6 +33,10 @@ cast call $SEADROP "getTokenGatedAllowedTokens(address)(address[])" $BEARS --rpc
 non-empty at step 4 was set before the handover: clear it through Studio or the matching
 `update…` call before the drop is configured. After this the deployer holds no role.
 
+**`maxSupply` stays at 4,444.** Never raise it in Studio: `getMintStats` advertises `maxSupply`,
+so Studio would offer bears the token refuses to mint (`ExceedsMaxBears`, COL-2), and buyers past
+the cap would pay gas for reverted transactions.
+
 **Ownership is never renounced.** `renounceOwnership` reverts with `RenounceDisabled` for every
 caller: the collection always has an owner, because every setting in this runbook is an owner
 call. Ownership moves only by `transferOwnership` (the offer) and `acceptOwnership` (from the new
