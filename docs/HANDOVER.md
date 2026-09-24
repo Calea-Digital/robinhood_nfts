@@ -16,19 +16,21 @@ is `MintABear-Specification-v2.1.pages`; `v1.0` and `v2.0` stay beside it as the
 answered and then decided against. The v2.2 document is not built yet: it is built when the
 reviewer asks, and until then v2.1 is the last version MINT has. **The board (YouTrack MNT) follows `openspec/`** through
 `docs/tools/board.sh`; the work loop that picks requirements off it is in `CLAUDE.md`
-("Specification and board") and its pick order is `openspec/changes/tranche-1/tasks.md`. A
-The next session starts from `docs/prompts/tranche-1-integrity-and-review.md`: an integrity check of spec, prose, client document, code and board, then the rest of the tranche-1 review.
-The v2.0 document is 31 pages; to check a build without opening Pages, export it to PDF through
-`osascript` and render or count text per page with a short Swift PDFKit script — a table that does
-not fit the rest of a page moves whole to the next one in Pages, so a heading left alone on a page
-means the table after it is too tall.
+("Specification and board") and its pick order is `openspec/changes/tranche-1/tasks.md`.
+
+To check a client-document build without opening Pages, export it to PDF through `osascript` and
+render or count text per page with a short Swift PDFKit script. A table that does not fit the rest
+of a page moves whole to the next one, so a heading left alone on a page means the table after it
+is too tall; a one-cell callout taller than the space left is clipped at the page edge instead —
+v2.1's CQ-18 and CQ-9 callouts are cut off that way — so read each callout's last line too.
 
 The call of 21 September is folded in. Seven of the nine decisions are settled — $MNTD native on
 4663, cumulative thresholds, the on-chain whitelist registry, the instant mystery box, the VRF
 subscription, the existing-contract review deferred, and MINT building the play page on
-getminted.io in TypeScript. Section 10 now carries those as settled and lists eight open items,
-O1–O8, each with Calea's recommendation, which is also the default built if it is deferred.
-CQ-20 is new: the prize count and the excluded team ids.
+getminted.io in TypeScript. Section 10 carries those as settled and lists nine open items,
+O1–O9, each with Calea's recommendation, which is also the default built if it is deferred.
+CQ-20 asks for the prize count and the excluded team ids; CQ-21, raised in the tranche-1 review,
+how MINT's Status counts the links of an account's several wallets.
 
 **The mystery box is one instant game over the collection**, not a series of rounds (§6).
 `MysteryBox` on 4663 checks ownership, spends the id and registers the open; `PrizeDraw` on the
@@ -37,20 +39,20 @@ without replacement; a `PrizeVault` on each prize chain pays out. RAF-26 to RAF-
 game; RAF-10, 12, 13, 20, 21, 22 and 23 are retired with pointers to them.
 
 **Tranche 1's code is on branch `tranche-1`**, branched from `main` at `746acbe`, never pushed and
-not merged into `main`; `main` still carries the pre-specification code. **The paired review is
-under way** (`reports/tranche-1-review-log.md`): COL-1…COL-13 (MNT-7…16, 18, 19), WL-1, WL-3, WL-4,
-WL-5 (MNT-20, 22…24) and the non-spec MNT-92…94 are Done, with the Defects the review raised
-(MNT-99…112) Done too. In Review and still to be reviewed, in order: ACT-1…ACT-14 (MNT-26…39),
-OPS-2, OPS-3, OPS-6 (MNT-62, 63, 66) and MNT-96…98. MNT-113 — the change that made
-`Activation` burn $MNTD itself (spec v2.2) — and MNT-114, this handover, are Done. OPS-4, the rehearsal, is still ahead, with Subtask MNT-95 (Sourcify
-on 46630). Each Task carries a claim comment, a summary comment with its commits and gates, and
-logged time; the human sets Done and merges `tranche-1` into `main`.
+not merged into `main`; `main` still carries the pre-specification code. **The paired review of
+every tranche-1 Task is complete** (`reports/tranche-1-review-log.md`): COL-1…13, WL-1, 3, 4, 5,
+ACT-1…14, OPS-2, 3, 6 and the non-spec MNT-92…94, 96…98 are Done, with the Defects the review
+raised (MNT-99…112, 115…118, 120…129) and the architecture change MNT-113 (`Activation` burns
+$MNTD itself, spec v2.2). An integrity check of spec, prose, client document, code and board ran
+first (the log's "Integrity check"). OPS-4, the rehearsal, is still ahead, with Subtask MNT-95
+(Sourcify on 46630). Each Task carries a claim comment, a summary with its commits and gates, a
+`Reviewed — Done` comment and logged time; the human merges `tranche-1` into `main`.
 
 | | |
 |---|---|
 | Contracts | 3 of the 6 the spec calls for: `MintABear`, `WhitelistClaim`, `Activation`; `MysteryBox`, `PrizeVault`, `PrizeDraw` are tranche 2 |
 | Scripts | `Deploy.s.sol` (OPS-2), `verify.sh` (OPS-3), `Enforcement.s.sol` (OPS-6), `WhitelistExport.s.sol` (WL-4); `docs/RUNBOOK.md`: ownership handover, whitelist export, transfer enforcement, royalties, Activation |
-| Tests | 208, all passing; 100% line, branch and function coverage (gate ≥90 / ≥80); every tranche-1 work-item Scenario has a test except the operational OPS-1, OPS-3 (live), OPS-4, OPS-5 |
+| Tests | 214, all passing; 100% line, branch and function coverage (gate ≥90 / ≥80); every tranche-1 work-item Scenario has a test except the operational OPS-1, OPS-3 (live), OPS-4, OPS-5 |
 | CI gates | `fmt --check`, `build --sizes` (no warnings), `test`, spec lint, generated prose, `verify.sh` dry run and verdict test — all green |
 | Slither | no High or Critical; 2 accepted Mediums, both `locked-ether` (below) |
 
@@ -59,7 +61,9 @@ go: ACT-5 (after a transfer the weight reads the level-0 weight) and OPS-2 (`Whi
 takes MINT's admin as owner) on 2026-09-23; on 2026-09-24, in the tranche-1 review, COL-10
 (ownership is never renounced), WL-3 (the voucher's index is the account's allocation; renounce
 refused), WL-1 (thresholds make the account eligible), and spec v2.2 — `Activation` burns $MNTD
-itself and `DirectBurnAdapter` is gone (ACT-1, 2, 4, 6, 7, 8, 11–14, OPS-1, 2, 4, DEL-8).
+itself and `DirectBurnAdapter` is gone (ACT-1, 2, 4, 6, 7, 8, 11–14, OPS-1, 2, 4, DEL-8); ACT-9
+points to the new decision CQ-21; and CQ-2 and CQ-21 block what they gate downstream (OPS-2 and
+OPS-4; DEL-6).
 
 Submodule pins: `forge-std` `bf647bd` (v1.16.2), `seadrop` `757590f`, `solady` `acd959a`
 (v0.1.26). The chain's contract size limit is ~96 KB; every contract clears even Ethereum's
@@ -67,16 +71,17 @@ Submodule pins: `forge-std` `bf647bd` (v1.16.2), `seadrop` `757590f`, `solady` `
 
 ## Next session — integrity check and review, then the rehearsal
 
-1. **Integrity check, then the rest of the review** (`docs/prompts/tranche-1-integrity-and-review.md`).
-   The review resumes at #20, MNT-26 / ACT-1, against the `Activation` of MNT-113; then the human
-   merges `tranche-1` into `main`. Point recorded for the reviewer in the Task comments:
-   `WeightsNotAscending` (MNT-26).
+1. **Tranche-end pass, then the merge.** Two or three narrow `solidity-auditor` passes over
+   `src/`, findings handled as in the review; `reports/tranche-1-review.md` written from the log;
+   then the human merges `tranche-1` into `main`. The DEL-6 client package follows
+   (`docs/prompts/del-6-client.md`).
 2. **The OPS-4 rehearsal on 46630** (human-led; `tasks.md` 4.4). It needs from MINT the admin and
-   signer addresses (CQ-12), the campaign dates (CQ-1) and the testnet $MNTD with its `decimals`
-   (CQ-2), written into `script/config/46630.json` from `script/config/example.json`; and from the
+   signer addresses (CQ-12), the campaign dates (CQ-1) and the testnet $MNTD's address (CQ-2;
+   `Activation` reads its `decimals`), written into `script/config/46630.json` from `script/config/example.json`; and from the
    operator a funded deployer key and OpenSea Studio access. It runs the three `Deploy.s.sol`
    entry points with Sourcify verification (closing MNT-95), attaches Studio, completes
-   `acceptOwnership`, walks a whitelist claim through `WhitelistExport.s.sol`'s export and compare
+   `acceptOwnership`, reads `Activation` back and has the admin prove control (runbook,
+   "Activation"), walks a whitelist claim through `WhitelistExport.s.sol`'s export and compare
    into an allowlist mint, burns through `Activation`, and toggles enforcement once.
 3. **The internal auditor** takes the tranche after the rehearsal: the trees' INV-N and Fork-N
    obligations are theirs.
@@ -95,6 +100,7 @@ What each open item blocks:
 | O6 calendar (CQ-1) | Scheduling; the campaign dates fix when `WhitelistClaim` must be live |
 | O7 repository and CI (CQ-14) | Where the packages land at handover |
 | O8 whitelist export direction and any owner bulk-add (CQ-18) | One `WhitelistClaim` function, if MINT needs it; none is built |
+| O9 Status links across an account's wallets (CQ-21) | MINT's Status logic and the portal's link prompts (DEL-6), not code |
 
 ## Sources and precedence
 
@@ -121,9 +127,10 @@ must be live before the campaign opens (proposed 6 October).
 
 ### Tranche 1 — `MintABear`, `WhitelistClaim`, `Activation`, then the internal auditor
 
-The code is written and In Review (above). What remains before the internal auditor takes it:
+The code is written and reviewed (above). What remains before the internal auditor takes it:
 
-1. **Review and merge** of `tranche-1` into `main` (the human's).
+1. **The tranche-end `solidity-auditor` passes and the merge** of `tranche-1` into `main` (the
+   merge is the human's).
 2. **OPS-4 rehearsal on 46630** with MINT's values, closing Subtask MNT-95 and rehearsal items
    1, 3 and 4 below.
 3. **Mainnet configs** `script/config/4663.json` once CQ-12, CQ-1 and CQ-2 are answered.
@@ -292,10 +299,10 @@ Measured against chain 4663 on 2026-09-10 and 2026-09-15; Chainlink and ApeChain
 
 ## Open questions with the client
 
-Twenty in `docs/OPEN-QUESTIONS.md`, each with the section it affects, when it is needed, the
-answer where one exists, and the default otherwise. After the call of 21 September: ten settled
-(CQ-3, 4, 5, 6, 7, 8, 10, 16, 18, 19), six in follow-up (CQ-1, 2, 9, 11, 15, 17) and four open
-(CQ-12, 13, 14, 20). They map onto O1–O8 in §10. Tranche 1's code is written; its rehearsal and
+Twenty-one in `docs/OPEN-QUESTIONS.md`, each with the section it affects, when it is needed, the
+answer where one exists, and the default otherwise: nine resolved (CQ-3, 4, 5, 6, 7, 8, 10, 16,
+19), seven in follow-up (CQ-1, 2, 9, 11, 15, 17, 18) and five open (CQ-12, 13, 14, 20, 21). They
+map onto O1–O9 in §10. Tranche 1's code is written; its rehearsal and
 deployment wait on MINT's values (O4, O5, O6); tranche 2 waits on CQ-20.
 
 ## Related documents
