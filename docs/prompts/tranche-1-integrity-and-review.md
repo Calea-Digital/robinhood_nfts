@@ -12,8 +12,8 @@ spec and board in several places. Then resume the review where it stopped.
 merged). Review log: `reports/tranche-1-review-log.md` — read it whole; it records every finding,
 how it was settled, the Defects and their commits, and the notes carried forward. Done: the COL
 family (MNT-7…16, 18, 19), the WL family (MNT-20, 22…24), MNT-92…94, and Defects MNT-99…112. In
-Review, still to review: MNT-26…39 (ACT-1…14), MNT-62, 63, 66 (OPS-2, 3, 6), MNT-96…98, MNT-113, MNT-114.
-Spec is v2.2. Suite 208 tests, 100 % coverage, no build warnings, Slither no High or Critical.
+Review, still to review: MNT-26…39 (ACT-1…14), MNT-62, 63, 66 (OPS-2, 3, 6), MNT-96…98. MNT-113 (the burn moved into `Activation`) and MNT-114 (this handover) are
+Done. Spec is v2.2. Suite 208 tests, 100 % coverage, no build warnings, Slither no High or Critical.
 
 **What the review changed, so the check knows where to look.**
 - Spec amended through archived OpenSpec changes (`openspec/changes/archive/2026-09-24-*`):
@@ -59,8 +59,7 @@ what you ran and what it returned. Read-only: change nothing until I have seen t
    requirements implemented.
 3. **Spec ↔ board.** `source ~/trees/ai-stack/.env; docs/tools/board.sh --dry` must show nothing
    drifted and nothing to create. Then, beyond what the bridge checks: every Task's State against
-   the review log (Done / In Review exactly as listed above); the Defects MNT-99…112 Done and MNT-113
-   In Review, each with Work Kind, Spec Ref, parent milestone, the `MNT Claude` tag and its
+   the review log (Done / In Review exactly as listed above); the Defects MNT-99…112 and Tasks MNT-113, MNT-114 Done, each with Work Kind, Spec Ref, parent milestone, the `MNT Claude` tag and its
    `relates to` link; decision States against `openspec/decisions.md` (CQ-3's changed resolution
    in particular); no Task still describing the adapter or the crediter in a Claude-owned comment
    that a reader would take as current.
@@ -113,8 +112,6 @@ Then continue the review, one Task at a time, exactly as `docs/prompts/tranche-1
 | 37 | MNT-96 | NONE | `b16a75b` | `CLAUDE.md`, `README.md` (whole) | docs |
 | 38 | MNT-97 | NONE | `17a5097` | `test/*.tree.md` | docs |
 | 39 | MNT-98 | NONE | `c44f4bb` | `docs/HANDOVER.md`, `docs/prompts/` | docs |
-| 40 | MNT-113 | ACT-7 | `174fa96`, `899d131` | the whole v2.2 change: spec delta, `Activation`, deploy script, docs | logic ⚑ |
-| 41 | MNT-114 | NONE | this handover | `docs/HANDOVER.md`, this prompt, `reports/tranche-1-review-log.md`, `docs/tools/check_scenario_quotes.py` | docs |
 
 ACT-1's review was presented and its findings settled by MNT-113 (see the log); present MNT-26
 again against the new code, briefly, and review it independently from scratch. MNT-32's original

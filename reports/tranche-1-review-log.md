@@ -116,6 +116,8 @@ record the settlement.
 - Spec v2.2 174fa96 (change act-burn-in-activation; 71 board bodies refreshed). Code/tests e3e6e71, docs d65f619, merge 899d131. Task MNT-113. Tests 208. Fixes ACT-1 L-1, I-1, I-2.
 - ACT-1's findings are settled by the architecture change: L-1, I-1, I-2 fixed (MNT-113); I-3 (one-step `transferOwnership` of `Activation` in `Deploy.s.sol`) deferred to OPS-2 (#34); I-4 (an approved operator's self-transfer wipes a level) a DEL-6 note. MNT-26 itself is re-reviewed against the new code when the review resumes.
 
+- Done: MNT-113, MNT-114 (2026-09-24, without separate review rows; MNT-26…39 and MNT-62 are still reviewed against MNT-113's code from #20).
+
 ## Carried forward
 
 - **DEL-6 notes** (for `docs/prompts/del-6-client.md`): `BurnDisabled` answers any zero destination (MNT-14 I-2); `TransferNonceAdvanced` precedes `Transfer` in the logs (MNT-10 I-1); the client refuses `from == to` and the portal warns before transferring an activated bear, and an approved operator's self-transfer resets a bear too (MNT-9 I-2, MNT-26 I-4); a viem `signTypedData` known-answer test for the whitelist voucher — exact type string, domain `WhitelistClaim` / `1` / chainId / verifyingContract — and the signer signs the account's allocation number (MNT-22); the mirror's Merkle proofs use Studio's sorted-leaf tree, as `script/lib/AllowListTree.sol` builds it (MNT-23, MNT-93); approve `Activation`, not an adapter, and `BearActivated` carries no `ref` (MNT-113); page `snapshot` over large id ranges (MNT-26).
