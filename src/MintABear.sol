@@ -15,7 +15,7 @@ import {ERC721SeaDrop} from "seadrop/ERC721SeaDrop.sol";
  *         is the stock `baseURI` followed by `id`, with `baseURI`, provenance and royalties set
  *         through Studio.
  *
- *         Three behaviours are added on top:
+ *         Four behaviours are added on top:
  *
  *         1. A per-bear transfer counter. Activation stores a level alongside the counter
  *            value it was set at; when the counter moves, that level is void. The reset is
@@ -30,6 +30,11 @@ import {ERC721SeaDrop} from "seadrop/ERC721SeaDrop.sol";
  *         3. A hard supply ceiling of `MAX_BEARS`. The inherited `maxSupply` is an owner
  *            setting that can be raised at will; this one is a constant checked on the mint
  *            path, so 4,444 is a guarantee rather than a configuration choice.
+ *
+ *         4. A refusal to renounce ownership. The collection always has an owner, because
+ *            Studio's configuration, `baseURI`, royalties and the transfer-validator lift and
+ *            restore are owner settings, and the inherited `renounceOwnership` would leave a
+ *            pending ownership offer standing.
  *
  *         The collection carries no token-bound accounts. ERC-6551 can be added later without
  *         any change here, because the canonical registry derives an account address from
@@ -58,6 +63,9 @@ contract MintABear is ERC721SeaDrop {
     /// @notice The mint would take the collection past `MAX_BEARS`.
     error ExceedsMaxBears();
 
+    /// @notice Ownership can be handed over, never renounced.
+    error RenounceDisabled();
+
     /**
      * @param name_           Collection name. Permanent.
      * @param symbol_         Collection symbol. Permanent.
@@ -72,6 +80,17 @@ contract MintABear is ERC721SeaDrop {
     ///         true it stays true; ownership is `ownerOf`'s business.
     function exists(uint256 tokenId) external view returns (bool) {
         return _exists(tokenId);
+    }
+
+    /**
+     * @notice Refused for every caller, the owner included: the collection always has an owner.
+     * @dev    The inherited `TwoStepOwnable.renounceOwnership` would freeze every owner setting for
+     *         good and, because it does not clear `potentialOwner`, leave a pending offer through
+     *         which a renounced collection could be claimed again. Ownership moves only by
+     *         `transferOwnership` and `acceptOwnership`.
+     */
+    function renounceOwnership() public virtual override {
+        revert RenounceDisabled();
     }
 
     /**

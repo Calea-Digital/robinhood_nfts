@@ -23,7 +23,8 @@ deployCollection
     ├── setMaxSupply(4444)
     ├── setTransferValidator(Limit Break V3)
     ├── transferOwnership(admin) — the admin's acceptOwnership completes it
-    └── canonical SeaDrop mints and any other address reverts with OnlyAllowedSeaDrop (COL-1)
+    ├── canonical SeaDrop mints and any other address reverts with OnlyAllowedSeaDrop (COL-1)
+    └── it never calls SeaDrop, so no SeaDrop state is set before the admin takes over (COL-10)
 ```
 
 ## deployActivation

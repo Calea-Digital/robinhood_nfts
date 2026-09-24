@@ -4,6 +4,40 @@ Operating the MintABear contracts on Robinhood Chain (4663). Every action here i
 by MINT's admin, and every one is reversible. Scripts live in `script/`; each prints what it read
 and what it did.
 
+## Ownership handover (COL-10)
+
+**Accept, then check what was handed over — before Studio configures anything.** Calea deploys
+and offers ownership; MINT's admin completes it and, in the same sitting, resets and reads the
+state an owner could have set before the handover. Everything below is expected empty or zero
+because the deploy sets none of it; Studio fills it in afterwards.
+
+```shell
+# 1. accept (from the admin; a Safe proposes the same call)
+cast send $BEARS "acceptOwnership()" --rpc-url $RPC
+# 2. reset the minter list to canonical SeaDrop alone (it has no getter; this replaces it whole)
+cast send $BEARS "updateAllowedSeaDrop(address[])" "[$SEADROP]" --rpc-url $RPC
+# 3. read the collection
+cast call $BEARS "owner()(address)" --rpc-url $RPC                  # the admin
+cast call $BEARS "maxSupply()(uint256)" --rpc-url $RPC              # 4444
+cast call $BEARS "getTransferValidator()(address)" --rpc-url $RPC   # V3, 0x721C…cd1B
+# 4. read SeaDrop's state for the collection
+cast call $SEADROP "getCreatorPayoutAddress(address)(address)" $BEARS --rpc-url $RPC     # 0x0
+cast call $SEADROP "getAllowListMerkleRoot(address)(bytes32)" $BEARS --rpc-url $RPC      # 0x0
+cast call $SEADROP "getAllowedFeeRecipients(address)(address[])" $BEARS --rpc-url $RPC   # []
+cast call $SEADROP "getSigners(address)(address[])" $BEARS --rpc-url $RPC                # []
+cast call $SEADROP "getPayers(address)(address[])" $BEARS --rpc-url $RPC                 # []
+cast call $SEADROP "getTokenGatedAllowedTokens(address)(address[])" $BEARS --rpc-url $RPC # []
+```
+
+`$SEADROP` is canonical SeaDrop, `0x00005EA00Ac477B1030CE78506496e8C2dE24bf5`. Anything
+non-empty at step 4 was set before the handover: clear it through Studio or the matching
+`update…` call before the drop is configured. After this the deployer holds no role.
+
+**Ownership is never renounced.** `renounceOwnership` reverts with `RenounceDisabled` for every
+caller: the collection always has an owner, because every setting in this runbook is an owner
+call. Ownership moves only by `transferOwnership` (the offer) and `acceptOwnership` (from the new
+owner); `cancelOwnershipTransfer` withdraws an offer.
+
 ## Transfer enforcement (OPS-6, COL-7)
 
 **The deployed state.** `MintABear` is an ERC-721C collection. The deploy sets its transfer
