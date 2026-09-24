@@ -118,7 +118,23 @@ record the settlement.
 
 - Done: MNT-113, MNT-114 (2026-09-24, without separate review rows; MNT-26…39 and MNT-62 are still reviewed against MNT-113's code from #20).
 
+## Integrity check (2026-09-24)
+- Ran: lint OK (71 req, 20 CQ); render --check current; build 0 warnings; 208 tests; quotes 33/0; ABI of the three contracts vs every tranche-1 statement; Scenario → leaf/test map; INV/Fork header identical in the four contract trees; board.sh --dry; board states, links, CQ bodies and comments (sub-agent); working-docs grep; v2.1 .pages → PDF → PDFKit text vs 746acbe sources (ratio 0.991, formatting only).
+- A-1 Medium/process: board.sh --dry failed — MNT-113 Spec Ref ACT-7 duplicated MNT-32. FIXED: MNT-113 Spec Ref NONE; --dry then 0 create / 0 refresh.
+- A-2 Low: 16 Tasks' 2026-09-23 comments describe credit/adapter as current; MNT-113 not linked to MNT-27, 29, 31, 36, 39, 63. FIXED: "Superseded by MNT-113" comment on MNT-26…39, 62, 63; links to 27, 29, 36, 39, 63 added. Link MNT-113↔MNT-31 refused by the session's permission classifier — open for the reviewer.
+- A-3 Info: MNT-114 has no relates-to (→ MNT-26: refused by the classifier, open for the reviewer); MNT-101 Spec Ref NONE (sweep) and MNT-114 under MNT-3 ACCEPTED.
+- A-4 Low: SPECIFICATION.md §10 "CQ-3 the credit design" settled; §2 "credited burns"; two v2.1 typos. FIXED, Defect MNT-115, 3c23720.
+- A-5 Info: Activation THRESHOLD_1…5 public, not named by ACT-14 (WEIGHT_n internal) → settle at MNT-39 (#33).
+- A-6 Info: unnamed guard errors/events (ThresholdsNotAscending, WeightsNotAscending, ZeroAddress, InvalidLevel, SignerSet, WindowSet, RenounceDisabled) ACCEPTED, as ZeroSigner/InvalidWindow at MNT-22.
+- A-7 Info: OPS-3 Scenario has no tree leaf (CI dry run only) → MNT-97 (#38).
+- A-8 Low: tasks.md lines named the adapter/credit design. FIXED, MNT-115, 3c23720. proposal.md/design.md kept as the change's record.
+- A-9 Info: rehearsal prompt "credited level". FIXED, MNT-115, 3c23720.
+- A-10 Info: RUNBOOK has no Activation section (pause around switch-on, rehearsal window, ownership; OPS-5) → OPS-2 (#34) with I-3; RUNBOOK:3 "every action is an owner call" (export is read-only) → OPS-6 (#36).
+- A-11 Low: v2.1 .pages clips the CQ-18 callout (p12) and CQ-9 callout (p24, hides "supply the prize count and excluded ids (CQ-20)"); Pages does not split a one-cell callout. Noted for the v2.2 build (shorten/split or build change; check page fit). v2.1 otherwise faithful to 746acbe.
+- v2.1 now incorrect on: COL-10, WL-1, WL-3, ACT-1, 2, 4–8, 11–14, OPS-1, 2, 4, DEL-8; §1.1, §2 tables and flow, §8 three rows, §10 O5; CQ-1, 2, 3, 12.
+- Note: the bridge .env is ~/trees/ai-stack/scripts/youtrack-bridge/.env (the handover prompt names ~/trees/ai-stack/.env).
+
 ## Carried forward
 
 - **DEL-6 notes** (for `docs/prompts/del-6-client.md`): `BurnDisabled` answers any zero destination (MNT-14 I-2); `TransferNonceAdvanced` precedes `Transfer` in the logs (MNT-10 I-1); the client refuses `from == to` and the portal warns before transferring an activated bear, and an approved operator's self-transfer resets a bear too (MNT-9 I-2, MNT-26 I-4); a viem `signTypedData` known-answer test for the whitelist voucher — exact type string, domain `WhitelistClaim` / `1` / chainId / verifyingContract — and the signer signs the account's allocation number (MNT-22); the mirror's Merkle proofs use Studio's sorted-leaf tree, as `script/lib/AllowListTree.sol` builds it (MNT-23, MNT-93); approve `Activation`, not an adapter, and `BearActivated` carries no `ref` (MNT-113); page `snapshot` over large id ranges (MNT-26).
-- **Open at the end of the review:** refresh the test count in `docs/HANDOVER.md` and `docs/prompts/tranche-1-rehearsal.md`; run `test/fixtures/merkletreejs-vector.js` once npm access is agreed (MNT-111); the pre-existing forge-lint note (unused `MintABear` import, `test/Enforcement.t.sol:7`) at OPS-6 (#36); the v2.2 client document is built only when the reviewer asks (Q13).
+- **Open at the end of the review:** refresh the test count in `docs/HANDOVER.md` and `docs/prompts/tranche-1-rehearsal.md`; run `test/fixtures/merkletreejs-vector.js` once npm access is agreed (MNT-111); the pre-existing forge-lint note (unused `MintABear` import, `test/Enforcement.t.sol:7`) at OPS-6 (#36); the v2.2 client document is built only when the reviewer asks (Q13), with the CQ-18 and CQ-9 callouts fitted to their pages (A-11); A-5 at #33, A-7 at #38, A-10 at #34 and #36.
