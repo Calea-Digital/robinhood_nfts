@@ -140,8 +140,27 @@ record the settlement.
 - ACT1-I-2 Info: an unminted id reverts OwnerQueryForNonexistentToken, not NotBearOwner (`:200`, `:224`) → ACT-4 (#23).
 - Carried: decimals ≥78 Panic / 0 decimals untested → #21; weights[0] == 100 unchecked → #22 / #34; no post-deploy read of MNTD/DECIMALS/thresholdFor(5) (the deploy's decimals check left with MNT-113) and Activation's own one-step transferOwnership → #34.
 - DEL-6 notes: warn/cancel open listings before a burn (a filled listing after a burn costs the seller, buyer gets level 0); snapshot in ~500-id chunks at the closing block from an archive node (one 1..4444 call ≈ 40–45M gas, estimated), ids exactly 1..4444 (duplicates return duplicate rows); contract-held bears keep weight — only 0x…dEaD excluded (MINT's policy).
+- Done: MNT-26, MNT-116
+## MNT-27 ACT-2 (presented)
+- Tests lens: each assertion breaks under a named mutation (`>=`→`>` in `_levelFor`; hard-coded 10^18; constant DECIMALS; `<=`→`<` in the ascending check). costToReach(1,4) = 8,333e18 alone would pass `return cumulative` or T4−T3 — caught by test_costToReach_atEveryLevel at level 5.
+- dimension-validator (read-only): no mismatch in Activation.sol, Deploy.s.sol loadConfig/deployActivation, example.json; scaling once, in the constructor.
+- ACT2-I-1 Info: "a bear burned for to 8,333" (test_costToReach_atEveryLevel) — fold into the next Activation test Defect.
+- ACT2-I-2 Info: decimals 34–72 → SafeCast Overflow, ≥73 → Panic 0x11, 0 untested — ACCEPTED (reverts, never truncates; CQ-2 / Fork-3).
+- Carried to OPS-2 (#34): a pre-scaled thresholdsWhole passes at 6 decimals (10^6× too high) — guard in loadConfig or runbook; loadConfig does not check array lengths.
+## MNT-28 ACT-3 (presented)
+- Tests lens: Scenario test breaks under a swapped weight, weightOf → weightFor(level+1), a broken _levelFor; neighbour pins the reset to 100; InvalidLevel above 5 pinned (:775).
+- ACT3-I-1 Info: "burned for to" in four Scenario blocks (test/Activation.t.sol:767, 870, 911, 1254; MNT-113's rewording of "credited to"; includes ACT2-I-1) — fold into the next Activation test Defect.
+- ACT3-I-2 Info: constructor does not require weights[0] == 100 (only ascending) — contract as specified; post-deploy read of weightFor(0..5) at OPS-2 (#34).
+- Done: MNT-27, MNT-28, MNT-115
+## MNT-29 ACT-4 (presented)
+- Tests lens (the ⚑ adversarial pass on `burn` ran at #20): Scenario test breaks without nonReentrant, without the lifetime add, with a wrong event argument or amount; effect order pinned by MNT-116.
+- ACT4-I-1 Info/test: check-order test did not pin NotBearOwner before AlreadyAtMaxLevel. FIXED (bob burns for the level-5 bear; the mutant fails).
+- ACT1-I-2 settled here: an unminted id reverts OwnerQueryForNonexistentToken in the collection's ownerOf — FIXED, NatSpec on burn and linkBear, test, tree leaf.
+- ACT2-I-1 / ACT3-I-1: four "burned for to" blocks reworded.
+- Defect MNT-117 (all of the above). Tests 210.
+- DEL-6 note: an unminted id answers `OwnerQueryForNonexistentToken` (ERC721A), not `NotBearOwner`.
 
 ## Carried forward
 
-- **DEL-6 notes** (for `docs/prompts/del-6-client.md`): `BurnDisabled` answers any zero destination (MNT-14 I-2); `TransferNonceAdvanced` precedes `Transfer` in the logs (MNT-10 I-1); the client refuses `from == to` and the portal warns before transferring an activated bear, and an approved operator's self-transfer resets a bear too (MNT-9 I-2, MNT-26 I-4); a viem `signTypedData` known-answer test for the whitelist voucher — exact type string, domain `WhitelistClaim` / `1` / chainId / verifyingContract — and the signer signs the account's allocation number (MNT-22); the mirror's Merkle proofs use Studio's sorted-leaf tree, as `script/lib/AllowListTree.sol` builds it (MNT-23, MNT-93); approve `Activation`, not an adapter, and `BearActivated` carries no `ref` (MNT-113); page `snapshot` over large id ranges — ~500 ids per call from an archive node at the closing block, ids exactly 1..4444, contract-held bears keep weight (MNT-26); the portal warns about or cancels a bear's open listings before a burn (MNT-26).
+- **DEL-6 notes** (for `docs/prompts/del-6-client.md`): `BurnDisabled` answers any zero destination (MNT-14 I-2); `TransferNonceAdvanced` precedes `Transfer` in the logs (MNT-10 I-1); the client refuses `from == to` and the portal warns before transferring an activated bear, and an approved operator's self-transfer resets a bear too (MNT-9 I-2, MNT-26 I-4); a viem `signTypedData` known-answer test for the whitelist voucher — exact type string, domain `WhitelistClaim` / `1` / chainId / verifyingContract — and the signer signs the account's allocation number (MNT-22); the mirror's Merkle proofs use Studio's sorted-leaf tree, as `script/lib/AllowListTree.sol` builds it (MNT-23, MNT-93); approve `Activation`, not an adapter, and `BearActivated` carries no `ref` (MNT-113); page `snapshot` over large id ranges — ~500 ids per call from an archive node at the closing block, ids exactly 1..4444, contract-held bears keep weight (MNT-26); the portal warns about or cancels a bear's open listings before a burn (MNT-26); `burn` and `linkBear` for an unminted id revert `OwnerQueryForNonexistentToken` from the collection, not `NotBearOwner` (MNT-29).
 - **Open at the end of the review:** refresh the test count in `docs/HANDOVER.md` and `docs/prompts/tranche-1-rehearsal.md`; run `test/fixtures/merkletreejs-vector.js` once npm access is agreed (MNT-111); the pre-existing forge-lint note (unused `MintABear` import, `test/Enforcement.t.sol:7`) at OPS-6 (#36); the v2.2 client document is built only when the reviewer asks (Q13), with the CQ-18 and CQ-9 callouts fitted to their pages (A-11); A-5 at #33, A-7 at #38, A-10 at #34 and #36.
