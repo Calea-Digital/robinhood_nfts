@@ -91,7 +91,7 @@ All of it is needed before `Activation` is deployed.
 - **Needed by:** 2026-10-05 — before tranche 2 starts
 - **Resolution:** **instant reveal**. A holder opens a box with a bear they own and learns the outcome then; one bear is one shot and the id is spent by it. Rounds, entry windows and the scheduled draw are dropped.
 - **Summary:** Instant reveal on opening; one bear is one shot and the id is spent
-- **Blocks:** RAF-28
+- **Blocks:** RAF-28, RAF-29, RAF-30, RAF-31
 
 **Question.** Every bear at a published block is a ticket and holders do nothing — or an
 explicit opt-in?
@@ -180,6 +180,7 @@ reading with CQ-9.
 - **Needed by:** 2026-10-02 — before anything is deployed to mainnet
 - **Resolution:** Open; supplied on time, as constructor parameters where possible
 - **Default if deferred:** a Safe for the admin; EOAs for worker and signer.
+- **Blocks:** OPS-1, OPS-2, WL-3, COL-10
 
 **Question.** Four addresses, as OPS-1 records them: the **admin** (owner of every contract on
 every chain), the **worker** key (raffle lifecycle, seed relay, winners root), the **eligibility
@@ -324,6 +325,7 @@ question.
 - **Needed by:** 2026-10-05 — before tranche 2 starts; the numbers are deployment values
 - **Resolution:** To supply: how many prizes, and which token ids are out of play
 - **Default if deferred:** none; the game cannot be deployed without them.
+- **Blocks:** RAF-24, RAF-27
 
 **Question.** The instant mystery box (CQ-9) needs three numbers that only MINT can give.
 
@@ -350,6 +352,7 @@ burn thresholds are immutable once `Activation` is deployed.
 - **Needed by:** before the campaign opens
 - **Resolution:** option **(A)** — an on-chain registry on Robinhood Chain; the holder sends the claim and pays the gas. The CSV loaded into OpenSea is exported from that registry.
 - **Summary:** On-chain registry, holder pays gas (A); the OpenSea CSV is exported from it
+- **Blocks:** WL-4, OPS-4
 
 **Question.** MINT provides the Privy mirror login and an API for the signed-in account's
 wagering; Calea records the whitelist claims of those who meet the requirement. Where is the
@@ -545,8 +548,9 @@ does not dilute the pot (ACT-10).
 **Answer (MINT).** "Enforce royalties always."
 
 **Recorded as.** COL-7 and OPS-6: the validator is set at deployment. With it, holder-initiated
-transfers always pass; sales settle only through OpenSea's SignedZone orders or a Payment
-Processor marketplace, and creator earnings are collected on each. OpenSea's handling of a
+transfers always pass; sales a marketplace operates settle only through OpenSea's SignedZone
+orders or a Payment Processor marketplace, and creator earnings are collected on each; a sale
+arranged outside a marketplace pays none (COL-7). OpenSea's handling of a
 validated collection on Robinhood Chain has not yet been observed, so it is proven on testnet
 with Studio and then with one team bear listed and sold on mainnet before the drop page is
 published; if OpenSea cannot fill orders, one owner call lifts enforcement until it can.

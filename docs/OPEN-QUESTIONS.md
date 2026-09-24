@@ -528,8 +528,9 @@ does not dilute the pot (ACT-10).
 **Answer (MINT).** "Enforce royalties always."
 
 **Recorded as.** COL-7 and OPS-6: the validator is set at deployment. With it, holder-initiated
-transfers always pass; sales settle only through OpenSea's SignedZone orders or a Payment
-Processor marketplace, and creator earnings are collected on each. OpenSea's handling of a
+transfers always pass; sales a marketplace operates settle only through OpenSea's SignedZone
+orders or a Payment Processor marketplace, and creator earnings are collected on each; a sale
+arranged outside a marketplace pays none (COL-7). OpenSea's handling of a
 validated collection on Robinhood Chain has not yet been observed, so it is proven on testnet
 with Studio and then with one team bear listed and sold on mainnet before the drop page is
 published; if OpenSea cannot fill orders, one owner call lifts enforcement until it can.
