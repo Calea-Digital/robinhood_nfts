@@ -231,6 +231,15 @@ record the settlement.
 - MNT98-I-1 Low: HANDOVER "Where things stand" / "Next session" described the session's start (review in progress, 208 tests, O1–O8, twenty questions, WeightsNotAscending point, a broken sentence). FIXED: review complete, Defect ranges, 214 tests, O9 / CQ-21 (table, counts, amendments), next = tranche-end pass → merge → DEL-6; the callout-clipping note (A-11).
 - MNT98-I-2 Low: rehearsal prompt (four contracts, 208, decimals in the config, no read-back step). FIXED: three contracts, 214, the $MNTD address only, step 2b (runbook "Activation" read-back and control check), verify.test.sh in the reading list.
 - Defect MNT-129.
+- Done: MNT-98, MNT-129
+
+## Tranche-end pass (2026-09-24) — three narrow solidity-auditor runs (Activation; MintABear; WhitelistClaim), read-only
+- No C/H/M; nothing Low in the contracts' own code. Lead closed: the counter advances before ERC721A writes the new owner, but the only call in that gap is the validator's `view` (STATICCALL) — no state change possible (Fork-2 records the STATICCALL).
+- T-1 Low (verified): the allowlist's per-wallet limit counts every mint to the wallet (SeaDrop.sol:668, ERC721SeaDrop.sol:456 `_numberMinted`; WhitelistExport.s.sol:114) — a claimant who minted in an earlier or overlapping stage loses allocations. Spec WL-4 amended (change tranche-end-wl4-col7, 7a3feff): the whitelist stage is the first open to non-team wallets, no overlap; CQ-18 carries it; RUNBOOK and rehearsal follow (MNT-130).
+- T-2 Low (verified): SeaDrop's ERC721AConduitPreapproved pre-approves OpenSea's conduit 0x1E00…3c71 for every holder, irrevocably; not deployed on 4663. ACCEPTED as a risk (HANDOVER), with a Fork-2 line and rehearsal step 4b (MNT-130).
+- T-3 Info: COL-7 overstated enforcement — at level 0 an escrow-mediated sale pays no royalty. Spec COL-7 reworded (same change); NatSpec, CLAUDE.md, RUNBOOK, HANDOVER accepted risk (MNT-130).
+- T-4, T-5 (a–d), T-6 Info: backend voucher rules (keyed canonical `account` hash; index from `accountClaims`; check `claimsOf`; EOA signer, no key re-use), `weightOf` 100 for unminted ids vs `snapshot` 0, re-link overwrites — into docs/prompts/del-6-client.md. T-5 e (shared allowlist root) → RUNBOOK and rehearsal.
+- For MINT with the v2.2 document: the stage order (CQ-18), the conduit preapproval, and what royalty enforcement covers.
 
 ## Carried forward
 
