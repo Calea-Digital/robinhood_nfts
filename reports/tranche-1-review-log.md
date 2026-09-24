@@ -226,6 +226,11 @@ record the settlement.
 - Done: MNT-96, MNT-127
 ## MNT-97 trees (presented) — 214 tests in 11 suites; INV/Fork header identical in the four contract trees; obligations current; crediter mentions state absence; every Defect test today has a leaf.
 - A-7 settled: OPS-3 had no leaf and verify.sh no tree. FIXED, Defect MNT-128: test/Verify.tree.md (dry run, verdict leaves citing OPS-3, live Scenario as the MNT-95 rehearsal obligation); CLAUDE.md names the four scripts.
+- Done: MNT-97, MNT-128
+## MNT-98 docs (presented) — HANDOVER whole and the rehearsal prompt; other prompts are records (review / kickoff still describe the adapter; the integrity prompt's .env path).
+- MNT98-I-1 Low: HANDOVER "Where things stand" / "Next session" described the session's start (review in progress, 208 tests, O1–O8, twenty questions, WeightsNotAscending point, a broken sentence). FIXED: review complete, Defect ranges, 214 tests, O9 / CQ-21 (table, counts, amendments), next = tranche-end pass → merge → DEL-6; the callout-clipping note (A-11).
+- MNT98-I-2 Low: rehearsal prompt (four contracts, 208, decimals in the config, no read-back step). FIXED: three contracts, 214, the $MNTD address only, step 2b (runbook "Activation" read-back and control check), verify.test.sh in the reading list.
+- Defect MNT-129.
 
 ## Carried forward
 
