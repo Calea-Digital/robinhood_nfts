@@ -135,6 +135,20 @@ contract DeployTest is Test {
         assertEq(bears.totalSupply(), 1, "nothing more minted");
     }
 
+    function test_deployCollection_touchesNoSeaDropState() public {
+        /* Scenario:
+           Given the collection the deploy script creates
+           When every account the deployment touches is recorded
+           Then canonical SeaDrop is never called, so no drop, signer, payer, payout or fee
+             recipient is configured before MINT's admin takes over (COL-10) */
+        vm.startStateDiffRecording();
+        deployer.deployCollection(_config());
+        VmSafe.AccountAccess[] memory accesses = vm.stopAndReturnStateDiff();
+        for (uint256 i; i < accesses.length; ++i) {
+            assertTrue(accesses[i].account != deployer.SEADROP(), "SeaDrop touched");
+        }
+    }
+
     function test_deployWhitelist_refusesACloseTooNearTheStage() public {
         /* Scenario:
            Given a campaign that closes less than 48 hours before the whitelist stage

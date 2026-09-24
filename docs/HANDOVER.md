@@ -46,7 +46,7 @@ merges `tranche-1` into `main`. Subtask MNT-95 (Sourcify on 46630) waits for the
 | | |
 |---|---|
 | Contracts | 4 of the 7 the spec calls for: `MintABear`, `WhitelistClaim`, `Activation`, `DirectBurnAdapter`; `MysteryBox`, `PrizeVault`, `PrizeDraw` are tranche 2 |
-| Scripts | `Deploy.s.sol` (OPS-2), `verify.sh` (OPS-3), `Enforcement.s.sol` (OPS-6), `WhitelistExport.s.sol` (WL-4); `docs/RUNBOOK.md` opens with transfer enforcement |
+| Scripts | `Deploy.s.sol` (OPS-2), `verify.sh` (OPS-3), `Enforcement.s.sol` (OPS-6), `WhitelistExport.s.sol` (WL-4); `docs/RUNBOOK.md`: ownership handover, transfer enforcement, royalties |
 | Tests | 218, all passing; 100% line, branch and function coverage (gate ≥90 / ≥80); every tranche-1 work-item Scenario has a test except the operational OPS-1, OPS-3 (live), OPS-4, OPS-5 |
 | CI gates | `fmt --check`, `build --sizes` (no warnings), `test`, spec lint, generated prose, `verify.sh` dry run — all green |
 | Slither | no High or Critical; 2 accepted Mediums, both `locked-ether` (below) |
@@ -201,7 +201,7 @@ RAF-17. Four constraints:
   address and mint bears outside Studio's stages, without fee or allowlist, up to `MAX_BEARS`.
   Canonical SeaDrop as the only allowed minter (COL-1) is a deployment and ownership property,
   not a constant. Accepted; the mitigation is MINT's admin being a Safe (COL-10) and the
-  runbook's owner calls.
+  runbook's handover, which resets the list to canonical SeaDrop straight after acceptance.
 - **Slither "locked ether"** on `Activation` and `WhitelistClaim`: Solady marks ownership
   functions `payable`; only the owner could lock their own ETH by attaching value. Accepted, and
   said in each contract's NatSpec.
@@ -275,7 +275,7 @@ deployment wait on MINT's values (O4, O5, O6); tranche 2 waits on CQ-20.
 - `docs/SPECIFICATION.md`, `docs/OPEN-QUESTIONS.md` (generated views), `docs/client/`, `docs/tools/build_client_doc.py`, `docs/tools/board.sh`.
 - `test/<Suite>.tree.md` — one branching tree per test suite, leaves citing requirement IDs, with
   the auditor's INV-N and Fork-N obligations numbered once across all trees.
-- `docs/RUNBOOK.md` — operating steps; opens with transfer enforcement (OPS-6).
+- `docs/RUNBOOK.md` — operating steps: the ownership handover (COL-10), transfer enforcement (OPS-6) and royalties (COL-6).
 - `test/SeaDropIntegration.t.sol` and its tree — the boundary with OpenSea Studio.
 - `docs/MintABear-Questionnaire-v2.0.docx` — the client questionnaire the original build answered.
 - `~/.claude/plans/i-am-starting-a-tidy-sloth.md` — the original decision log, item by item.
