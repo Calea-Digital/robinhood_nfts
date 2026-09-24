@@ -42,9 +42,10 @@ game; RAF-10, 12, 13, 20, 21, 22 and 23 are retired with pointers to them.
 not merged into `main`; `main` still carries the pre-specification code. **The paired review of
 every tranche-1 Task is complete** (`reports/tranche-1-review-log.md`): COL-1…13, WL-1, 3, 4, 5,
 ACT-1…14, OPS-2, 3, 6 and the non-spec MNT-92…94, 96…98 are Done, with the Defects the review
-raised (MNT-99…112, 115…118, 120…129) and the architecture change MNT-113 (`Activation` burns
+raised (MNT-99…112, 115…118, 120…130) and the architecture change MNT-113 (`Activation` burns
 $MNTD itself, spec v2.2). An integrity check of spec, prose, client document, code and board ran
-first (the log's "Integrity check"). OPS-4, the rehearsal, is still ahead, with Subtask MNT-95
+first (the log's "Integrity check"), and three tranche-end `solidity-auditor` passes after
+(the log's "Tranche-end pass"); `reports/tranche-1-review.md` summarises it all. OPS-4, the rehearsal, is still ahead, with Subtask MNT-95
 (Sourcify on 46630). Each Task carries a claim comment, a summary with its commits and gates, a
 `Reviewed — Done` comment and logged time; the human merges `tranche-1` into `main`.
 
@@ -71,10 +72,8 @@ Submodule pins: `forge-std` `bf647bd` (v1.16.2), `seadrop` `757590f`, `solady` `
 
 ## Next session — integrity check and review, then the rehearsal
 
-1. **Tranche-end pass, then the merge.** Two or three narrow `solidity-auditor` passes over
-   `src/`, findings handled as in the review; `reports/tranche-1-review.md` written from the log;
-   then the human merges `tranche-1` into `main`. The DEL-6 client package follows
-   (`docs/prompts/del-6-client.md`).
+1. **The merge, then DEL-6.** The human merges `tranche-1` into `main`; the DEL-6 client package
+   follows from `docs/prompts/del-6-client.md` (it asks first where the packages live — CQ-14).
 2. **The OPS-4 rehearsal on 46630** (human-led; `tasks.md` 4.4). It needs from MINT the admin and
    signer addresses (CQ-12), the campaign dates (CQ-1) and the testnet $MNTD's address (CQ-2;
    `Activation` reads its `decimals`), written into `script/config/46630.json` from `script/config/example.json`; and from the
@@ -129,8 +128,7 @@ must be live before the campaign opens (proposed 6 October).
 
 The code is written and reviewed (above). What remains before the internal auditor takes it:
 
-1. **The tranche-end `solidity-auditor` passes and the merge** of `tranche-1` into `main` (the
-   merge is the human's).
+1. **The merge** of `tranche-1` into `main` (the human's).
 2. **OPS-4 rehearsal on 46630** with MINT's values, closing Subtask MNT-95 and rehearsal items
    1, 3 and 4 below.
 3. **Mainnet configs** `script/config/4663.json` once CQ-12, CQ-1 and CQ-2 are answered.
