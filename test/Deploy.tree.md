@@ -32,20 +32,17 @@ deployCollection
 ```
 deployActivation
 ├── when the admin, $MNTD or the collection is zero: it reverts with MissingAddress
-├── when $MNTD's decimals differ from the config's: it reverts with DecimalsMismatch
-└── otherwise, in this order (OPS-2):
-    ├── Activation(bears, thresholds scaled by 10^decimals, weights)
-    ├── DirectBurnAdapter(mntd, activation)
-    ├── setCrediter(adapter) — the one address set after construction
-    ├── setPaused(true) — until the switch-on date
-    └── transferOwnership(admin)
+├── otherwise, in this order (OPS-2), with no address set after construction:
+│   ├── Activation(bears, mntd, thresholdsWhole, weights)
+│   ├── setPaused(true) — until the switch-on date
+│   └── transferOwnership(admin)
+└── with a 6-decimal $MNTD, Activation reads the decimals itself and scales the thresholds by 10^6
 ```
 
 ## Config
 
 ```
 loadConfig: every field of script/config/example.json reads as written
-scaledThresholds: whole $MNTD × 10^decimals; a figure past uint128 reverts, never truncates
 runWhitelist / runCollection / runActivation: each broadcasts its deployment from the config
 ```
 

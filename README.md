@@ -11,14 +11,13 @@ specification is in [`openspec/`](openspec/); the board (YouTrack `MNT`) follows
 
 ## Contracts
 
-The specification calls for seven contracts, four in tranche 1. On `tranche-1` today:
+The specification calls for six contracts, three in tranche 1. On `tranche-1` today:
 
 | Contract | Base | Role |
 |---|---|---|
 | [`src/MintABear.sol`](src/MintABear.sol) | OpenSea `ERC721SeaDrop` | the collection. Transfer counter and reset event, burn refusal, `MAX_BEARS`, `exists`; ERC-721C with the validator set at deploy; stock SeaDrop metadata, royalties and two-step ownership, never renounced |
 | [`src/interfaces/IMintABear.sol`](src/interfaces/IMintABear.sol) | — | the reads `Activation` depends on: `ownerOf`, `transferNonce`, `exists` |
-| [`src/Activation.sol`](src/Activation.sol) | Solady `Ownable` | the level record: credits from one adapter (the crediter), levels and royalty weights, the MINT Status link, `snapshot` for the royalty split; holds no token |
-| [`src/DirectBurnAdapter.sol`](src/DirectBurnAdapter.sol) | — | the one crediter: a holder burns $MNTD for a bear and the burn is credited to `Activation` in the same transaction; no owner, no settings, refuses amounts past level 5 |
+| [`src/Activation.sol`](src/Activation.sol) | Solady `Ownable`, `ReentrancyGuard` | the level record: a holder burns $MNTD for a bear and the burn is recorded in the same transaction; levels and royalty weights, the MINT Status link, `snapshot` for the royalty split; refuses amounts past level 5 |
 | [`src/WhitelistClaim.sol`](src/WhitelistClaim.sol) | Solady `Ownable`, `EIP712`, `ECDSA` | the on-chain whitelist registry: 1,000 allocations claimed with a voucher from MINT's eligibility signer, two per wallet and per account, inside the campaign window; its claimant list is the Studio allowlist |
 
 `MysteryBox`, `PrizeDraw` and `PrizeVault` are tranche 2.

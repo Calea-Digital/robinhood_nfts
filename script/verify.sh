@@ -33,7 +33,6 @@ source_of() {
     MintABear) echo "src/MintABear.sol:MintABear" ;;
     WhitelistClaim) echo "src/WhitelistClaim.sol:WhitelistClaim" ;;
     Activation) echo "src/Activation.sol:Activation" ;;
-    DirectBurnAdapter) echo "src/DirectBurnAdapter.sol:DirectBurnAdapter" ;;
     *) echo "" ;;
   esac
 }

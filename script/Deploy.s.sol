@@ -7,12 +7,6 @@ import {SafeCastLib} from "solady/utils/SafeCastLib.sol";
 import {MintABear} from "../src/MintABear.sol";
 import {WhitelistClaim} from "../src/WhitelistClaim.sol";
 import {Activation} from "../src/Activation.sol";
-import {DirectBurnAdapter} from "../src/DirectBurnAdapter.sol";
-
-/// @dev The one read of $MNTD the deploy makes: its `decimals`, to scale the thresholds.
-interface IDecimals {
-    function decimals() external view returns (uint8);
-}
 
 /**
  * @title  Deploy
@@ -28,12 +22,12 @@ interface IDecimals {
  *         `--verify --verifier sourcify` verifies each created contract as it is broadcast (OPS-3);
  *         `script/verify.sh <chainId>` retries and checks afterwards.
  *
- *         After construction the only address set is `Activation`'s crediter; every other call is
- *         a listed setting (`setMaxSupply`, `setTransferValidator`, `setPaused(true)`) or an
- *         ownership transfer. `MintABear`'s transfer is two-step: MINT's admin completes it with
+ *         No address is set after construction; every call after it is a listed setting
+ *         (`setMaxSupply`, `setTransferValidator`, `setPaused(true)`) or an ownership transfer. `MintABear`'s transfer is two-step: MINT's admin completes it with
  *         `acceptOwnership`, then Iñigo sets provenance, `baseURI` and royalties in Studio.
  *         Values still open with MINT — the admin and signer (CQ-12), the campaign dates (CQ-1),
- *         $MNTD's address and decimals (CQ-2) — come from the config file; nothing here assumes them.
+ *         $MNTD's address (CQ-2) — come from the config file; nothing here assumes them. `Activation`
+ *         reads $MNTD's `decimals` itself and scales the whole-token thresholds.
  */
 contract Deploy is Script {
     /// @notice Canonical SeaDrop on Robinhood Chain (verified 2026-09-10).
@@ -58,7 +52,6 @@ contract Deploy is Script {
         uint40 closeAt;
         uint256 whitelistStageAt;
         address mntd;
-        uint8 mntdDecimals;
         uint128[5] thresholdsWhole;
         uint16[6] weights;
     }
@@ -68,9 +61,6 @@ contract Deploy is Script {
 
     /// @notice The campaign closes less than 48 hours before the whitelist stage.
     error CloseTooLate(uint256 closeAt, uint256 whitelistStageAt);
-
-    /// @notice $MNTD reports other decimals than the config was written for (CQ-2).
-    error DecimalsMismatch(uint8 configured, uint8 onChain);
 
     function runWhitelist(string memory path) external returns (WhitelistClaim registry) {
         Config memory cfg = loadConfig(path);
@@ -88,16 +78,12 @@ contract Deploy is Script {
         console2.log("MintABear", address(bears));
     }
 
-    function runActivation(string memory path, address bears)
-        external
-        returns (Activation activation, DirectBurnAdapter adapter)
-    {
+    function runActivation(string memory path, address bears) external returns (Activation activation) {
         Config memory cfg = loadConfig(path);
         vm.startBroadcast();
-        (activation, adapter) = deployActivation(cfg, bears);
+        activation = deployActivation(cfg, bears);
         vm.stopBroadcast();
         console2.log("Activation", address(activation));
-        console2.log("DirectBurnAdapter", address(adapter));
     }
 
     /**
@@ -128,35 +114,17 @@ contract Deploy is Script {
     }
 
     /**
-     * @notice `Activation(bears, thresholds, weights)` → `DirectBurnAdapter(mntd, activation)` →
-     *         `setCrediter(adapter)` → `setPaused(true)` until the switch-on date → ownership to
-     *         MINT's admin. Thresholds are scaled from whole $MNTD by the decimals the token reports,
-     *         which must match the config.
+     * @notice `Activation(bears, mntd, thresholdsWhole, weights)` → `setPaused(true)` until the
+     *         switch-on date → ownership to MINT's admin. `Activation` reads $MNTD's `decimals`
+     *         and scales the thresholds itself.
      */
-    function deployActivation(Config memory cfg, address bears)
-        public
-        returns (Activation activation, DirectBurnAdapter adapter)
-    {
+    function deployActivation(Config memory cfg, address bears) public returns (Activation activation) {
         _require(cfg.admin, "admin");
         _require(cfg.mntd, "mntd");
         _require(bears, "bears");
-        uint8 onChain = IDecimals(cfg.mntd).decimals();
-        if (onChain != cfg.mntdDecimals) revert DecimalsMismatch(cfg.mntdDecimals, onChain);
-
-        activation = new Activation(bears, scaledThresholds(cfg), cfg.weights);
-        adapter = new DirectBurnAdapter(cfg.mntd, address(activation));
-        activation.setCrediter(address(adapter));
+        activation = new Activation(bears, cfg.mntd, cfg.thresholdsWhole, cfg.weights);
         activation.setPaused(true);
         activation.transferOwnership(cfg.admin);
-    }
-
-    /// @notice The thresholds in $MNTD base units: each whole figure times `10 ** mntdDecimals`.
-    ///         A figure that does not fit `uint128` once scaled reverts rather than truncating.
-    function scaledThresholds(Config memory cfg) public pure returns (uint128[5] memory base) {
-        uint256 unit = 10 ** uint256(cfg.mntdDecimals);
-        for (uint256 i; i < 5; ++i) {
-            base[i] = SafeCastLib.toUint128(uint256(cfg.thresholdsWhole[i]) * unit);
-        }
     }
 
     /// @notice Reads the config file for one chain.
@@ -170,7 +138,6 @@ contract Deploy is Script {
         cfg.closeAt = SafeCastLib.toUint40(vm.parseJsonUint(json, ".closeAt"));
         cfg.whitelistStageAt = vm.parseJsonUint(json, ".whitelistStageAt");
         cfg.mntd = vm.parseJsonAddress(json, ".mntd");
-        cfg.mntdDecimals = SafeCastLib.toUint8(vm.parseJsonUint(json, ".mntdDecimals"));
         uint256[] memory t = vm.parseJsonUintArray(json, ".thresholdsWhole");
         uint256[] memory w = vm.parseJsonUintArray(json, ".weights");
         for (uint256 i; i < 5; ++i) {

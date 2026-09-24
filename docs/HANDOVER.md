@@ -45,16 +45,18 @@ merges `tranche-1` into `main`. Subtask MNT-95 (Sourcify on 46630) waits for the
 
 | | |
 |---|---|
-| Contracts | 4 of the 7 the spec calls for: `MintABear`, `WhitelistClaim`, `Activation`, `DirectBurnAdapter`; `MysteryBox`, `PrizeVault`, `PrizeDraw` are tranche 2 |
+| Contracts | 3 of the 6 the spec calls for: `MintABear`, `WhitelistClaim`, `Activation`; `MysteryBox`, `PrizeVault`, `PrizeDraw` are tranche 2 |
 | Scripts | `Deploy.s.sol` (OPS-2), `verify.sh` (OPS-3), `Enforcement.s.sol` (OPS-6), `WhitelistExport.s.sol` (WL-4); `docs/RUNBOOK.md`: ownership handover, whitelist export, transfer enforcement, royalties |
 | Tests | 218, all passing; 100% line, branch and function coverage (gate ≥90 / ≥80); every tranche-1 work-item Scenario has a test except the operational OPS-1, OPS-3 (live), OPS-4, OPS-5 |
 | CI gates | `fmt --check`, `build --sizes` (no warnings), `test`, spec lint, generated prose, `verify.sh` dry run — all green |
 | Slither | no High or Critical; 2 accepted Mediums, both `locked-ether` (below) |
 
-Two requirements were amended on 2026-09-23 because their Scenarios contradicted the rest of the
-spec, each through an archived OpenSpec change with the reviewer's go: ACT-5 (after a transfer the
-weight reads the level-0 weight, not zero) and OPS-2 (the crediter is the one address set after
-construction; `WhitelistClaim` takes MINT's admin as owner).
+Requirements amended since v2.1, each through an archived OpenSpec change with the reviewer's
+go: ACT-5 (after a transfer the weight reads the level-0 weight) and OPS-2 (`WhitelistClaim`
+takes MINT's admin as owner) on 2026-09-23; on 2026-09-24, in the tranche-1 review, COL-10
+(ownership is never renounced), WL-3 (the voucher's index is the account's allocation; renounce
+refused), WL-1 (thresholds make the account eligible), and spec v2.2 — `Activation` burns $MNTD
+itself and `DirectBurnAdapter` is gone (ACT-1, 2, 4, 6, 7, 8, 11–14, OPS-1, 2, 4, DEL-8).
 
 Submodule pins: `forge-std` `bf647bd` (v1.16.2), `seadrop` `757590f`, `solady` `acd959a`
 (v0.1.26). The chain's contract size limit is ~96 KB; every contract clears even Ethereum's
@@ -63,18 +65,16 @@ Submodule pins: `forge-std` `bf647bd` (v1.16.2), `seadrop` `757590f`, `solady` `
 ## Next session — review, then the rehearsal
 
 1. **Review and merge.** The human reviews the In Review Tasks, sets Done, and merges `tranche-1`
-   into `main`. Points recorded for the reviewer in the Task comments: refs keyed per crediter
-   (MNT-26), `WeightsNotAscending` and `setCrediter(0)` allowed (MNT-26), the adapter's
-   record-then-burn order and event placement (MNT-32), the one-transaction window between
-   `setCrediter` and `setPaused(true)` in OPS-2's order (MNT-62), the Studio tree construction the
-   export assumes (MNT-93).
+   into `main`. Points recorded for the reviewer in the Task comments: `WeightsNotAscending`
+   (MNT-26), the record-then-burn order (MNT-32), the Studio tree construction the export assumes
+   (MNT-93).
 2. **The OPS-4 rehearsal on 46630** (human-led; `tasks.md` 4.4). It needs from MINT the admin and
    signer addresses (CQ-12), the campaign dates (CQ-1) and the testnet $MNTD with its `decimals`
    (CQ-2), written into `script/config/46630.json` from `script/config/example.json`; and from the
    operator a funded deployer key and OpenSea Studio access. It runs the three `Deploy.s.sol`
    entry points with Sourcify verification (closing MNT-95), attaches Studio, completes
    `acceptOwnership`, walks a whitelist claim through `WhitelistExport.s.sol`'s export and compare
-   into an allowlist mint, burns through the adapter, and toggles enforcement once.
+   into an allowlist mint, burns through `Activation`, and toggles enforcement once.
 3. **The internal auditor** takes the tranche after the rehearsal: the trees' INV-N and Fork-N
    obligations are theirs.
 4. **Tranche 2 waits on O1 (CQ-20)** — the prize count, the excluded token ids and the closed list
@@ -110,13 +110,13 @@ client replies cite them.
 Three anchors are MINT's: TGE 20 October ($MNTD live on Robinhood Chain), mint 29 October, and
 burns, level-up and the first mystery box round all starting 29 October. Every other date is
 proposed in §8 of the specification and confirmed under D7. Two decouplings hold whatever moves:
-the collection deploys and mints without the hub, the vaults or the adapter, and `Activation`
-stays paused until the adapter has been exercised against real $MNTD. The whitelist registry
+the collection deploys and mints without the hub, the vaults or `Activation`, and `Activation`
+stays paused until its burn has been exercised against real $MNTD. The whitelist registry
 must be live before the campaign opens (proposed 6 October).
 
 ## What is left
 
-### Tranche 1 — `MintABear`, `WhitelistClaim`, `Activation`, `DirectBurnAdapter`, then the internal auditor
+### Tranche 1 — `MintABear`, `WhitelistClaim`, `Activation`, then the internal auditor
 
 The code is written and In Review (above). What remains before the internal auditor takes it:
 
@@ -158,7 +158,7 @@ RAF-17. Four constraints:
    whichever wallet the holder selects, and the EIP-712 type is exactly
    `Claim(address wallet,uint8 allocationIndex,bytes32 account,uint256 deadline)`. `spotsLeft()` is the live
    counter; a claim after sell-out reverts with `SoldOut`.
-2. **Activation is approve, then one click.** Approve the adapter on $MNTD, then `burn(tokenId,
+2. **Activation is approve, then one click.** Approve `Activation` on $MNTD, then `burn(tokenId,
    amount)` with `amount` from `costToReach(tokenId, targetLevel)`; anything above the level-5
    remainder is refused, so nothing is destroyed for nothing.
 3. **Reads are free; poll them.** `levelOf`, `weightOf`, `linkOf`, `costToReach`, `snapshot`,
@@ -179,10 +179,13 @@ RAF-17. Four constraints:
 - **No burn.** MINT's decision; `BurnDisabled` stays. Supply is 4,444 forever.
 - **Supply capped in code.** `MAX_BEARS` on the mint path refuses the mint whatever the
   Studio-writable `maxSupply` says, so raising it cannot increase the supply delivered (COL-2).
-- **`Activation` never touches the token.** One `crediter` address is the whole route decision;
-  MINT's answer makes it the same-chain adapter.
-- **A credit requires `ownerOf == burner` and an unchanged counter.** An approved operator
-  cannot spend an owner's $MNTD, and a burn never lands on a bear that has changed hands.
+- **`Activation` burns $MNTD itself.** $MNTD is native to Robinhood Chain (CQ-2), so the token is
+  a constructor argument and there is no crediter to point elsewhere: no key can record a level
+  without a burn. Calea's decision of 24 September (spec v2.2); a different token address means a
+  new `Activation`.
+- **A burn is recorded only for the bear's current owner.** `burn` reads `ownerOf` and the
+  counter in the same call, so an approved operator cannot spend an owner's $MNTD, and a burn
+  never lands on a bear that has changed hands.
 - **Instant reveal, one word per open.** MINT's decision of 21 September. Robinhood Chain makes
   no randomness, so the only arrangement in which an instant outcome is unpredictable to
   everyone — MINT included — is a fresh Chainlink word per open. A pre-committed seed was
@@ -218,10 +221,11 @@ RAF-17. Four constraints:
 - **`setWindow` can reopen a closed campaign.** Claims made after the export would be in the
   registry and not in Studio's allowlist. Accepted; the runbook runs the export and `compare`
   after the last `WindowSet`, and `compare` fails on any difference.
-- **Event ordering in the adapter**: the record is written before `burnFrom`; the hostile paths
-  were traced (re-entering still needs each `burnFrom` to succeed; transferring the bear from
-  inside `burnFrom` voids the caller's own record). Accepted; the adapter's hostile-token tests
-  pin both paths.
+- **`Activation` calls $MNTD, which is outside this codebase.** The record is written before
+  `burnFrom`, and `burn` is `nonReentrant`: a token that calls back cannot burn again, and any
+  revert undoes the record. What remains trusted is that $MNTD's `burnFrom` reverts on failure
+  rather than returning without burning (CQ-2, Fork-3). Accepted; the hostile-token tests pin the
+  refusal.
 - **The worker relays each open and each award.** It cannot change an outcome — Chainlink
   decides it — and it cannot reorder, because `PrizeDraw` refuses an `openIndex` out of turn. It
   can delay one, which is visible as a `BoxOpened` with no `OutcomeRecorded`. Accepted; the
@@ -270,7 +274,7 @@ Measured against chain 4663 on 2026-09-10 and 2026-09-15; Chainlink and ApeChain
 1. Does OpenSea Studio attach to and manage a contract we deployed ourselves, validator set? (testnet)
 2. Does OpenSea emit SignedZone-restricted orders for a Limit-Break-validated collection on 4663? (mainnet: one team bear listed and sold before the drop page is published)
 3. A whitelist claim end to end: voucher → `claim` → export → Studio allowlist stage → allowlist mint. It passes when `WhitelistExport.s.sol compare` passes against the root Studio set, a two-allocation wallet mints two, and a one-allocation wallet is refused its second — which shows Studio builds its tree like `script/lib/AllowListTree.sol` and keeps each wallet's own limit. (testnet)
-4. A burn through the adapter against $MNTD on 46630 through to a credited level; then against the real token on mainnet between 20 and 28 October. The pause has no exemption, so that rehearsal runs in a window the owner opens and closes again; holders' access opens on 29 October (ACT-11, §8).
+4. A burn through `Activation` against $MNTD on 46630 through to a recorded level; then against the real token on mainnet between 20 and 28 October. The pause has no exemption, so that rehearsal runs in a window the owner opens and closes again; holders' access opens on 29 October (ACT-11, §8).
 5. A full multi-chain game on the testnets: deposit, commit, exclude, open the game, boxes opened, relays in order, words, outcomes, awards, claims and expiry — including one open that wins and one that does not, and a relay offered out of turn and refused.
 6. Does Safe's web interface support chain 4663? (D3)
 
