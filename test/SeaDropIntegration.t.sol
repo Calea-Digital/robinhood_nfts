@@ -6,6 +6,7 @@ import {MintABear} from "../src/MintABear.sol";
 import {IERC2981} from "openzeppelin-contracts/interfaces/IERC2981.sol";
 import {ISeaDropTokenContractMetadata} from "seadrop/interfaces/ISeaDropTokenContractMetadata.sol";
 import {INonFungibleSeaDropToken} from "seadrop/interfaces/INonFungibleSeaDropToken.sol";
+import {ERC721SeaDropStructsErrorsAndEvents} from "seadrop/lib/ERC721SeaDropStructsErrorsAndEvents.sol";
 import {TwoStepOwnable} from "utility-contracts/TwoStepOwnable.sol";
 
 /**
@@ -144,7 +145,9 @@ contract SeaDropIntegrationTest is BaseTest {
         _mint(alice, 10);
 
         vm.prank(seaDrop);
-        vm.expectRevert();
+        vm.expectRevert(
+            abi.encodeWithSelector(ERC721SeaDropStructsErrorsAndEvents.MintQuantityExceedsMaxSupply.selector, 11, 10)
+        );
         bears.mintSeaDrop(alice, 1);
         assertEq(bears.totalSupply(), 10);
     }

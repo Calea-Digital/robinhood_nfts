@@ -59,7 +59,11 @@ contract MintABearTest is BaseTest {
            Then it reverts */
         _mint(alice, MAX_SUPPLY);
         vm.prank(seaDrop);
-        vm.expectRevert();
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ERC721SeaDropStructsErrorsAndEvents.MintQuantityExceedsMaxSupply.selector, MAX_SUPPLY + 1, MAX_SUPPLY
+            )
+        );
         bears.mintSeaDrop(alice, 1);
         assertEq(bears.totalSupply(), MAX_SUPPLY);
     }

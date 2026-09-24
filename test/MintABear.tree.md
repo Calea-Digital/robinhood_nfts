@@ -155,7 +155,7 @@ supply
 ├── MAX_BEARS reads 4,444 and is a constant
 ├── minting exactly to the cap succeeds, and the supply is then exactly 4,444
 ├── when a mint would exceed maxSupply
-│   └── it reverts
+│   └── it reverts with SeaDrop's MintQuantityExceedsMaxSupply(total, maxSupply)
 └── maxSupply stays owner-settable, which is why MAX_BEARS and not maxSupply is the
     guarantee the collection actually makes
 ```
