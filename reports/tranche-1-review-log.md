@@ -197,6 +197,12 @@ record the settlement.
 ## MNT-39 ACT-14 (presented) — with Part A's A-5
 - Tests lens: every listed read asserted against a value; a constant DECIMALS is caught by the 6-decimal construction test.
 - A-5 settled: THRESHOLD_1…5 were public reads ACT-14 does not name. FIXED, Defect MNT-123: internal immutables, as the weights; thresholdFor is the one read; the ACT-12 pin is 24 functions; Activation runtime 7,844 → 7,529 bytes. Self-review of the diff: visibility only, no logic change; thresholdFor unchanged.
+- Done: MNT-39, MNT-123
+## MNT-62 OPS-2 (presented) — scripts ⚑ + dimensional (dimensional at #21, adversarial at #20); dry run: runWhitelist, runCollection OK on example.json; runActivation stops at the placeholder mntd.
+- OPS2-L-1 Low: Activation's immutable inputs unchecked — a wrong `bears` deploys (the constructor never calls it), a wrong token / pre-scaled threshold / weights[0] ≠ 100 go unnoticed, one-step transferOwnership (ACT-1 I-3). FIXED, Defect MNT-124: deployActivation refuses a collection that does not answer MAX_BEARS with 4,444 (`NotTheCollection`) and prints DECIMALS, thresholdFor(1..5), weightFor(0..5); RUNBOOK "Activation" (read-back, the admin's setPaused(true) control check, rehearsal windows, switch-on, mint batches ≤ ~200). Ownership stays one-step, as WhitelistClaim's (accepted at MNT-22).
+- OPS2-I-1 Info: loadConfig did not check array lengths. FIXED (`ConfigLength`).
+- ACT7-L-1 (from MNT-32): HANDOVER:94 claimed a decimals guard. FIXED (final state).
+- Also: README:37 "deploys the four contracts" (stale since MNT-113) → three; CLAUDE.md Deploy row. Tests 213.
 
 ## Carried forward
 
