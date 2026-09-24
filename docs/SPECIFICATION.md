@@ -3,7 +3,7 @@
 
 <!-- openspec:begin version -->
 **Version** 2.2 · **Date** 24 September 2026 · **Status** records the decisions of the
-MINT–Calea call of 21 September 2026 and Calea's simplification of the burn route (ACT-7);
+MINT–Calea call of 21 September 2026 and the tranche-1 build and review of 22–24 September;
 sign-off follows the open items in §10
 <!-- openspec:end -->
 
@@ -23,6 +23,44 @@ own. Each requirement is a single testable statement. An identifier
 is never given a new meaning; a requirement superseded in this version is marked retired and
 points to its replacement. In the client document, green callouts record MINT's answers as
 confirmed; yellow callouts are decisions for the call.
+
+## Where the work stands
+
+As of 24 September 2026. Tranche 1 — the collection, the whitelist registry and the activation
+contract — is built and reviewed; nothing is deployed yet. Tranche 2, the mystery box, is
+specified and waits on the prize count and chains (CQ-20).
+
+| Item | Where it stands |
+|---|---|
+| `MintABear` (§3) | Built and reviewed. Deploys with the transfer validator set, `maxSupply` at 4,444, ownership offered to MINT's admin in two steps |
+| `WhitelistClaim` (§4) | Built and reviewed. The claimant export to the Studio allowlist and a check of Studio's root against the registry are scripted |
+| `Activation` (§5) | Built and reviewed. Burns $MNTD itself; paused from deployment until the switch-on date |
+| Deployment, verification, enforcement (§7) | Scripts written and tested; the runbook covers the handover, the whitelist export, enforcement, royalties and `Activation` |
+| Tests | 214 deterministic unit tests at full line and branch coverage; fuzzing, invariants and fork tests are the internal auditor's (DEL-3) |
+| Review | Every tranche-1 requirement reviewed with Calea's reviewer; 29 defects found and fixed in the code, tests and documents before hand-off to the auditor |
+| Testnet rehearsal (OPS-4) | Next, once MINT's testnet $MNTD and addresses are in hand (CQ-2, CQ-12) |
+| Integration package (DEL-6) | Next: the TypeScript client library and the royalty-split script |
+| Mystery box (§6) | Specified; built after CQ-20 is answered |
+
+**Changes since version 2.1.** Each went through Calea's review; the requirements above read as
+the final state.
+
+- `Activation` burns $MNTD itself, in the same transaction as the record, instead of taking
+  credits from an adapter: no key can record a level without a burn (ACT-1, ACT-4, ACT-7). The
+  thresholds are given in whole $MNTD and scaled by the token's `decimals` at deployment (ACT-2).
+- After a transfer a bear weighs the level-0 weight, so an unactivated bear still counts in the
+  royalty split (ACT-5).
+- Ownership of the collection, the whitelist registry and `Activation` can never be renounced,
+  so the signer can always be rotated and the pause always set (COL-10, WL-3, ACT-11).
+- A whitelist allocation belongs to the getminted.io account: allocation 1 at $50, 2 at $100,
+  each claimed once, in order, whichever wallet the holder selects (WL-1, WL-3).
+- The whitelist stage is the first stage open to wallets other than the team's, because the
+  allowlist's per-wallet limit counts every bear a wallet mints (WL-4, CQ-18).
+- Royalty enforcement covers every sale a marketplace operates; a sale arranged outside a
+  marketplace pays no creator earnings (COL-7).
+- No address is set after a contract is deployed, and the deployment refuses a collection
+  address that is not `MintABear` (OPS-2).
+- A new question: how Status counts an account's several links (CQ-21).
 
 ## 1. Scope
 
@@ -880,7 +918,7 @@ mainnet deployment.
 ## 10. Decisions
 
 The call of 21 September 2026 worked through the nine decisions this document carried into it.
-Seven are settled and are written into the requirements above as final state; the rest, with
+Seven are settled and are written into the requirements as final state; the rest, with
 what the call opened, are listed after them. Each open item states Calea's recommendation, which
 is also what Calea builds if the decision is deferred.
 
