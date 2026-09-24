@@ -41,8 +41,8 @@ not merged into `main`; `main` still carries the pre-specification code. **The p
 under way** (`reports/tranche-1-review-log.md`): COL-1…COL-13 (MNT-7…16, 18, 19), WL-1, WL-3, WL-4,
 WL-5 (MNT-20, 22…24) and the non-spec MNT-92…94 are Done, with the Defects the review raised
 (MNT-99…112) Done too. In Review and still to be reviewed, in order: ACT-1…ACT-14 (MNT-26…39),
-OPS-2, OPS-3, OPS-6 (MNT-62, 63, 66), MNT-96…98, MNT-113 — the change that made `Activation`
-burn $MNTD itself (spec v2.2) — and MNT-114, this handover. OPS-4, the rehearsal, is still ahead, with Subtask MNT-95 (Sourcify
+OPS-2, OPS-3, OPS-6 (MNT-62, 63, 66) and MNT-96…98. MNT-113 — the change that made
+`Activation` burn $MNTD itself (spec v2.2) — and MNT-114, this handover, are Done. OPS-4, the rehearsal, is still ahead, with Subtask MNT-95 (Sourcify
 on 46630). Each Task carries a claim comment, a summary comment with its commits and gates, and
 logged time; the human sets Done and merges `tranche-1` into `main`.
 
