@@ -1,7 +1,7 @@
 # MintABear — Runbook
 
-Operating the MintABear contracts on Robinhood Chain (4663). Every action here is an owner call
-by MINT's admin, and every one is reversible. Scripts live in `script/`; each prints what it read
+Operating the MintABear contracts on Robinhood Chain (4663). Every change here is an owner call
+by MINT's admin, and reversible; the reads and the whitelist export change nothing. Scripts live in `script/`; each prints what it read
 and what it did.
 
 ## Ownership handover (COL-10)
@@ -80,7 +80,8 @@ forge script script/Enforcement.s.sol --rpc-url $RPC --sig "status(address)" $BE
 # or: cast call $BEARS "getTransferValidator()(address)" --rpc-url $RPC
 ```
 
-A non-zero validator means enforcement is on; `address(0)` means it is off.
+A non-zero validator means enforcement is on; `address(0)` means it is off. `status` also says
+whether the validator is V3; `enable` restores V3 over any other.
 
 **Lift enforcement — one call.** For example, if a marketplace MINT needs is being refused, or
 OpenSea's handling of the validated collection on 4663 misbehaves.
@@ -96,7 +97,8 @@ Afterwards any venue can settle a sale; whether creator earnings are paid is the
 **Restore enforcement — one call.** The same, with `enable(address)`, or `safeTransaction(…, true)`
 for a Safe (`data` = `setTransferValidator(V3)`). The zero-state policy applies again at once.
 
-The script refuses a call that would change nothing (`AlreadyInState`) before broadcasting.
+The script refuses a call that would change nothing (`AlreadyInState`: V3 already set for
+`enable`, none for `disable`) before broadcasting.
 
 **Watch.** Every change emits `TransferValidatorUpdated(oldValidator, newValidator)` from the
 collection; an indexer alerting on it sees every lift and restore.

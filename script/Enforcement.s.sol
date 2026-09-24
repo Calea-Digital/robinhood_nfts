@@ -11,8 +11,8 @@ import {MintABear} from "../src/MintABear.sol";
  * @title  Enforcement
  * @notice Lifts or restores royalty enforcement on `MintABear` with one owner call each (OPS-6):
  *         `setTransferValidator(address(0))` lifts it, `setTransferValidator(V3)` restores
- *         Limit Break V3 with its zero-state policy. Both are reversible and emit
- *         `TransferValidatorUpdated`.
+ *         Limit Break V3 with its zero-state policy — over any other validator too. Both are
+ *         reversible and emit `TransferValidatorUpdated`.
  *
  *             forge script script/Enforcement.s.sol --rpc-url $RPC --sig "status(address)" $BEARS
  *             forge script script/Enforcement.s.sol --rpc-url $RPC --broadcast --sig "disable(address)" $BEARS
@@ -28,15 +28,17 @@ contract Enforcement is Script {
     /// @notice Limit Break transfer validator V3 on Robinhood Chain (verified 2026-09-15; COL-7).
     address public constant TRANSFER_VALIDATOR_V3 = 0x721C002B0059009a671D00aD1700c9748146cd1B;
 
-    /// @notice Enforcement is already in the requested state; nothing is sent.
-    error AlreadyInState(bool enforced);
+    /// @notice The collection already has the validator requested; nothing is sent.
+    error AlreadyInState(address validator);
 
     /// @notice Whether enforcement is on, and through which validator.
     function status(address bears) public view returns (bool enforced, address validator) {
         validator = MintABear(bears).getTransferValidator();
         enforced = validator != address(0);
         console2.log("transfer validator", validator);
-        console2.log(enforced ? "enforcement: on" : "enforcement: off");
+        if (validator == TRANSFER_VALIDATOR_V3) console2.log("enforcement: on (Limit Break V3)");
+        else if (enforced) console2.log("enforcement: on (another validator; enable restores V3)");
+        else console2.log("enforcement: off");
     }
 
     /// @notice Lifts enforcement: `setTransferValidator(address(0))`.
@@ -64,11 +66,14 @@ contract Enforcement is Script {
         console2.logBytes(data);
     }
 
+    /// @dev Compares with the target, not with on/off, so `enable` also replaces a validator
+    ///      other than V3.
     function _set(address bears, bool enable_) private {
-        (bool enforced,) = status(bears);
-        if (enforced == enable_) revert AlreadyInState(enforced);
+        address target = enable_ ? TRANSFER_VALIDATOR_V3 : address(0);
+        (, address validator) = status(bears);
+        if (validator == target) revert AlreadyInState(validator);
         vm.startBroadcast();
-        MintABear(bears).setTransferValidator(enable_ ? TRANSFER_VALIDATOR_V3 : address(0));
+        MintABear(bears).setTransferValidator(target);
         vm.stopBroadcast();
         status(bears);
     }
