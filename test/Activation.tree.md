@@ -14,6 +14,8 @@ Activation
 │   balance in burn; it sends no value and moves no other token (ACT-1)
 ├── calls nothing else but MintABear, and only its views ownerOf, transferNonce and exists —
 │   across construction, burn, link, unlink and every read (ACT-1)
+├── writes the record before it calls burnFrom: read from inside burnFrom, cumulativeOf and
+│   lifetimeBurned already show the amount (ACT-1)
 └── has no crediter
 ```
 
