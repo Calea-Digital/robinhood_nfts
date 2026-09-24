@@ -42,6 +42,24 @@ caller: the collection always has an owner, because every setting in this runboo
 call. Ownership moves only by `transferOwnership` (the offer) and `acceptOwnership` (from the new
 owner); `cancelOwnershipTransfer` withdraws an offer.
 
+## Whitelist export (WL-4)
+
+**After the campaign closes, and after the last `WindowSet`.** The registry is the source; the
+Studio allowlist is its copy. Export the claimant rows, load the CSV into Studio's whitelist
+stage, then check the root Studio set against the registry:
+
+```shell
+forge script script/WhitelistExport.s.sol --rpc-url $RPC --sig "export(address,string)" $REGISTRY exports/whitelist.csv
+forge script script/WhitelistExport.s.sol --rpc-url $RPC \
+  --sig "compare(address,address,address,(uint256,uint256,uint256,uint256,uint256,uint256,uint256,bool))" \
+  $REGISTRY $SEADROP $BEARS "(0,0,$START,$END,1,4444,$FEE_BPS,$RESTRICT)"
+```
+
+`compare` fails unless the root is the registry's. The owner can move the window with
+`setWindow`, so a `WindowSet` after the export means claims the allowlist does not carry: export
+and compare again. `setSigner` rotates the eligibility signer; `renounceOwnership` reverts, so
+the owner can always do both.
+
 ## Transfer enforcement (OPS-6, COL-7)
 
 **The deployed state.** `MintABear` is an ERC-721C collection. The deploy sets its transfer
