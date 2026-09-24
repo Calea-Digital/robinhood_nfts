@@ -125,7 +125,7 @@ transfer validator
 ├── supportsInterface advertises ICreatorToken and the legacy id
 └── with V3's zero-state policy set (modelled by MockTransferValidator)
     ├── a transfer the holder initiates passes
-    ├── a whitelisted operator — OpenSea's SignedZone, a Payment Processor venue — settles a sale
+    ├── an authorised caller — a SignedZone-authorised OpenSea fill, a Payment Processor venue — settles a sale
     ├── an operator from any other venue reverts, and the counter does not move
     ├── minting is unaffected: the validator is consulted for transfers only
     ├── the burn refusal is unaffected
@@ -170,5 +170,11 @@ supply
 - Fork-2: the real Limit Break validator V3 at `0x721C002B0059009a671D00aD1700c9748146cd1B` on
   chain 4663 with its zero-state policy (security level 0, list 0, OpenSea's SignedZone
   `0x000056F7000000EcE9003ca63978907a00FFD100` as authorizer): a holder transfer passes, a
-  SignedZone-restricted Seaport fill passes, a Seaport fill from another venue reverts. The unit
-  leaves above model the policy with `MockTransferValidator`; only a fork can confirm the real one.
+  SignedZone-restricted Seaport fill passes, a Seaport fill from another venue reverts. The OpenSea
+  Conduit is not deployed on 4663 and orders use conduitKey 0, so the caller V3 sees on a fill is
+  Seaport 1.6 `0x0000000000000068F116a894984e2DB1123eB395`, authorised by the SignedZone on the
+  validator; the SignedZone does not move the bear. SeaDrop calls `validateTransfer` through a
+  `view` interface — a STATICCALL — while `getTransferValidationFunction` reports it as non-view,
+  so the authorised fill must succeed under STATICCALL. The unit leaves above model the policy with
+  `MockTransferValidator`, whose one list stands for both whitelisted operators and authorised
+  callers; only a fork can confirm the real one.
