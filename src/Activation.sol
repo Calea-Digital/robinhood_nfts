@@ -276,7 +276,10 @@ contract Activation is Ownable, ReentrancyGuard {
      * @notice Owner, level and weight for each id, for MINT's royalty split at a closing block.
      * @dev    An id that does not exist reads as zeroes. A wallet's weight is the sum over its
      *         bears; the eligible total excludes bears held by `0x…dEaD`, summed off-chain. The
-     *         loop's calls go only to the immutable collection, and are views.
+     *         loop's calls go only to the immutable collection, and are views. The collection's
+     *         `ownerOf` walks back to the start of an untransferred mint batch, so the cost grows
+     *         with the length of such a batch: page by gas, not by a fixed count. `weightOf` does
+     *         not read the owner.
      */
     function snapshot(uint256[] calldata ids) external view returns (BearState[] memory rows) {
         rows = new BearState[](ids.length);

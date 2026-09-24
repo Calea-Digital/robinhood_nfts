@@ -229,6 +229,15 @@ RAF-17. Four constraints:
   revert undoes the record. What remains trusted is that $MNTD's `burnFrom` reverts on failure
   rather than returning without burning (CQ-2, Fork-3). Accepted; the hostile-token tests pin the
   refusal.
+- **Reading owners over an untransferred mint batch is expensive.** ERC721A records one owner
+  per mint batch, and `ownerOf` walks back to the batch's start, so `snapshot` (which reads the
+  owner of every id) costs roughly the square of an untransferred batch's length. Measured on the
+  unit fixture: `snapshot(1..4444)` 56.2M gas when wallets mint two each; with all 4,444 in one
+  batch, 50 ids at its end cost 55.9M and the full range runs out of gas. `weightOf` does not walk
+  (2,451 gas). A holder cannot lengthen a batch; the mint pattern decides it. Accepted; the
+  mitigations are the split script's (DEL-6: owners from indexed `Transfer` events at the closing
+  block and weights from `weightOf`, or `snapshot` paged by a gas budget) and team and treasury
+  mints of at most about 200 bears per transaction (ACT-10).
 - **The worker relays each open and each award.** It cannot change an outcome — Chainlink
   decides it — and it cannot reorder, because `PrizeDraw` refuses an `openIndex` out of turn. It
   can delay one, which is visible as a `BoxOpened` with no `OutcomeRecorded`. Accepted; the
