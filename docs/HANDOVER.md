@@ -1,11 +1,11 @@
 # MintABear — handover
 
-Written 2026-09-15, current as of 2026-09-23. Read this first when resuming.
+Written 2026-09-15, current as of 2026-09-24. Read this first when resuming.
 
 ## Where things stand
 
-**The specification lives in `openspec/`** (v2.1, recording the MINT–Calea call of 21 September
-2026): `openspec/specs/<family>/spec.md` carries every requirement with its Kind and its
+**The specification lives in `openspec/`** (v2.2: the MINT–Calea call of 21 September 2026,
+and the amendments of the tranche-1 review, 23–24 September): `openspec/specs/<family>/spec.md` carries every requirement with its Kind and its
 Scenario, `openspec/decisions.md` the `CQ-n` register that belongs to MINT. `docs/SPECIFICATION.md`
 and `docs/OPEN-QUESTIONS.md` are the prose views MINT reads: narrative edited in place, the
 requirement and register blocks generated between markers by `docs/tools/spec_tools/` (CI fails
@@ -13,10 +13,11 @@ when they are stale). MINT has one combined document in `docs/client/`, generate
 files by `docs/tools/build_client_doc.py` — never edit the `.pages` by hand. The output name
 carries the version line in full, suffix included, so each draft is its own file. The current one
 is `MintABear-Specification-v2.1.pages`; `v1.0` and `v2.0` stay beside it as the records MINT
-answered and then decided against. **The board (YouTrack MNT) follows `openspec/`** through
+answered and then decided against. The v2.2 document is not built yet: it is built when the
+reviewer asks, and until then v2.1 is the last version MINT has. **The board (YouTrack MNT) follows `openspec/`** through
 `docs/tools/board.sh`; the work loop that picks requirements off it is in `CLAUDE.md`
 ("Specification and board") and its pick order is `openspec/changes/tranche-1/tasks.md`. A
-The next development session starts from `docs/prompts/tranche-1-rehearsal.md`.
+The next session starts from `docs/prompts/tranche-1-integrity-and-review.md`: an integrity check of spec, prose, client document, code and board, then the rest of the tranche-1 review.
 The v2.0 document is 31 pages; to check a build without opening Pages, export it to PDF through
 `osascript` and render or count text per page with a short Swift PDFKit script — a table that does
 not fit the rest of a page moves whole to the next one in Pages, so a heading left alone on a page
@@ -36,18 +37,20 @@ without replacement; a `PrizeVault` on each prize chain pays out. RAF-26 to RAF-
 game; RAF-10, 12, 13, 20, 21, 22 and 23 are retired with pointers to them.
 
 **Tranche 1's code is on branch `tranche-1`**, branched from `main` at `746acbe`, never pushed and
-not merged into `main`; `main` still carries the pre-specification code. Every requirement Task of
-tranche 1 is In Review on the board except OPS-4, the rehearsal, which is still ahead: COL-1…COL-13
-(MNT-7…16, 18, 19), WL-1, WL-3, WL-4, WL-5 (MNT-20, 22, 23, 24), ACT-1…ACT-14 (MNT-26…39), OPS-2,
-OPS-3, OPS-6 (MNT-62, 63, 66), with the non-spec Tasks MNT-92…94 and 96…98. Each carries a claim
-comment, a summary comment with its commits and gates, and logged time; the human sets Done and
-merges `tranche-1` into `main`. Subtask MNT-95 (Sourcify on 46630) waits for the rehearsal.
+not merged into `main`; `main` still carries the pre-specification code. **The paired review is
+under way** (`reports/tranche-1-review-log.md`): COL-1…COL-13 (MNT-7…16, 18, 19), WL-1, WL-3, WL-4,
+WL-5 (MNT-20, 22…24) and the non-spec MNT-92…94 are Done, with the Defects the review raised
+(MNT-99…112) Done too. In Review and still to be reviewed, in order: ACT-1…ACT-14 (MNT-26…39),
+OPS-2, OPS-3, OPS-6 (MNT-62, 63, 66), MNT-96…98, MNT-113 — the change that made `Activation`
+burn $MNTD itself (spec v2.2) — and MNT-114, this handover. OPS-4, the rehearsal, is still ahead, with Subtask MNT-95 (Sourcify
+on 46630). Each Task carries a claim comment, a summary comment with its commits and gates, and
+logged time; the human sets Done and merges `tranche-1` into `main`.
 
 | | |
 |---|---|
 | Contracts | 3 of the 6 the spec calls for: `MintABear`, `WhitelistClaim`, `Activation`; `MysteryBox`, `PrizeVault`, `PrizeDraw` are tranche 2 |
 | Scripts | `Deploy.s.sol` (OPS-2), `verify.sh` (OPS-3), `Enforcement.s.sol` (OPS-6), `WhitelistExport.s.sol` (WL-4); `docs/RUNBOOK.md`: ownership handover, whitelist export, transfer enforcement, royalties |
-| Tests | 218, all passing; 100% line, branch and function coverage (gate ≥90 / ≥80); every tranche-1 work-item Scenario has a test except the operational OPS-1, OPS-3 (live), OPS-4, OPS-5 |
+| Tests | 208, all passing; 100% line, branch and function coverage (gate ≥90 / ≥80); every tranche-1 work-item Scenario has a test except the operational OPS-1, OPS-3 (live), OPS-4, OPS-5 |
 | CI gates | `fmt --check`, `build --sizes` (no warnings), `test`, spec lint, generated prose, `verify.sh` dry run — all green |
 | Slither | no High or Critical; 2 accepted Mediums, both `locked-ether` (below) |
 
@@ -62,12 +65,12 @@ Submodule pins: `forge-std` `bf647bd` (v1.16.2), `seadrop` `757590f`, `solady` `
 (v0.1.26). The chain's contract size limit is ~96 KB; every contract clears even Ethereum's
 24,576.
 
-## Next session — review, then the rehearsal
+## Next session — integrity check and review, then the rehearsal
 
-1. **Review and merge.** The human reviews the In Review Tasks, sets Done, and merges `tranche-1`
-   into `main`. Points recorded for the reviewer in the Task comments: `WeightsNotAscending`
-   (MNT-26), the record-then-burn order (MNT-32), the Studio tree construction the export assumes
-   (MNT-93).
+1. **Integrity check, then the rest of the review** (`docs/prompts/tranche-1-integrity-and-review.md`).
+   The review resumes at #20, MNT-26 / ACT-1, against the `Activation` of MNT-113; then the human
+   merges `tranche-1` into `main`. Point recorded for the reviewer in the Task comments:
+   `WeightsNotAscending` (MNT-26).
 2. **The OPS-4 rehearsal on 46630** (human-led; `tasks.md` 4.4). It needs from MINT the admin and
    signer addresses (CQ-12), the campaign dates (CQ-1) and the testnet $MNTD with its `decimals`
    (CQ-2), written into `script/config/46630.json` from `script/config/example.json`; and from the
