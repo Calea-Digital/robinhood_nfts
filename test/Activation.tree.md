@@ -157,7 +157,7 @@ Roles (ACT-12)
 ├── a non-owner's setPaused, and anyone's renounceOwnership, revert (ACT-12)
 ├── the complete external interface, read from the artifact, is exactly the pinned list — no
 │   setter for the token, thresholds, weights or records, no freeze, no clawback, no way to
-│   record a level but burn (ACT-12)
+│   record a level but burn, and no fallback or receive (ACT-12)
 └── every owner function run in turn leaves the token, thresholds, weights and a bear's record unchanged
 
 setPaused
