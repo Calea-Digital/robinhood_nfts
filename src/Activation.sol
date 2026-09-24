@@ -41,12 +41,13 @@ interface IBurnableMNTD {
  *         them; nothing here withdraws it, and nothing else accepts ETH.
  */
 contract Activation is Ownable, ReentrancyGuard {
-    /// @notice Cumulative burn, in $MNTD base units, at which each level is reached.
-    uint128 public immutable THRESHOLD_1;
-    uint128 public immutable THRESHOLD_2;
-    uint128 public immutable THRESHOLD_3;
-    uint128 public immutable THRESHOLD_4;
-    uint128 public immutable THRESHOLD_5;
+    /// @dev Cumulative burn, in $MNTD base units, at which each level is reached; read with
+    ///      `thresholdFor`.
+    uint128 internal immutable THRESHOLD_1;
+    uint128 internal immutable THRESHOLD_2;
+    uint128 internal immutable THRESHOLD_3;
+    uint128 internal immutable THRESHOLD_4;
+    uint128 internal immutable THRESHOLD_5;
 
     /// @dev Royalty weight of each level 0–5, basis 100.
     uint16 internal immutable WEIGHT_0;

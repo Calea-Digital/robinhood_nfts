@@ -193,6 +193,10 @@ record the settlement.
 ## MNT-38 ACT-13 (presented)
 - ACT13-I-1 Info/test: every checked BearActivated was a first burn (previousLevel 0, amount == cumulative) — swapping amount/cumulative, or hard-coding previousLevel 0, passed all 211 tests. FIXED, Defect MNT-122: the events test burns again (5,000 on 3,333) and reads 2 → 3, 5,000, 8,333; both mutants fail it.
 - DEL-6 note: with the real $MNTD a burn transaction carries two logs — Activation's BearActivated and the token's Transfer(holder, 0x0, amount); MockMNTD emits none, so the unit tests see one. Indexers filter by emitter.
+- Done: MNT-38, MNT-122
+## MNT-39 ACT-14 (presented) — with Part A's A-5
+- Tests lens: every listed read asserted against a value; a constant DECIMALS is caught by the 6-decimal construction test.
+- A-5 settled: THRESHOLD_1…5 were public reads ACT-14 does not name. FIXED, Defect MNT-123: internal immutables, as the weights; thresholdFor is the one read; the ACT-12 pin is 24 functions; Activation runtime 7,844 → 7,529 bytes. Self-review of the diff: visibility only, no logic change; thresholdFor unchanged.
 
 ## Carried forward
 
