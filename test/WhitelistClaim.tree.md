@@ -63,7 +63,10 @@ rules
 ```
 
 The eligibility thresholds ($50 / $100, the Season 1 back-credit) are MINT's data (WL-2): the
-contract sees only the signed voucher, so a threshold has no leaf here.
+contract sees only the signed voucher, so a dollar amount has no leaf here. The tier's order does:
+each of an account's allocations is claimed once, in turn, over whichever wallets it selects —
+the `allocationIndex ≠ accountClaims(account) + 1` branch of the claim tree (WL-3) and the
+regression in `test/poc/TierAcrossWallets.t.sol`.
 
 ## Export into the mint (WL-4)
 
