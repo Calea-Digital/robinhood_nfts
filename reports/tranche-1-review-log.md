@@ -219,7 +219,7 @@ record the settlement.
 - MNT96-I-1 Info: CLAUDE.md:106 lint-note inventory missed ReentrantHolder's immutable naming and StubCollection.MAX_BEARS (MNT-124). FIXED: immutable renamed ACTIVATION (note gone); the stub's note listed with its reason.
 - MNT96-I-2 Info: CLAUDE.md:107 "pin each contract's interface" — only Activation's. FIXED.
 - MNT96-I-3 Info: CLAUDE.md:17 did not say to source the bridge .env. FIXED.
-- MNT96-I-4 Info: CLAUDE.md:21 names a `/solidity` skill not present in this environment — asked the reviewer; left unchanged, OPEN.
+- MNT96-I-4 Info: CLAUDE.md:21 named a `/solidity` skill — the reviewer confirmed it does not exist. FIXED (removed).
 - MNT96-I-5 Info: README Activation base without SafeCastLib; Tests paragraph said every test quotes a Scenario. FIXED.
 - Folded to #38: CLAUDE.md:111 "each script has a suite and a tree" — verify.sh has a test script, no tree (A-7).
 - Defect MNT-127 (parent should be MNT-3 — reviewer to move; created under MNT-5).
