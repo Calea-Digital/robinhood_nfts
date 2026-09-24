@@ -11,10 +11,11 @@ and `docs/OPEN-QUESTIONS.md` are the prose views MINT reads: narrative edited in
 requirement and register blocks generated between markers by `docs/tools/spec_tools/` (CI fails
 when they are stale). MINT has one combined document in `docs/client/`, generated from those two
 files by `docs/tools/build_client_doc.py` — never edit the `.pages` by hand. The output name
-carries the version line in full, suffix included, so each draft is its own file. The current one
-is `MintABear-Specification-v2.1.pages`; `v1.0` and `v2.0` stay beside it as the records MINT
-answered and then decided against. The v2.2 document is not built yet: it is built when the
-reviewer asks, and until then v2.1 is the last version MINT has. **The board (YouTrack MNT) follows `openspec/`** through
+carries the version line in full, suffix included, so each draft is its own file. The current one is `MintABear-Specification-v2.2.pages` (built 24 September 2026, 41 pages):
+it opens with the open questions — what each holds up and when it is needed — then where the
+work stands and the changes since v2.1, and names each open question under the requirements it
+holds up. `v1.0`, `v2.0` and `v2.1` stay beside it as the records MINT answered, decided against
+and last received. **The board (YouTrack MNT) follows `openspec/`** through
 `docs/tools/board.sh`; the work loop that picks requirements off it is in `CLAUDE.md`
 ("Specification and board") and its pick order is `openspec/changes/tranche-1/tasks.md`.
 
