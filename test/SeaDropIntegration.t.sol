@@ -282,6 +282,18 @@ contract SeaDropIntegrationTest is BaseTest {
         bears.setRoyaltyInfo(_royalty(pot, 10_001));
     }
 
+    function test_setRoyaltyInfo_toTheZeroAddress_reverts() public {
+        /* Scenario:
+           When the owner sets royalty info with no receiver
+           Then SeaDrop refuses it with RoyaltyAddressCannotBeZeroAddress and the setting is unchanged */
+        bears.setRoyaltyInfo(_royalty(pot, 500));
+
+        vm.expectRevert(ISeaDropTokenContractMetadata.RoyaltyAddressCannotBeZeroAddress.selector);
+        bears.setRoyaltyInfo(_royalty(address(0), 500));
+        assertEq(bears.royaltyAddress(), pot);
+        assertEq(bears.royaltyBasisPoints(), 500);
+    }
+
     function test_setRoyaltyInfo_isOwnerOnly() public {
         /* Scenario:
            When a wallet that does not own the contract sets royalty info

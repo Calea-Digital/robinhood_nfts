@@ -74,6 +74,7 @@ royaltyInfo (COL-6)
 └── setRoyaltyInfo
     ├── emits RoyaltyInfoUpdated(receiver, bps)
     ├── refuses a rate above 10,000 basis points with InvalidRoyaltyBasisPoints
+    ├── refuses a zero receiver with RoyaltyAddressCannotBeZeroAddress
     └── is owner-only
 
 operator transfers

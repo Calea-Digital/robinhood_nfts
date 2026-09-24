@@ -48,3 +48,23 @@ collection, and `setTransferSecurityLevelOfCollection` to tighten the level. **N
 5 or above.** Each step is reversible by the admin on the validator. These calls go to Limit Break's
 contract, not to `MintABear`, and are made with Limit Break's tooling; this repository does not
 encode them.
+
+## Royalties (COL-6)
+
+**Set before the first sale.** Royalty info is a Studio setting, written to the collection by
+MINT's admin through `setRoyaltyInfo`: **500 basis points (5%)** to the royalty pot MINT names
+(CQ-15). The receiver is never the admin and never a vault — the contract cannot tell them apart,
+so this rule is the operator's. It is set and checked before any sale, the team-bear sale that
+proves OpenSea's handling of the validated collection included: until it is set, `royaltyInfo`
+answers `(address(0), 0)` and the enforced royalty is zero.
+
+**Check it.**
+
+```shell
+cast call $BEARS "royaltyInfo(uint256,uint256)(address,uint256)" 1 10000 --rpc-url $RPC
+# expect: the pot address, then 500
+```
+
+The rate is collection-wide: every id answers the same. SeaDrop refuses a zero receiver
+(`RoyaltyAddressCannotBeZeroAddress`) and a rate above 10,000 basis points
+(`InvalidRoyaltyBasisPoints`). Every change emits `RoyaltyInfoUpdated(receiver, bps)`.
