@@ -175,6 +175,10 @@ record the settlement.
 - ACT9-I-2 Info: unlinkBear after the bear moved still emits BearUnlinked for a link linkOf already reads (0, 0) — ACCEPTED as specified.
 - Reviewer asked who calls linkBear/unlinkBear and why not automatic: the holder, through the portal; the reset is automatic by the counter comparison on read (no callback — COL-3/COL-4); a link is a choice among a wallet's bears, and a transaction is needed to record one.
 - DEL-6 notes: the portal prompts for linkBear after a purchase and after a holder's first burn (a wallet has no Status boost until it links, level 5 included) and shows a link voided by a sale; the indexer voids a link at TransferNonceAdvanced, and a later BearUnlinked for it is a no-op.
+- Reviewer asked for the linking sequence by example (Alice, bears #7 and #12: burn without link gives no Status; the link follows later burns; a sale voids it with no transaction; unlink withdraws a nomination while keeping the bear). Gap found: an account with several wallets can carry several links — how Status counts them is MINT's and unspecified.
+- Raised as CQ-21 (change act-9-status-per-account, 6c37f54 / merge dcc0820): open, needed by 2026-10-29, default the account's single highest-level link; ACT-9 points to it; §10 O9. Board: MNT-119 created, MNT-34 refreshed.
+- board.sh check 3 then flagged CQ-2 (blocks ACT-7) and CQ-21 (blocks ACT-9) as open decisions gating only Done work. Settled: Blocks widened to what each gates downstream — CQ-2 → ACT-7, OPS-2, OPS-4; CQ-21 → ACT-9, DEL-6 (change cq-2-cq-21-blocks).
+- Done: MNT-34, MNT-118
 
 ## Carried forward
 
