@@ -11,6 +11,7 @@ import {Activation} from "../src/Activation.sol";
 import {DirectBurnAdapter} from "../src/DirectBurnAdapter.sol";
 import {Deploy} from "../script/Deploy.s.sol";
 import {MockMNTD} from "./mocks/MockMNTD.sol";
+import {INonFungibleSeaDropToken} from "seadrop/interfaces/INonFungibleSeaDropToken.sol";
 
 /// @dev OPS-2. The deploy functions run against a fresh local chain; every call the deployer makes
 ///      after construction is recorded and compared with the listed order.
@@ -113,6 +114,25 @@ contract DeployTest is Test {
         assertEq(activation.crediter(), address(adapter));
         assertTrue(activation.paused(), "paused until the switch-on date");
         assertEq(activation.owner(), admin);
+    }
+
+    function test_deployCollection_allowsOnlyCanonicalSeaDrop() public {
+        /* Scenario:
+           Given the collection the deploy script creates
+           When canonical SeaDrop and then any other address call the mint path
+           Then SeaDrop mints and the other is refused with OnlyAllowedSeaDrop, so the collection is
+             deployed with canonical SeaDrop as its only allowed minter (COL-1) */
+        MintABear bears = deployer.deployCollection(_config());
+        address alice = makeAddr("alice");
+
+        vm.prank(deployer.SEADROP());
+        bears.mintSeaDrop(alice, 1);
+        assertEq(bears.ownerOf(1), alice);
+
+        vm.prank(makeAddr("anotherMinter"));
+        vm.expectRevert(INonFungibleSeaDropToken.OnlyAllowedSeaDrop.selector);
+        bears.mintSeaDrop(alice, 1);
+        assertEq(bears.totalSupply(), 1, "nothing more minted");
     }
 
     function test_deployWhitelist_refusesACloseTooNearTheStage() public {

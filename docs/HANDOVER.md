@@ -196,6 +196,12 @@ RAF-17. Four constraints:
 
 ## Accepted risks
 
+- **The collection's owner can add a minter.** `updateAllowedSeaDrop` is SeaDrop's owner-only
+  setting, so the owner — Calea until `acceptOwnership`, then MINT's admin — could allow its own
+  address and mint bears outside Studio's stages, without fee or allowlist, up to `MAX_BEARS`.
+  Canonical SeaDrop as the only allowed minter (COL-1) is a deployment and ownership property,
+  not a constant. Accepted; the mitigation is MINT's admin being a Safe (COL-10) and the
+  runbook's owner calls.
 - **Slither "locked ether"** on `Activation` and `WhitelistClaim`: Solady marks ownership
   functions `payable`; only the owner could lock their own ETH by attaching value. Accepted, and
   said in each contract's NatSpec.
