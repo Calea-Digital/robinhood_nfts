@@ -98,6 +98,8 @@ linkBear
 ├── when paused: it reverts with ContractPaused
 └── otherwise: BearLinked; linkOf reads (tokenId, level); a second nomination replaces the first
     ├── a wallet owning a bear at level 2 reads (tokenId, 2); after the bear moves, (0, 0) (ACT-9)
+    ├── a new owner linking a bear that has already moved reads (tokenId, level); the next move
+    │   voids it (ACT-9)
     ├── the link's level follows later burns without a new nomination
     └── a wallet with several bears carries one link; the others count only as weight
 
