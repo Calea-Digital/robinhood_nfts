@@ -46,7 +46,7 @@ merges `tranche-1` into `main`. Subtask MNT-95 (Sourcify on 46630) waits for the
 | | |
 |---|---|
 | Contracts | 4 of the 7 the spec calls for: `MintABear`, `WhitelistClaim`, `Activation`, `DirectBurnAdapter`; `MysteryBox`, `PrizeVault`, `PrizeDraw` are tranche 2 |
-| Scripts | `Deploy.s.sol` (OPS-2), `verify.sh` (OPS-3), `Enforcement.s.sol` (OPS-6), `WhitelistExport.s.sol` (WL-4); `docs/RUNBOOK.md`: ownership handover, transfer enforcement, royalties |
+| Scripts | `Deploy.s.sol` (OPS-2), `verify.sh` (OPS-3), `Enforcement.s.sol` (OPS-6), `WhitelistExport.s.sol` (WL-4); `docs/RUNBOOK.md`: ownership handover, whitelist export, transfer enforcement, royalties |
 | Tests | 218, all passing; 100% line, branch and function coverage (gate ≥90 / ≥80); every tranche-1 work-item Scenario has a test except the operational OPS-1, OPS-3 (live), OPS-4, OPS-5 |
 | CI gates | `fmt --check`, `build --sizes` (no warnings), `test`, spec lint, generated prose, `verify.sh` dry run — all green |
 | Slither | no High or Critical; 2 accepted Mediums, both `locked-ether` (below) |
@@ -153,7 +153,10 @@ RAF-17. Four constraints:
    against the ABIs, covering every call the app makes, with its own tests and the revert
    reasons a caller has to handle. MINT builds the page on getminted.io against it.
 1. **Whitelist claims are voucher-then-transaction.** The backend signs a short-lived voucher
-   after the wager API confirms a threshold; the wallet submits it. `spotsLeft()` is the live
+   after the wager API confirms a threshold; the wallet submits it. The voucher's
+   `allocationIndex` is the account's allocation number — 1 once $50 is wagered, 2 once $100 is —
+   whichever wallet the holder selects, and the EIP-712 type is exactly
+   `Claim(address wallet,uint8 allocationIndex,bytes32 account,uint256 deadline)`. `spotsLeft()` is the live
    counter; a claim after sell-out reverts with `SoldOut`.
 2. **Activation is approve, then one click.** Approve the adapter on $MNTD, then `burn(tokenId,
    amount)` with `amount` from `costToReach(tokenId, targetLevel)`; anything above the level-5
@@ -203,8 +206,18 @@ RAF-17. Four constraints:
   not a constant. Accepted; the mitigation is MINT's admin being a Safe (COL-10) and the
   runbook's handover, which resets the list to canonical SeaDrop straight after acceptance.
 - **Slither "locked ether"** on `Activation` and `WhitelistClaim`: Solady marks ownership
-  functions `payable`; only the owner could lock their own ETH by attaching value. Accepted, and
-  said in each contract's NatSpec.
+  functions `payable`, and anyone can call `requestOwnershipHandover` and
+  `cancelOwnershipHandover`, so anyone could lock their own ETH by attaching value; neither
+  contract withdraws it. The loss is only ever the sender's own. Accepted, and said in each
+  contract's NatSpec.
+- **The eligibility signer decides who may claim.** The signer, and the owner through
+  `setSigner`, can sign vouchers for wallets they control with fresh account hashes, up to all
+  1,000 allocations: the register proves a voucher, not the wagering behind it. Accepted; the
+  signer is MINT's backend key (WL-2), rotated by `setSigner`, and every claim and every
+  `SignerSet` is on-chain.
+- **`setWindow` can reopen a closed campaign.** Claims made after the export would be in the
+  registry and not in Studio's allowlist. Accepted; the runbook runs the export and `compare`
+  after the last `WindowSet`, and `compare` fails on any difference.
 - **Event ordering in the adapter**: the record is written before `burnFrom`; the hostile paths
   were traced (re-entering still needs each `burnFrom` to succeed; transferring the bear from
   inside `burnFrom` voids the caller's own record). Accepted; the adapter's hostile-token tests
@@ -275,7 +288,7 @@ deployment wait on MINT's values (O4, O5, O6); tranche 2 waits on CQ-20.
 - `docs/SPECIFICATION.md`, `docs/OPEN-QUESTIONS.md` (generated views), `docs/client/`, `docs/tools/build_client_doc.py`, `docs/tools/board.sh`.
 - `test/<Suite>.tree.md` — one branching tree per test suite, leaves citing requirement IDs, with
   the auditor's INV-N and Fork-N obligations numbered once across all trees.
-- `docs/RUNBOOK.md` — operating steps: the ownership handover (COL-10), transfer enforcement (OPS-6) and royalties (COL-6).
+- `docs/RUNBOOK.md` — operating steps: the ownership handover (COL-10), the whitelist export (WL-4), transfer enforcement (OPS-6) and royalties (COL-6).
 - `test/SeaDropIntegration.t.sol` and its tree — the boundary with OpenSea Studio.
 - `docs/MintABear-Questionnaire-v2.0.docx` — the client questionnaire the original build answered.
 - `~/.claude/plans/i-am-starting-a-tidy-sloth.md` — the original decision log, item by item.

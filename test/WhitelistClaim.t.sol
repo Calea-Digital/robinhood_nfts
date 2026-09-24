@@ -97,7 +97,8 @@ contract WhitelistClaimRegistryTest is WhitelistClaimBase {
              and the campaign window
            When W calls claim
            Then spotsLeft falls by one, claimsOf(W) reads 1 and WhitelistClaimed is emitted
-           And the same call from another wallet reverts with NotClaimant */
+           And the same call from another wallet reverts with NotClaimant, and a voucher for the
+             same account's allocation 1 for another wallet reverts with WrongAllocation */
         WhitelistClaim.Claim memory v = _voucher(alice, 1, ACCOUNT_A);
         bytes memory sig = _sign(signerKey, v);
 
@@ -117,6 +118,9 @@ contract WhitelistClaimRegistryTest is WhitelistClaimBase {
         vm.prank(bob);
         vm.expectRevert(WhitelistClaim.NotClaimant.selector);
         wl.claim(v, sig);
+
+        _expectClaimRevert(bob, 1, ACCOUNT_A, WhitelistClaim.WrongAllocation.selector);
+        assertEq(wl.spotsLeft(), 999, "the account's allocation 1 is spent");
     }
 
     function test_claim_spotNumberCountsAcrossTheCampaign() public {
@@ -310,8 +314,8 @@ contract WhitelistClaimRegistryTest is WhitelistClaimBase {
            When a third wallet claims for the same account
            Then it reverts with AccountLimit */
         _claim(alice, 1, ACCOUNT_A);
-        _claim(bob, 1, ACCOUNT_A);
-        _expectClaimRevert(carol, 1, ACCOUNT_A, WhitelistClaim.AccountLimit.selector);
+        _claim(bob, 2, ACCOUNT_A);
+        _expectClaimRevert(carol, 3, ACCOUNT_A, WhitelistClaim.AccountLimit.selector);
     }
 
     function test_claim_checksRunInTheSpecifiedOrder() public {
@@ -337,6 +341,34 @@ contract WhitelistClaimRegistryTest is WhitelistClaimBase {
         vm.prank(alice);
         vm.expectRevert(WhitelistClaim.Expired.selector);
         wl.claim(v, sig);
+    }
+
+    function test_claim_accountLimit_precedesWrongAllocation() public {
+        /* Scenario:
+           Given an account that holds both its allocations
+           When a voucher for its allocation 1 is presented for a fresh wallet
+           Then it reverts with AccountLimit, not WrongAllocation: the cap is named before the order */
+        _claim(alice, 1, ACCOUNT_A);
+        _claim(bob, 2, ACCOUNT_A);
+        _expectClaimRevert(carol, 1, ACCOUNT_A, WhitelistClaim.AccountLimit.selector);
+    }
+
+    function test_renounceOwnership_reverts() public {
+        /* Scenario:
+           When the owner, or anyone else, calls renounceOwnership
+           Then it reverts with RenounceDisabled and the owner can still rotate the signer */
+        vm.prank(admin);
+        vm.expectRevert(WhitelistClaim.RenounceDisabled.selector);
+        wl.renounceOwnership();
+        vm.prank(alice);
+        vm.expectRevert(WhitelistClaim.RenounceDisabled.selector);
+        wl.renounceOwnership();
+        assertEq(wl.owner(), admin);
+
+        address next = makeAddr("nextSigner");
+        vm.prank(admin);
+        wl.setSigner(next);
+        assertEq(wl.signer(), next);
     }
 
     function test_reads_constantsAndConfiguration() public view {
@@ -531,11 +563,11 @@ contract WhitelistClaimRulesTest is WhitelistClaimBase {
 
     function test_claim_accountSpreadOverWallets_isCappedAtTwo() public {
         /* Scenario:
-           Given an account that has claimed one allocation for each of two wallets
+           Given an account that has claimed its two allocations, one for each of two wallets
            When it claims for either wallet again, or for a third wallet
            Then every attempt reverts with AccountLimit */
         _claim(alice, 1, ACCOUNT_A);
-        _claim(bob, 1, ACCOUNT_A);
+        _claim(bob, 2, ACCOUNT_A);
         _expectClaimRevert(alice, 2, ACCOUNT_A, WhitelistClaim.AccountLimit.selector);
         _expectClaimRevert(bob, 2, ACCOUNT_A, WhitelistClaim.AccountLimit.selector);
         _expectClaimRevert(carol, 1, ACCOUNT_A, WhitelistClaim.AccountLimit.selector);
@@ -545,10 +577,10 @@ contract WhitelistClaimRulesTest is WhitelistClaimBase {
     function test_claim_walletCountsAllocations_notAccounts() public {
         /* Scenario:
            Given a wallet holding one allocation claimed under one account
-           When it claims allocation 2 under another account
+           When it claims another account's allocation 1
            Then the claim succeeds: the wallet holds two and each account one */
         _claim(alice, 1, ACCOUNT_A);
-        _claim(alice, 2, ACCOUNT_B);
+        _claim(alice, 1, ACCOUNT_B);
         assertEq(wl.claimsOf(alice), 2);
         assertEq(wl.accountClaims(ACCOUNT_A), 1);
         assertEq(wl.accountClaims(ACCOUNT_B), 1);
