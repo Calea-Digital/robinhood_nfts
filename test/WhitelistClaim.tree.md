@@ -100,8 +100,10 @@ window
 ```
 
 The 48-hour gap and the dates themselves (proposed 6–26 October, CQ-1 / CQ-18) are deployment
-values: the registry does not know when the whitelist stage opens, so the gap is checked by the
-deploy script and the runbook (OPS-2), not by the contract.
+values: the registry does not know when the whitelist stage opens, so the contract does not check
+the gap. The deploy script refuses a close under 48 hours before the stage (OPS-2,
+`test/Deploy.t.sol`), once; after that, `setWindow` keeping the gap is the operator's rule
+(`docs/RUNBOOK.md`, "Whitelist export").
 
 ## Reads
 
