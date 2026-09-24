@@ -33,4 +33,10 @@ expect "no Sourcify answer at all: exit 1" 1 "MISSING   WhitelistClaim" -- \
 expect "broadcasts that created nothing: exit 2" 2 "no contract created" -- \
   bash script/verify.sh 46630 --check --broadcast-dir test/fixtures/broadcast-no-create
 
+expect "no broadcast for the chain: exit 2" 2 "no Deploy.s.sol broadcast for chain 1" -- \
+  bash script/verify.sh 1 --check --broadcast-dir "$BROADCAST"
+
+expect "a contract it does not know: exit 2" 2 "unknown contract in broadcast: Stranger" -- \
+  bash script/verify.sh 46630 --check --broadcast-dir test/fixtures/broadcast-unknown
+
 exit "$fail"
