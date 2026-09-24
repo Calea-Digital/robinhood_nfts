@@ -55,6 +55,10 @@ forge script script/WhitelistExport.s.sol --rpc-url $RPC \
   $REGISTRY $SEADROP $BEARS "(0,0,$START,$END,1,4444,$FEE_BPS,$RESTRICT)"
 ```
 
+**The close stays at least 48 hours before the whitelist stage (WL-5).** The deploy checks it
+once; any later `setWindow` must keep it too, so the export, the Studio import and the published
+proofs have their time.
+
 `compare` fails unless the root is the registry's. The owner can move the window with
 `setWindow`, so a `WindowSet` after the export means claims the allowlist does not carry: export
 and compare again. `setSigner` rotates the eligibility signer; `renounceOwnership` reverts, so

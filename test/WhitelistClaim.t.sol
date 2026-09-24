@@ -770,7 +770,8 @@ contract WhitelistClaimTimingTest is WhitelistClaimBase {
            Given openAt and closeAt set with the close at least 48 hours before the whitelist stage
            When a claim arrives before openAt or after closeAt
            Then it reverts with CampaignClosed */
-        assertGe(STAGE_START - wl.closeAt(), 48 hours);
+        // The Given is the deployment's: DeployTest.test_deployWhitelist_refusesACloseTooNearTheStage
+        // pins that Deploy.s.sol refuses a close under 48 hours before the stage.
 
         vm.warp(uint256(OPEN_AT) - 1);
         _expectClaimRevert(alice, 1, ACCOUNT_A, WhitelistClaim.CampaignClosed.selector);
@@ -820,7 +821,7 @@ contract WhitelistClaimTimingTest is WhitelistClaimBase {
         /* Scenario:
            Given a registry deployed before the campaign opens
            When it is read before openAt
-           Then its signer and window are already set, and a claim waits for openAt */
+           Then its signer and window are already set, and openAt is still ahead */
         WhitelistClaim fresh = new WhitelistClaim(admin, signer, OPEN_AT + 30 days, CLOSE_AT + 30 days);
         assertEq(fresh.signer(), signer);
         assertEq(fresh.openAt(), OPEN_AT + 30 days);
