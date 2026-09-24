@@ -4,7 +4,7 @@ pragma solidity 0.8.17;
 import {BaseTest} from "./BaseTest.t.sol";
 import {ERC721ContractMetadata} from "seadrop/ERC721ContractMetadata.sol";
 
-import {MintABear} from "../src/MintABear.sol";
+import {TwoStepOwnable} from "utility-contracts/TwoStepOwnable.sol";
 import {Enforcement} from "../script/Enforcement.s.sol";
 import {MockTransferValidator} from "./mocks/MockTransferValidator.sol";
 
@@ -67,11 +67,30 @@ contract EnforcementTest is BaseTest {
            Given enforcement on
            When enable is run, and after disabling, disable again
            Then each reverts with AlreadyInState before anything is broadcast */
-        vm.expectRevert(abi.encodeWithSelector(Enforcement.AlreadyInState.selector, true));
+        vm.expectRevert(abi.encodeWithSelector(Enforcement.AlreadyInState.selector, v3));
         script.enable(address(bears));
         script.disable(address(bears));
-        vm.expectRevert(abi.encodeWithSelector(Enforcement.AlreadyInState.selector, false));
+        vm.expectRevert(abi.encodeWithSelector(Enforcement.AlreadyInState.selector, address(0)));
         script.disable(address(bears));
+    }
+
+    function test_enable_restoresV3_overAnotherValidator() public {
+        /* Scenario:
+           Given the collection holding a validator other than V3
+           When status is read and enable is run
+           Then status reports it enforced through that validator, and enable replaces it with V3,
+             emitting TransferValidatorUpdated(other, V3) */
+        address other = address(new MockTransferValidator());
+        vm.prank(DEFAULT_SENDER);
+        bears.setTransferValidator(other);
+        (bool enforced, address validator) = script.status(address(bears));
+        assertTrue(enforced);
+        assertEq(validator, other);
+
+        vm.expectEmit(true, true, true, true, address(bears));
+        emit TransferValidatorUpdated(other, v3);
+        script.enable(address(bears));
+        assertEq(bears.getTransferValidator(), v3);
     }
 
     function test_toggle_byANonOwnerSigner_reverts() public {
@@ -83,7 +102,7 @@ contract EnforcementTest is BaseTest {
         bears.transferOwnership(makeAddr("mintAdmin"));
         vm.prank(makeAddr("mintAdmin"));
         bears.acceptOwnership();
-        vm.expectRevert();
+        vm.expectRevert(TwoStepOwnable.OnlyOwner.selector);
         script.disable(address(bears));
         assertEq(bears.getTransferValidator(), v3);
     }
