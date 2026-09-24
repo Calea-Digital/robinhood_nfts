@@ -193,9 +193,12 @@ and is deployed with the transfer validator **set**:
 4663, with the validator's zero-state policy — security level 0 (operator whitelist,
 holder-initiated transfers always allowed, no receiver constraint) and list 0 (Limit Break
 Payment Processor whitelist with OpenSea's SignedZone `0x000056F7000000EcE9003ca63978907a00FFD100`
-as authorizer). Consequence: a transfer initiated by the holder always passes; a sale settles only
-through OpenSea (SignedZone-restricted orders) or a Payment Processor marketplace, and creator
-earnings are collected on every such sale; a Seaport order from any other venue reverts.
+as authorizer). Consequence: a transfer the holder makes itself always passes; a sale a marketplace
+operates settles only through OpenSea (SignedZone-restricted orders) or a Payment Processor
+marketplace, and creator earnings are collected on every such sale; a Seaport order from any
+other venue reverts. Because the holder's own transfers pass, a sale arranged outside a
+marketplace — directly, or through an escrow contract the holder sends the bear to — pays no
+creator earnings; every level that lets holders move their own bears allows it.
 Security levels 5 and above additionally restrict contract receivers and are not used. OpenSea's
 handling of a validated collection on this chain has not been observed, so the switch is proven
 in two steps: on testnet 46630 with Studio (OPS-4), and on mainnet with a listing and sale of a
@@ -311,7 +314,9 @@ signer can always be rotated. Nobody can remove or reassign a claim.
 **WL-4 Into the mint.** After the window closes or the spots sell out, MINT exports the claimant
 list — one row per wallet with its allocation count — and loads it as the whitelist stage's
 allowlist in Studio. SeaDrop allowlist entries carry a per-wallet mint limit, so "one or two" is
-enforced by the mint itself. The getminted.io mirror builds its Merkle proofs from the same list
+enforced by the mint itself. That limit counts every bear minted to the wallet in any stage, so
+the whitelist stage is the first in which any wallet but the team's can mint and no other stage
+overlaps it; a later stage's per-wallet limit counts the whitelist mints too. The getminted.io mirror builds its Merkle proofs from the same list
 (DEL-6). The registry is public, so a loaded list that differs from it is detectable by anyone.
 
 *Acceptance.* Given a closed campaign; when `claimants(offset, limit)` is read across the whole list; then every wallet appears once with its allocation count, and the Studio allowlist loaded from it carries the same rows.

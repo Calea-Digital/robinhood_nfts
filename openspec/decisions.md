@@ -395,7 +395,9 @@ it changes what the registry guarantees.
 them; the campaign's open and close dates (proposed 6 and 26 October; it must close at least
 48 hours before the whitelist mint stage opens); the account that holds the eligibility signer
 key; the other mint stages (team and treasury, public) and their order, so the whitelist stage's
-place in Studio is known; and that Season 1 wagering and the $50 back-credit are MINT's data,
+place in Studio is known — it must be the first stage in which any wallet but the team's can
+mint, with no stage overlapping it, because the allowlist's per-wallet limit counts a wallet's
+mints in every stage (WL-4); and that Season 1 wagering and the $50 back-credit are MINT's data,
 with Calea recording only the result.
 
 ### CQ-21 — How MINT's Status counts links across an account's wallets

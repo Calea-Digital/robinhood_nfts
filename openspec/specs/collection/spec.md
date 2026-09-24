@@ -89,9 +89,12 @@ and is deployed with the transfer validator **set**:
 4663, with the validator's zero-state policy — security level 0 (operator whitelist,
 holder-initiated transfers always allowed, no receiver constraint) and list 0 (Limit Break
 Payment Processor whitelist with OpenSea's SignedZone `0x000056F7000000EcE9003ca63978907a00FFD100`
-as authorizer). Consequence: a transfer initiated by the holder always passes; a sale settles only
-through OpenSea (SignedZone-restricted orders) or a Payment Processor marketplace, and creator
-earnings are collected on every such sale; a Seaport order from any other venue reverts.
+as authorizer). Consequence: a transfer the holder makes itself always passes; a sale a marketplace
+operates settles only through OpenSea (SignedZone-restricted orders) or a Payment Processor
+marketplace, and creator earnings are collected on every such sale; a Seaport order from any
+other venue reverts. Because the holder's own transfers pass, a sale arranged outside a
+marketplace — directly, or through an escrow contract the holder sends the bear to — pays no
+creator earnings; every level that lets holders move their own bears allows it.
 Security levels 5 and above additionally restrict contract receivers and are not used. OpenSea's
 handling of a validated collection on this chain has not been observed, so the switch is proven
 in two steps: on testnet 46630 with Studio (OPS-4), and on mainnet with a listing and sale of a
