@@ -554,6 +554,8 @@ contract MintABearCreatorTokenTest is BaseTest {
     event TransferValidatorUpdated(address oldValidator, address newValidator);
 
     MockTransferValidator internal validator;
+    /// @dev Stands for an authorised caller. On 4663 the caller of a fill is Seaport 1.6 (conduitKey
+    ///      0), authorised by OpenSea's SignedZone on V3; the mock's one list models both (Fork-2).
     address internal signedZone = makeAddr("openSeaSignedZone");
     address internal foreignVenue = makeAddr("foreignSeaportVenue");
 
