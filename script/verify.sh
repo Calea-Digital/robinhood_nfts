@@ -50,6 +50,11 @@ fi
 # name<TAB>address for every CREATE, in broadcast order.
 CREATED="$(jq -r '.transactions[] | select(.transactionType == "CREATE") | "\(.contractName)\t\(.contractAddress)"' "${FILES[@]}")"
 
+if [ -z "$CREATED" ]; then
+  echo "no contract created in the Deploy.s.sol broadcasts for chain $CHAIN under $DIR" >&2
+  exit 2
+fi
+
 failed=0
 while IFS=$'\t' read -r name address; do
   [ -z "$name" ] && continue
