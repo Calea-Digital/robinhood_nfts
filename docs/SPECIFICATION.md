@@ -223,9 +223,12 @@ is a token-side guard against sending a bear into a bear's account.
 
 **COL-10 Ownership.** Deployed by Calea; ownership transferred to MINT's admin address by the
 inherited two-step process (`transferOwnership`, then `acceptOwnership` from the admin) before
-the drop page is published. Calea retains no role.
+the drop page is published. Calea retains no role. The collection always has an owner:
+`renounceOwnership` reverts for every caller, the owner included, because an ownerless collection
+would freeze every owner setting — Studio's drop configuration, `baseURI`, royalties and the
+transfer-validator lift and restore (OPS-6) — and a pending ownership offer would survive it.
 
-*Acceptance.* Given Calea has called `transferOwnership(admin)`; when the admin calls `acceptOwnership`; then the admin is the owner; and Calea holds no role.
+*Acceptance.* Given Calea has called `transferOwnership(admin)`; when the admin calls `acceptOwnership`; then the admin is the owner; and Calea holds no role, and `renounceOwnership` reverts for the admin as for anyone else.
 
 **COL-11 What Studio owns.** Mint stages, dates and pricing; allowlists and per-wallet limits,
 including the whitelist stage loaded from `WhitelistClaim` (WL-4); payout address; `maxSupply`
