@@ -44,7 +44,7 @@ makes that rehearsal independent of TGE (CQ-2).
 - **Needed by:** 2026-10-20 — before `Activation` is deployed
 - **Resolution:** option (a1) — $MNTD is **native** to Robinhood Chain, burned by `Activation` in the same transaction as the record.
 - **Summary:** Native on Robinhood Chain, with burning and staking beside it; token interface to confirm
-- **Blocks:** ACT-7
+- **Blocks:** ACT-7, OPS-2, OPS-4
 
 **Question.** On which chain does the $MNTD burn happen, what does the token's level-up function
 do, and does it call our contract?
@@ -406,7 +406,7 @@ with Calea recording only the result.
 - **Needed by:** 2026-10-29 — before burns, level-up and Status linking open
 - **Resolution:** Open; Calea recommends the account's single highest-level link
 - **Default if deferred:** MINT's Status counts one link per getminted.io account: the highest-level bear among the links of the account's wallets.
-- **Blocks:** ACT-9
+- **Blocks:** ACT-9, DEL-6
 
 **Question.** `Activation` lets each **wallet** nominate one bear to carry its Status boost
 (ACT-9), and a getminted.io account may use several wallets — the whitelist already counts two
