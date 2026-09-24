@@ -184,6 +184,63 @@ contract DeployTest is Test {
         deployer.deployActivation(_config(), address(0));
     }
 
+    function test_deployActivation_refusesAnAddressThatIsNotTheCollection() public {
+        /* Scenario:
+           Given a collection address that is a wallet, or a contract other than MintABear
+           When Activation is deployed with it
+           Then it reverts with NotTheCollection before anything is created, since the address
+             would be immutable in Activation */
+        address wallet = makeAddr("notACollection");
+        vm.expectRevert(abi.encodeWithSelector(Deploy.NotTheCollection.selector, wallet));
+        deployer.deployActivation(_config(), wallet);
+
+        vm.expectRevert(abi.encodeWithSelector(Deploy.NotTheCollection.selector, address(mntd)));
+        deployer.deployActivation(_config(), address(mntd));
+
+        StubCollection stub = new StubCollection();
+        vm.expectRevert(abi.encodeWithSelector(Deploy.NotTheCollection.selector, address(stub)));
+        deployer.deployActivation(_config(), address(stub));
+    }
+
+    function test_loadConfig_refusesArraysOfTheWrongLength() public {
+        /* Scenario:
+           Given a config whose thresholdsWhole has six entries, or whose weights has five
+           When it is loaded
+           Then it reverts with ConfigLength naming the field, rather than ignoring or missing one */
+        string memory json = vm.readFile(EXAMPLE);
+        vm.createDir("exports", true);
+        string memory path = "exports/test-deploy-config.json";
+
+        vm.writeFile(path, _replace(json, "[1666, 3333, 8333, 16666, 41666]", "[1666, 3333, 8333, 16666, 41666, 1]"));
+        vm.expectRevert(abi.encodeWithSelector(Deploy.ConfigLength.selector, "thresholdsWhole"));
+        deployer.loadConfig(path);
+
+        vm.writeFile(path, _replace(json, "[100, 110, 125, 145, 170, 200]", "[100, 110, 125, 145, 170]"));
+        vm.expectRevert(abi.encodeWithSelector(Deploy.ConfigLength.selector, "weights"));
+        deployer.loadConfig(path);
+        vm.removeFile(path);
+    }
+
+    /// @dev `json` with the one occurrence of `from` replaced by `to`.
+    function _replace(string memory json, string memory from, string memory to) internal pure returns (string memory) {
+        bytes memory s = bytes(json);
+        bytes memory f = bytes(from);
+        for (uint256 i; i + f.length <= s.length; ++i) {
+            if (keccak256(_slice(s, i, f.length)) == keccak256(f)) {
+                return
+                    string.concat(string(_slice(s, 0, i)), to, string(_slice(s, i + f.length, s.length - i - f.length)));
+            }
+        }
+        revert("pattern not found");
+    }
+
+    function _slice(bytes memory s, uint256 start, uint256 len) internal pure returns (bytes memory out) {
+        out = new bytes(len);
+        for (uint256 i; i < len; ++i) {
+            out[i] = s[start + i];
+        }
+    }
+
     function test_deployActivation_scalesByTheTokensDecimals() public {
         /* Scenario:
            Given $MNTD reporting 6 decimals
@@ -236,5 +293,12 @@ contract DeployTest is Test {
         assertEq(address(activation.MNTD()), 0x00000000000000000000000000000000000A0003);
         assertTrue(activation.paused());
         assertEq(activation.owner(), 0x00000000000000000000000000000000000a0001);
+    }
+}
+
+/// @dev A contract that answers `MAX_BEARS` with the wrong supply.
+contract StubCollection {
+    function MAX_BEARS() external pure returns (uint256) {
+        return 10_000;
     }
 }

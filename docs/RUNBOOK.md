@@ -128,3 +128,37 @@ cast call $BEARS "royaltyInfo(uint256,uint256)(address,uint256)" 1 10000 --rpc-u
 The rate is collection-wide: every id answers the same. SeaDrop refuses a zero receiver
 (`RoyaltyAddressCannotBeZeroAddress`) and a rate above 10,000 basis points
 (`InvalidRoyaltyBasisPoints`). Every change emits `RoyaltyInfoUpdated(receiver, bps)`.
+
+## Activation (OPS-2, ACT-11)
+
+**Read everything back the day it is deployed.** `Activation`'s collection, token, thresholds and
+weights are fixed in its constructor; a wrong one means a new `Activation`, which costs nothing
+while it is still paused and before the portal points at it. The deploy script refuses a
+collection address that is not `MintABear` and prints the scaled values; check them on-chain:
+
+```shell
+cast call $ACTIVATION "owner()(address)" --rpc-url $RPC      # MINT's admin
+cast call $ACTIVATION "paused()(bool)" --rpc-url $RPC        # true
+cast call $ACTIVATION "BEARS()(address)" --rpc-url $RPC      # the collection
+cast call $ACTIVATION "MNTD()(address)" --rpc-url $RPC       # $MNTD as MINT confirmed it (CQ-2)
+cast call $ACTIVATION "DECIMALS()(uint8)" --rpc-url $RPC     # $MNTD's decimals
+for k in 1 2 3 4 5; do cast call $ACTIVATION "thresholdFor(uint8)(uint128)" $k --rpc-url $RPC; done
+# expect 1,666 / 3,333 / 8,333 / 16,666 / 41,666 × 10^DECIMALS
+for k in 0 1 2 3 4 5; do cast call $ACTIVATION "weightFor(uint8)(uint16)" $k --rpc-url $RPC; done
+# expect 100 / 110 / 125 / 145 / 170 / 200
+```
+
+**Prove control once.** Ownership moves to the admin in one step at deployment, so the admin
+sends `setPaused(true)` straight away: it changes nothing (the contract is already paused) and its
+`PausedSet(true)` shows the admin holds the key. Only then is the address given to the portal.
+
+**Rehearsal windows and switch-on.** `Activation` stays paused until the switch-on date; no
+address is exempt. For each rehearsal against real $MNTD the admin sends `setPaused(false)`, the
+rehearsal burns, and the admin sends `setPaused(true)` again; reads, `unlinkBear` and transfers
+work throughout. On the switch-on date the admin sends `setPaused(false)` and leaves it.
+`renounceOwnership` reverts, so the pause can always be set and lifted.
+
+**Team and treasury mints: at most about 200 bears per transaction.** The collection records one
+owner per mint batch and reads an owner by walking back to its batch's start, so `snapshot` —
+what the royalty split reads — grows with the square of an untransferred batch's length (a single
+4,444 batch cannot be read in one call). Batches of about 200 keep every read cheap.

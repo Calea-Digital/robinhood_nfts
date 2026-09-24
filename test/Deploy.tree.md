@@ -32,17 +32,21 @@ deployCollection
 ```
 deployActivation
 ├── when the admin, $MNTD or the collection is zero: it reverts with MissingAddress
+├── when the collection is a wallet, another contract, or answers MAX_BEARS with anything but
+│   4,444: it reverts with NotTheCollection before anything is created
 ├── otherwise, in this order (OPS-2), with no address set after construction:
 │   ├── Activation(bears, mntd, thresholdsWhole, weights)
 │   ├── setPaused(true) — until the switch-on date
 │   └── transferOwnership(admin)
-└── with a 6-decimal $MNTD, Activation reads the decimals itself and scales the thresholds by 10^6
+├── with a 6-decimal $MNTD, Activation reads the decimals itself and scales the thresholds by 10^6
+└── it prints DECIMALS, thresholdFor(1..5) and weightFor(0..5) for the runbook's read-back
 ```
 
 ## Config
 
 ```
 loadConfig: every field of script/config/example.json reads as written
+loadConfig: thresholdsWhole other than 5 entries, or weights other than 6: ConfigLength naming the field
 runWhitelist / runCollection / runActivation: each broadcasts its deployment from the config
 ```
 
