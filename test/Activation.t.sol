@@ -9,6 +9,7 @@ import {SafeCastLib} from "solady/utils/SafeCastLib.sol";
 import {BaseTest} from "./BaseTest.t.sol";
 import {Activation} from "../src/Activation.sol";
 import {IMintABear} from "../src/interfaces/IMintABear.sol";
+import {IERC721A} from "ERC721A/IERC721A.sol";
 import {MockMNTD} from "./mocks/MockMNTD.sol";
 import {HookedMNTD} from "./mocks/HookedMNTD.sol";
 import {ReentrantHolder} from "./mocks/ReentrantHolder.sol";
@@ -258,12 +259,34 @@ contract ActivationBurnTest is BaseTest {
         _burnAs(bob, 50_000 * UNIT);
 
         _burnAs(alice, 41_666 * UNIT);
+        vm.expectRevert(Activation.NotBearOwner.selector);
+        _burnAs(bob, UNIT);
         vm.expectRevert(Activation.AlreadyAtMaxLevel.selector);
         _burnAs(alice, 50_000 * UNIT);
 
         vm.prank(bob);
         vm.expectRevert(Activation.Overshoot.selector);
         activation.burn(2, 41_667 * UNIT);
+    }
+
+    function test_burnOrLink_forAnUnmintedId_revertsInTheCollection() public {
+        /* Scenario:
+           Given an id that was never minted
+           When anyone burns for it or links it
+           Then the collection's ownerOf reverts with OwnerQueryForNonexistentToken, before
+             NotBearOwner, and nothing is recorded or burned */
+        vm.expectRevert(IERC721A.OwnerQueryForNonexistentToken.selector);
+        _burnAsFor(alice, 4445, UNIT);
+        vm.prank(alice);
+        vm.expectRevert(IERC721A.OwnerQueryForNonexistentToken.selector);
+        activation.linkBear(4445);
+        assertEq(activation.lifetimeBurned(4445), 0);
+        assertEq(mntd.balanceOf(alice), 50_000 * UNIT);
+    }
+
+    function _burnAsFor(address caller, uint256 tokenId, uint128 amount) internal {
+        vm.prank(caller);
+        activation.burn(tokenId, amount);
     }
 }
 
@@ -764,7 +787,7 @@ contract ActivationViewsTest is BaseTest {
 
     function test_weightOf_followsTheLevel() public {
         /* Scenario:
-           Given an unactivated bear and a bear burned for to level 3
+           Given an unactivated bear and a bear burned to level 3
            When their weights are read
            Then they are 100 and 145 */
         _burnFor(2, 8_333);
@@ -867,7 +890,7 @@ contract ActivationThresholdsTest is BaseTest {
 
     function test_costToReach_atEveryLevel() public {
         /* Scenario:
-           Given a bear burned for to 8,333
+           Given a bear burned for 8,333
            When costToReach is read for each level
            Then levels 0-3 cost nothing and levels 4 and 5 cost their threshold less 8,333 */
         _burnFor(1, 8_333);
@@ -908,7 +931,7 @@ contract ActivationWeightsTest is BaseTest {
     function test_weightOf_risesWithEveryLevel_andResetsOnTransfer() public {
         /* Scenario:
            Given an unactivated bear
-           When it is burned for to each threshold in turn, then sold
+           When it is burned up to each threshold in turn, then sold
            Then weightOf reads 100, 110, 125, 145, 170, 200, and 100 again after the sale */
         uint16[6] memory w = _weights();
         uint128[5] memory t = _thresholds();
@@ -1251,7 +1274,7 @@ contract ActivationRolesTest is BaseTest {
 
     function test_ownerFunctions_leaveTheTokenThresholdsWeightsAndRecordsAlone() public {
         /* Scenario:
-           Given a bear burned for to level 2 and linked
+           Given a bear burned to level 2 and linked
            When the owner runs every owner function — setPaused on and off, a handover and a
              transfer of ownership
            Then the token, thresholds, weights, the bear's cumulative, level, lifetime and link read

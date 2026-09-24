@@ -29,6 +29,9 @@ burn
 │   └── it reverts with ZeroAmount
 ├── when the caller does not own the bear (an unrelated wallet, an approved operator)
 │   └── it reverts with NotBearOwner and burns nothing (ACT-7)
+├── when the id was never minted
+│   └── the collection's ownerOf reverts with OwnerQueryForNonexistentToken, before NotBearOwner;
+│       linkBear alike (ACT-4)
 ├── when the bear is at level 5
 │   └── it reverts with AlreadyAtMaxLevel and burns nothing
 ├── when amount > costToReach(tokenId, 5)

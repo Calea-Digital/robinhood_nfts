@@ -188,9 +188,11 @@ contract Activation is Ownable, ReentrancyGuard {
      * @dev    The caller must own the bear; the approval is on this contract. Reverts, in this
      *         order, with `ContractPaused`, `ZeroAmount`, `NotBearOwner`, `AlreadyAtMaxLevel` or
      *         `Overshoot` (above `costToReach(tokenId, 5)`); size a burn with
-     *         `costToReach(tokenId, targetLevel)`. The record is written and `BearActivated`
-     *         emitted before `burnFrom`, and the token's own reverts (allowance, balance) undo
-     *         the whole call. Non-reentrant: a `burn` from inside `burnFrom` reverts.
+     *         `costToReach(tokenId, targetLevel)`. An id never minted reverts in the collection's
+     *         `ownerOf` with `OwnerQueryForNonexistentToken`, where `NotBearOwner` would be. The
+     *         record is written and `BearActivated` emitted before `burnFrom`, and the token's own
+     *         reverts (allowance, balance) undo the whole call. Non-reentrant: a `burn` from
+     *         inside `burnFrom` reverts.
      * @param  tokenId The bear.
      * @param  amount  Base units of $MNTD to burn.
      */
@@ -217,8 +219,9 @@ contract Activation is Ownable, ReentrancyGuard {
     /**
      * @notice Nominates a bear to carry this wallet's Status multiplier. One per wallet; a new
      *         nomination replaces the previous one.
-     * @dev    Owner of the bear only. The nomination is void once the bear moves, so a previous
-     *         owner cannot keep the boost after selling.
+     * @dev    Owner of the bear only (`NotBearOwner`; an id never minted reverts in the
+     *         collection's `ownerOf` with `OwnerQueryForNonexistentToken`). The nomination is void
+     *         once the bear moves, so a previous owner cannot keep the boost after selling.
      */
     function linkBear(uint256 tokenId) external whenNotPaused {
         if (BEARS.ownerOf(tokenId) != msg.sender) revert NotBearOwner();
