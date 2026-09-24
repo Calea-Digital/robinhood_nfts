@@ -38,7 +38,7 @@ contracts. They are configured through OpenSea Studio / SeaDrop.
 | [`script/Deploy.s.sol`](script/Deploy.s.sol) | deploys the four contracts in the specified order from `script/config/<chain>.json` (template [`example.json`](script/config/example.json)), verifying on Sourcify as it broadcasts |
 | [`script/verify.sh`](script/verify.sh) | re-verifies and checks on Sourcify every contract a deploy created |
 | [`script/Enforcement.s.sol`](script/Enforcement.s.sol) | lifts or restores royalty enforcement with one owner call; prints the Safe transaction for a Safe admin |
-| [`script/WhitelistExport.s.sol`](script/WhitelistExport.s.sol) | exports the claimant CSV for Studio and checks the allowlist root Studio set against the registry |
+| [`script/WhitelistExport.s.sol`](script/WhitelistExport.s.sol) | exports the claimant CSV for Studio and checks the allowlist root Studio set against the registry; both refuse while claims are still possible |
 
 Operating steps are in [`docs/RUNBOOK.md`](docs/RUNBOOK.md).
 
