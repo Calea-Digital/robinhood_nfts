@@ -7,12 +7,18 @@ import {Activation} from "../../src/Activation.sol";
 import {HookedMNTD, IBurnHook} from "./HookedMNTD.sol";
 
 /// @dev A bear holder that, when its $MNTD is burned, calls `burn` again once from inside the
-///      token's `burnFrom` — the nested call a hooked token makes possible.
+///      token's `burnFrom` — the nested call a hooked token makes possible — or, observing,
+///      reads what `Activation` has recorded at that moment.
 contract ReentrantHolder is IBurnHook, IERC721Receiver {
     Activation internal immutable activation;
     uint256 internal tokenId;
     uint128 internal nestedAmount;
     bool internal armed;
+    bool internal observing;
+
+    /// @dev `cumulativeOf` and `lifetimeBurned` as read from inside `burnFrom`.
+    uint128 public cumulativeDuringBurn;
+    uint256 public lifetimeDuringBurn;
 
     constructor(Activation activation_, HookedMNTD mntd_) {
         activation = activation_;
@@ -28,7 +34,18 @@ contract ReentrantHolder is IBurnHook, IERC721Receiver {
         activation.burn(tokenId_, amount);
     }
 
+    function burnObserving(uint256 tokenId_, uint128 amount) external {
+        (tokenId, observing) = (tokenId_, true);
+        activation.burn(tokenId_, amount);
+        observing = false;
+    }
+
     function onBurn() external {
+        if (observing) {
+            cumulativeDuringBurn = activation.cumulativeOf(tokenId);
+            lifetimeDuringBurn = activation.lifetimeBurned(tokenId);
+            return;
+        }
         if (!armed) return;
         armed = false;
         activation.burn(tokenId, nestedAmount);

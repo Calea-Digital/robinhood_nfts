@@ -312,6 +312,19 @@ contract ActivationReentrancyTest is BaseTest {
         assertEq(hooked.balanceOf(address(holder)), 99_000 * UNIT);
     }
 
+    function test_burn_recordsBeforeTheTokenBurns() public {
+        /* Scenario:
+           Given a holder that reads Activation from inside the token's burnFrom
+           When it burns for its bear
+           Then cumulativeOf and lifetimeBurned already show the amount while burnFrom runs:
+             the record is written first and the burn follows it in the same call */
+        holder.burnOnce(1, 1_000 * UNIT);
+        holder.burnObserving(1, 666 * UNIT);
+        assertEq(holder.cumulativeDuringBurn(), 1_666 * UNIT, "recorded before burnFrom");
+        assertEq(holder.lifetimeDuringBurn(), 1_666 * UNIT, "lifetime too");
+        assertEq(hooked.balanceOf(address(holder)), 100_000 * UNIT - 1_666 * UNIT, "and then burned");
+    }
+
     function test_nestedBurn_withinTheLimit_isStillRefused() public {
         /* Scenario:
            Given a holder whose nested burn would stay within level 5
