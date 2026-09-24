@@ -26,26 +26,26 @@ becomes a Task with Spec Ref `NONE` when picked.
 - [x] 2.3 WL-4 — `claimants(offset, limit)` export equals the Studio allowlist
 - [x] 2.4 WL-5 — window gates claims; close ≥ 48 h before the stage
 
-## 3. Activation and DirectBurnAdapter
+## 3. Activation
 
-- [x] 3.1 ACT-1 — token-agnostic `Activation`
+- [x] 3.1 ACT-1 — one token, one collection: $MNTD fixed in the constructor
 - [x] 3.2 ACT-2 — cumulative thresholds, `thresholdFor`, `costToReach`
 - [x] 3.3 ACT-3 — weights, `weightFor`, `weightOf`
-- [x] 3.4 ACT-4 — `credit` with `NotCrediter`, `ContractPaused`, `ZeroAmount`, `NotBearOwner`, `StaleNonce`, `RefAlreadyUsed`; `BearActivated`
+- [x] 3.4 ACT-4 — the burn record: `burn` with `ContractPaused`, `ZeroAmount`, `NotBearOwner`, `AlreadyAtMaxLevel`, `Overshoot`; `BearActivated`; non-reentrant
 - [x] 3.5 ACT-5 — reset by counter
 - [x] 3.6 ACT-6 — `lifetimeBurned`
-- [x] 3.7 ACT-7 — `DirectBurnAdapter.burn`: `NotOwner`, `AlreadyAtMaxLevel`, `Overshoot`, `burnFrom` + `credit`, `BurnedForBear`
+- [x] 3.7 ACT-7 — the burn route: `Activation.burn` records, then `burnFrom` of the caller's own $MNTD
 - [x] 3.8 ACT-8 — overshoot refused
 - [x] 3.9 ACT-9 — Status link
 - [x] 3.10 ACT-10 — `snapshot(ids)`
-- [x] 3.11 ACT-11 — pause semantics, `renounceOwnership` refused while paused
+- [x] 3.11 ACT-11 — pause semantics; `renounceOwnership` refused
 - [x] 3.12 ACT-12 — roles
 - [x] 3.13 ACT-13 — events
 - [x] 3.14 ACT-14 — reads
 
 ## 4. Scripts, runbook material, rehearsal
 
-- [x] 4.1 OPS-2 — deploy scripts in the specified order, constructor arguments, `setCrediter`, `setPaused(true)`
+- [x] 4.1 OPS-2 — deploy scripts in the specified order, constructor arguments, `setMaxSupply`, `setTransferValidator`, `setPaused(true)`, ownership
 - [x] 4.2 OPS-3 — Sourcify verification for 4663 and 46630
 - [x] 4.3 OPS-6 — enforcement toggle script and runbook section
 - [ ] 4.4 OPS-4 — testnet rehearsal on 46630 (human-led; Claude prepares the scripts and records the results)

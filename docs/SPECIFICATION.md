@@ -54,7 +54,7 @@ automatic bridges or trading; arbitrary unsupported assets; new casino free spin
 Also out of scope: ERC-6551 token-bound accounts (COL-9); artwork, metadata hosting and reveal
 (MINT); the Privy mirror login, the wager API, the eligibility checker and the web app or Framer
 pages (MINT); backend workers and indexing; running the royalty pot — the $MNTD
-purchase, the splitter wallet and the crediting of getminted.io accounts, Calea delivering only
+purchase, the splitter wallet and the crediting of getminted.io accounts, Calea delivering only a
 reference script that reproduces the split (DEL-6); the Status boost; monitoring and alerts (MINT);
 bridging prize assets between chains; cross-chain messaging infrastructure.
 
@@ -113,14 +113,14 @@ alter weights or thresholds, raise a level without a burn, open a box, change an
 committed or won prize, or create a whitelist spot.
 
 **On-chain.** Ownership and transfers; the transfer counter and its event; whitelist claims and
-the live spot count; credited burns, cumulative totals, levels and weights; Status nominations;
+the live spot count; recorded burns, cumulative totals, levels and weights; Status nominations;
 raffle entries, seeds, awards and roots; prize inventory and its states; claims.
 
 **Off-chain (MINT).** Wager measurement and the Season 1 back-credit; the Privy login that ties
 a wallet to a getminted.io account; the royalty pot and its split — when the pot reaches its ETH
 or its countdown ends, half the ETH buys $MNTD, and ETH and $MNTD move to a splitter wallet that
 credits getminted.io accounts by wallet weight (ACT-10); crediting an account requires knowing
-account a holding wallet belongs to, which the Privy login supplies and the chain does not; the
+which account a holding wallet belongs to, which the Privy login supplies and the chain does not; the
 Status boost; indexing, alerts and the UI. What level 5 is *worth* is MINT's to define; the
 chain records that it was reached.
 
@@ -890,10 +890,10 @@ is also what Calea builds if the decision is deferred.
 | **D8** | The **existing-contract review** stands as a deliverable but is unscheduled; no contract has been named (CQ-13) | DEL-7 |
 | **D9** | MINT builds the page holders play on, in **TypeScript on getminted.io**; Calea delivers a typed, tested TypeScript client library; the Framer landing page is out of scope (CQ-19) | DEL-6, DEL-11 |
 
-Settled earlier and not reopened: **CQ-3** the `credit` design; **CQ-5** the weights
-1.00 / 1.10 / 1.25 / 1.45 / 1.70 / 2.00; **CQ-6** no burn, supply 4,444 forever; **CQ-7**
-royalties enforced from deployment; **CQ-10** the 30-day claim window; **CQ-11** nothing leaves a
-vault while it is committed; **CQ-16** no freeze and no clawback.
+Settled earlier and not reopened: **CQ-5** the weights 1.00 / 1.10 / 1.25 / 1.45 / 1.70 / 2.00;
+**CQ-6** no burn, supply 4,444 forever; **CQ-7** royalties enforced from deployment; **CQ-10** the
+30-day claim window; **CQ-11** nothing leaves a vault while it is committed; **CQ-16** no freeze
+and no clawback. **CQ-3** is closed: `Activation` burns $MNTD itself (ACT-7).
 
 ### Open after the call
 
