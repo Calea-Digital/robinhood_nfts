@@ -39,7 +39,7 @@ gates, never patched in place.
    `WhitelistExport.s.sol` `export` → CSV into a Studio allowlist stage → `compare` passes → a
    two-per-wallet allowlist mint (rehearsal item 3).
 5. `Activation` unpaused for the window, a burn through `Activation` against the testnet $MNTD to a
-   credited level, paused again (rehearsal item 4).
+   recorded level, paused again (rehearsal item 4).
 6. `Enforcement.s.sol` `disable` then `enable` once, each emitting `TransferValidatorUpdated`.
 
 **Stop and report when:** a step needs a value MINT has not given; a step fails for a reason
