@@ -447,7 +447,7 @@ contract MintABearOwnershipTest is BaseTest {
            Given Calea has called transferOwnership(admin)
            When the admin calls acceptOwnership
            Then the admin is the owner
-           And Calea holds no role */
+           And Calea holds no role, and renounceOwnership reverts for the admin as for anyone else */
         assertEq(bears.owner(), address(this), "Calea deployed and owns at construction");
 
         vm.expectEmit(false, false, false, true, address(bears));
@@ -481,6 +481,37 @@ contract MintABearOwnershipTest is BaseTest {
         bears.transferOwnership(address(this));
         vm.expectRevert(TwoStepOwnable.NotNextOwner.selector);
         bears.acceptOwnership();
+        MintABear.MultiConfigureStruct memory config;
+        config.maxSupply = 1;
+        vm.expectRevert(TwoStepOwnable.OnlyOwner.selector);
+        bears.multiConfigure(config);
+        vm.expectRevert(MintABear.RenounceDisabled.selector);
+        bears.renounceOwnership();
+
+        // The collection always has an owner: the admin cannot renounce either.
+        vm.prank(admin);
+        vm.expectRevert(MintABear.RenounceDisabled.selector);
+        bears.renounceOwnership();
+        assertEq(bears.owner(), admin, "still owned by the admin");
+    }
+
+    function test_renounceOwnership_withAnOfferPending_reverts() public {
+        /* Scenario:
+           Given the owner has offered ownership to the admin
+           When the owner, and then a stranger, call renounceOwnership
+           Then both revert with RenounceDisabled, the owner is unchanged and the offer still stands */
+        bears.transferOwnership(admin);
+
+        vm.expectRevert(MintABear.RenounceDisabled.selector);
+        bears.renounceOwnership();
+        vm.prank(alice);
+        vm.expectRevert(MintABear.RenounceDisabled.selector);
+        bears.renounceOwnership();
+        assertEq(bears.owner(), address(this), "owner unchanged");
+
+        vm.prank(admin);
+        bears.acceptOwnership();
+        assertEq(bears.owner(), admin, "the offer completes as made");
     }
 
     function test_theAdminOperatesTheDrop_andSeaDropStillMints() public {

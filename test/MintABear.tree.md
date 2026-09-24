@@ -143,8 +143,10 @@ ownership
 ├── acceptOwnership by the admin emits OwnershipTransferred and makes the admin the owner
 │   ├── by anyone else it reverts with NotNextOwner
 │   └── after cancelOwnershipTransfer it reverts with NotNextOwner
-└── afterwards Calea holds no role: every owner function refuses the deployer, and the admin
-    operates the drop while SeaDrop still mints
+├── afterwards Calea holds no role: every owner function refuses the deployer, and the admin
+│   operates the drop while SeaDrop still mints
+└── renounceOwnership reverts with RenounceDisabled for every caller, the owner included
+    └── with an offer pending, the owner is unchanged and the offer still completes
 ```
 
 ## Supply and numbering (COL-2)
