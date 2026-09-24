@@ -17,7 +17,7 @@ The specification calls for six contracts, three in tranche 1. On `tranche-1` to
 |---|---|---|
 | [`src/MintABear.sol`](src/MintABear.sol) | OpenSea `ERC721SeaDrop` | the collection. Transfer counter and reset event, burn refusal, `MAX_BEARS`, `exists`; ERC-721C with the validator set at deploy; stock SeaDrop metadata, royalties and two-step ownership, never renounced |
 | [`src/interfaces/IMintABear.sol`](src/interfaces/IMintABear.sol) | — | the reads `Activation` depends on: `ownerOf`, `transferNonce`, `exists` |
-| [`src/Activation.sol`](src/Activation.sol) | Solady `Ownable`, `ReentrancyGuard` | the level record: a holder burns $MNTD for a bear and the burn is recorded in the same transaction; levels and royalty weights, the MINT Status link, `snapshot` for the royalty split; refuses amounts past level 5 |
+| [`src/Activation.sol`](src/Activation.sol) | Solady `Ownable`, `ReentrancyGuard`, `SafeCastLib` | the level record: a holder burns $MNTD for a bear and the burn is recorded in the same transaction; levels and royalty weights, the MINT Status link, `snapshot` for the royalty split; refuses amounts past level 5 |
 | [`src/WhitelistClaim.sol`](src/WhitelistClaim.sol) | Solady `Ownable`, `EIP712`, `ECDSA` | the on-chain whitelist registry: 1,000 allocations claimed with a voucher from MINT's eligibility signer, two per wallet and per account, inside the campaign window; its claimant list is the Studio allowlist |
 
 `MysteryBox`, `PrizeDraw` and `PrizeVault` are tranche 2.
@@ -73,9 +73,9 @@ Reproduce a CI run locally: `FOUNDRY_PROFILE=ci forge test`.
 ## Tests
 
 Deterministic unit tests only, with a branching tree per contract (`test/<Contract>.tree.md`)
-and a `Given / When / Then` block in every test that quotes the specification's Scenario for
-the requirement it satisfies. Coverage gate is ≥90% line and ≥80% branch; the suite sits at
-100% on both.
+and a `Given / When / Then` block in every test; a test that satisfies a requirement quotes that
+requirement's Scenario from the specification. Coverage gate is ≥90% line and ≥80% branch; the
+suite sits at 100% on both.
 
 Fuzz, invariant, mutation, formal-verification and fork harnesses are deliberately absent.
 They belong to the auditor and are run independently — a dev-authored invariant suite anchors
