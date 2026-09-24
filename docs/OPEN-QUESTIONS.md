@@ -33,6 +33,7 @@ are marked as such below. CQ-20 is new from that call.
 | CQ-17 | RAF | VRF subscription and network | MINT creates, funds and owns it; the network is Calea's to recommend | 2026-10-12 | Follow-up |
 | CQ-20 | RAF | Prize count, odds and excluded ids | To supply: how many prizes, and which token ids are out of play | 2026-10-05 | Open |
 | CQ-18 | WL | Whitelist claim recording | On-chain registry, holder pays gas (A); the OpenSea CSV is exported from it | before the campaign opens | Follow-up |
+| CQ-21 | ACT | Status links per account | Open; Calea recommends the account's single highest-level link | 2026-10-29 | Open |
 | CQ-3 | ACT | Token-agnostic `credit` design | Superseded — `Activation` burns $MNTD itself; MINT's reply concerned the royalty pot (§2) | — | Closed |
 | CQ-4 | ACT | Five burn thresholds | 1,666 / 3,333 / 8,333 / 16,666 / 41,666, read cumulatively | — | Answered |
 | CQ-5 | ACT | Weight table | 1.00 / 1.10 / 1.25 / 1.45 / 1.70 / 2.00, six levels | — | Answered |
@@ -401,6 +402,29 @@ them; the campaign's open and close dates (proposed 6 and 26 October; it must cl
 key; the other mint stages (team and treasury, public) and their order, so the whitelist stage's
 place in Studio is known; and that Season 1 wagering and the $50 back-credit are MINT's data,
 with Calea recording only the result.
+
+### CQ-21 — How MINT's Status counts links across an account's wallets
+- **Section:** ACT
+- **Needed by:** 2026-10-29 — before burns, level-up and Status linking open
+- **Status:** Open (new; from the tranche-1 review, 24 September 2026)
+- **Resolution:** Open; Calea recommends the account's single highest-level link
+
+**Question.** `Activation` lets each **wallet** nominate one bear to carry its Status boost
+(ACT-9), and a getminted.io account may use several wallets — the whitelist already counts two
+per account across them (WL-1, WL-3). So one account can hold several links at once, one per
+wallet. How does MINT's Status treat them: one link per account (and if so, which — the highest
+level, the most recent, a wallet the account marks as primary), or every wallet's link, each
+boosting the account?
+
+**In plain words.** A holder with two wallets could link a bear in each. The contract records
+both and reads each bear's current level; what the Status boost is worth, and whether two links
+count twice, is MINT's rule, off-chain.
+
+**Calea's recommendation.** One boost per account: MINT reads `linkOf` for every wallet the
+account's Privy login ties to it and applies the highest level among them. It keeps "one Status
+boost" true per account whatever the number of wallets, needs nothing from the holder beyond the
+links they already make, and needs no contract change. Any other answer needs no contract change
+either — only MINT's Status service and the portal's wording follow it.
 
 ### CQ-3 — Confirm the token-agnostic `credit` design
 - **Section:** ACT

@@ -415,7 +415,8 @@ which returns the exact remainder or zero.
 recorded with the current counter value; `unlinkBear()` clears it and is safe to call when
 nothing is linked; `linkOf(wallet) → (tokenId, level)` returns `(0, 0)` when nothing is linked
 or the bear has since moved. A wallet aggregates royalty weight across all its bears (ACT-10)
-but carries exactly one Status boost; the boost's value is MINT's, off-chain.
+but carries exactly one Status boost; the boost's value, and how the links of an account's
+several wallets combine, are MINT's, off-chain (`→ CQ-21`).
 
 *Acceptance.* Given a wallet owning a bear at level 2; when it calls `linkBear(tokenId)`; then `linkOf(wallet)` reads `(tokenId, 2)`; and after the bear moves it reads `(0, 0)`.
 
@@ -946,6 +947,11 @@ exported *from* the registry rather than written *into* it, and say whether MINT
 place an address on the whitelist without a wager voucher — for a partner or a correction. If it
 does, that is an owner function with its own event and it should be named now, because it changes
 what the registry guarantees.
+
+**O9 — Status links across an account's wallets (CQ-21).** Each wallet nominates one bear to
+carry its Status boost (ACT-9), and a getminted.io account may use several wallets, so one
+account can hold several links. Say how MINT's Status counts them. **Recommended:** one boost per
+account, from the highest-level bear among its wallets' links; no answer changes the contract.
 
 ## 11. Sign-off
 
