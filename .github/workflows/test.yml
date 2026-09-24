@@ -52,3 +52,8 @@ jobs:
         run: |
           bash script/verify.sh 46630 --dry-run --broadcast-dir test/fixtures/broadcast \
             | diff - test/fixtures/verify-dry-run.expected
+
+      # Its verdict — verified, MISSING, nothing created — against Sourcify answers recorded under
+      # test/fixtures/sourcify/, read through a file:// SOURCIFY_URL. No network is touched.
+      - name: Verification script — verdict over recorded answers
+        run: bash test/verify.test.sh

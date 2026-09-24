@@ -51,7 +51,7 @@ logged time; the human sets Done and merges `tranche-1` into `main`.
 | Contracts | 3 of the 6 the spec calls for: `MintABear`, `WhitelistClaim`, `Activation`; `MysteryBox`, `PrizeVault`, `PrizeDraw` are tranche 2 |
 | Scripts | `Deploy.s.sol` (OPS-2), `verify.sh` (OPS-3), `Enforcement.s.sol` (OPS-6), `WhitelistExport.s.sol` (WL-4); `docs/RUNBOOK.md`: ownership handover, whitelist export, transfer enforcement, royalties, Activation |
 | Tests | 208, all passing; 100% line, branch and function coverage (gate ≥90 / ≥80); every tranche-1 work-item Scenario has a test except the operational OPS-1, OPS-3 (live), OPS-4, OPS-5 |
-| CI gates | `fmt --check`, `build --sizes` (no warnings), `test`, spec lint, generated prose, `verify.sh` dry run — all green |
+| CI gates | `fmt --check`, `build --sizes` (no warnings), `test`, spec lint, generated prose, `verify.sh` dry run and verdict test — all green |
 | Slither | no High or Critical; 2 accepted Mediums, both `locked-ether` (below) |
 
 Requirements amended since v2.1, each through an archived OpenSpec change with the reviewer's

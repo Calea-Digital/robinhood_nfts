@@ -203,6 +203,11 @@ record the settlement.
 - OPS2-I-1 Info: loadConfig did not check array lengths. FIXED (`ConfigLength`).
 - ACT7-L-1 (from MNT-32): HANDOVER:94 claimed a decimals guard. FIXED (final state).
 - Also: README:37 "deploys the four contracts" (stale since MNT-113) → three; CLAUDE.md Deploy row. Tests 213.
+- Done: MNT-62, MNT-124
+## MNT-63 OPS-3 (presented) — scripts lens; dry run matches the expected file; no-broadcast chain exits 2.
+- OPS3-I-1 Info: a broadcast set with no CREATE passed `--check` with exit 0 (vacuous). FIXED: exit 2 "no contract created".
+- OPS3-I-2 Info: the verdict branches (verified / MISSING, exit 1) never ran. FIXED: test/verify.test.sh over recorded Sourcify answers (file:// SOURCIFY_URL; all-verified, one-missing, absent, no-create), a CI step; mutants (guard removed; "none" accepted) fail it.
+- Defect MNT-125.
 
 ## Carried forward
 
