@@ -269,7 +269,7 @@ Measured against chain 4663 on 2026-09-10 and 2026-09-15; Chainlink and ApeChain
 
 1. Does OpenSea Studio attach to and manage a contract we deployed ourselves, validator set? (testnet)
 2. Does OpenSea emit SignedZone-restricted orders for a Limit-Break-validated collection on 4663? (mainnet: one team bear listed and sold before the drop page is published)
-3. A whitelist claim end to end: voucher → `claim` → export → Studio allowlist stage → a two-per-wallet allowlist mint. (testnet)
+3. A whitelist claim end to end: voucher → `claim` → export → Studio allowlist stage → allowlist mint. It passes when `WhitelistExport.s.sol compare` passes against the root Studio set, a two-allocation wallet mints two, and a one-allocation wallet is refused its second — which shows Studio builds its tree like `script/lib/AllowListTree.sol` and keeps each wallet's own limit. (testnet)
 4. A burn through the adapter against $MNTD on 46630 through to a credited level; then against the real token on mainnet between 20 and 28 October. The pause has no exemption, so that rehearsal runs in a window the owner opens and closes again; holders' access opens on 29 October (ACT-11, §8).
 5. A full multi-chain game on the testnets: deposit, commit, exclude, open the game, boxes opened, relays in order, words, outcomes, awards, claims and expiry — including one open that wins and one that does not, and a relay offered out of turn and refused.
 6. Does Safe's web interface support chain 4663? (D3)

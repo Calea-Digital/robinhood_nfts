@@ -25,7 +25,8 @@ contract AllowListTreeHarness {
 
 /// @dev `AllowListTree` against merkletreejs 0.2.32 — the library and options SeaDrop's own
 ///      reference tests build allowlists with (`hashLeaves`, `sortLeaves`, `sortPairs`). The vector
-///      was produced by that library over the five rows below.
+///      was produced by that library over the five rows below; `test/fixtures/merkletreejs-vector.js`
+///      regenerates it.
 contract AllowListTreeTest is WhitelistClaimBase {
     WhitelistExport internal exporter;
     AllowListTreeHarness internal tree;
@@ -182,11 +183,29 @@ contract WhitelistExportTest is WhitelistClaimBase {
         vm.removeFile(CSV);
     }
 
+    function test_exportAndCompare_refuseWhileClaimsAreOpen() public {
+        /* Scenario:
+           Given a campaign with spots left, at its last second
+           When export or compare runs
+           Then each reverts with CampaignStillOpen, because a later claim would be missing; one
+             second after the close both run */
+        _claim(alice, 1, ACCOUNT_A);
+        vm.warp(CLOSE_AT);
+
+        vm.expectRevert(abi.encodeWithSelector(WhitelistExport.CampaignStillOpen.selector, CLOSE_AT, 999));
+        exporter.export(address(wl), CSV);
+        vm.expectRevert(abi.encodeWithSelector(WhitelistExport.CampaignStillOpen.selector, CLOSE_AT, 999));
+        exporter.compare(address(wl), address(seaDrop), address(bears), _stage());
+
+        vm.warp(uint256(CLOSE_AT) + 1);
+        assertEq(exporter.checkedRows(wl).length, 1);
+    }
+
     function test_export_readsEveryPage() public {
         /* Scenario:
-           Given a sold-out campaign of 500 claimants, more than one page
+           Given a campaign sold out of 500 claimants before its close, more than one page
            When the rows are read
-           Then all 500 come back, each with two allocations */
+           Then all 500 come back, each with two allocations: a sell-out ends the campaign early */
         for (uint256 i; i < 500; ++i) {
             address wallet = makeAddr(string(abi.encode("claimant", i)));
             bytes32 account = keccak256(abi.encode("account", i));

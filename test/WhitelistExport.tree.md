@@ -20,7 +20,7 @@ root / proof
 ```
 export
 ├── writes a header and one wallet,allocations row per claimant, in claim order
-└── reads every page: 500 claimants over three pages of 200
+└── reads every page: 500 claimants over three pages of 200, sold out before the close
 ```
 
 ## compare(registry, seaDrop, collection, stage)
@@ -36,6 +36,8 @@ compare
 
 ```
 checkedRows
+├── while the window is open and spots are left: CampaignStillOpen(closeAt, spotsLeft), for
+│   export and compare alike; one second after closeAt, or once sold out, the rows are read
 ├── a wallet listed twice: DuplicateWallet
 ├── a row whose count differs from claimsOf: AllocationMismatch
 └── rows totalling other than TOTAL_SPOTS - spotsLeft: TotalMismatch

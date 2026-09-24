@@ -12,6 +12,9 @@ contract MockClaimantRegistry {
     mapping(address => uint8) public claimsOf;
     uint256 public spotsLeft = TOTAL_SPOTS;
 
+    /// @dev Zero: the window is closed at any timestamp, so only the rows are under test.
+    uint40 public closeAt;
+
     function push(address wallet, uint8 rowAllocations, uint8 counted) external {
         _rows.push(WhitelistClaim.Claimant({wallet: wallet, allocations: rowAllocations}));
         claimsOf[wallet] = counted;
