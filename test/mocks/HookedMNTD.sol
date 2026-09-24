@@ -7,8 +7,12 @@ interface IBurnHook {
 }
 
 /// @dev A hostile $MNTD stand-in: `burnFrom` calls back into the holder before burning, the way a
-///      token with transfer hooks could. Used to show the adapter's record-then-burn order holds.
+///      token with transfer hooks could. Used to show `Activation.burn` refuses the nested call.
 contract HookedMNTD {
+    function decimals() external pure returns (uint8) {
+        return 18;
+    }
+
     mapping(address => uint256) public balanceOf;
     mapping(address => mapping(address => uint256)) public allowance;
     uint256 public totalSupply;

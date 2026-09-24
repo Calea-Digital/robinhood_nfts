@@ -4,7 +4,7 @@ Scope note: this tree covers the boundary between what OpenSea Studio configures
 the collection enforces for itself. It is not a separate contract; it pins behaviour that
 spans `MintABear` and its `ERC721SeaDrop` base.
 
-INV-N and Fork-N are numbered once across all trees and never reused: `MintABear` INV-1…3 (INV-1 retired), `Activation` INV-4…9, `WhitelistClaim` INV-10…14, `DirectBurnAdapter` INV-15…16; Fork-1 (real SeaDrop mint), Fork-2 (real validator V3), Fork-3 (real $MNTD `burnFrom`).
+INV-N and Fork-N are numbered once across all trees and never reused: `MintABear` INV-1…3 (INV-1 retired), `Activation` INV-4…9 (INV-6 retired) and INV-15…16, `WhitelistClaim` INV-10…14; Fork-1 (real SeaDrop mint), Fork-2 (real validator V3), Fork-3 (real $MNTD `burnFrom`).
 
 Two functions on `ERC721SeaDrop` that matter here are `virtual`, `mintSeaDrop` and
 `tokenURI`, and the collection overrides neither. `getMintStats`, `setMaxSupply`,
