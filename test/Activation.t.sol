@@ -794,8 +794,8 @@ contract ActivationViewsTest is BaseTest {
         for (uint8 k; k < 5; ++k) {
             assertEq(activation.thresholdFor(k + 1), t[k] * UNIT);
         }
-        assertEq(activation.THRESHOLD_1(), 1_666 * UNIT);
-        assertEq(activation.THRESHOLD_5(), 41_666 * UNIT);
+        assertEq(activation.thresholdFor(1), 1_666 * UNIT);
+        assertEq(activation.thresholdFor(5), 41_666 * UNIT);
     }
 
     function test_weightFor_everyLevel() public view {
@@ -1254,16 +1254,11 @@ contract ActivationRolesTest is BaseTest {
         vm.expectRevert(Activation.RenounceDisabled.selector);
         activation.renounceOwnership();
 
-        string[29] memory expected = [
+        string[24] memory expected = [
             // reads
             "BEARS()",
             "DECIMALS()",
             "MNTD()",
-            "THRESHOLD_1()",
-            "THRESHOLD_2()",
-            "THRESHOLD_3()",
-            "THRESHOLD_4()",
-            "THRESHOLD_5()",
             "costToReach(uint256,uint8)",
             "cumulativeOf(uint256)",
             "levelOf(uint256)",
