@@ -183,6 +183,12 @@ record the settlement.
 - Tests lens: dropping `exists`, a weight not from the level, excluding 0x…dEaD on-chain each fail a test.
 - ACT10-L-1 Low/operational, measured (throwaway test, not committed): snapshot(1..4444) 56.2M gas at 2 per wallet; 1..500 3.2M; one 200-batch 1..200 6.4M; one 4,444-batch: 1..50 0.8M, 4395..4444 55.9M, 1..4444 out of gas (~1.97B); weightOf 2,451. Root cause: ERC721A ownerOf walks back to the batch start. FIXED as docs, Defect MNT-120: snapshot NatSpec, HANDOVER accepted risk. RUNBOOK team/treasury batch ≤ ~200 → OPS-2 (#34).
 - DEL-6 note (replaces #20's estimate): the split script takes owners from indexed Transfer events at the closing block and weights from weightOf, or pages snapshot by a gas budget; one 1..4444 call is 56M+ and not dependable.
+- Done: MNT-35, MNT-120
+## MNT-36 ACT-11 (presented) — findings: none (pause checks in burn and linkBear, none on unlinkBear, no exemption, renounce refused in every state, PausedSet — each pinned by a mutation-breaking assertion).
+- Done: MNT-36
+## MNT-37 ACT-12 (presented)
+- ACT12-I-1 Info/test: the interface pin read methodIdentifiers only — a level-writing `fallback` passed all 211 tests. FIXED, Defect MNT-121: the pin also reads `.abi[*].type` (no fallback, no receive; asserts the ABI was read). The fallback mutant fails it; a `receive` does not compile against the suite (the tests convert an address to Activation). Only Activation carries a pin.
+- Checked: count + membership of the 29 named functions; out/ current (forge test compiles first); owner functions leave token, thresholds, weights, record and link unchanged. THRESHOLD_n (A-5) → #33; one-step transferOwnership (I-3) → #34.
 
 ## Carried forward
 
