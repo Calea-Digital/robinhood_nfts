@@ -13,7 +13,7 @@ signs or spends; you prepare, check, and record.
 **Where things stand (2026-09-23).** Branch `tranche-1` (off `main` at `746acbe`, not pushed, not
 merged) carries all four tranche-1 contracts and the scripts; `tasks.md` has 36 of 37 lines ticked,
 the one open line being 4.4 OPS-4. Every other tranche-1 Task is In Review or Done on the board;
-Subtask MNT-95 (Sourcify on 46630) is Open and closes during the rehearsal. Suite 218 tests at
+Subtask MNT-95 (Sourcify on 46630) is Open and closes during the rehearsal. Suite 208 tests at
 100 % coverage, no build warnings, Slither no High or Critical. ACT-5 and OPS-2 were amended on
 2026-09-23 (archived changes under `openspec/changes/archive/`).
 
@@ -38,7 +38,7 @@ gates, never patched in place.
 4. A whitelist claim end to end: a voucher signed with the testnet signer → `claim` → after close,
    `WhitelistExport.s.sol` `export` → CSV into a Studio allowlist stage → `compare` passes → a
    two-per-wallet allowlist mint (rehearsal item 3).
-5. `Activation` unpaused for the window, a burn through the adapter against the testnet $MNTD to a
+5. `Activation` unpaused for the window, a burn through `Activation` against the testnet $MNTD to a
    credited level, paused again (rehearsal item 4).
 6. `Enforcement.s.sol` `disable` then `enable` once, each emitting `TransferValidatorUpdated`.
 
