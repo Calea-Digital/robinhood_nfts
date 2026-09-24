@@ -22,7 +22,8 @@ deployCollection
     ├── MintABear(name, symbol, [canonical SeaDrop])
     ├── setMaxSupply(4444)
     ├── setTransferValidator(Limit Break V3)
-    └── transferOwnership(admin) — the admin's acceptOwnership completes it
+    ├── transferOwnership(admin) — the admin's acceptOwnership completes it
+    └── canonical SeaDrop mints and any other address reverts with OnlyAllowedSeaDrop (COL-1)
 ```
 
 ## deployActivation
