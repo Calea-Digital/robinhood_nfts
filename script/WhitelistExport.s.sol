@@ -48,6 +48,9 @@ contract WhitelistExport is Script {
     /// @notice The root on SeaDrop is not the root of the registry's rows.
     error RootMismatch(bytes32 expected, bytes32 onChain);
 
+    /// @notice The campaign can still take claims: the window has not closed and spots are left.
+    error CampaignStillOpen(uint40 closeAt, uint256 spotsLeft);
+
     /**
      * @notice Writes the registry's claimant list to `path` as `wallet,allocations` rows, after
      *         checking each wallet appears once with `claimsOf` allocations and the total equals the
@@ -113,8 +116,14 @@ contract WhitelistExport is Script {
         }
     }
 
-    /// @notice The whole claimant list, checked against the registry's own counts.
+    /// @notice The whole claimant list, checked against the registry's own counts. Refused while
+    ///         the campaign can still take claims (WL-4: after the window closes or the spots sell
+    ///         out), since a later claim would be missing from the list.
     function checkedRows(WhitelistClaim registry) public view returns (WhitelistClaim.Claimant[] memory rows) {
+        uint40 closeAt = registry.closeAt();
+        uint256 left = registry.spotsLeft();
+        if (block.timestamp <= closeAt && left > 0) revert CampaignStillOpen(closeAt, left);
+
         rows = new WhitelistClaim.Claimant[](0);
         for (uint256 offset;; offset += PAGE) {
             WhitelistClaim.Claimant[] memory page = registry.claimants(offset, PAGE);
