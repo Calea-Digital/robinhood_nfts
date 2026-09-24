@@ -10,7 +10,7 @@ import {HookedMNTD, IBurnHook} from "./HookedMNTD.sol";
 ///      token's `burnFrom` — the nested call a hooked token makes possible — or, observing,
 ///      reads what `Activation` has recorded at that moment.
 contract ReentrantHolder is IBurnHook, IERC721Receiver {
-    Activation internal immutable activation;
+    Activation internal immutable ACTIVATION;
     uint256 internal tokenId;
     uint128 internal nestedAmount;
     bool internal armed;
@@ -21,34 +21,34 @@ contract ReentrantHolder is IBurnHook, IERC721Receiver {
     uint256 public lifetimeDuringBurn;
 
     constructor(Activation activation_, HookedMNTD mntd_) {
-        activation = activation_;
+        ACTIVATION = activation_;
         mntd_.approve(address(activation_), type(uint256).max);
     }
 
     function burnTwice(uint256 tokenId_, uint128 outer, uint128 nested) external {
         (tokenId, nestedAmount, armed) = (tokenId_, nested, true);
-        activation.burn(tokenId_, outer);
+        ACTIVATION.burn(tokenId_, outer);
     }
 
     function burnOnce(uint256 tokenId_, uint128 amount) external {
-        activation.burn(tokenId_, amount);
+        ACTIVATION.burn(tokenId_, amount);
     }
 
     function burnObserving(uint256 tokenId_, uint128 amount) external {
         (tokenId, observing) = (tokenId_, true);
-        activation.burn(tokenId_, amount);
+        ACTIVATION.burn(tokenId_, amount);
         observing = false;
     }
 
     function onBurn() external {
         if (observing) {
-            cumulativeDuringBurn = activation.cumulativeOf(tokenId);
-            lifetimeDuringBurn = activation.lifetimeBurned(tokenId);
+            cumulativeDuringBurn = ACTIVATION.cumulativeOf(tokenId);
+            lifetimeDuringBurn = ACTIVATION.lifetimeBurned(tokenId);
             return;
         }
         if (!armed) return;
         armed = false;
-        activation.burn(tokenId, nestedAmount);
+        ACTIVATION.burn(tokenId, nestedAmount);
     }
 
     function onERC721Received(address, address, uint256, bytes calldata) external pure returns (bytes4) {
