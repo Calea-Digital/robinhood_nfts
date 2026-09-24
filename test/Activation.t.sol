@@ -1288,12 +1288,17 @@ contract ActivationRolesTest is BaseTest {
             "cancelOwnershipHandover()",
             "completeOwnershipHandover(address)"
         ];
-        string[] memory actual =
-            vm.parseJsonKeys(vm.readFile("out/Activation.sol/Activation.json"), ".methodIdentifiers");
+        string memory artifact = vm.readFile("out/Activation.sol/Activation.json");
+        string[] memory actual = vm.parseJsonKeys(artifact, ".methodIdentifiers");
         assertEq(actual.length, expected.length, "function count");
         for (uint256 i; i < expected.length; ++i) {
             assertTrue(_contains(actual, expected[i]), expected[i]);
         }
+        // methodIdentifiers lists named functions only; a fallback or receive shows in the ABI.
+        string[] memory kinds = abi.decode(vm.parseJson(artifact, ".abi[*].type"), (string[]));
+        assertTrue(_contains(kinds, "function"), "the ABI was read");
+        assertFalse(_contains(kinds, "fallback"), "no fallback");
+        assertFalse(_contains(kinds, "receive"), "no receive");
     }
 
     function test_ownerFunctions_leaveTheTokenThresholdsWeightsAndRecordsAlone() public {
