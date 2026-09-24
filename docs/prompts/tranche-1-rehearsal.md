@@ -43,7 +43,11 @@ gates, never patched in place.
    item 1).
 4. A whitelist claim end to end: a voucher signed with the testnet signer → `claim` → after close,
    `WhitelistExport.s.sol` `export` → CSV into a Studio allowlist stage → `compare` passes → a
-   two-per-wallet allowlist mint (rehearsal item 3).
+   two-per-wallet allowlist mint (rehearsal item 3). The whitelist stage is Studio's first stage
+   open to non-team wallets (WL-4); check that Studio's root carries only the registry's rows, and
+   note what a wallet that minted in an earlier test stage can then mint.
+4b. `cast code 0x1E0049783F008A0085193E00003D00cd54003c71` on 46630 and 4663: OpenSea's
+   pre-approved conduit has no code (HANDOVER, accepted risks).
 5. `Activation` unpaused for the window, a burn through `Activation` against the testnet $MNTD to a
    recorded level, paused again (rehearsal item 4).
 6. `Enforcement.s.sol` `disable` then `enable` once, each emitting `TransferValidatorUpdated`.

@@ -55,6 +55,14 @@ forge script script/WhitelistExport.s.sol --rpc-url $RPC \
   $REGISTRY $SEADROP $BEARS "(0,0,$START,$END,1,4444,$FEE_BPS,$RESTRICT)"
 ```
 
+**The whitelist stage comes first (WL-4).** Each row's allocations become the allowlist entry's
+per-wallet limit, and SeaDrop counts every bear minted to the wallet in any stage against it: a
+claimant who minted earlier would lose whitelist mints. So in Studio the whitelist stage is the
+first stage in which any wallet but the team's can mint, and no other stage overlaps it; a later
+stage's per-wallet limit counts the whitelist mints too. If Studio's allowlist root also carries
+leaves that are not the registry's (team, partners), `compare` reports the difference — keep the
+whitelist stage's allowlist to the registry's rows.
+
 **The close stays at least 48 hours before the whitelist stage (WL-5).** The deploy checks it
 once; any later `setWindow` must keep it too, so the export, the Studio import and the published
 proofs have their time.
@@ -70,8 +78,10 @@ the owner can always do both.
 validator to Limit Break V3, `0x721C002B0059009a671D00aD1700c9748146cd1B`, and leaves the
 validator's zero-state policy in place: security level 0, list 0, OpenSea's SignedZone
 (`0x000056F7000000EcE9003ca63978907a00FFD100`) as authorizer. A holder's own transfer always
-passes; a sale settles only through OpenSea or a Payment Processor venue, so creator earnings are
-collected on it.
+passes; a sale a marketplace operates settles only through OpenSea or a Payment Processor venue,
+so creator earnings are collected on it. A sale arranged outside a marketplace — directly, or
+through an escrow the holder sends the bear to — pays none; no level that lets holders move their
+own bears prevents it (COL-7).
 
 **Read the current state.**
 
