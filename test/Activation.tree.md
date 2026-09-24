@@ -132,7 +132,8 @@ snapshot:     owner, level and weight for existing ids; zeroes for an id that do
 
 ```
 events, checked in the recorded logs against the documented signatures
-├── BearActivated(tokenId, burner, previousLevel, newLevel, amount, cumulative) on a burn
+├── BearActivated(tokenId, burner, previousLevel, newLevel, amount, cumulative) on a burn; a
+│   second burn on the same bear reads 2 → 3, amount 5,000, cumulative 8,333 (ACT-13)
 ├── BearLinked(wallet, tokenId) on a link; BearUnlinked(wallet, tokenId) on an unlink
 └── PausedSet(paused) on a pause — each call emits exactly that one event (ACT-13)
 ```

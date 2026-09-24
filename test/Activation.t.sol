@@ -1353,7 +1353,7 @@ contract ActivationEventsTest is BaseTest {
     function setUp() public override {
         super.setUp();
         _mint(alice, 1);
-        _fund(alice, 5_000);
+        _fund(alice, 10_000);
     }
 
     function test_events_carryTheDocumentedArguments() public {
@@ -1375,6 +1375,16 @@ contract ActivationEventsTest is BaseTest {
         assertEq(newLevel, 2);
         assertEq(amount, 3_333 * UNIT);
         assertEq(cumulative, 3_333 * UNIT);
+
+        // A second burn tells previousLevel from 0 and amount from cumulative.
+        vm.prank(alice);
+        activation.burn(1, 5_000 * UNIT);
+        log = _only(vm.getRecordedLogs());
+        (previousLevel, newLevel, amount, cumulative) = abi.decode(log.data, (uint8, uint8, uint256, uint256));
+        assertEq(previousLevel, 2);
+        assertEq(newLevel, 3);
+        assertEq(amount, 5_000 * UNIT);
+        assertEq(cumulative, 8_333 * UNIT);
 
         vm.prank(alice);
         activation.linkBear(1);
