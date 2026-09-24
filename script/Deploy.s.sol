@@ -62,6 +62,12 @@ contract Deploy is Script {
     /// @notice The campaign closes less than 48 hours before the whitelist stage.
     error CloseTooLate(uint256 closeAt, uint256 whitelistStageAt);
 
+    /// @notice The address given as the collection is not a MintABear.
+    error NotTheCollection(address bears);
+
+    /// @notice A config array has the wrong number of entries.
+    error ConfigLength(string field);
+
     function runWhitelist(string memory path) external returns (WhitelistClaim registry) {
         Config memory cfg = loadConfig(path);
         vm.startBroadcast();
@@ -116,15 +122,25 @@ contract Deploy is Script {
     /**
      * @notice `Activation(bears, mntd, thresholdsWhole, weights)` → `setPaused(true)` until the
      *         switch-on date → ownership to MINT's admin. `Activation` reads $MNTD's `decimals`
-     *         and scales the thresholds itself.
+     *         and scales the thresholds itself. Every value is immutable, so the collection is
+     *         checked first and the scaled values are printed for the runbook's read-back.
      */
     function deployActivation(Config memory cfg, address bears) public returns (Activation activation) {
         _require(cfg.admin, "admin");
         _require(cfg.mntd, "mntd");
         _require(bears, "bears");
+        _requireCollection(bears);
         activation = new Activation(bears, cfg.mntd, cfg.thresholdsWhole, cfg.weights);
         activation.setPaused(true);
         activation.transferOwnership(cfg.admin);
+
+        console2.log("Activation DECIMALS", activation.DECIMALS());
+        for (uint8 k = 1; k <= 5; ++k) {
+            console2.log("thresholdFor", k, activation.thresholdFor(k));
+        }
+        for (uint8 k; k <= 5; ++k) {
+            console2.log("weightFor", k, activation.weightFor(k));
+        }
     }
 
     /// @notice Reads the config file for one chain.
@@ -140,6 +156,8 @@ contract Deploy is Script {
         cfg.mntd = vm.parseJsonAddress(json, ".mntd");
         uint256[] memory t = vm.parseJsonUintArray(json, ".thresholdsWhole");
         uint256[] memory w = vm.parseJsonUintArray(json, ".weights");
+        if (t.length != 5) revert ConfigLength("thresholdsWhole");
+        if (w.length != 6) revert ConfigLength("weights");
         for (uint256 i; i < 5; ++i) {
             cfg.thresholdsWhole[i] = SafeCastLib.toUint128(t[i]);
         }
@@ -150,5 +168,16 @@ contract Deploy is Script {
 
     function _require(address value, string memory field) private pure {
         if (value == address(0)) revert MissingAddress(field);
+    }
+
+    /// @dev `Activation` never calls the collection at construction, so a wrong address would be
+    ///      fixed in it for good: refuse anything that does not answer `MAX_BEARS` with 4,444.
+    function _requireCollection(address bears) private view {
+        if (bears.code.length == 0) revert NotTheCollection(bears);
+        try MintABear(bears).MAX_BEARS() returns (uint256 maxBears) {
+            if (maxBears != MAX_SUPPLY) revert NotTheCollection(bears);
+        } catch {
+            revert NotTheCollection(bears);
+        }
     }
 }
