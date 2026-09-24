@@ -34,6 +34,8 @@ from pathlib import Path
 from xml.sax.saxutils import escape
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(Path(__file__).resolve().parent / "spec_tools"))
+from parser_openspec import parse_openspec  # noqa: E402
 SPEC = ROOT / "docs" / "SPECIFICATION.md"
 QUESTIONS = ROOT / "docs" / "OPEN-QUESTIONS.md"
 OUT_DIR = ROOT / "docs" / "client"
@@ -185,16 +187,25 @@ def para_xml(
     indent: int | None = None,
     hanging: int | None = None,
     keep_next: bool = False,
+    shade: tuple[str, str] | None = None,
 ) -> str:
     ppr: list[str] = []
     if style:
         ppr.append(f'<w:pStyle w:val="{style}"/>')
     if keep_next:
         ppr.append("<w:keepNext/>")
+    if shade:
+        fill, bar = shade
+        ppr.append(
+            f'<w:pBdr><w:left w:val="single" w:sz="24" w:space="8" w:color="{bar}"/></w:pBdr>'
+            f'<w:shd w:val="clear" w:color="auto" w:fill="{fill}"/>'
+        )
     ppr.append(f'<w:spacing w:before="{before}" w:after="{after}"/>')
-    if indent is not None:
+    if indent is not None or shade:
+        left = (indent or 0) + (180 if shade else 0)
         hang = f' w:hanging="{hanging}"' if hanging else ""
-        ppr.append(f'<w:ind w:left="{indent}"{hang}/>')
+        right = ' w:right="180"' if shade else ""
+        ppr.append(f'<w:ind w:left="{left}"{right}{hang}/>')
     return f"<w:p><w:pPr>{''.join(ppr)}</w:pPr>{content}</w:p>"
 
 
@@ -248,8 +259,8 @@ def table_xml(widths: list[int], rows_xml: list[str], border: str = "999999") ->
     )
 
 
-def data_table_xml(header: list[str], rows: list[list[str]]) -> str:
-    widths = column_widths(header, rows)
+def data_table_xml(header: list[str], rows: list[list[str]], widths: list[int] | None = None) -> str:
+    widths = widths or column_widths(header, rows)
     header_row = "<w:tr><w:trPr><w:tblHeader/></w:trPr>" + "".join(
         cell_xml(para_xml(runs_xml(h, size=20, b=True), after=0), widths[c], fill="EEEEEE")
         for c, h in enumerate(header)
@@ -266,7 +277,7 @@ def data_table_xml(header: list[str], rows: list[list[str]]) -> str:
     return table_xml(widths, [header_row] + body_rows)
 
 
-def blocks_xml(blocks: list[dict], in_callout: bool = False) -> str:
+def blocks_xml(blocks: list[dict], in_callout: bool = False, shade: tuple[str, str] | None = None) -> str:
     out: list[str] = []
     size = 21 if in_callout else None
     for n, blk in enumerate(blocks):
@@ -274,7 +285,7 @@ def blocks_xml(blocks: list[dict], in_callout: bool = False) -> str:
         if kind == "heading":
             level = blk["level"]
             if in_callout:
-                out.append(para_xml(runs_xml(blk["text"], b=True), after=80))
+                out.append(para_xml(runs_xml(blk["text"], b=True), after=80, shade=shade, keep_next=True))
             else:
                 # Pages keeps a heading with the *whole* following table, so a long table would
                 # be pushed to a fresh page and leave the heading alone; release the tie then.
@@ -284,26 +295,36 @@ def blocks_xml(blocks: list[dict], in_callout: bool = False) -> str:
                                     before=(360 if level == 2 else 240 if level == 3 else 160),
                                     keep_next=not long_table))
         elif kind == "para":
-            out.append(para_xml(runs_xml(blk["text"], size=size), after=(80 if in_callout else 120)))
+            out.append(para_xml(runs_xml(blk["text"], size=size), after=(80 if in_callout else 120), shade=shade))
         elif kind == "list":
             for n, item in enumerate(blk["items"], 1):
                 marker = f"{n}. " if blk["ordered"] else "•  "
-                out.append(para_xml(run_xml(marker, size=size) + runs_xml(item, size=size),
-                                    after=40, indent=540, hanging=360))
-            out.append(para_xml("", after=40))
+                if shade:
+                    out.append(para_xml(run_xml(marker, size=size) + runs_xml(item, size=size),
+                                        after=40, shade=shade))
+                else:
+                    out.append(para_xml(run_xml(marker, size=size) + runs_xml(item, size=size),
+                                        after=40, indent=540, hanging=360))
+            out.append(para_xml("", after=40, shade=shade))
         elif kind == "quote":
-            out.append(para_xml(runs_xml(blk["text"], size=size, i=True), indent=540, after=120))
+            out.append(para_xml(runs_xml(blk["text"], size=size, i=True), indent=(None if shade else 540),
+                                after=120, shade=shade))
         elif kind == "table":
-            out.append(data_table_xml(blk["header"], blk["rows"]))
+            out.append(data_table_xml(blk["header"], blk["rows"], blk.get("widths")))
     return "".join(out)
 
 
 def callout_xml(title: str, body_blocks: list[dict], settled: bool = False) -> str:
-    """One shaded, bordered cell holding a question: green once settled, yellow while open."""
-    fill, border = ("E8F5E9", "5B9A5B") if settled else ("FFF8DC", "C9A227")
-    inner = para_xml(runs_xml(title, b=True, size=22), after=80, keep_next=True) + blocks_xml(body_blocks, in_callout=True)
-    row = "<w:tr>" + cell_xml(inner, TEXT_W, fill=fill) + "</w:tr>"
-    return table_xml([TEXT_W], [row], border=border)
+    """A question as shaded paragraphs with a coloured bar: green once settled, yellow while open.
+
+    Paragraphs, not a one-cell table: Pages does not split a table row across pages, so a callout
+    taller than the space left on a page was clipped at its edge. Paragraphs flow on."""
+    shade = ("E8F5E9", "5B9A5B") if settled else ("FFF8DC", "C9A227")
+    return (
+        para_xml(runs_xml(title, b=True, size=22), before=120, after=80, keep_next=True, shade=shade)
+        + blocks_xml(body_blocks, in_callout=True, shade=shade)
+        + para_xml("", after=120)
+    )
 
 
 def is_settled(status: str) -> bool:
@@ -360,8 +381,95 @@ def parse_questions(md: str) -> tuple[dict[str, list[tuple[str, list[dict], bool
     return by_section, register, closed
 
 
-def merge(spec_md: str, by_section: dict, register: dict | None, closed: dict | None = None) -> str:
+OPEN_STATES = {"open", "follow-up"}
+NEEDS_WIDTHS = [1000, 1500, 2300, 1100, 2126, 1000]  # twips; sums to TEXT_W — IDs never wrap
+SECTION_NAMES = {"SYS": "§2 System overview", "CAL": "§8 Calendar"}
+REQ_LEAD = re.compile(r"^\*\*(?P<id>[A-Z]{2,3}-\d+) ")
+MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+
+def short_date(needed_by: str | None) -> tuple[str, str]:
+    """(sort key, display) for a `Needed by`: its ISO date when it starts with one, else the phrase."""
+    if not needed_by:
+        return ("9999", "—")
+    m = re.match(r"^(\d{4})-(\d{2})-(\d{2})\b", needed_by.strip())
+    if not m:
+        return ("9998", needed_by.strip())
+    y, mo, d = m.groups()
+    return (f"{y}{mo}{d}", f"{int(d)} {MONTHS[int(mo) - 1]} {y}")
+
+
+def question_links(parsed) -> tuple[list, dict[str, list], dict[str, list[str]]]:
+    """The questions still open, which requirements each holds up, and the reverse.
+
+    A question holds up a requirement when the register's `Blocks` names it or the requirement's
+    own statement points at the question (`→ CQ-n`) — the same links the board carries."""
+    open_q = [d for d in parsed.decisions if d.state in OPEN_STATES]
+    ids = {d.id for d in open_q}
+    holds: dict[str, list[str]] = {d.id: [] for d in open_q}
+    for d in open_q:
+        for r in d.blocks:
+            if parsed.requirement_by_id(r) and r not in holds[d.id]:
+                holds[d.id].append(r)
+    for req in parsed.requirements:
+        if req.status != "active":
+            continue
+        for q in req.gated_by:
+            if q in ids and req.id not in holds[q]:
+                holds[q].append(req.id)
+    waits: dict[str, list] = {}
+    for d in open_q:
+        for r in holds[d.id]:
+            waits.setdefault(r, []).append(d)
+    return open_q, waits, holds
+
+
+def needs_blocks(parsed) -> list[dict]:
+    """The agenda's opening table: every question still open, soonest first."""
+    open_q, _, holds = question_links(parsed)
+    rows = []
+    for d in sorted(open_q, key=lambda d: short_date(d.needed_by)[0]):
+        held = holds[d.id]
+        names = ", ".join(f"{r} {parsed.requirement_by_id(r).name}" for r in held) \
+            or SECTION_NAMES.get(d.section or "", d.section or "—")
+        rows.append([f"**{d.id}**", d.statement, names, short_date(d.needed_by)[1],
+                     d.default_if_deferred or d.summary or d.resolution or "—", d.label])
+    return [
+        {"kind": "heading", "level": 3, "text": "What we need from MINT, soonest first"},
+        {"kind": "para", "text": "Every question still open, with the requirements it holds up and the date "
+                                 "it is needed by. The last column but one is what Calea builds if it is "
+                                 "not answered in time. Each question is set out in full under the section "
+                                 "it affects, and each requirement it holds up says so."},
+        {"kind": "table", "header": ["ID", "Question", "Holds up", "Needed by", "If not answered", "Status"],
+         "rows": rows, "widths": NEEDS_WIDTHS},
+    ]
+
+
+def with_waits(blocks: list[dict], waits: dict[str, list]) -> list[dict]:
+    """After each requirement's acceptance line, the open questions that requirement waits on."""
+    out: list[dict] = []
+    current: str | None = None
+    for blk in blocks:
+        out.append(blk)
+        if blk["kind"] != "para":
+            continue
+        lead = REQ_LEAD.match(blk["text"])
+        if lead:
+            current = lead.group("id")
+        elif blk["text"].startswith("*Acceptance.*") and current in waits:
+            def when(d) -> str:
+                key, shown = short_date(d.needed_by)
+                return f"needed by {shown}" if not key.startswith("999") else shown
+            items = "; ".join(f"**{d.id}** {d.statement} ({when(d)})" for d in waits[current])
+            out.append({"kind": "para", "text": f"**Waits on** {items}."})
+            current = None
+    return out
+
+
+def merge(spec_md: str, by_section: dict, register: dict | None, closed: dict | None = None,
+          parsed=None) -> str:
     """Body XML: spec sections with their questions appended; register appendix; sign-off last."""
+    waits = question_links(parsed)[1] if parsed else {}
     lines = spec_md.splitlines()
     chunks: list[tuple[str | None, list[str]]] = []
     current: tuple[str | None, list[str]] = (None, [])
@@ -390,7 +498,10 @@ def merge(spec_md: str, by_section: dict, register: dict | None, closed: dict | 
         if "Sign-off" in heading:
             signoff = blocks_xml(parse_blocks(heading + "\n" + body_md))
             continue
-        part = blocks_xml(parse_blocks(heading + "\n" + body_md))
+        section_blocks = with_waits(parse_blocks(heading + "\n" + body_md), waits)
+        if parsed and "Decisions" in heading:
+            section_blocks[1:1] = needs_blocks(parsed)
+        part = blocks_xml(section_blocks)
         tag_match = SECTION_TAG.match(heading)
         if tag_match:
             tag = tag_match.group("tag")
@@ -410,7 +521,11 @@ def merge(spec_md: str, by_section: dict, register: dict | None, closed: dict | 
     parts.append('<w:p><w:r><w:br w:type="page"/></w:r></w:p>')
     parts.append(blocks_xml([
         {"kind": "heading", "level": 2, "text": "Appendix — Register of questions"},
-        {"kind": "para", "text": "One line per question. Open items first, for deciding in one place; "
+        {"kind": "para", "text": ("One line per settled question. The open ones are the table that "
+                                  "opens the agenda (§10), with what each holds up and when it is needed. "
+                                  "Every question also appears in full under the section it affects.")
+                                 if parsed else
+                                 "One line per question. Open items first, for deciding in one place; "
                                  "then the settled ones. Each question also appears in full under the "
                                  "section it affects."},
     ]))
@@ -422,8 +537,9 @@ def merge(spec_md: str, by_section: dict, register: dict | None, closed: dict | 
         else:
             open_rows = [r for r in register["rows"] if not is_settled(r[status_col])]
             settled_rows = [r for r in register["rows"] if is_settled(r[status_col])]
-            parts.append(blocks_xml([{"kind": "heading", "level": 3, "text": "Open for the call"}]))
-            parts.append(data_table_xml(header, open_rows))
+            if not parsed:
+                parts.append(blocks_xml([{"kind": "heading", "level": 3, "text": "Open for the call"}]))
+                parts.append(data_table_xml(header, open_rows))
             parts.append(blocks_xml([{"kind": "heading", "level": 3, "text": "Settled"}]))
             parts.append(data_table_xml(header, settled_rows))
     if closed:
@@ -518,7 +634,9 @@ def main(argv: list[str]) -> int:
 
     spec_md = SPEC.read_text(encoding="utf-8")
     by_section, register, closed = parse_questions(QUESTIONS.read_text(encoding="utf-8"))
-    body = merge(spec_md, by_section, register, closed)
+    openspec = ROOT / "openspec"
+    parsed = parse_openspec(openspec / "specs", openspec / "decisions.md", openspec / "config.yaml", ROOT)
+    body = merge(spec_md, by_section, register, closed, parsed)
 
     version = VERSION.search(spec_md)
     out_name = f"MintABear-Specification-v{version.group('ver') if version else 'draft'}"
