@@ -2,8 +2,9 @@
 # MintABear — Specification
 
 <!-- openspec:begin version -->
-**Version** 2.1 · **Date** 21 September 2026 · **Status** records the decisions of the
-MINT–Calea call of 21 September 2026; sign-off follows the open items in §10
+**Version** 2.2 · **Date** 24 September 2026 · **Status** records the decisions of the
+MINT–Calea call of 21 September 2026 and Calea's simplification of the burn route (ACT-7);
+sign-off follows the open items in §10
 <!-- openspec:end -->
 
 Prepared by Calea for MINT. Sources: *MINTaBear development statement of work* (MINT, 14 September
@@ -32,8 +33,8 @@ confirmed; yellow callouts are decisions for the call.
 - **WhitelistClaim** registry on Robinhood Chain: records first-come-first-served whitelist
   allocations against MINT-signed wagering eligibility and exports the allowlist for Studio
   (`→ CQ-18`).
-- **Activation** contract on Robinhood Chain: cumulative $MNTD burn credits, level derivation
-  (0–5), royalty-weight table, Status link; **DirectBurnAdapter**, the same-chain burn route.
+- **Activation** contract on Robinhood Chain: burns $MNTD for a bear and records it, level
+  derivation (0–5), royalty-weight table, Status link.
 - **Mystery box**: `MysteryBox` on Robinhood Chain (ownership, the spent id, the open register),
   `PrizeDraw` on the Chainlink chain (one VRF word per open, the win rule, the outcome), and a
   `PrizeVault` on each chain that holds prizes (`→ CQ-20`).
@@ -77,7 +78,7 @@ bridging prize assets between chains; cross-chain messaging infrastructure.
 
 | Chain | Id | Hosts | Testnet |
 |---|---|---|---|
-| Robinhood Chain | 4663 | `MintABear`, `WhitelistClaim`, `Activation`, `DirectBurnAdapter`, `MysteryBox`, one `PrizeVault` | 46630 |
+| Robinhood Chain | 4663 | `MintABear`, `WhitelistClaim`, `Activation`, `MysteryBox`, one `PrizeVault` | 46630 |
 | Ethereum | 1 | `PrizeVault` | Sepolia 11155111 |
 | ApeChain | 33139 | `PrizeVault` | Curtis 33111 |
 | Base | 8453 | `PrizeDraw` (Chainlink VRF v2.5) — Calea's recommendation, `→ CQ-17` | Base Sepolia 84532 |
@@ -94,8 +95,7 @@ and Robinhood Chain do not (checked 18 September 2026).
 |---|---|---|
 | `MintABear` | 4663 | ERC721SeaDrop collection, 4,444 supply, transfer counter, enforced royalties |
 | `WhitelistClaim` | 4663 | 1,000 first-come-first-served whitelist allocations against signed eligibility |
-| `Activation` | 4663 | Credited burns → level → weight; Status link |
-| `DirectBurnAdapter` | 4663 | Burns $MNTD and credits the bear in one transaction |
+| `Activation` | 4663 | $MNTD burned for a bear → level → weight; Status link |
 | `MysteryBox` | 4663 | The open register: ownership check, the spent id, the excluded ids |
 | `PrizeVault` | each prize chain | Prize inventory, commitment to the game, awards and claims |
 | `PrizeDraw` | Chainlink chain | One VRF word per open, the win rule, the recorded outcome |
@@ -127,8 +127,8 @@ chain records that it was reached.
 **Flow.** (1) Whitelist campaign: a holder wagers and logs in on getminted.io; MINT's
 backend signs a voucher; the holder claims a spot on `WhitelistClaim`; at close MINT loads the
 list into the Studio allowlist stage. (2) Iñigo runs the drop in Studio; holders mint via OpenSea
-or the getminted.io mirror. (3) Holders burn $MNTD through the adapter; `Activation` credits the
-bear and its level and weight follow. (4) Any transfer advances the counter and voids level,
+or the getminted.io mirror. (3) Holders burn $MNTD for a bear on `Activation`, which records the
+burn, and the bear's level and weight follow. (4) Any transfer advances the counter and voids level,
 weight and link. (5) The mystery box: MINT deposits prizes into the vaults; the worker commits
 them; the owner records the excluded ids and opens the game; a holder opens a box with a bear,
 which spends that id; the worker relays the open in turn; a Chainlink word decides it; a winner
@@ -335,31 +335,29 @@ on-chain. `→ CQ-18`.
 <!-- openspec:begin family ACT -->
 Holders need to burn $MNTD to raise a bear's level and weight, and MINT needs to read those weights for the royalty split, in a way no key can forge and every transfer resets — so that a level is always evidence of a burn by the current owner.
 
-**ACT-1 Token-agnostic.** `Activation` holds no reference to $MNTD and never moves tokens. It
-records credited burn amounts per bear and derives level and weight from them. It reads
-`MintABear` (`ownerOf`, `transferNonce`, `exists`); `MintABear` never calls it, so no defect in
-`Activation` can affect a transfer. In plain terms: burning the tokens and recording the level
-are two steps of one transaction. The adapter burns the holder's $MNTD, then tells `Activation`
-"this wallet burned this amount for this bear"; `Activation` accepts that message from the
-adapter alone. If $MNTD ever changes address or chain, only the adapter changes.
+**ACT-1 One token, one collection.** `Activation` holds one token reference, $MNTD, fixed in its constructor, and
+uses it for one thing: burning the caller's own $MNTD in `burn` (ACT-7). It records burned
+amounts per bear and derives level and weight from them. It reads `MintABear` (`ownerOf`,
+`transferNonce`, `exists`); `MintABear` never calls it, so no defect in `Activation` can affect a
+transfer. In plain terms: recording the level and burning the tokens are two steps of one
+transaction, the record first — `Activation` adds the amount to the bear, then burns it from the
+holder — and any revert undoes both.
 
-*Acceptance.* When `Activation`'s code and constructor are inspected; then it holds no $MNTD reference and moves no tokens; and it reads only `MintABear`'s `ownerOf`, `transferNonce` and `exists`.
+*Acceptance.* When `Activation`'s code and constructor are inspected; then its only calls to $MNTD are `decimals` in the constructor and `burnFrom` of the caller's own balance in `burn`, and it moves no other token; and it reads only `MintABear`'s `ownerOf`, `transferNonce` and `exists`.
 
-**ACT-2 Thresholds.** Five cumulative thresholds `T1 < T2 < T3 < T4 < T5`, in $MNTD base units,
-supplied to the constructor and immutable. A bear's level is the highest `k` with
-`cumulative ≥ Tk`, or 0. `thresholdFor(level)` and `costToReach(tokenId, level)` expose them.
-The figures are 1,666 / 3,333 / 8,333 / 16,666 / 41,666 $MNTD, read cumulatively: each is the
-total a bear must have burned to stand at that level, so level 5 costs 41,666 $MNTD in all
-(MINT, CQ-4).
+**ACT-2 Thresholds.** Five cumulative thresholds `T1 < T2 < T3 < T4 < T5`, supplied to the
+constructor in whole $MNTD and scaled there by the token's `decimals` into base units, which are
+immutable; `DECIMALS` reads the value used. A bear's level is the highest `k` with
+`cumulative ≥ Tk`, or 0. `thresholdFor(level)` and `costToReach(tokenId, level)` expose them in
+base units. The figures are 1,666 / 3,333 / 8,333 / 16,666 / 41,666 $MNTD, read cumulatively:
+each is the total a bear must have burned to stand at that level, so level 5 costs 41,666 $MNTD in
+all (MINT, CQ-4).
 
 | Level | 1 | 2 | 3 | 4 | 5 |
 |---|---|---|---|---|---|
 | Total burned to reach it | 1,666 | 3,333 | 8,333 | 16,666 | 41,666 |
 
-The constructor receives this row in base units, which fixes $MNTD's `decimals` before
-deployment (`→ CQ-2`).
-
-*Acceptance.* Given the thresholds 1,666 / 3,333 / 8,333 / 16,666 / 41,666 in base units; when a bear's cumulative reaches 8,333; then `levelOf` reads 3 and `costToReach(id, 4)` reads 8,333.
+*Acceptance.* Given the thresholds 1,666 / 3,333 / 8,333 / 16,666 / 41,666 whole $MNTD and a token with 18 decimals; when a bear's cumulative reaches 8,333 $MNTD; then `levelOf` reads 3 and `costToReach(id, 4)` reads 8,333 × 10^18.
 
 **ACT-3 Weights.** Six royalty weights for levels 0–5, basis 100, supplied to the constructor
 and immutable: `100 / 110 / 125 / 145 / 170 / 200` (1.00× to 2.00×), confirmed by MINT.
@@ -368,17 +366,17 @@ current level.
 
 *Acceptance.* Given the weights 100 / 110 / 125 / 145 / 170 / 200; when a bear at level 3 is read; then `weightOf` returns 145 and `weightFor(5)` returns 200.
 
-**ACT-4 Credit.** `credit(uint256 tokenId, address burner, uint128 amount, uint64 nonce,
-bytes32 ref)` is callable only by the `crediter` (`NotCrediter`, ACT-7). It reverts unless: not
-paused (`ContractPaused`); `amount > 0` (`ZeroAmount`); `ownerOf(tokenId) == burner`
-(`NotBearOwner`); `transferNonce(tokenId) == nonce` (`StaleNonce`); `ref` has not been used
-(`RefAlreadyUsed`). Both ownership checks passing means `burner` has owned the bear continuously
-since `nonce` was read — a burn is never credited to a bear that changed hands in between. Effects:
-the cumulative for the current counter value increases by `amount`; `lifetimeBurned` increases by
-`amount`; `ref` is marked used; `BearActivated(tokenId, burner, previousLevel, newLevel, amount,
-cumulative, ref)` is emitted.
+**ACT-4 Burn record.** `burn(uint256 tokenId, uint128 amount)` reverts unless: not paused
+(`ContractPaused`); `amount > 0` (`ZeroAmount`); `ownerOf(tokenId) == msg.sender`
+(`NotBearOwner`); the bear is below level 5 (`AlreadyAtMaxLevel`); `amount ≤ costToReach(tokenId,
+5)` (`Overshoot`, ACT-8). Effects, in order: the cumulative for the bear's current counter value
+increases by `amount`; `lifetimeBurned` increases by `amount`; `BearActivated(tokenId, burner,
+previousLevel, newLevel, amount, cumulative)` is emitted; then `MNTD.burnFrom(msg.sender, amount)`.
+The owner check and the counter are read in the same call as the record, so a burn is never
+recorded for a bear its burner does not hold. `burn` is non-reentrant: a call made from inside the
+token's `burnFrom` is refused.
 
-*Acceptance.* Given the crediter calls `credit` for a bear the burner owns, with the current nonce and a fresh `ref`; when the call executes; then the cumulative and `lifetimeBurned` grow by `amount` and `BearActivated` is emitted; and a second call with the same `ref` reverts with `RefAlreadyUsed`.
+*Acceptance.* Given the owner of a bear below level 5 who has approved `Activation` on $MNTD; when the owner calls `burn(tokenId, amount)`; then the cumulative and `lifetimeBurned` grow by `amount`, `BearActivated` is emitted and the owner's $MNTD falls by `amount`; and a `burn` made from inside the token's `burnFrom` reverts.
 
 **ACT-5 Reset.** Cumulative and level read as zero, the weight reads the level-0 weight (ACT-3) and the link
 reads `(0, 0)` whenever the counter value they were recorded at differs from the current
@@ -387,33 +385,27 @@ be skipped and cannot block a transfer. Return transfers reset like any other.
 
 *Acceptance.* Given a bear at level 2 with a Status link; when it is transferred to another wallet; then `levelOf` and `cumulativeOf` read zero, `weightOf` reads `weightFor(0)` and `linkOf` reads `(0, 0)`, with no call into `Activation`.
 
-**ACT-6 Lifetime.** `lifetimeBurned(tokenId)` accumulates every credit ever made to a bear and
-never resets.
+**ACT-6 Lifetime.** `lifetimeBurned(tokenId)` accumulates every burn ever recorded for a bear
+and never resets.
 
-*Acceptance.* Given a bear credited twice with a transfer in between; when `lifetimeBurned` is read; then it is the sum of both credits.
+*Acceptance.* Given a bear burned for twice with a transfer in between; when `lifetimeBurned` is read; then it is the sum of both burns.
 
-**ACT-7 Crediter and route.** Exactly one `crediter` address, set by the owner (`setCrediter`,
-event `CrediterSet`). $MNTD is deployed on Robinhood Chain (MINT), so the crediter is the
-**`DirectBurnAdapter`** on 4663. The holder approves the adapter on $MNTD once and calls
-`burn(tokenId, amount)`; the adapter reverts unless `ownerOf(tokenId) == msg.sender`
-(`NotOwner`), the bear is below level 5 (`AlreadyAtMaxLevel`) and
-`amount ≤ costToReach(tokenId, 5)` (`Overshoot`); it then calls `MNTD.burnFrom(msg.sender,
-amount)` and `Activation.credit(tokenId, msg.sender, amount, transferNonce(tokenId), ref)` in
-the same transaction, with `ref` a per-adapter burn number, and emits `BurnedForBear(ref,
-tokenId, burner, amount)`. The adapter has no owner and no settings; a new token address means a
-new adapter and one `setCrediter` call. Requirements on $MNTD: an ERC-20 on 4663 exposing
-`burnFrom(address, uint256)` (OpenZeppelin `ERC20Burnable`) with `decimals` fixed before
-`Activation` is deployed. $MNTD is **native** to Robinhood Chain: its canonical supply is issued
-there and `burnFrom` reduces it, so a burn removes supply outright and needs nothing said about
-it publicly (MINT, CQ-2). A bridged or mint-and-burn representation, a burn on another chain
-with an attested credit on 4663, and cross-chain messaging are all out. MINT's staking sits
-beside the token on the same chain and touches nothing here: `Activation` reads only
-`MintABear`, and the adapter only $MNTD. The token's `burnFrom` and `decimals` are still to be
-confirmed against the deployed contract (`→ CQ-2`).
+**ACT-7 Burn route.** $MNTD is native to Robinhood Chain (MINT, CQ-2): its canonical supply is
+issued there and `burnFrom` reduces it, so a burn removes supply outright and needs nothing said
+about it publicly. `Activation` takes its address as an immutable constructor argument; a
+different token address means a new `Activation`, so the address must be final before deployment
+(`→ CQ-2`). The holder approves `Activation` on $MNTD once and calls `burn(tokenId, amount)`
+(ACT-4), which records the burn and calls `MNTD.burnFrom(msg.sender, amount)` in the same
+transaction. Requirements on $MNTD: an ERC-20 on 4663 exposing `decimals()` and
+`burnFrom(address, uint256)` (OpenZeppelin `ERC20Burnable`) that reverts rather than returning
+false on failure. A bridged or mint-and-burn representation, a burn on another chain with an
+attested record on 4663, and cross-chain messaging are all out. MINT's staking sits beside the
+token on the same chain and touches nothing here. The token's `burnFrom`, `decimals` and the
+finality of its address are still to be confirmed against the deployed contract (`→ CQ-2`).
 
-*Acceptance.* Given the holder has approved the adapter on $MNTD; when the holder calls `burn(tokenId, amount)` for a bear below level 5; then `burnFrom` and `credit` execute in one transaction and `BurnedForBear` is emitted; and a call by a non-owner reverts with `NotOwner`.
+*Acceptance.* Given the holder has approved `Activation` on $MNTD; when the holder calls `burn(tokenId, amount)` for a bear below level 5; then the burn is recorded and `burnFrom` executes in one transaction, and `BearActivated` is emitted; and a call by a non-owner reverts with `NotBearOwner`.
 
-**ACT-8 Overshoot.** The adapter refuses any amount beyond what level 5 needs, so no $MNTD is
+**ACT-8 Overshoot.** `burn` refuses any amount beyond what level 5 needs, so no $MNTD is
 destroyed for nothing. The portal sizes each burn with `costToReach(tokenId, targetLevel)`,
 which returns the exact remainder or zero.
 
@@ -439,32 +431,32 @@ wallet (§2).
 
 *Acceptance.* When `snapshot([1, 2, 4445])` is read; then it returns owner, level and weight for ids 1 and 2 and zeroes for the id that does not exist.
 
-**ACT-11 Pause.** The owner may pause. While paused, `credit` and `linkBear` revert; reads,
-`unlinkBear` and every transfer are unaffected. The adapter's `burn` therefore reverts while
-paused and no $MNTD is burned; this is how burns stay closed between deployment and the
-switch-on date (§8). The pause admits no exemption — no address may burn while it is on — so
-the mainnet rehearsal against real $MNTD runs in a window the owner opens and closes again
-(§8). `renounceOwnership` is refused while paused, so a pause can always be lifted.
+**ACT-11 Pause.** The owner may pause. While paused, `burn` and `linkBear` revert; reads,
+`unlinkBear` and every transfer are unaffected. No $MNTD is burned while paused; this is how
+burns stay closed between deployment and the switch-on date (§8). The pause admits no exemption —
+no address may burn while it is on — so the mainnet rehearsal against real $MNTD runs in a window
+the owner opens and closes again (§8). `renounceOwnership` reverts for every caller, so the pause
+can always be set and lifted.
 
-*Acceptance.* Given the owner has paused; when the crediter calls `credit` or a holder calls `linkBear`; then both revert with `ContractPaused`; and reads, `unlinkBear` and every transfer still succeed.
+*Acceptance.* Given the owner has paused; when a holder calls `burn` or `linkBear`; then both revert with `ContractPaused`; and reads, `unlinkBear` and every transfer still succeed.
 
-**ACT-12 Roles.** Owner (MINT admin): `setCrediter`, `setPaused`, ownership transfer. Nothing
-else is administrable: thresholds, weights and records are immutable; the adapter has no owner.
-There is no freeze or clawback path into a bear anywhere (MINT, CQ-16).
+**ACT-12 Roles.** Owner (MINT admin): `setPaused` and ownership transfer; `renounceOwnership`
+reverts. A bear's owner: `burn` for that bear, `linkBear`, `unlinkBear`. Nothing else is
+administrable: the token, thresholds, weights and records are immutable, and no address can record
+a level without burning. There is no freeze or clawback path into a bear anywhere (MINT, CQ-16).
 
-*Acceptance.* When a non-owner calls `setCrediter` or `setPaused`; then it reverts; and no function anywhere changes thresholds, weights or a bear's record.
+*Acceptance.* When a non-owner calls `setPaused`, or anyone calls `renounceOwnership`; then it reverts; and no function anywhere changes the token, thresholds, weights or a bear's record other than its owner's `burn`.
 
-**ACT-13 Events.** `BearActivated` (ACT-4), `BearLinked(wallet, tokenId)`,
-`BearUnlinked(wallet, tokenId)`, `CrediterSet(previous, current)`, `PausedSet(paused)`;
-adapter: `BurnedForBear(ref, tokenId, burner, amount)`.
+**ACT-13 Events.** `BearActivated(tokenId, burner, previousLevel, newLevel, amount,
+cumulative)` (ACT-4), `BearLinked(wallet, tokenId)`, `BearUnlinked(wallet, tokenId)`,
+`PausedSet(paused)`.
 
-*Acceptance.* When a credit, a link, an unlink, a crediter change and a pause happen; then `BearActivated`, `BearLinked`, `BearUnlinked`, `CrediterSet` and `PausedSet` are emitted with the documented arguments.
+*Acceptance.* When a burn, a link, an unlink and a pause happen; then `BearActivated`, `BearLinked`, `BearUnlinked` and `PausedSet` are emitted with the documented arguments.
 
 **ACT-14 Reads.** `levelOf`, `cumulativeOf`, `lifetimeBurned`, `weightOf`, `weightFor`,
-`thresholdFor`, `costToReach`, `linkOf`, `snapshot`, `paused`, `crediter`, `BEARS`; adapter:
-`MNTD`, `ACTIVATION`, `burnCount`.
+`thresholdFor`, `costToReach`, `linkOf`, `snapshot`, `paused`, `BEARS`, `MNTD`, `DECIMALS`.
 
-*Acceptance.* When every listed read is called for a credited bear; then each returns without reverting; and `BEARS`, `MNTD` and `ACTIVATION` return the deployed addresses.
+*Acceptance.* When every listed read is called for a bear that has been burned for; then each returns without reverting; and `BEARS` and `MNTD` return the deployed addresses and `DECIMALS` the token's decimals.
 <!-- openspec:end -->
 
 ## 6. Mystery box raffle (RAF)
@@ -710,30 +702,27 @@ royalty receiver follows, before the first sale (COL-6). `→ CQ-12`, `→ CQ-15
 | Royalty receiver | ERC-2981 receiver — the pot | MINT, separate from the admin |
 | Prize vaults | the `PrizeVault` contracts, one per prize chain | — |
 
-`DirectBurnAdapter` has no role.
-
 *Acceptance.* When the mainnet deploy scripts run; then the admin, worker and signer addresses they read are the ones MINT recorded; and the royalty receiver is set in Studio before the first sale.
 
 **OPS-2 Deployment order.** Every address a contract needs at birth is a constructor argument,
 so a contract is correct from its first block and is never deployed-but-unconfigured (MINT,
-CQ-12). One cannot be: `Activation.setCrediter`, because the adapter does not exist until
-`Activation` does. `WhitelistClaim.setSigner` exists so the admin can rotate the signer; the
-first signer is a constructor argument. Both stay owner-only. The other calls made after
-construction are settings and hand-overs, each in the order listed: `setMaxSupply`,
-`setTransferValidator`, `setPaused(true)` and ownership transfers. Robinhood Chain:
+CQ-12). `WhitelistClaim.setSigner` exists so the admin can rotate the signer; the first signer is
+a constructor argument, and it stays owner-only. The calls made after construction are settings
+and hand-overs, each in the order listed: `setMaxSupply`, `setTransferValidator`,
+`setPaused(true)` and ownership transfers. Robinhood Chain:
 `MintABear(name, symbol, [SeaDrop])` → `setMaxSupply(4444)` → `setTransferValidator(V3)`
 (COL-7) → two-step ownership transfer → provenance, `baseURI` and royalties set by Iñigo
 through Studio, before the drop page is published (COL-5, COL-6, COL-10).
 `WhitelistClaim(owner, signer, openAt, closeAt)`, with MINT's admin as `owner`, before the
-campaign opens. `Activation(bears, thresholds, weights)` → `DirectBurnAdapter(mntd, activation)`
-→ `setCrediter(adapter)` → `setPaused(true)` until the switch-on date → ownership; requires
-$MNTD on 4663. `MysteryBox(bears, worker)` → ownership; `PrizeVault(worker)` → `approveAsset`
-per prize asset → ownership. Ethereum and ApeChain: `PrizeVault(worker)` → approvals →
-ownership. The Chainlink chain: `PrizeDraw(coordinator, subscriptionId, keyHash, worker,
-playable, prizeCount, manifestHash)` → added as consumer → ownership. Each contract is deployed
-before the page that depends on it is published.
+campaign opens. `Activation(bears, mntd, thresholds, weights)`, thresholds in whole $MNTD
+(ACT-2) → `setPaused(true)` until the switch-on date → ownership; requires $MNTD on 4663.
+`MysteryBox(bears, worker)` → ownership; `PrizeVault(worker)` → `approveAsset` per prize asset →
+ownership. Ethereum and ApeChain: `PrizeVault(worker)` → approvals → ownership. The Chainlink
+chain: `PrizeDraw(coordinator, subscriptionId, keyHash, worker, playable, prizeCount,
+manifestHash)` → added as consumer → ownership. Each contract is deployed before the page that
+depends on it is published.
 
-*Acceptance.* When the deploy script runs on a fresh chain; then each contract is created with its constructor arguments in the listed order and is never left deployed-but-unconfigured; and the only address set after construction is `Activation`'s crediter; every other call after construction is a listed setting or ownership transfer, in the listed order.
+*Acceptance.* When the deploy script runs on a fresh chain; then each contract is created with its constructor arguments in the listed order and is never left deployed-but-unconfigured; and no address is set after construction; every call after construction is a listed setting or ownership transfer, in the listed order.
 
 **OPS-3 Verification.** Sourcify for 4663 and 46630 (mainnet Blockscout's API sits behind a bot
 challenge); Etherscan for Ethereum and Sepolia; Apescan for ApeChain and Curtis; Basescan for
@@ -744,7 +733,7 @@ Base and Base Sepolia.
 **OPS-4 Rehearsal on testnets (46630, Sepolia, Curtis, Base Sepolia).** Studio attaches to and
 manages a self-deployed, validated `MintABear`; both mint paths (OpenSea and the getminted.io
 mirror); a whitelist claim from voucher to exported allowlist to a two-per-wallet allowlist mint; a
-burn through the adapter against $MNTD on 46630 through to a credited level; a full multi-chain
+burn through `Activation` against $MNTD on 46630 through to a recorded level; a full multi-chain
 game — deposits on the testnets, commit, exclude, open, boxes opened, relays, words, outcomes,
 awards, claims and expiry, including one open that wins and one that does not; an OpenSea testnet
 listing of the validated collection. On mainnet, before the drop page is published: one team bear
@@ -793,11 +782,11 @@ is MINT's to confirm or move (`→ CQ-1`, §10 D7).
 |---|---|---|---|
 | 21 Sep | Call: the decisions in §10 | Iñigo; Calea | fixed |
 | 22 Sep – 2 Oct | `MintABear` final, reviewed, deployed with the validator set; OpenSea page and URL live before promotion; team bear listed and sold; `WhitelistClaim` deployed and signer set; Studio attach proven on testnet | Calea; Iñigo | SoW |
-| by 5 Oct | $MNTD test deployment on 46630 for the adapter rehearsal | MINT (Lorenzo) | proposed |
+| by 5 Oct | $MNTD test deployment on 46630 for the burn rehearsal | MINT (Lorenzo) | proposed |
 | 5 – 9 Oct | `MysteryBox`, the vaults, `PrizeDraw`, the worker and the UI tested on testnets, baskets and the win rule included; reports and runbooks; no open Critical/High | Calea; Javier; MINT | SoW |
 | 6 – 26 Oct | Whitelist campaign open on getminted.io/mintabear | Iñigo; Javier; Vlad; Lorenzo | proposed |
 | 12 – 14 Oct | `MysteryBox`, `PrizeDraw` and the vaults deployed, verified and funded on every prize chain; roles and official addresses verified; a multi-chain game rehearsed | Calea; Iñigo; Javier; MINT | SoW |
-| 20 Oct | TGE: $MNTD live on Robinhood Chain; `Activation` and `DirectBurnAdapter` deployed, verified against the real token, paused | MINT; Calea | MINT |
+| 20 Oct | TGE: $MNTD live on Robinhood Chain; `Activation` deployed, verified against the real token, paused | MINT; Calea | MINT |
 | 20 – 28 Oct | Real burns rehearsed by MINT and Calea on mainnet, in windows the owner opens and closes again; `Activation` is paused outside them | Calea; MINT | derived |
 | 26 Oct | Whitelist campaign closes; list exported, loaded into the Studio whitelist stage, proofs published | Iñigo; Calea | proposed |
 | 29 Oct | Mint: whitelist stage, then the other stages per Studio; `Activation` unpaused — burns, level-up and Status linking open; the mystery box opens | Iñigo; Javier; Calea | MINT |
@@ -807,7 +796,7 @@ is MINT's to confirm or move (`→ CQ-1`, §10 D7).
 | 19 Nov | Operations handed over; technical support ends (OPS-5, DEL-10) | Iñigo/Robert; Calea | SoW; to confirm |
 
 Two decouplings hold whatever moves: the collection deploys and mints without the hub, the
-vaults or the adapter being live, and `Activation` opens to holders only once the adapter has
+vaults or `Activation` being live, and `Activation` opens to holders only once its burn has
 been exercised against real $MNTD — which the owner does by unpausing for a rehearsal and
 pausing again (ACT-11). One compression to note: burns open nine days after TGE, so the mainnet
 rehearsal against the real token has that window; the testnet deployment on 5 October takes the
@@ -851,10 +840,10 @@ time until one is (`→ CQ-13`).
 
 *Acceptance.* Given MINT has named a contract within the line limit; when the review is delivered; then it lists findings only, with no remediation.
 
-**DEL-8 Audit tranches.** Tranche 1: `MintABear`, `WhitelistClaim`, `Activation` and
-`DirectBurnAdapter`. Tranche 2: `MysteryBox`, `PrizeVault` and `PrizeDraw`, once CQ-9's remaining
-questions and CQ-20 are answered. Iñigo accepts after Calea and MINT sign off; anything not
-accepted stays disabled in the UI.
+**DEL-8 Audit tranches.** Tranche 1: `MintABear`, `WhitelistClaim` and `Activation`. Tranche 2:
+`MysteryBox`, `PrizeVault` and `PrizeDraw`, once CQ-9's remaining questions and CQ-20 are
+answered. Iñigo accepts after Calea and MINT sign off; anything not accepted stays disabled in the
+UI.
 
 **DEL-9 Repository.** The contracts live in MINT's monorepo (`github.com/mintdotio/NFT`) as
 `packages/contracts` (`@mint/contracts`), a Foundry package with a thin `package.json` so
@@ -936,9 +925,9 @@ its interface supports Robinhood Chain, otherwise one EOA per chain held by Iñi
 worker and signer; a royalty receiver that is the pot and not the admin.
 
 **O5 — The $MNTD interface (CQ-2).** Not a decision but a dependency: does the deployed token
-expose `burnFrom(address, uint256)`, how many `decimals`, and can a copy be on testnet 46630 for
-the adapter rehearsal? `decimals` fixes `Activation`'s constructor values and is needed before it
-is deployed.
+expose `burnFrom(address, uint256)`, how many `decimals`, is its address final, and can a copy be
+on testnet 46630 for the burn rehearsal? `Activation` fixes the token's address and reads its
+`decimals` in its constructor, so all of it is needed before `Activation` is deployed.
 
 **O6 — Calendar (CQ-1).** Left to be decided at the call. The three anchors stand — TGE
 20 October, mint 29 October, burns and level-up from 29 October — and every other row of §8
@@ -966,6 +955,6 @@ what the registry guarantees.
 | Calea | Bojan Jovin | | |
 | Rayco | | | |
 
-Version 2.1, 21 September 2026. The version signed carries the open items of §10 resolved;
+Version 2.2, 24 September 2026. The version signed carries the open items of §10 resolved;
 amendments are issued as new versions of this document; requirement identifiers are never
 reused.

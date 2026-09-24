@@ -1,9 +1,17 @@
-# Activation and burn route Specification
+# Spec Delta
 
-## Purpose
-Holders need to burn $MNTD to raise a bear's level and weight, and MINT needs to read those weights for the royalty split, in a way no key can forge and every transfer resets — so that a level is always evidence of a burn by the current owner.
+## RENAMED Requirements
 
-## Requirements
+- FROM: `### Requirement: ACT-1 — Token-agnostic`
+- TO: `### Requirement: ACT-1 — One token, one collection`
+
+- FROM: `### Requirement: ACT-4 — Credit`
+- TO: `### Requirement: ACT-4 — Burn record`
+
+- FROM: `### Requirement: ACT-7 — Crediter and route`
+- TO: `### Requirement: ACT-7 — Burn route`
+
+## MODIFIED Requirements
 
 ### Requirement: ACT-1 — One token, one collection
 **Kind:** work-item
@@ -15,7 +23,7 @@ transfer. In plain terms: recording the level and burning the tokens are two ste
 transaction, the record first — `Activation` adds the amount to the bear, then burns it from the
 holder — and any revert undoes both.
 
-#### Scenario: One token, one collection
+#### Scenario: Activation knows no token
 - **WHEN** `Activation`'s code and constructor are inspected
 - **THEN** its only calls to $MNTD are `decimals` in the constructor and `burnFrom` of the caller's own balance in `burn`, and it moves no other token
 - **AND** it reads only `MintABear`'s `ownerOf`, `transferNonce` and `exists`
@@ -39,18 +47,6 @@ all (MINT, CQ-4).
 - **WHEN** a bear's cumulative reaches 8,333 $MNTD
 - **THEN** `levelOf` reads 3 and `costToReach(id, 4)` reads 8,333 × 10^18
 
-### Requirement: ACT-3 — Weights
-**Kind:** work-item
-Six royalty weights for levels 0–5, basis 100, supplied to the constructor
-and immutable: `100 / 110 / 125 / 145 / 170 / 200` (1.00× to 2.00×), confirmed by MINT.
-`weightFor(level)` returns the table entry; `weightOf(tokenId)` returns the weight of the bear's
-current level.
-
-#### Scenario: Weights follow the level
-- **GIVEN** the weights 100 / 110 / 125 / 145 / 170 / 200
-- **WHEN** a bear at level 3 is read
-- **THEN** `weightOf` returns 145 and `weightFor(5)` returns 200
-
 ### Requirement: ACT-4 — Burn record
 **Kind:** work-item
 `burn(uint256 tokenId, uint128 amount)` reverts unless: not paused
@@ -63,23 +59,11 @@ The owner check and the counter are read in the same call as the record, so a bu
 recorded for a bear its burner does not hold. `burn` is non-reentrant: a call made from inside the
 token's `burnFrom` is refused.
 
-#### Scenario: A burn is recorded once
+#### Scenario: A credit is recorded once
 - **GIVEN** the owner of a bear below level 5 who has approved `Activation` on $MNTD
 - **WHEN** the owner calls `burn(tokenId, amount)`
 - **THEN** the cumulative and `lifetimeBurned` grow by `amount`, `BearActivated` is emitted and the owner's $MNTD falls by `amount`
 - **AND** a `burn` made from inside the token's `burnFrom` reverts
-
-### Requirement: ACT-5 — Reset
-**Kind:** work-item
-Cumulative and level read as zero, the weight reads the level-0 weight (ACT-3) and the link
-reads `(0, 0)` whenever the counter value they were recorded at differs from the current
-`transferNonce`. The reset is a consequence of the transfer (COL-3), not an action: it cannot
-be skipped and cannot block a transfer. Return transfers reset like any other.
-
-#### Scenario: A transfer resets everything
-- **GIVEN** a bear at level 2 with a Status link
-- **WHEN** it is transferred to another wallet
-- **THEN** `levelOf` and `cumulativeOf` read zero, `weightOf` reads `weightFor(0)` and `linkOf` reads `(0, 0)`, with no call into `Activation`
 
 ### Requirement: ACT-6 — Lifetime
 **Kind:** work-item
@@ -106,7 +90,7 @@ attested record on 4663, and cross-chain messaging are all out. MINT's staking s
 token on the same chain and touches nothing here. The token's `burnFrom`, `decimals` and the
 finality of its address are still to be confirmed against the deployed contract (`→ CQ-2`).
 
-#### Scenario: Record and burn in one transaction
+#### Scenario: Burn and credit in one transaction
 - **GIVEN** the holder has approved `Activation` on $MNTD
 - **WHEN** the holder calls `burn(tokenId, amount)` for a bear below level 5
 - **THEN** the burn is recorded and `burnFrom` executes in one transaction, and `BearActivated` is emitted
@@ -123,36 +107,6 @@ which returns the exact remainder or zero.
 - **WHEN** the holder calls `burn(id, x + 1)`
 - **THEN** it reverts with `Overshoot` and no $MNTD is burned
 
-### Requirement: ACT-9 — Status link
-**Kind:** work-item
-`linkBear(tokenId)`, owner of the bear only, one nomination per wallet,
-recorded with the current counter value; `unlinkBear()` clears it and is safe to call when
-nothing is linked; `linkOf(wallet) → (tokenId, level)` returns `(0, 0)` when nothing is linked
-or the bear has since moved. A wallet aggregates royalty weight across all its bears (ACT-10)
-but carries exactly one Status boost; the boost's value is MINT's, off-chain.
-
-#### Scenario: One nomination per wallet
-- **GIVEN** a wallet owning a bear at level 2
-- **WHEN** it calls `linkBear(tokenId)`
-- **THEN** `linkOf(wallet)` reads `(tokenId, 2)`
-- **AND** after the bear moves it reads `(0, 0)`
-
-### Requirement: ACT-10 — Snapshot view
-**Kind:** work-item
-`snapshot(uint256[] ids) → (address owner, uint8 level, uint16
-weight)[]`, returning zeroes for ids that do not exist. MINT's royalty accounting reads it for
-`1..4444` at each closing block; a wallet's weight is the sum over its bears and the total
-eligible weight is the sum over all bears whose owner is not the canonical dead address
-`0x000000000000000000000000000000000000dEaD` (COL-8). Because transfers reset weight without any
-call into `Activation`, there is no on-chain running total; the sum is taken off-chain from
-this view. A reference script reproducing the split, dead-address exclusion included, is
-delivered (DEL-6); MINT credits the resulting shares to getminted.io accounts through its
-wallet (§2).
-
-#### Scenario: The snapshot answers for any ids
-- **WHEN** `snapshot([1, 2, 4445])` is read
-- **THEN** it returns owner, level and weight for ids 1 and 2 and zeroes for the id that does not exist
-
 ### Requirement: ACT-11 — Pause
 **Kind:** work-item
 The owner may pause. While paused, `burn` and `linkBear` revert; reads,
@@ -162,7 +116,7 @@ no address may burn while it is on — so the mainnet rehearsal against real $MN
 the owner opens and closes again (§8). `renounceOwnership` reverts for every caller, so the pause
 can always be set and lifted.
 
-#### Scenario: Pause closes burns and links only
+#### Scenario: Pause closes credits and links only
 - **GIVEN** the owner has paused
 - **WHEN** a holder calls `burn` or `linkBear`
 - **THEN** both revert with `ContractPaused`

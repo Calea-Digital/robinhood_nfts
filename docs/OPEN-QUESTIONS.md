@@ -33,7 +33,7 @@ are marked as such below. CQ-20 is new from that call.
 | CQ-17 | RAF | VRF subscription and network | MINT creates, funds and owns it; the network is Calea's to recommend | 2026-10-12 | Follow-up |
 | CQ-20 | RAF | Prize count, odds and excluded ids | To supply: how many prizes, and which token ids are out of play | 2026-10-05 | Open |
 | CQ-18 | WL | Whitelist claim recording | On-chain registry, holder pays gas (A); the OpenSea CSV is exported from it | before the campaign opens | Follow-up |
-| CQ-3 | ACT | Token-agnostic `credit` design | Stands; MINT's reply concerned the royalty pot (§2) | — | Closed |
+| CQ-3 | ACT | Token-agnostic `credit` design | Superseded — `Activation` burns $MNTD itself; MINT's reply concerned the royalty pot (§2) | — | Closed |
 | CQ-4 | ACT | Five burn thresholds | 1,666 / 3,333 / 8,333 / 16,666 / 41,666, read cumulatively | — | Answered |
 | CQ-5 | ACT | Weight table | 1.00 / 1.10 / 1.25 / 1.45 / 1.70 / 2.00, six levels | — | Answered |
 | CQ-6 | COL | May holders burn bears? | No; supply stays 4,444 | — | Answered |
@@ -70,15 +70,15 @@ non-anchor rows stay marked with their basis and none of them is a commitment.
 **Remaining.** Please confirm or move the proposed rows: whitelist campaign 6–26 October; round 1
 entries 29 October to 1 November, draw 1 November, claims to 1 December; first royalty closing
 block 5 November; operations handed over 19 November. Two consequences of the anchors to be
-aware of: burns open nine days after TGE, so the adapter is rehearsed against real $MNTD on
+aware of: burns open nine days after TGE, so the burn is rehearsed against real $MNTD on
 Robinhood Chain between 20 and 28 October, and a $MNTD deployment on testnet 46630 by 5 October
 makes that rehearsal independent of TGE (CQ-2).
 
 ### CQ-2 — $MNTD burn route
 - **Section:** ACT
-- **Needed by:** 2026-10-20 — before `Activation` and `DirectBurnAdapter` are deployed
+- **Needed by:** 2026-10-20 — before `Activation` is deployed
 - **Status:** Follow-up (call, 21 September 2026)
-- **Resolution:** option (a1) — $MNTD is **native** to Robinhood Chain, burned by `DirectBurnAdapter` in the same transaction as the credit.
+- **Resolution:** option (a1) — $MNTD is **native** to Robinhood Chain, burned by `Activation` in the same transaction as the record.
 
 **Question.** On which chain does the $MNTD burn happen, what does the token's level-up function
 do, and does it call our contract?
@@ -86,8 +86,8 @@ do, and does it call our contract?
 **Answer (MINT).** "Burn will be on Robinhood in the end, so burn will live on RH. Simple, and I
 believe that would be the answer."
 
-**Recorded as.** ACT-7: the crediter is `DirectBurnAdapter` on 4663; a burn on Base and
-cross-chain messaging are not selected. The adapter moves into audit tranche 1 (DEL-8).
+**Recorded as.** ACT-7: the burn happens on 4663, in `Activation`; a burn on Base and
+cross-chain messaging are not selected. The burn route is in audit tranche 1 (DEL-8).
 
 **Remaining.** What the token on Robinhood Chain *is* decides what a burn means:
 
@@ -104,16 +104,18 @@ cross-chain messaging are not selected. The adapter moves into audit tranche 1 (
 **Answer (call, 21 September 2026).** "Token will be native, and the supporting infra (burning,
 staking) will also be on Robinhood Chain." That is option (a1): the canonical supply is issued
 on 4663 and `burnFrom` reduces it, so a burn is a burn with nothing to qualify publicly. Staking
-is MINT's and touches nothing here — `Activation` reads only `MintABear`, and the adapter reads
-only $MNTD.
+is MINT's and touches nothing here — `Activation` reads only `MintABear` and burns only the
+caller's own $MNTD.
 
 **Recorded as (call).** ACT-7: the token is native on 4663; the bridged and mint-and-burn
 readings are dropped. §10 D1 is closed.
 
 **Remaining — interface, not a decision.** Does the token expose `burnFrom(address, uint256)`
-(OpenZeppelin `ERC20Burnable`)? How many `decimals`? Who deploys it, and can a copy be on
-testnet 46630 for the adapter rehearsal? Is it live on 4663 at TGE? `decimals` fixes the
-constructor's base units and is needed before `Activation` is deployed.
+(OpenZeppelin `ERC20Burnable`), reverting rather than returning false on failure? How many
+`decimals`? Is its address final — a proxy, or a contract MINT will not redeploy? `Activation`
+fixes the address in its constructor, so a different token later means a new `Activation`. Who
+deploys it, and can a copy be on testnet 46630 for the burn rehearsal? Is it live on 4663 at TGE?
+All of it is needed before `Activation` is deployed.
 
 ### CQ-9 — Raffle entry model
 - **Section:** RAF
@@ -219,9 +221,8 @@ calls.
 
 **Recorded as (call).** OPS-2: every address a contract needs at birth is a constructor
 argument, so a contract is correct from its first block and there is no window in which it is
-deployed but unconfigured. The two that cannot be constructor arguments stay setters and stay
-owner-only: `Activation.setCrediter`, because the adapter's address is not known until after
-`Activation` exists, and `WhitelistClaim.setSigner`, because a signer key must be rotatable.
+deployed but unconfigured. The one address set by a call rather than a constructor argument is
+`WhitelistClaim.setSigner`'s, owner-only, because a signer key must be rotatable.
 
 ### CQ-13 — Existing smart-contract review: which contract, source, line limit
 - **Section:** DEL
@@ -404,8 +405,8 @@ with Calea recording only the result.
 ### CQ-3 — Confirm the token-agnostic `credit` design
 - **Section:** ACT
 - **Needed by:** —
-- **Status:** Closed (MINT reply, September 2026; superseded by CQ-2)
-- **Resolution:** the design stands; no decision remains.
+- **Status:** Closed (superseded by Calea, 24 September 2026 (tranche-1 review))
+- **Resolution:** superseded: `Activation` takes $MNTD in its constructor and burns it itself (ACT-1, ACT-4, ACT-7).
 
 **Question.** `Activation` never touches $MNTD; it accepts `credit(tokenId, burner, amount,
 nonce, ref)` from one crediter and requires that the burner still owns the bear and that the
@@ -416,11 +417,14 @@ be: once threshold/countdown is met, half of that ETH is used to buy $MNTD, and 
 ETH are sent to a splitter/multisender wallet, and that wallet executes the crediting to accounts
 on mint.io."
 
-**In plain words.** The question was about the *level* record, not the royalty pot. Burning the
-tokens and recording the level are two steps of one transaction: the adapter burns the holder's
-$MNTD, then tells `Activation` "this wallet burned this amount for this bear". `Activation`
-accepts that message from the adapter alone, so if $MNTD ever changes address or chain only the
-adapter changes. With MINT's answer to CQ-2 this is settled without a further decision.
+**In plain words.** The question was about the *level* record, not the royalty pot.
+
+**Superseded (Calea, 24 September 2026).** $MNTD is native to Robinhood Chain (CQ-2), so the
+indirection that kept `Activation` token-agnostic no longer buys anything, and it let the owner
+record levels without a burn by pointing the crediter at an address of their own. `Activation`
+takes $MNTD in its constructor: recording the level and burning the tokens are two steps of one
+transaction, the record first, and any revert undoes both. A different token address means a new
+`Activation` (CQ-2, *Remaining*).
 
 **Recorded as.** ACT-1 carries the plain-language version. MINT's description of the royalty pot
 — ETH cap or countdown, half the ETH buys $MNTD, a splitter wallet credits the accounts — is
