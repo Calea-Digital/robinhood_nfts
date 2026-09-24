@@ -26,8 +26,9 @@ import {IMintABear} from "./interfaces/IMintABear.sol";
  *         constructor arguments with no setter; the owner can only set the crediter and pause.
  *
  *         Slither reports `locked-ether` because Solady's ownership functions are `payable`
- *         (a gas saving). Only the owner can call them, so only the owner could lock their own
- *         ETH by attaching value; nothing else here accepts ETH.
+ *         (a gas saving). Anyone can call `requestOwnershipHandover` and
+ *         `cancelOwnershipHandover`, so anyone could lock their own ETH by attaching value to
+ *         them; nothing here withdraws it, and nothing else accepts ETH.
  */
 contract Activation is Ownable {
     /// @notice Cumulative burn, in $MNTD base units, at which each level is reached.

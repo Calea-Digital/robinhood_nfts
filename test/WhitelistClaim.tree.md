@@ -30,11 +30,13 @@ claim
                 └── when spots are left
                     ├── when the wallet holds MAX_PER_WALLET
                     │   └── it reverts with WalletLimit
-                    ├── when allocationIndex ≠ claimsOf(wallet) + 1
-                    │   ├── out of order (2 first, or 0): it reverts with WrongAllocation
-                    │   └── a spent voucher presented again: it reverts with WrongAllocation
                     ├── when the account has claimed MAX_PER_ACCOUNT
-                    │   └── it reverts with AccountLimit
+                    │   └── it reverts with AccountLimit, ahead of any allocation mismatch
+                    ├── when allocationIndex ≠ accountClaims(account) + 1
+                    │   ├── out of order (2 first, or 0): it reverts with WrongAllocation
+                    │   ├── a spent voucher presented again: it reverts with WrongAllocation
+                    │   └── the account's allocation 1 again, for another wallet: it reverts with
+                    │       WrongAllocation (WL-3)
                     └── otherwise
                         ├── spotsLeft falls by one, claimsOf(W) reads 1, WhitelistClaimed is emitted (WL-3)
                         ├── the account's count increases
@@ -43,7 +45,7 @@ claim
 ```
 
 When several checks fail at once, the first in the order `NotClaimant`, `BadSigner`, `Expired`,
-`CampaignClosed`, `SoldOut`, `WalletLimit`, `WrongAllocation`, `AccountLimit` names the revert.
+`CampaignClosed`, `SoldOut`, `WalletLimit`, `AccountLimit`, `WrongAllocation` names the revert.
 
 ## Campaign rules (WL-1)
 
@@ -53,8 +55,10 @@ rules
 │   └── a wallet and an account each at one: allocation 2 succeeds, both read 2, a third for
 │       either reverts with WalletLimit / AccountLimit (WL-1)
 ├── one call per allocation: allocation 1 now, allocation 2 days later; the wallet is listed once
-├── an account spread over wallets is capped at two, whichever wallets it uses
-├── a wallet's limit counts allocations, not accounts: two accounts may give one wallet its two
+├── an account spread over wallets is capped at two, whichever wallets it uses: its allocation 1
+│   in one wallet, its allocation 2 in another
+├── a wallet's limit counts allocations, not accounts: two accounts' allocation 1 may give one
+│   wallet its two
 └── the last spot: one claim takes spot 1,000, the next reverts with SoldOut and leaves nothing
 ```
 
@@ -130,6 +134,18 @@ constructor
 
 transferOwnership
 └── the new owner holds setSigner and setWindow; the previous owner does not
+
+renounceOwnership
+└── it reverts with RenounceDisabled for every caller, the owner included; the owner can still
+    rotate the signer
+```
+
+## Regression (test/poc/TierAcrossWallets.t.sol)
+
+```
+the tranche-1 review's tier-across-wallets PoC, kept inverted (WL-3)
+└── an account at $50 with allocation-1 vouchers for two wallets holds one spot: the second
+    claim reverts with WrongAllocation
 ```
 
 No function removes, reassigns or adds a claim; there is nothing to test for it but its absence

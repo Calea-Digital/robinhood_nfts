@@ -16,18 +16,23 @@ import {ECDSA} from "solady/utils/ECDSA.sol";
  *         `account` is a hash of the getminted.io account id, so the chain carries no personal
  *         data. The wallet sends its own claim and pays the gas.
  *
- *         A voucher needs no nonce: `allocationIndex` must equal the wallet's claims so far plus
- *         one, so once a voucher has been used its index is behind the wallet's count and it
- *         can never succeed again. For the same reason ECDSA malleability is harmless here: a
- *         second encoding of a spent signature is refused for the same reason the first would be.
+ *         `allocationIndex` is the account's allocation number — 1 for the allocation $50 of
+ *         wagering unlocks, 2 for the one $100 unlocks — and must equal the account's claims so
+ *         far plus one. A voucher is therefore bound to the account's tier whichever wallet the
+ *         holder selects: a second voucher for allocation 1, for another wallet, is refused once
+ *         the first is claimed. It also needs no nonce: once used, its index is behind the
+ *         account's count and it can never succeed again, and ECDSA malleability is harmless for
+ *         the same reason.
  *
- *         The owner (MINT's admin) sets the signer and the campaign window and nothing else. No
- *         function removes, reassigns or adds a claim; every claim in the register was made by
- *         its wallet with a signed voucher.
+ *         The owner (MINT's admin) sets the signer and the campaign window and nothing else, and
+ *         can hand ownership over but never renounce it. No function removes or reassigns a
+ *         claim, and every claim was made by its wallet with a voucher from the signer — so the
+ *         signer, and the owner through `setSigner`, decide who may claim.
  *
  *         Slither reports `locked-ether` because Solady's ownership functions are `payable`
- *         (a gas saving). Only the owner can call them, so only the owner could lock their own
- *         ETH by attaching value; nothing else here accepts ETH.
+ *         (a gas saving). Anyone can call `requestOwnershipHandover` and
+ *         `cancelOwnershipHandover`, so anyone could lock their own ETH by attaching value to
+ *         them; nothing here withdraws it, and nothing else accepts ETH.
  */
 contract WhitelistClaim is Ownable, EIP712 {
     /// @notice Whitelist allocations in the campaign. Each is the right to mint one bear in the
@@ -46,7 +51,7 @@ contract WhitelistClaim is Ownable, EIP712 {
 
     /// @notice A voucher, as signed by the eligibility signer.
     /// @param wallet          The NFT wallet the allocation is claimed for; it sends the claim.
-    /// @param allocationIndex 1 for the wallet's first allocation, 2 for its second.
+    /// @param allocationIndex The account's allocation number: 1 ($50 wagered), 2 ($100).
     /// @param account         Hash of the getminted.io account id.
     /// @param deadline        Last timestamp at which the voucher is accepted.
     struct Claim {
@@ -112,7 +117,7 @@ contract WhitelistClaim is Ownable, EIP712 {
     /// @notice The wallet already holds `MAX_PER_WALLET` allocations.
     error WalletLimit();
 
-    /// @notice The voucher's allocation is not the wallet's next one.
+    /// @notice The voucher's allocation is not the account's next one.
     error WrongAllocation();
 
     /// @notice The account has already claimed `MAX_PER_ACCOUNT` allocations.
@@ -123,6 +128,9 @@ contract WhitelistClaim is Ownable, EIP712 {
 
     /// @notice A window must open before it closes.
     error InvalidWindow();
+
+    /// @notice Ownership can be handed over, never renounced.
+    error RenounceDisabled();
 
     /**
      * @param owner_   MINT's admin: sets the signer and the window. Not the zero address.
@@ -141,10 +149,11 @@ contract WhitelistClaim is Ownable, EIP712 {
     }
 
     /**
-     * @notice Claims the wallet's next allocation with a voucher from the eligibility signer.
+     * @notice Claims the account's next allocation, for the voucher's wallet, with a voucher from
+     *         the eligibility signer.
      * @dev    Must be sent by `voucher.wallet`. Reverts, in this order, with `NotClaimant`,
      *         `BadSigner`, `Expired`, `CampaignClosed`, `SoldOut`, `WalletLimit`,
-     *         `WrongAllocation` or `AccountLimit`. A claim either takes a spot whole or fails.
+     *         `AccountLimit` or `WrongAllocation`. A claim either takes a spot whole or fails.
      * @param  voucher   The signed voucher.
      * @param  signature The signer's signature over the voucher's EIP-712 digest (65 bytes, or
      *                   64 in EIP-2098 form).
@@ -169,10 +178,10 @@ contract WhitelistClaim is Ownable, EIP712 {
 
         uint8 walletClaims = claimsOf[voucher.wallet];
         if (walletClaims >= MAX_PER_WALLET) revert WalletLimit();
-        if (voucher.allocationIndex != walletClaims + 1) revert WrongAllocation();
 
         uint8 accountCount = accountClaims[voucher.account];
         if (accountCount >= MAX_PER_ACCOUNT) revert AccountLimit();
+        if (voucher.allocationIndex != accountCount + 1) revert WrongAllocation();
 
         if (walletClaims == 0) _claimants.push(voucher.wallet);
         claimsOf[voucher.wallet] = walletClaims + 1;
@@ -217,6 +226,12 @@ contract WhitelistClaim is Ownable, EIP712 {
     /// @param  closeAt_ Last timestamp at which claims are accepted; after `openAt_`.
     function setWindow(uint40 openAt_, uint40 closeAt_) external onlyOwner {
         _setWindow(openAt_, closeAt_);
+    }
+
+    /// @notice Refused for every caller, the owner included, so the signer can always be rotated
+    ///         and the window moved.
+    function renounceOwnership() public payable override {
+        revert RenounceDisabled();
     }
 
     function _setSigner(address signer_) private {
