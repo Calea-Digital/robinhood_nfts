@@ -608,6 +608,30 @@ contract ActivationLinkTest is BaseTest {
         assertEq(level, 0);
     }
 
+    function test_linkBear_byANewOwner_ofATradedBear() public {
+        /* Scenario:
+           Given a bear alice has sold to bob, so its counter has moved
+           When bob burns it to level 2 and links it
+           Then linkOf(bob) reads (tokenId, 2), recorded at the counter's current value
+           And once bob sells it back, linkOf(bob) reads (0, 0) */
+        vm.prank(alice);
+        bears.transferFrom(alice, bob, 1);
+        assertEq(bears.transferNonce(1), 1);
+
+        _burnFor(1, 3_333);
+        vm.prank(bob);
+        activation.linkBear(1);
+        (uint256 tokenId, uint8 level) = activation.linkOf(bob);
+        assertEq(tokenId, 1, "the new owner's link stands");
+        assertEq(level, 2);
+
+        vm.prank(bob);
+        bears.transferFrom(bob, alice, 1);
+        (tokenId, level) = activation.linkOf(bob);
+        assertEq(tokenId, 0);
+        assertEq(level, 0);
+    }
+
     function test_linkOf_levelFollowsLaterBurns() public {
         /* Scenario:
            Given a linked bear at level 1
