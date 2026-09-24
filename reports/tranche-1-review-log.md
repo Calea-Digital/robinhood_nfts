@@ -223,6 +223,9 @@ record the settlement.
 - MNT96-I-5 Info: README Activation base without SafeCastLib; Tests paragraph said every test quotes a Scenario. FIXED.
 - Folded to #38: CLAUDE.md:111 "each script has a suite and a tree" — verify.sh has a test script, no tree (A-7).
 - Defect MNT-127 (parent should be MNT-3 — reviewer to move; created under MNT-5).
+- Done: MNT-96, MNT-127
+## MNT-97 trees (presented) — 214 tests in 11 suites; INV/Fork header identical in the four contract trees; obligations current; crediter mentions state absence; every Defect test today has a leaf.
+- A-7 settled: OPS-3 had no leaf and verify.sh no tree. FIXED, Defect MNT-128: test/Verify.tree.md (dry run, verdict leaves citing OPS-3, live Scenario as the MNT-95 rehearsal obligation); CLAUDE.md names the four scripts.
 
 ## Carried forward
 
