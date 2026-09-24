@@ -9,7 +9,8 @@ import {ERC721SeaDrop} from "seadrop/ERC721SeaDrop.sol";
  * @dev    Extends OpenSea's ERC721SeaDrop, which already implements ICreatorToken, so this is
  *         an ERC-721C contract: the transfer validator is set at deployment to Limit Break's
  *         validator V3 with its zero-state policy, so a holder's own transfers always pass and
- *         a sale settles only through OpenSea or a Payment Processor venue; one owner call
+ *         a sale a marketplace operates settles only through OpenSea or a Payment Processor
+ *         venue (a sale arranged outside a marketplace pays no creator earnings); one owner call
  *         lifts or restores enforcement. The SeaDrop mint path, `getMintStats`, metadata and
  *         royalty interfaces are untouched, per OpenSea's integration guidance: `tokenURI(id)`
  *         is the stock `baseURI` followed by `id`, with `baseURI`, provenance and royalties set

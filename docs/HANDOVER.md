@@ -245,6 +245,16 @@ RAF-17. Four constraints:
   mitigations are the split script's (DEL-6: owners from indexed `Transfer` events at the closing
   block and weights from `weightOf`, or `snapshot` paged by a gas budget) and team and treasury
   mints of at most about 200 bears per transaction (ACT-10).
+- **Every holder pre-approves OpenSea's conduit.** SeaDrop's base (`ERC721AConduitPreapproved`)
+  answers `isApprovedForAll(anyHolder, 0x1E0049783F008A0085193E00003D00cd54003c71)` with true, and
+  no holder can revoke it. The conduit is not deployed on 4663 (verified read-only, 2026-09-24),
+  and only OpenSea's conduit creator can deploy it at that address; if it ever exists, its owner
+  could move any bear — each move still advancing the counter. Accepted as trust in OpenSea, like
+  Studio itself; Fork-2 and the rehearsal check that the address still has no code, or who owns it
+  and what the validator's list allows it.
+- **A sale arranged outside a marketplace pays no creator earnings.** At level 0 the holder's own
+  transfers pass, so a direct or escrow-mediated sale settles without royalties (COL-7). Inherent
+  to every level that lets holders move their bears; the level is settled.
 - **The worker relays each open and each award.** It cannot change an outcome — Chainlink
   decides it — and it cannot reorder, because `PrizeDraw` refuses an `openIndex` out of turn. It
   can delay one, which is visible as a `BoxOpened` with no `OutcomeRecorded`. Accepted; the

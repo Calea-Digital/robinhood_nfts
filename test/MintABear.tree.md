@@ -179,4 +179,6 @@ supply
   `view` interface — a STATICCALL — while `getTransferValidationFunction` reports it as non-view,
   so the authorised fill must succeed under STATICCALL. The unit leaves above model the policy with
   `MockTransferValidator`, whose one list stands for both whitelisted operators and authorised
-  callers; only a fork can confirm the real one.
+  callers; only a fork can confirm the real one. The fork also confirms that OpenSea's conduit
+  `0x1E0049783F008A0085193E00003D00cd54003c71`, which SeaDrop pre-approves for every holder
+  (`ERC721AConduitPreapproved`), still has no code on 4663 — or who owns it and what list 0 allows it.
