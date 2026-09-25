@@ -58,4 +58,4 @@ becomes a Task with Spec Ref `NONE` when picked.
 
 ## 6. Integration
 
-- [ ] 6.1 DEL-6 — typed TypeScript client library (`packages/contracts-client`) and the reference royalty-split script
+- [x] 6.1 DEL-6 — typed TypeScript client library (`packages/contracts-client`) and the reference royalty-split script
