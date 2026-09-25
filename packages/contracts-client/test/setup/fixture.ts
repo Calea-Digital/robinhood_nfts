@@ -68,12 +68,14 @@ export interface Fixture {
  * Deploys the tranche-1 system on a fresh anvil chain from the Foundry artifacts: a real SeaDrop
  * (at an ordinary address, passed to the library as configuration), the collection with that
  * SeaDrop as its only minter and `maxSupply` 4,444, the V3 stand-in as its transfer validator, an
- * 18-decimal $MNTD stand-in, the whitelist registry with a window open now for seven days, and
+ * 18-decimal $MNTD stand-in (`MockMNTD`, or with `mntd: "oz"` the OpenZeppelin `ERC20Burnable` one that
+ * emits `Transfer` and reverts with strings), the whitelist registry with a window open now for seven days, and
  * `Activation` unpaused with the specified thresholds and weights.
  */
-export async function deployFixture(rpcUrl: string): Promise<Fixture> {
+export async function deployFixture(rpcUrl: string, options: { mntd?: "mock" | "oz" } = {}): Promise<Fixture> {
   const transport = http(rpcUrl);
-  const publicClient = createPublicClient({ chain: foundry, transport });
+  // cacheTime 0: viem otherwise caches the block number for 4 s, and tests read it between blocks.
+  const publicClient = createPublicClient({ chain: foundry, transport, cacheTime: 0 });
   const testClient = createTestClient({ chain: foundry, mode: "anvil", transport });
   const wallet = (account: HDAccount): Wallet => createWalletClient({ chain: foundry, transport, account });
   const deployer = wallet(accounts.deployer);
@@ -94,7 +96,7 @@ export async function deployFixture(rpcUrl: string): Promise<Fixture> {
 
   const seaDrop = await deploy("SeaDrop");
   const validator = await deploy("MockTransferValidator");
-  const mntd = await deploy("MockMNTD", [18]);
+  const mntd = options.mntd === "oz" ? await deploy("MockOzMNTD") : await deploy("MockMNTD", [18]);
   const bears = await deploy("MintABear", ["MintABear", "BEAR", [seaDrop]]);
   await send(bears, mintABearAbi, "setMaxSupply", [4444n]);
   await send(bears, mintABearAbi, "setTransferValidator", [validator]);

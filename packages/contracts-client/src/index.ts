@@ -8,3 +8,4 @@ export * from "./mint.js";
 export * from "./whitelist.js";
 export * from "./activation.js";
 export * from "./transfer.js";
+export * from "./events.js";

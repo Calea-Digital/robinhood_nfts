@@ -188,3 +188,20 @@ Reads are free, so poll them.
 
 An id that was never minted answers `weightOf` 100 and `snapshot` zeroes, and `ownerOf`
 reverts. Check `exists` first.
+
+## Events and indexing
+
+- `decodeSystemLogs(logs, { bears, activation, registry?, mntd? })` and `readSystemEvents(client,
+  addresses, fromBlock)` decode **by emitter**. The collection's ERC-721 `Transfer` and $MNTD's
+  ERC-20 `Transfer` share one topic, and a burn transaction carries $MNTD's `Transfer(holder, 0x0,
+  amount)` (and its `Approval`) beside `BearActivated`. Decoded by topic alone, that would read as
+  a bear sent to the zero address.
+- `TransferNonceAdvanced(tokenId, nonce)` is the reset. It fires on every transfer, never on mint,
+  and precedes the collection's `Transfer` in the same transaction's logs. The indexer voids the
+  bear's level and every wallet's link to it there.
+- A new `BearLinked(wallet, tokenId)` replaces the wallet's earlier link without a `BearUnlinked`
+  for the old bear. A later `BearUnlinked` for a link voided by a reset changes nothing.
+- `BearActivated(tokenId, burner, previousLevel, newLevel, amount, cumulative)` carries no `ref`.
+- `ReferenceIndexer` is the reference reducer. A test replays every event of a sequence of burns,
+  sales, a self-transfer, a voided unlink, relinks and a buy-back, and checks that its `levelOf`
+  and `linkOf` equal the contracts' for every bear and wallet.
