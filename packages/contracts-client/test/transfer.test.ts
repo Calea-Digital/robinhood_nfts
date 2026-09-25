@@ -95,10 +95,10 @@ describe("transfers", () => {
        When she plans a transfer to the zero address, and sends raw transferFrom and safeTransferFrom to it
        Then the plan throws ZERO_ADDRESS and both raw calls revert BurnDisabled */
     const error = await rejection(planTransfer(f.publicClient, a, { from: accounts.alice.address, to: zeroAddress, tokenId: 1n }));
-    expect((error as ClientRefusal).code).toBe("ZERO_ADDRESS");
+    expect((error as ClientRefusal).code).toBe("BURN_DISABLED");
     for (const safe of [false, true]) {
       const revert = await rejection(send("alice", transferCall(a, { from: accounts.alice.address, to: zeroAddress, tokenId: 1n, safe })));
-      expect((revert as ContractRevertError).revert.name).toBe("BurnDisabled");
+      expect((revert as ContractRevertError).revert.errorName).toBe("BurnDisabled");
     }
   });
 
@@ -109,7 +109,7 @@ describe("transfers", () => {
        Then the plan warns RESETS_LEVEL (level 2, 3,333 $MNTD) and VOIDS_LINK, and after it bob's bear reads level 0 */
     await activateAndLink();
     const plan = await planTransfer(f.publicClient, a, { from: accounts.alice.address, to: accounts.bob.address, tokenId: 1n, safe: true });
-    expect(plan.warnings).toEqual([{ code: "RESETS_LEVEL", level: 2, cumulative: 3_333n * UNIT }, { code: "VOIDS_LINK" }]);
+    expect(plan.warnings).toMatchObject([{ code: "RESETS_LEVEL", level: 2, cumulative: 3_333n * UNIT }, { code: "VOIDS_LINK" }]);
     await send("alice", plan.call);
     expect(await readOwner(f.publicClient, a, 1n)).toBe(accounts.bob.address);
     expect(await readLevel(f.publicClient, a, 1n)).toBe(0);
@@ -146,6 +146,6 @@ describe("transfers", () => {
        Then the validator's own error comes through (OperatorNotWhitelisted on the stand-in; the real V3's differs) */
     await send("alice", { address: f.bears, abi: mintABearAbi, functionName: "setApprovalForAll", args: [accounts.bob.address, true] });
     const revert = await rejection(send("bob", transferCall(a, { from: accounts.alice.address, to: accounts.carol.address, tokenId: 1n })));
-    expect((revert as ContractRevertError).revert.name).toBe("OperatorNotWhitelisted");
+    expect((revert as ContractRevertError).revert.errorName).toBe("OperatorNotWhitelisted");
   });
 });

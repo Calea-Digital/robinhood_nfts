@@ -1,239 +1,431 @@
-import { erc20Abi, type Address, type Chain, type PublicClient, type Transport } from "viem";
+/**
+ * Activation: burning $MNTD for a bear's level, the Status link, and every read about a bear.
+ *
+ * A burn is **approve, then one call**: approve `Activation` on $MNTD, then `burn(tokenId, amount)`
+ * from the bear's owner, with the amount from `costToReach(tokenId, targetLevel)`. {@link planBurn}
+ * works that out and checks it; `executePlan` sends it. Anything above the level-5 remainder is
+ * refused (`OVERSHOOT`), so nothing is destroyed for nothing.
+ *
+ * Every transfer resets a bear: its level, its cumulative burn and any Status link to it read zero
+ * for the new holder (and after a self-transfer too).
+ *
+ * @module
+ */
+import { erc20Abi, type Address } from "viem";
 
 import { activationAbi, mintABearAbi } from "./abi/index.js";
-import type { Call } from "./calls.js";
+import type { MintABearAddresses } from "./addresses.js";
+import type { AnyPublicClient, Call } from "./calls.js";
 import { MAX_LEVEL } from "./constants.js";
+import { ClientRefusal, refusal, type Refusal } from "./errors.js";
 
-type Client = PublicClient<Transport, Chain | undefined>;
+/** The addresses a burn touches: `Activation`, the collection it reads, and $MNTD. */
+export type ActivationAddresses = Pick<MintABearAddresses, "activation" | "bears" | "mntd">;
 
-/** The contracts a burn touches: `Activation`, the collection it reads, and $MNTD. */
-export interface ActivationAddresses {
-  activation: Address;
-  bears: Address;
-  mntd: Address;
-}
+type WithActivation = Pick<MintABearAddresses, "activation">;
+type WithBears = Pick<MintABearAddresses, "bears">;
 
 /**
- * `burn`'s reverts in the order the contract checks them (ACT-4, ACT-8). Besides these: an id
- * never minted reverts with the collection's `OwnerQueryForNonexistentToken`, not `NotBearOwner`;
- * the $MNTD token's own reverts for a short allowance or balance come from `burnFrom` after the
- * record is written, and undo it; `Reentrancy` never happens in normal use.
+ * `burn`'s contract errors, in the order the contract checks them (ACT-4, ACT-8). Besides these: an
+ * id never minted reverts with the collection's `OwnerQueryForNonexistentToken`
+ * (`TOKEN_DOES_NOT_EXIST`); a short $MNTD allowance or balance reverts from the token
+ * (`INSUFFICIENT_MNTD_ALLOWANCE`, `INSUFFICIENT_MNTD_BALANCE`) and undoes the record; `Reentrancy`
+ * never happens in normal use.
  */
 export const BURN_REVERTS = ["ContractPaused", "ZeroAmount", "NotBearOwner", "AlreadyAtMaxLevel", "Overshoot"] as const;
 
-/** `linkBear`'s reverts: `ContractPaused`, `NotBearOwner`; an unminted id reverts `OwnerQueryForNonexistentToken`. */
+/** `linkBear`'s contract errors; an unminted id reverts `OwnerQueryForNonexistentToken` too. */
 export const LINK_REVERTS = ["ContractPaused", "NotBearOwner"] as const;
 
 // ---------------------------------------------------------------------------------------------
-// Reads (ACT-14, COL-12)
+// Reads (ACT-14, COL-12) — free; poll them
 // ---------------------------------------------------------------------------------------------
 
-const act = (a: Pick<ActivationAddresses, "activation">) => ({ address: a.activation, abi: activationAbi }) as const;
-const col = (a: Pick<ActivationAddresses, "bears">) => ({ address: a.bears, abi: mintABearAbi }) as const;
-
-/** A bear's current level, 0–5; zero after any transfer. */
-export const readLevel = (client: Client, a: Pick<ActivationAddresses, "activation">, tokenId: bigint) =>
-  client.readContract({ ...act(a), functionName: "levelOf", args: [tokenId] });
-
-/** $MNTD burned for a bear under its current owner, in base units; zero after any transfer. */
-export const readCumulative = (client: Client, a: Pick<ActivationAddresses, "activation">, tokenId: bigint) =>
-  client.readContract({ ...act(a), functionName: "cumulativeOf", args: [tokenId] });
-
-/** $MNTD ever burned for a bear, across owners; never resets. */
-export const readLifetimeBurned = (client: Client, a: Pick<ActivationAddresses, "activation">, tokenId: bigint) =>
-  client.readContract({ ...act(a), functionName: "lifetimeBurned", args: [tokenId] });
-
-/** A bear's royalty weight, basis 100. 100 for an id never minted as well: sum it only over owned ids. */
-export const readWeight = (client: Client, a: Pick<ActivationAddresses, "activation">, tokenId: bigint) =>
-  client.readContract({ ...act(a), functionName: "weightOf", args: [tokenId] });
-
-/** The weight of a level. */
-export const readWeightFor = (client: Client, a: Pick<ActivationAddresses, "activation">, level: number) =>
-  client.readContract({ ...act(a), functionName: "weightFor", args: [level] });
-
-/** The cumulative burn a level requires, in base units. */
-export const readThreshold = (client: Client, a: Pick<ActivationAddresses, "activation">, level: number) =>
-  client.readContract({ ...act(a), functionName: "thresholdFor", args: [level] });
-
-/** How much more $MNTD a bear needs to reach `targetLevel`; zero if already there. */
-export const readCostToReach = (client: Client, a: Pick<ActivationAddresses, "activation">, tokenId: bigint, targetLevel: number) =>
-  client.readContract({ ...act(a), functionName: "costToReach", args: [tokenId, targetLevel] });
-
-/** Whether `burn` and `linkBear` are suspended. */
-export const readPaused = (client: Client, a: Pick<ActivationAddresses, "activation">) =>
-  client.readContract({ ...act(a), functionName: "paused" });
-
-/** A bear's transfer counter: advances on every transfer, never on mint (COL-3). */
-export const readTransferNonce = (client: Client, a: Pick<ActivationAddresses, "bears">, tokenId: bigint) =>
-  client.readContract({ ...col(a), functionName: "transferNonce", args: [tokenId] });
-
-/** Whether an id has been minted. */
-export const readExists = (client: Client, a: Pick<ActivationAddresses, "bears">, tokenId: bigint) =>
-  client.readContract({ ...col(a), functionName: "exists", args: [tokenId] });
-
-/** A bear's owner. Reverts `OwnerQueryForNonexistentToken` for an id never minted. */
-export const readOwner = (client: Client, a: Pick<ActivationAddresses, "bears">, tokenId: bigint) =>
-  client.readContract({ ...col(a), functionName: "ownerOf", args: [tokenId] });
+const act = (a: WithActivation) => ({ address: a.activation, abi: activationAbi }) as const;
+const col = (a: WithBears) => ({ address: a.bears, abi: mintABearAbi }) as const;
 
 /**
- * The bear carrying `wallet`'s Status boost and its level, or `tokenId` 0 when the wallet has no
- * link or its bear has moved since. How several wallets' links combine for one getminted.io
- * account is MINT's Status service's rule (CQ-21); this library reads each wallet on its own.
+ * A bear's current level.
+ * @param client - Any viem public client on the chain.
+ * @param addresses - Where `Activation` is.
+ * @param tokenId - The bear.
+ * @returns 0–5; 0 after any transfer.
  */
-export async function readLink(client: Client, a: Pick<ActivationAddresses, "activation">, wallet: Address) {
-  const [tokenId, level] = await client.readContract({ ...act(a), functionName: "linkOf", args: [wallet] });
+export const readLevel = (client: AnyPublicClient, addresses: WithActivation, tokenId: bigint): Promise<number> =>
+  client.readContract({ ...act(addresses), functionName: "levelOf", args: [tokenId] });
+
+/**
+ * $MNTD burned for a bear under its current owner.
+ * @param client - Any viem public client on the chain.
+ * @param addresses - Where `Activation` is.
+ * @param tokenId - The bear.
+ * @returns Base units; 0 after any transfer.
+ */
+export const readCumulative = (client: AnyPublicClient, addresses: WithActivation, tokenId: bigint): Promise<bigint> =>
+  client.readContract({ ...act(addresses), functionName: "cumulativeOf", args: [tokenId] });
+
+/**
+ * $MNTD ever burned for a bear, across all its owners. Never resets.
+ * @param client - Any viem public client on the chain.
+ * @param addresses - Where `Activation` is.
+ * @param tokenId - The bear.
+ * @returns Base units.
+ */
+export const readLifetimeBurned = (client: AnyPublicClient, addresses: WithActivation, tokenId: bigint): Promise<bigint> =>
+  client.readContract({ ...act(addresses), functionName: "lifetimeBurned", args: [tokenId] });
+
+/**
+ * A bear's royalty weight: the weight of its level.
+ * @param client - Any viem public client on the chain.
+ * @param addresses - Where `Activation` is.
+ * @param tokenId - The bear.
+ * @returns Basis 100 (100 at level 0 … 200 at level 5). Also 100 for an id never minted — check
+ *   {@link readExists} before summing.
+ */
+export const readWeight = (client: AnyPublicClient, addresses: WithActivation, tokenId: bigint): Promise<number> =>
+  client.readContract({ ...act(addresses), functionName: "weightOf", args: [tokenId] });
+
+/**
+ * The royalty weight of a level.
+ * @param client - Any viem public client on the chain.
+ * @param addresses - Where `Activation` is.
+ * @param level - 0–5.
+ * @returns Basis 100.
+ */
+export const readWeightFor = (client: AnyPublicClient, addresses: WithActivation, level: number): Promise<number> =>
+  client.readContract({ ...act(addresses), functionName: "weightFor", args: [level] });
+
+/**
+ * The cumulative burn a level requires.
+ * @param client - Any viem public client on the chain.
+ * @param addresses - Where `Activation` is.
+ * @param level - 0–5.
+ * @returns Base units; 0 for level 0.
+ */
+export const readThreshold = (client: AnyPublicClient, addresses: WithActivation, level: number): Promise<bigint> =>
+  client.readContract({ ...act(addresses), functionName: "thresholdFor", args: [level] });
+
+/**
+ * How much more $MNTD a bear needs to reach `targetLevel` — the amount to burn.
+ * @param client - Any viem public client on the chain.
+ * @param addresses - Where `Activation` is.
+ * @param tokenId - The bear.
+ * @param targetLevel - 1–5.
+ * @returns Base units; 0 when the bear is already there.
+ */
+export const readCostToReach = (client: AnyPublicClient, addresses: WithActivation, tokenId: bigint, targetLevel: number): Promise<bigint> =>
+  client.readContract({ ...act(addresses), functionName: "costToReach", args: [tokenId, targetLevel] });
+
+/**
+ * Whether burning and linking are suspended (they are until the switch-on date).
+ * @param client - Any viem public client on the chain.
+ * @param addresses - Where `Activation` is.
+ */
+export const readPaused = (client: AnyPublicClient, addresses: WithActivation): Promise<boolean> =>
+  client.readContract({ ...act(addresses), functionName: "paused" });
+
+/**
+ * A bear's transfer counter: it advances on every transfer, never on mint (COL-3).
+ * @param client - Any viem public client on the chain.
+ * @param addresses - Where the collection is.
+ * @param tokenId - The bear.
+ */
+export const readTransferNonce = (client: AnyPublicClient, addresses: WithBears, tokenId: bigint): Promise<bigint> =>
+  client.readContract({ ...col(addresses), functionName: "transferNonce", args: [tokenId] });
+
+/**
+ * Whether a bear has been minted.
+ * @param client - Any viem public client on the chain.
+ * @param addresses - Where the collection is.
+ * @param tokenId - The bear.
+ */
+export const readExists = (client: AnyPublicClient, addresses: WithBears, tokenId: bigint): Promise<boolean> =>
+  client.readContract({ ...col(addresses), functionName: "exists", args: [tokenId] });
+
+/**
+ * A bear's owner.
+ * @param client - Any viem public client on the chain.
+ * @param addresses - Where the collection is.
+ * @param tokenId - The bear.
+ * @throws A viem error (`OwnerQueryForNonexistentToken`) for an id never minted — use {@link readBear}
+ *   to read a bear that may not exist.
+ */
+export const readOwner = (client: AnyPublicClient, addresses: WithBears, tokenId: bigint): Promise<Address> =>
+  client.readContract({ ...col(addresses), functionName: "ownerOf", args: [tokenId] });
+
+/** A wallet's Status link. */
+export interface Link {
+  /** The linked bear, or 0 when the wallet has no link or the bear has moved since. */
+  tokenId: bigint;
+  /** That bear's level, or 0. */
+  level: number;
+}
+
+/**
+ * The bear carrying `wallet`'s Status boost. How several wallets' links combine for one
+ * getminted.io account is MINT's Status service's rule (CQ-21); this reads each wallet on its own.
+ * @param client - Any viem public client on the chain.
+ * @param addresses - Where `Activation` is.
+ * @param wallet - The wallet.
+ */
+export async function readLink(client: AnyPublicClient, addresses: WithActivation, wallet: Address): Promise<Link> {
+  const [tokenId, level] = await client.readContract({ ...act(addresses), functionName: "linkOf", args: [wallet] });
   return { tokenId, level };
 }
 
-/** `snapshot(ids)`: owner, level and weight per id; zeroes for an id never minted. */
-export const readSnapshot = (client: Client, a: Pick<ActivationAddresses, "activation">, ids: readonly bigint[], blockNumber?: bigint) =>
-  client.readContract({ ...act(a), functionName: "snapshot", args: [ids], blockNumber });
+/**
+ * `snapshot(ids)`: owner, level and weight per id, as the royalty split reads them.
+ * @param client - Any viem public client on the chain.
+ * @param addresses - Where `Activation` is.
+ * @param ids - Token ids; keep a call to a few hundred (the cost grows with long mint batches).
+ * @param blockNumber - Read at this block instead of the latest (needs an archive node).
+ * @returns One row per id; zeroes for an id never minted.
+ */
+export const readSnapshot = (client: AnyPublicClient, addresses: WithActivation, ids: readonly bigint[], blockNumber?: bigint) =>
+  client.readContract({ ...act(addresses), functionName: "snapshot", args: [ids], blockNumber });
 
-/** Everything the portal shows for one bear, read together. */
-export async function readBear(client: Client, a: Omit<ActivationAddresses, "mntd">, tokenId: bigint) {
-  const exists = await readExists(client, a, tokenId);
-  if (!exists) return { tokenId, exists } as const;
+/** Everything the portal shows for one bear. */
+export type Bear =
+  | { tokenId: bigint; exists: false }
+  | {
+      tokenId: bigint;
+      exists: true;
+      owner: Address;
+      /** 0–5. */
+      level: number;
+      /** $MNTD burned under this owner, base units. */
+      cumulative: bigint;
+      /** $MNTD burned across all owners, base units. */
+      lifetimeBurned: bigint;
+      /** Royalty weight, basis 100. */
+      weight: number;
+      transferNonce: bigint;
+      /** $MNTD still needed for level 5, base units; 0 at level 5. */
+      costToMax: bigint;
+    };
+
+/**
+ * Everything the portal shows for one bear, read together.
+ * @param client - Any viem public client on the chain.
+ * @param addresses - Where `Activation` and the collection are.
+ * @param tokenId - The bear.
+ * @returns `{ exists: false }` for an id never minted, otherwise owner, level, burns, weight and the cost to level 5.
+ */
+export async function readBear(client: AnyPublicClient, addresses: Omit<ActivationAddresses, "mntd">, tokenId: bigint): Promise<Bear> {
+  const exists = await readExists(client, addresses, tokenId);
+  if (!exists) return { tokenId, exists };
   const [owner, level, cumulative, lifetimeBurned, weight, transferNonce, costToMax] = await Promise.all([
-    readOwner(client, a, tokenId),
-    readLevel(client, a, tokenId),
-    readCumulative(client, a, tokenId),
-    readLifetimeBurned(client, a, tokenId),
-    readWeight(client, a, tokenId),
-    readTransferNonce(client, a, tokenId),
-    readCostToReach(client, a, tokenId, MAX_LEVEL),
+    readOwner(client, addresses, tokenId),
+    readLevel(client, addresses, tokenId),
+    readCumulative(client, addresses, tokenId),
+    readLifetimeBurned(client, addresses, tokenId),
+    readWeight(client, addresses, tokenId),
+    readTransferNonce(client, addresses, tokenId),
+    readCostToReach(client, addresses, tokenId, MAX_LEVEL),
   ]);
-  return { tokenId, exists, owner, level, cumulative, lifetimeBurned, weight, transferNonce, costToMax } as const;
+  return { tokenId, exists, owner, level, cumulative, lifetimeBurned, weight, transferNonce, costToMax };
 }
 
 // ---------------------------------------------------------------------------------------------
 // Burn (ACT-4, ACT-7, ACT-8)
 // ---------------------------------------------------------------------------------------------
 
-/** `$MNTD.approve(Activation, amount)`. Approve `Activation` itself; nothing else spends for a burn. */
-export function approveBurnCall(a: ActivationAddresses, amount: bigint) {
-  return { address: a.mntd, abi: erc20Abi, functionName: "approve", args: [a.activation, amount] } as const satisfies Call;
+/**
+ * The `$MNTD.approve(Activation, amount)` call. Approve `Activation` itself; nothing else spends
+ * $MNTD for a burn.
+ * @param addresses - Where $MNTD and `Activation` are.
+ * @param amount - Base units; approve exactly the burn.
+ */
+export function approveBurnCall(addresses: Pick<MintABearAddresses, "activation" | "mntd">, amount: bigint) {
+  return { address: addresses.mntd, abi: erc20Abi, functionName: "approve", args: [addresses.activation, amount] } as const satisfies Call;
 }
 
-/** `Activation.burn(tokenId, amount)`, sent by the bear's owner, burning the owner's own $MNTD. */
-export function burnCall(a: Pick<ActivationAddresses, "activation">, tokenId: bigint, amount: bigint) {
-  return { ...act(a), functionName: "burn", args: [tokenId, amount] } as const satisfies Call;
+/**
+ * The `Activation.burn(tokenId, amount)` call, sent by the bear's owner, burning the owner's own $MNTD.
+ * @param addresses - Where `Activation` is.
+ * @param tokenId - The bear.
+ * @param amount - Base units, at most `costToReach(tokenId, 5)`.
+ */
+export function burnCall(addresses: WithActivation, tokenId: bigint, amount: bigint) {
+  return { ...act(addresses), functionName: "burn", args: [tokenId, amount] } as const satisfies Call;
 }
 
-/** Why a burn cannot go ahead, found before anything is sent. The first four mirror `burn`'s own checks. */
-export type BurnRefusal = "ContractPaused" | "NotBearOwner" | "AlreadyAtMaxLevel" | "TargetReached" | "NonexistentToken" | "InsufficientBalance";
+/** Why {@link planBurn} refused. Each is the code the burn would have reverted with, or `TARGET_REACHED`. */
+export type BurnRefusalCode =
+  | "TOKEN_DOES_NOT_EXIST"
+  | "ACTIVATION_PAUSED"
+  | "NOT_BEAR_OWNER"
+  | "ALREADY_MAX_LEVEL"
+  | "TARGET_REACHED"
+  | "INSUFFICIENT_MNTD_BALANCE";
 
-/** Something the holder should see before confirming a burn. */
+/** Something the holder should see, and confirm, before a burn. */
 export type BurnWarning =
-  /** The bear has open marketplace listings: one filled after the burn costs the seller the $MNTD and gives the buyer level 0. */
-  | { code: "OPEN_LISTINGS"; count: number }
+  /** The bear has open marketplace listings: one filled after the burn costs the seller the $MNTD and gives the buyer level 0. Offer to cancel them. */
+  | { code: "OPEN_LISTINGS"; count: number; message: string }
   /** The burner's wallet does not link this bear: its Status gains nothing until `linkBear` (a level-5 bear included). */
-  | { code: "NOT_LINKED"; currentLink: bigint };
+  | { code: "NOT_LINKED"; currentLink: bigint; message: string };
 
+/** Arguments of {@link planBurn}. */
 export interface PlanBurnArgs {
+  /** The bear. */
   tokenId: bigint;
   /** The wallet that will send the burn; it must own the bear. */
   owner: Address;
+  /** The level to reach, 1–5. */
   targetLevel: number;
   /**
-   * Counts the bear's open marketplace listings (MINT's call to OpenSea's API, or any other
-   * source). The library has no marketplace client; without this, no listing warning is given.
+   * Counts the bear's open marketplace listings (MINT's call to OpenSea's API). The library has no
+   * marketplace client; without this, no listing warning is given.
    */
   countOpenListings?: (tokenId: bigint) => Promise<number>;
 }
 
+/** A burn, worked out and checked — or the reason it cannot happen. */
 export type BurnPlan =
   | {
       ok: true;
-      /** Base units to burn: `costToReach(tokenId, targetLevel)`. */
+      tokenId: bigint;
+      /** The bear's level now. */
+      currentLevel: number;
+      targetLevel: number;
+      /** $MNTD to burn, base units: exactly `costToReach(tokenId, targetLevel)`. */
       amount: bigint;
-      /** The calls to send in order: `approve` if the allowance is short, then `burn`. */
+      /** The calls to send in order: `approve` if the allowance is short, then `burn`. Pass to `executePlan`. */
       calls: Call[];
+      /** Show these and ask the holder to confirm before sending. */
       warnings: BurnWarning[];
     }
-  | { ok: false; reason: BurnRefusal };
+  | Refusal<BurnRefusalCode>;
 
 /**
- * Sizes a burn to `targetLevel` and checks it the way `burn` will, so the portal can refuse
- * before a wallet prompt: paused, not the owner, already at level 5, target already reached, id
- * never minted, balance short. The amount is exactly `costToReach`, so it can never overshoot.
+ * Works out a burn to `targetLevel` and checks it the way `burn` will, so the page can refuse
+ * before a wallet prompt. The amount is exactly `costToReach`, so it can never overshoot.
+ *
+ * @param client - Any viem public client on the chain.
+ * @param addresses - Where `Activation`, the collection and $MNTD are.
+ * @param args - The bear, its owner, the target level, and optionally a listing counter.
+ * @returns `{ ok: true, amount, calls, warnings }`, or `{ ok: false, code, userMessage }`.
+ * @throws {ClientRefusal} `INVALID_ARGUMENT` when `targetLevel` is not an integer 1–5.
+ *
+ * @example
+ * ```ts
+ * const plan = await planBurn(client, addresses, { tokenId: 7n, owner: account.address, targetLevel: 3 });
+ * if (!plan.ok) return showError(plan.userMessage);          // e.g. "This bear is already at level 5."
+ * if (!(await confirm(plan.warnings.map((w) => w.message)))) return;
+ * await executePlan(client, wallet, plan.calls);
+ * ```
  */
-export async function planBurn(client: Client, a: ActivationAddresses, p: PlanBurnArgs): Promise<BurnPlan> {
-  if (!Number.isInteger(p.targetLevel) || p.targetLevel < 1 || p.targetLevel > MAX_LEVEL) {
-    throw new RangeError(`targetLevel must be 1..${MAX_LEVEL}, not ${p.targetLevel}`);
+export async function planBurn(client: AnyPublicClient, addresses: ActivationAddresses, args: PlanBurnArgs): Promise<BurnPlan> {
+  if (!Number.isInteger(args.targetLevel) || args.targetLevel < 1 || args.targetLevel > MAX_LEVEL) {
+    throw new ClientRefusal("INVALID_ARGUMENT", { reason: `The target level must be a whole number from 1 to ${MAX_LEVEL}, not ${args.targetLevel}.` });
   }
-  if (!(await readExists(client, a, p.tokenId))) return { ok: false, reason: "NonexistentToken" };
-  const [paused, owner, amount, costToMax, balance, allowance, link] = await Promise.all([
-    readPaused(client, a),
-    readOwner(client, a, p.tokenId),
-    readCostToReach(client, a, p.tokenId, p.targetLevel),
-    readCostToReach(client, a, p.tokenId, MAX_LEVEL),
-    client.readContract({ address: a.mntd, abi: erc20Abi, functionName: "balanceOf", args: [p.owner] }),
-    client.readContract({ address: a.mntd, abi: erc20Abi, functionName: "allowance", args: [p.owner, a.activation] }),
-    readLink(client, a, p.owner),
+  if (!(await readExists(client, addresses, args.tokenId))) return refusal("TOKEN_DOES_NOT_EXIST", { tokenId: args.tokenId });
+  const [paused, owner, currentLevel, amount, costToMax, balance, allowance, link] = await Promise.all([
+    readPaused(client, addresses),
+    readOwner(client, addresses, args.tokenId),
+    readLevel(client, addresses, args.tokenId),
+    readCostToReach(client, addresses, args.tokenId, args.targetLevel),
+    readCostToReach(client, addresses, args.tokenId, MAX_LEVEL),
+    client.readContract({ address: addresses.mntd, abi: erc20Abi, functionName: "balanceOf", args: [args.owner] }),
+    client.readContract({ address: addresses.mntd, abi: erc20Abi, functionName: "allowance", args: [args.owner, addresses.activation] }),
+    readLink(client, addresses, args.owner),
   ]);
-  if (paused) return { ok: false, reason: "ContractPaused" };
-  if (owner.toLowerCase() !== p.owner.toLowerCase()) return { ok: false, reason: "NotBearOwner" };
-  if (costToMax === 0n) return { ok: false, reason: "AlreadyAtMaxLevel" };
-  if (amount === 0n) return { ok: false, reason: "TargetReached" };
-  if (balance < amount) return { ok: false, reason: "InsufficientBalance" };
+  if (paused) return refusal("ACTIVATION_PAUSED");
+  if (owner.toLowerCase() !== args.owner.toLowerCase()) return refusal("NOT_BEAR_OWNER", { tokenId: args.tokenId, owner });
+  if (costToMax === 0n) return refusal("ALREADY_MAX_LEVEL", { tokenId: args.tokenId });
+  if (amount === 0n) return refusal("TARGET_REACHED", { tokenId: args.tokenId, targetLevel: args.targetLevel, currentLevel });
+  if (balance < amount) return refusal("INSUFFICIENT_MNTD_BALANCE", { balance, needed: amount });
 
   const warnings: BurnWarning[] = [];
-  const listings = p.countOpenListings ? await p.countOpenListings(p.tokenId) : 0;
-  if (listings > 0) warnings.push({ code: "OPEN_LISTINGS", count: listings });
-  if (link.tokenId !== p.tokenId) warnings.push({ code: "NOT_LINKED", currentLink: link.tokenId });
+  const listings = args.countOpenListings ? await args.countOpenListings(args.tokenId) : 0;
+  if (listings > 0) {
+    warnings.push({
+      code: "OPEN_LISTINGS",
+      count: listings,
+      message: `This bear has ${listings} open marketplace listing${listings === 1 ? "" : "s"}. If one fills after this burn, the buyer gets the bear at level 0 and the $MNTD is lost. Cancel the listings first.`,
+    });
+  }
+  if (link.tokenId !== args.tokenId) {
+    warnings.push({
+      code: "NOT_LINKED",
+      currentLink: link.tokenId,
+      message:
+        link.tokenId === 0n
+          ? "Your Status boost needs a linked bear. Link this bear after the burn to use its level."
+          : `Your Status boost uses bear #${link.tokenId}. Link this bear after the burn to use its level instead.`,
+    });
+  }
 
   const calls: Call[] = [];
-  if (allowance < amount) calls.push(approveBurnCall(a, amount));
-  calls.push(burnCall(a, p.tokenId, amount));
-  return { ok: true, amount, calls, warnings };
+  if (allowance < amount) calls.push(approveBurnCall(addresses, amount));
+  calls.push(burnCall(addresses, args.tokenId, amount));
+  return { ok: true, tokenId: args.tokenId, currentLevel, targetLevel: args.targetLevel, amount, calls, warnings };
 }
 
 // ---------------------------------------------------------------------------------------------
 // Status link (ACT-9)
 // ---------------------------------------------------------------------------------------------
 
-/** `linkBear(tokenId)`: the sender's wallet nominates a bear it owns; replaces any earlier link. */
-export function linkCall(a: Pick<ActivationAddresses, "activation">, tokenId: bigint) {
-  return { ...act(a), functionName: "linkBear", args: [tokenId] } as const satisfies Call;
-}
-
-/** `unlinkBear()`: removes the sender's link; a no-op without one, and allowed while paused. */
-export function unlinkCall(a: Pick<ActivationAddresses, "activation">) {
-  return { ...act(a), functionName: "unlinkBear", args: [] } as const satisfies Call;
+/**
+ * The `linkBear(tokenId)` call: the sender's wallet nominates a bear it owns to carry its Status
+ * boost. It replaces any earlier link.
+ * @param addresses - Where `Activation` is.
+ * @param tokenId - A bear the sender owns.
+ */
+export function linkCall(addresses: WithActivation, tokenId: bigint) {
+  return { ...act(addresses), functionName: "linkBear", args: [tokenId] } as const satisfies Call;
 }
 
 /**
- * The state of a wallet's link: `none`, `active` (with the bear and its level), or `voided` — the
- * wallet's last link was to a bear that has changed hands since, so it carries no boost. `voided`
- * needs the link history, read from `BearLinked` / `BearUnlinked` logs from `fromBlock` (the
- * `Activation` deployment block).
+ * The `unlinkBear()` call: removes the sender's link. Safe to call without one; allowed while paused.
+ * @param addresses - Where `Activation` is.
  */
-export async function readLinkStatus(
-  client: Client,
-  a: Pick<ActivationAddresses, "activation">,
-  wallet: Address,
-  fromBlock: bigint,
-): Promise<{ state: "none" } | { state: "active"; tokenId: bigint; level: number } | { state: "voided"; tokenId: bigint }> {
-  const link = await readLink(client, a, wallet);
+export function unlinkCall(addresses: WithActivation) {
+  return { ...act(addresses), functionName: "unlinkBear", args: [] } as const satisfies Call;
+}
+
+/** A wallet's link, told apart from one voided by a sale. */
+export type LinkStatus =
+  | { state: "none" }
+  | { state: "active"; tokenId: bigint; level: number }
+  /** The wallet's last link was to a bear that has changed hands since; it carries no boost. */
+  | { state: "voided"; tokenId: bigint };
+
+/**
+ * The state of a wallet's link. `voided` needs the link history, read from `BearLinked` /
+ * `BearUnlinked` logs in one `eth_getLogs` from `fromBlock`; on an RPC that caps log ranges, serve it
+ * from an indexer instead.
+ * @param client - Any viem public client on the chain.
+ * @param addresses - Where `Activation` is.
+ * @param wallet - The wallet.
+ * @param fromBlock - `Activation`'s deployment block.
+ */
+export async function readLinkStatus(client: AnyPublicClient, addresses: WithActivation, wallet: Address, fromBlock: bigint): Promise<LinkStatus> {
+  const link = await readLink(client, addresses, wallet);
   if (link.tokenId !== 0n) return { state: "active", tokenId: link.tokenId, level: link.level };
   const [linked, unlinked] = await Promise.all([
-    client.getContractEvents({ ...act(a), eventName: "BearLinked", args: { wallet }, fromBlock }),
-    client.getContractEvents({ ...act(a), eventName: "BearUnlinked", args: { wallet }, fromBlock }),
+    client.getContractEvents({ ...act(addresses), eventName: "BearLinked", args: { wallet }, fromBlock }),
+    client.getContractEvents({ ...act(addresses), eventName: "BearUnlinked", args: { wallet }, fromBlock }),
   ]);
-  const last = [...linked, ...unlinked].sort((x, y) =>
-    x.blockNumber === y.blockNumber ? x.logIndex - y.logIndex : x.blockNumber < y.blockNumber ? -1 : 1,
-  ).at(-1);
+  const last = [...linked, ...unlinked]
+    .sort((x, y) => (x.blockNumber === y.blockNumber ? x.logIndex - y.logIndex : x.blockNumber < y.blockNumber ? -1 : 1))
+    .at(-1);
   if (last?.eventName === "BearLinked" && last.args.tokenId !== undefined) return { state: "voided", tokenId: last.args.tokenId };
   return { state: "none" };
 }
 
 /**
- * Whether to prompt `wallet` to link `tokenId` — after it buys a bear and after its first burn.
- * A wallet has no Status boost until it links, level 5 included. The prompt is shown whenever the
- * wallet's active link is not this bear; `currentLink` lets the portal word it (none yet, or
- * switching from another bear). Which of an account's links counts is CQ-21's, not the library's.
+ * Whether to prompt `wallet` to link `tokenId` — after it buys a bear and after its first burn. A
+ * wallet has no Status boost until it links, level 5 included.
+ * @param client - Any viem public client on the chain.
+ * @param addresses - Where `Activation` is.
+ * @param wallet - The holder's wallet.
+ * @param tokenId - The bear just bought or burned for.
+ * @returns `prompt: true` when the wallet's active link is not this bear, with the current link so
+ *   the page can word it ("link your bear" or "switch from bear #N").
  */
-export async function linkPrompt(client: Client, a: Pick<ActivationAddresses, "activation">, wallet: Address, tokenId: bigint) {
-  const link = await readLink(client, a, wallet);
+export async function linkPrompt(client: AnyPublicClient, addresses: WithActivation, wallet: Address, tokenId: bigint) {
+  const link = await readLink(client, addresses, wallet);
   return { prompt: link.tokenId !== tokenId, currentLink: link.tokenId, currentLevel: link.level };
 }

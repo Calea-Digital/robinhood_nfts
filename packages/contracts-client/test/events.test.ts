@@ -30,7 +30,8 @@ describe("events and indexing", () => {
   let deployBlock: bigint;
   let snapshot: Hex;
 
-  const send = (who: Who, call: Call) => execute(f.publicClient, f.wallet(accounts[who]), call);
+  /** Sends `call` from `who` and returns the mined receipt. */
+  const send = async (who: Who, call: Call) => (await execute(f.publicClient, f.wallet(accounts[who]), call)).receipt;
   const names = (receipt: TransactionReceipt) => decodeSystemLogs(receipt.logs, sys).map((e) => `${e.emitter}.${e.eventName}`);
 
   async function burn(who: Who, tokenId: bigint, whole: bigint) {
@@ -76,7 +77,8 @@ describe("events and indexing", () => {
     await mintBears(f, accounts.carol, 1n);
     const minted = await readSystemEvents(f.publicClient, sys, before + 1n);
     expect(minted.map((e) => e.eventName)).toEqual(["Transfer"]);
-    expect(minted[0]!.args.from).toBe(zeroAddress);
+    const mint = minted[0]!;
+    expect(mint.emitter === "bears" && mint.eventName === "Transfer" && mint.args.from).toBe(zeroAddress);
   });
 
   it("separates $MNTD's Transfer from the collection's by emitter in a burn transaction", async () => {
@@ -98,16 +100,20 @@ describe("events and indexing", () => {
     /* Scenario:
        Given the OpenZeppelin $MNTD stand-in, alice with no allowance, then with an allowance and no balance
        When she burns for bear 1
-       Then the reverts decode as Error with OpenZeppelin's strings */
+       Then the reverts decode as Error with OpenZeppelin's strings, and map to INSUFFICIENT_MNTD_ALLOWANCE and INSUFFICIENT_MNTD_BALANCE */
     const reason = async (call: Call) =>
       (await send("alice", call).then(
         () => undefined,
         (e: unknown) => e,
       )) as ContractRevertError;
     await fundMntd(f, accounts.alice.address, 2_000n);
-    expect((await reason(burnCall(a, 1n, 1_666n * UNIT))).revert).toMatchObject({ name: "Error", args: ["ERC20: insufficient allowance"] });
+    const noAllowance = await reason(burnCall(a, 1n, 1_666n * UNIT));
+    expect(noAllowance.revert).toMatchObject({ errorName: "Error", args: { reason: "ERC20: insufficient allowance" } });
+    expect(noAllowance.code).toBe("INSUFFICIENT_MNTD_ALLOWANCE");
     await send("alice", approveBurnCall(a, 5_000n * UNIT));
-    expect((await reason(burnCall(a, 1n, 3_333n * UNIT))).revert).toMatchObject({ name: "Error", args: ["ERC20: burn amount exceeds balance"] });
+    const noBalance = await reason(burnCall(a, 1n, 3_333n * UNIT));
+    expect(noBalance.revert).toMatchObject({ errorName: "Error", args: { reason: "ERC20: burn amount exceeds balance" } });
+    expect(noBalance.code).toBe("INSUFFICIENT_MNTD_BALANCE");
   });
 
   it("replaces a link with BearLinked alone, and a BearUnlinked for a voided link changes nothing", async () => {

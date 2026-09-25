@@ -157,7 +157,7 @@ describe("split inputs on chain", () => {
        Given the collection's first mints before the chosen fromBlock
        When the inputs are read in events mode
        Then it throws, naming the owned count against totalSupply at the closing block, instead of dropping those bears */
-    await expect(rowsFromEvents(f.publicClient, c(), { fromBlock: closingBlock - 2n, closingBlock })).rejects.toThrow(/totalSupply at block/);
+    await expect(rowsFromEvents(f.publicClient, c(), { fromBlock: closingBlock - 2n, closingBlock })).rejects.toMatchObject({ code: "SPLIT_MISSING_BEARS", details: { owned: 0, totalSupply: 8n } });
   });
 
   it("reads the same rows from snapshot, paged, and drops ids never minted", async () => {
@@ -204,7 +204,7 @@ describe("split inputs on chain", () => {
        Given an id list with 1 twice
        When snapshot mode is asked for it
        Then it throws, since snapshot would return a duplicate row */
-    await expect(rowsFromSnapshot(f.publicClient, c(), { closingBlock, ids: [1n, 1n] })).rejects.toThrow(/duplicates/);
+    await expect(rowsFromSnapshot(f.publicClient, c(), { closingBlock, ids: [1n, 1n] })).rejects.toMatchObject({ code: "SPLIT_INVALID_INPUT" });
   });
 
   it("runs as a command and prints the split", async () => {

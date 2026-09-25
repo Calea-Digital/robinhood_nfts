@@ -1,6 +1,16 @@
+/**
+ * The reference royalty split (ACT-10, DEL-6): how the pot is shared among holders at a closing
+ * block. Inputs come from `rowsFromEvents` or `rowsFromSnapshot`; `bin/split.ts` runs the whole
+ * thing from the command line.
+ *
+ * @module
+ */
 import { getAddress, zeroAddress, type Address } from "viem";
 
 import { DEAD_ADDRESS, MAX_BEARS } from "../constants.js";
+import { ClientRefusal } from "../errors.js";
+
+const invalid = (reason: string) => new ClientRefusal("SPLIT_INVALID_INPUT", { reason });
 
 /** One bear at the closing block: its owner and its royalty weight (basis 100). */
 export interface BearRow {
@@ -9,6 +19,7 @@ export interface BearRow {
   weight: number | bigint;
 }
 
+/** Options of {@link computeSplit}. */
 export interface SplitOptions {
   /** Rounding carried in from the previous distribution, added to this one's funding. */
   carriedIn?: bigint;
@@ -16,6 +27,7 @@ export interface SplitOptions {
   exclude?: readonly Address[];
 }
 
+/** One wallet's share. */
 export interface Allocation {
   wallet: Address;
   /** The sum of the wallet's bears' weights. */
@@ -26,6 +38,7 @@ export interface Allocation {
   amount: bigint;
 }
 
+/** The split. `Σ allocations.amount + carried === distributable`, exactly. */
 export interface SplitResult {
   /** `funding + carriedIn`. */
   distributable: bigint;
@@ -47,9 +60,24 @@ export interface SplitResult {
  *
  * Rows must be ids in 1..4,444, each once, each with an owner: an id never minted has none, and
  * counting it (`weightOf` answers 100 for it) would pay a phantom bear.
+ *
+ * @param rows - One row per bear at the closing block (`rowsFromEvents` / `rowsFromSnapshot`).
+ * @param funding - The amount to distribute, in base units of the paying token.
+ * @param options - Rounding carried in from the last distribution; owners to exclude.
+ * @returns Per-wallet allocations, ascending by address, and the rounding carried to the next one.
+ * @throws {ClientRefusal} `SPLIT_INVALID_INPUT` for a duplicate id, an id outside 1..4,444, a row
+ *   with no owner, or a negative amount.
+ *
+ * @example
+ * ```ts
+ * const rows = await rowsFromEvents(client, addresses, { fromBlock: deployBlock, closingBlock });
+ * const split = computeSplit(rows, 1_000_000n, { carriedIn: lastCarried });
+ * for (const { wallet, amount } of split.allocations) pay(wallet, amount);
+ * saveForNextTime(split.carried);
+ * ```
  */
 export function computeSplit(rows: readonly BearRow[], funding: bigint, options: SplitOptions = {}): SplitResult {
-  if (funding < 0n || (options.carriedIn ?? 0n) < 0n) throw new Error("funding and carriedIn must not be negative");
+  if (funding < 0n || (options.carriedIn ?? 0n) < 0n) throw invalid("Funding and carried-in rounding must not be negative.");
   const excluded = new Set((options.exclude ?? [DEAD_ADDRESS]).map((a) => a.toLowerCase()));
   const seen = new Set<bigint>();
   const byWallet = new Map<Address, { weight: bigint; bears: number }>();
@@ -57,10 +85,10 @@ export function computeSplit(rows: readonly BearRow[], funding: bigint, options:
   let excludedWeight = 0n;
 
   for (const row of rows) {
-    if (row.tokenId < 1n || row.tokenId > BigInt(MAX_BEARS)) throw new Error(`token id ${row.tokenId} is outside 1..${MAX_BEARS}`);
-    if (seen.has(row.tokenId)) throw new Error(`token id ${row.tokenId} appears twice`);
+    if (row.tokenId < 1n || row.tokenId > BigInt(MAX_BEARS)) throw invalid(`Token id ${row.tokenId} is outside 1..${MAX_BEARS}.`);
+    if (seen.has(row.tokenId)) throw invalid(`Token id ${row.tokenId} appears twice.`);
     seen.add(row.tokenId);
-    if (row.owner.toLowerCase() === zeroAddress) throw new Error(`token id ${row.tokenId} has no owner: drop ids never minted`);
+    if (row.owner.toLowerCase() === zeroAddress) throw invalid(`Token id ${row.tokenId} has no owner: drop ids never minted.`);
     const weight = BigInt(row.weight);
     if (excluded.has(row.owner.toLowerCase())) {
       excludedWeight += weight;

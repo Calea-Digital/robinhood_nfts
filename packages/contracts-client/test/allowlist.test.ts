@@ -142,12 +142,12 @@ describe("allowlist tree", () => {
     /* Scenario:
        Given a single leaf, then no leaves, then a leaf not in the tree
        When the root or a proof is asked for
-       Then the one leaf is its own root with an empty proof, and the other two throw */
+       Then the one leaf is its own root with an empty proof; no leaves throw EMPTY_ALLOWLIST and an absent leaf NOT_ON_ALLOWLIST */
     const list = buildAllowList([VECTOR_ROWS[0]], STAGE);
     expect(list.root).toBe(VECTOR_LEAF0);
     expect(allowListProof(list.leaves, VECTOR_LEAF0)).toEqual([]);
-    expect(() => allowListRoot([])).toThrow(/EmptyTree/);
-    expect(() => allowListProof(list.leaves, VECTOR_ROOT)).toThrow(/LeafNotFound/);
+    expect(() => allowListRoot([])).toThrow(expect.objectContaining({ code: "EMPTY_ALLOWLIST" }));
+    expect(() => allowListProof(list.leaves, VECTOR_ROOT)).toThrow(expect.objectContaining({ code: "NOT_ON_ALLOWLIST" }));
     expect(list.entry("0x9999999999999999999999999999999999999999")).toBeUndefined();
   });
 });

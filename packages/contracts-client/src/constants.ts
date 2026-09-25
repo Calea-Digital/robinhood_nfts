@@ -12,6 +12,8 @@ export const MAX_BEARS = 4444;
 /** The highest activation level (ACT-2). */
 export const MAX_LEVEL = 5;
 
-/** Whitelist caps (WL-1): allocations per wallet and per getminted.io account. */
+/** Most whitelist allocations one wallet can hold (WL-1). */
 export const MAX_CLAIMS_PER_WALLET = 2;
+
+/** Most whitelist allocations one getminted.io account can claim, across all its wallets (WL-1). */
 export const MAX_CLAIMS_PER_ACCOUNT = 2;

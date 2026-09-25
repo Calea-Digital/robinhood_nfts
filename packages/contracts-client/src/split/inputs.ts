@@ -1,14 +1,31 @@
-import { decodeFunctionResult, encodeFunctionData, getAbiItem, zeroAddress, type Address, type Chain, type PublicClient, type Transport } from "viem";
+/**
+ * The royalty split's inputs: each bear's owner and weight at the closing block, from an archive
+ * node. Two ways to read them, which agree:
+ *
+ * - {@link rowsFromEvents} (default): owners from the collection's `Transfer` logs, weights from
+ *   `weightOf` at the block. Flat cost.
+ * - {@link rowsFromSnapshot}: `Activation.snapshot`, paged by a gas budget. Its cost grows with the
+ *   square of a long untransferred mint batch.
+ *
+ * On Robinhood Chain the closing block is the chain's own block number, not `block.number`
+ * inside a contract (which reads L1).
+ *
+ * @module
+ */
+import { decodeFunctionResult, encodeFunctionData, getAbiItem, zeroAddress, type Address } from "viem";
 
 import { activationAbi, mintABearAbi } from "../abi/index.js";
+import type { AnyPublicClient } from "../calls.js";
 import { MAX_BEARS } from "../constants.js";
+import { ClientRefusal } from "../errors.js";
 import type { BearRow } from "./compute.js";
 
-type Client = PublicClient<Transport, Chain | undefined>;
+type Client = AnyPublicClient;
 
 const transferEvent = getAbiItem({ abi: mintABearAbi, name: "Transfer" });
 const consecutiveTransferEvent = getAbiItem({ abi: mintABearAbi, name: "ConsecutiveTransfer" });
 
+/** Arguments of {@link rowsFromEvents}. */
 export interface EventsModeArgs {
   /** The collection's deployment block: no bear moved before it. */
   fromBlock: bigint;
@@ -24,6 +41,11 @@ export interface EventsModeArgs {
  * Each bear's owner at the closing block, from the collection's indexed `Transfer` events: the
  * last recipient of each id. `ConsecutiveTransfer` (ERC-2309) is applied too, though SeaDrop's
  * mint path does not emit it. No `ownerOf` walk, so the cost does not grow with mint batches.
+ *
+ * @param client - A viem public client.
+ * @param bears - The collection's address.
+ * @param a - The deployment block, the closing block, and blocks per request.
+ * @returns Each owned token id with its owner.
  */
 export async function ownersFromTransferLogs(
   client: Client,
@@ -52,8 +74,14 @@ export async function ownersFromTransferLogs(
  * Split inputs, mode (a): owners from `Transfer` events up to the closing block, weights from
  * `weightOf` at that block — only for ids that have an owner. `weightOf` answers 100 for an id
  * never minted, so summing it over the whole 1..4,444 range before sell-out would count phantom
- * bears. Needs an archive node for reads at a past block. Refuses unless the owners found equal
- * `totalSupply` at the closing block, so a late `fromBlock` or a truncated log read cannot drop bears.
+ * bears. Needs an archive node for reads at a past block.
+ *
+ * @param client - A viem public client on an archive node.
+ * @param c - Where the collection and `Activation` are.
+ * @param a - The deployment block, the closing block, and paging.
+ * @returns One row per owned bear, ascending by id.
+ * @throws {ClientRefusal} `SPLIT_MISSING_BEARS` unless the owners found equal `totalSupply` at the
+ *   closing block — a late `fromBlock` or a truncated log read would otherwise drop bears silently.
  */
 export async function rowsFromEvents(
   client: Client,
@@ -67,7 +95,7 @@ export async function rowsFromEvents(
   // A fromBlock after the first mint, or an RPC that silently truncates getLogs, would drop bears
   // and underpay their owners; no bear can be burned, so every minted id has an owner.
   if (BigInt(owners.size) !== totalSupply) {
-    throw new Error(`Transfer logs give ${owners.size} owned bears but totalSupply at block ${a.closingBlock} is ${totalSupply}: check fromBlock and the RPC's log range`);
+    throw new ClientRefusal("SPLIT_MISSING_BEARS", { owned: owners.size, totalSupply, closingBlock: a.closingBlock });
   }
   const ids = [...owners.keys()].filter((id) => id >= 1n && id <= BigInt(MAX_BEARS)).sort((x, y) => (x < y ? -1 : 1));
   const rows: BearRow[] = [];
@@ -87,6 +115,7 @@ export async function rowsFromEvents(
 // Encoded by hand: viem's typed estimateContractGas and readContract take no gas cap for a view.
 const snapshotData = (ids: readonly bigint[]) => encodeFunctionData({ abi: activationAbi, functionName: "snapshot", args: [ids] });
 
+/** Arguments of {@link rowsFromSnapshot}. */
 export interface SnapshotModeArgs {
   closingBlock: bigint;
   /** Most gas one `snapshot` call may use. Default 30M, under common `eth_call` caps. */
@@ -104,6 +133,13 @@ export interface SnapshotModeArgs {
  * measured 56.2M gas for 1..4,444 at two bears per wallet, and a long batch runs out of gas at any
  * fixed size. Each page is estimated first and halved until it fits; after a page fits, the next
  * tries twice the size. Rows with no owner (ids never minted) are dropped.
+ *
+ * @param client - A viem public client on an archive node.
+ * @param c - Where `Activation` is.
+ * @param a - The closing block, the gas budget, and the ids (default 1..4,444).
+ * @returns The owned rows, and the size of each page read.
+ * @throws {ClientRefusal} `SPLIT_INVALID_INPUT` for duplicate ids; `SPLIT_GAS_BUDGET` when a single
+ *   id does not fit the budget (the RPC's own error is the `cause`).
  */
 export async function rowsFromSnapshot(
   client: Client,
@@ -111,7 +147,9 @@ export async function rowsFromSnapshot(
   a: SnapshotModeArgs,
 ): Promise<{ rows: BearRow[]; pages: number[] }> {
   const ids = a.ids ?? Array.from({ length: MAX_BEARS }, (_, i) => BigInt(i + 1));
-  if (new Set(ids).size !== ids.length) throw new Error("snapshot ids contain duplicates; snapshot would return duplicate rows");
+  if (new Set(ids).size !== ids.length) {
+    throw new ClientRefusal("SPLIT_INVALID_INPUT", { reason: "The snapshot ids contain duplicates; snapshot would return duplicate rows." });
+  }
   const budget = a.gasBudget ?? 30_000_000n;
   const maxPage = a.maxPage ?? 1_000;
   const rows: BearRow[] = [];
@@ -129,7 +167,7 @@ export async function rowsFromSnapshot(
     }
     if (!fits) {
       if (page.length === 1) {
-        throw new Error(`snapshot of id ${page[0]} alone does not fit the gas budget ${budget}`, { cause: failure });
+        throw new ClientRefusal("SPLIT_GAS_BUDGET", { tokenId: page[0], gasBudget: budget }, failure);
       }
       size = Math.max(1, Math.floor(page.length / 2));
       continue;

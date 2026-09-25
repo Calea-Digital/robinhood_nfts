@@ -53,7 +53,8 @@ describe("activation: burn, link and reads", () => {
 
   const T = (level: 1 | 2 | 3 | 4 | 5) => THRESHOLDS_WHOLE[level - 1]! * UNIT;
 
-  const send = (who: Who, call: Call) => execute(f.publicClient, f.wallet(accounts[who]), call, { extraErrors: mockMntdAbi });
+  /** Sends `call` from `who` (decoding the $MNTD stand-in's errors) and returns the mined receipt. */
+  const send = async (who: Who, call: Call) => (await execute(f.publicClient, f.wallet(accounts[who]), call, { extraErrors: mockMntdAbi })).receipt;
 
   async function expectRevert(promise: Promise<unknown>, name: string) {
     const error = await promise.then(
@@ -61,7 +62,7 @@ describe("activation: burn, link and reads", () => {
       (e: unknown) => e,
     );
     expect(error).toBeInstanceOf(ContractRevertError);
-    expect((error as ContractRevertError).revert.name).toBe(name);
+    expect((error as ContractRevertError).revert.errorName).toBe(name);
   }
 
   /** `who` is funded and approves `amount` of $MNTD, then burns it for `tokenId`. */
@@ -144,7 +145,7 @@ describe("activation: burn, link and reads", () => {
       await fundMntd(f, accounts.alice.address, 10_000n);
       await send("alice", approveBurnCall(a, 10_000n * UNIT));
       const plan = await planBurn(f.publicClient, a, { tokenId: 1n, owner: accounts.alice.address, targetLevel: 1 });
-      if (!plan.ok) throw new Error(plan.reason);
+      if (!plan.ok) throw new Error(plan.userMessage);
       expect(plan.calls.map((c) => c.functionName)).toEqual(["burn"]);
       const hash = await f.wallet(accounts.alice).sendTransaction(toTransaction(plan.calls[0]!));
       await f.publicClient.waitForTransactionReceipt({ hash });
@@ -172,15 +173,15 @@ describe("activation: burn, link and reads", () => {
          When alice plans each burn
          Then the plan answers NonexistentToken, NotBearOwner, AlreadyAtMaxLevel, TargetReached, InsufficientBalance and ContractPaused */
       const plan = (tokenId: bigint, targetLevel: number) => planBurn(f.publicClient, a, { tokenId, owner: accounts.alice.address, targetLevel });
-      expect(await plan(100n, 1)).toEqual({ ok: false, reason: "NonexistentToken" });
-      expect(await plan(4n, 1)).toEqual({ ok: false, reason: "NotBearOwner" });
-      expect(await plan(2n, 1)).toEqual({ ok: false, reason: "InsufficientBalance" });
+      expect(await plan(100n, 1)).toMatchObject({ ok: false, code: "TOKEN_DOES_NOT_EXIST" });
+      expect(await plan(4n, 1)).toMatchObject({ ok: false, code: "NOT_BEAR_OWNER" });
+      expect(await plan(2n, 1)).toMatchObject({ ok: false, code: "INSUFFICIENT_MNTD_BALANCE" });
       await burnAs("alice", 1n, T(5));
-      expect(await plan(1n, 5)).toEqual({ ok: false, reason: "AlreadyAtMaxLevel" });
+      expect(await plan(1n, 5)).toMatchObject({ ok: false, code: "ALREADY_MAX_LEVEL" });
       await burnAs("alice", 2n, T(2));
-      expect(await plan(2n, 1)).toEqual({ ok: false, reason: "TargetReached" });
+      expect(await plan(2n, 1)).toMatchObject({ ok: false, code: "TARGET_REACHED" });
       await setPaused(true);
-      expect(await plan(3n, 1)).toEqual({ ok: false, reason: "ContractPaused" });
+      expect(await plan(3n, 1)).toMatchObject({ ok: false, code: "ACTIVATION_PAUSED" });
     });
 
     it("refuses a target level outside 1..5 before reading anything", async () => {
@@ -189,7 +190,7 @@ describe("activation: burn, link and reads", () => {
          When a burn is planned to level 0, 6 or 2.5
          Then planBurn throws a RangeError rather than meeting the contract's InvalidLevel */
       for (const targetLevel of [0, 6, 2.5]) {
-        await expect(planBurn(f.publicClient, a, { tokenId: 1n, owner: accounts.alice.address, targetLevel })).rejects.toThrow(RangeError);
+        await expect(planBurn(f.publicClient, a, { tokenId: 1n, owner: accounts.alice.address, targetLevel })).rejects.toMatchObject({ code: "INVALID_ARGUMENT" });
       }
     });
 
