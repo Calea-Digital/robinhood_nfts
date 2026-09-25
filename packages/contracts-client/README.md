@@ -69,3 +69,51 @@ call without sending it.
 | `FeeRecipientNotAllowed` / `FeeRecipientCannotBeZeroAddress` | fee recipient not one Studio allows |
 | `PayerNotAllowed` | minting for another address from a payer the collection has not allowed |
 | `ExceedsMaxBears` | the collection's cap of 4,444, binding only if `maxSupply` is raised (COL-2) |
+
+## Whitelist claim (WL-3)
+
+The backend signs a short-lived voucher once the wager API confirms a threshold. The wallet
+sends `claimCall(registry, voucher, signature)` itself and pays the gas.
+
+- Reads: `readCampaign` (`spotsLeft` of 1,000, `openAt`, `closeAt`, `signer`), `campaignOpen`,
+  `readClaimsOf(wallet)`, `readAccountClaims(account)`, and `readClaimants`, which pages through
+  the rows the Studio allowlist is built from.
+- The typed data is `claimTypedData(chainId, registry, voucher)`. The type is exactly
+  `Claim(address wallet,uint8 allocationIndex,bytes32 account,uint256 deadline)` and the domain is
+  `WhitelistClaim` / `1` / chain id / registry. A known-answer test pins the digest and the
+  signature against values computed independently with Foundry's `cast`.
+- `allocationIndex` is the **account's** allocation number (1 at $50, 2 at $100), whichever
+  wallet claims it.
+- For a smart wallet, `voucher.wallet` is the smart account's address, because that address
+  sends the claim. Holders never sign typed data, so ERC-1271 never applies.
+
+| Revert (check order) | Meaning |
+|---|---|
+| `NotClaimant` | the sender is not `voucher.wallet` |
+| `BadSigner` | not signed by the current signer, or the signer is a contract |
+| `Expired` | past `voucher.deadline` |
+| `CampaignClosed` | outside `openAt`..`closeAt` |
+| `SoldOut` | all 1,000 allocations are claimed |
+| `WalletLimit` | the wallet already holds two |
+| `AccountLimit` | the account already holds two |
+| `WrongAllocation` | `allocationIndex` is not `accountClaims(account) + 1` |
+
+### The backend's rules (`@mintabear/contracts-client/backend`)
+
+The backend is MINT's code. This entry point is a reference implementation of its rules, and the
+tests pin them. It is server-only.
+
+1. **`account = accountHash(serverKey, id)`**: HMAC-SHA256 over the canonical id (NFKC, trimmed,
+   lower-cased), with a key of at least 32 bytes that never rotates. `account` is an indexed topic
+   of `WhitelistClaimed`: an unsalted hash of a low-entropy id would publicly tie wallets to casino
+   accounts, and a non-canonical id (email case, whitespace) would split one person into two
+   accounts past the cap.
+2. **`allocationIndex` comes from the chain**: it is `accountClaims(account) + 1`, not the wager
+   tier. Index 2 is issued only once index 1 is claimed. `planVoucher` does this, and answers
+   `NotYetEligible`, `WalletLimit`, `AccountLimit`, `CampaignClosed` or `SoldOut` instead of a
+   voucher when one can't be claimed.
+3. **Check `claimsOf(wallet) < 2`** before signing.
+4. **The signer is an EOA key** (`signVoucher` takes a viem `LocalAccount`; a Privy server wallet
+   qualifies). The contract recovers with `ecrecover` only. A key rotated out with `setSigner` is
+   never rotated back in: a test shows its unexpired vouchers working again when it is.
+5. **`deadline` is short.** `planVoucher` defaults to 10 minutes; the contract sets no cap.

@@ -5,3 +5,4 @@ export * from "./chains.js";
 export * from "./constants.js";
 export * from "./errors.js";
 export * from "./mint.js";
+export * from "./whitelist.js";
