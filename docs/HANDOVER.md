@@ -149,9 +149,13 @@ what makes "exactly the prize count is awarded" true.
 
 ### Integration
 
-Typed client library (`packages/contracts-client` per D9) and the reference royalty-split script
-with the dead-address exclusion (DEL-6). Calea's part of the UI is the call surface, review of
-contract-touching pull requests, and clarifications; the rest is MINT's.
+DEL-6 is built and in review (MNT-69): `packages/contracts-client`, the typed TypeScript client
+over the tranche-1 ABIs (viem 2, tested against anvil), and the reference royalty split with the
+dead-address exclusion (`bin/split.ts`). Its `README.md` is the portal team's reference: every call,
+the revert reasons in check order, the voucher backend's rules, events and indexing, and the split.
+The package stays in this repository until CQ-14 names the repository that holds it; it moves
+unchanged. The mystery box's calls join it in tranche 2. Calea's part of the UI is the call
+surface, review of contract-touching pull requests, and clarifications; the rest is MINT's.
 
 ## For the portal team
 
@@ -160,7 +164,8 @@ RAF-17. Four constraints:
 
 0. **The client library is Calea's deliverable and it is TypeScript** (DEL-6, D9): typed
    against the ABIs, covering every call the app makes, with its own tests and the revert
-   reasons a caller has to handle. MINT builds the page on getminted.io against it.
+   reasons a caller has to handle. MINT builds the page on getminted.io against it; it lives in
+   `packages/contracts-client`, and its `README.md` is the reference for everything below.
 1. **Whitelist claims are voucher-then-transaction.** The backend signs a short-lived voucher
    after the wager API confirms a threshold; the wallet submits it. The voucher's
    `allocationIndex` is the account's allocation number — 1 once $50 is wagered, 2 once $100 is —

@@ -205,3 +205,46 @@ reverts. Check `exists` first.
 - `ReferenceIndexer` is the reference reducer. A test replays every event of a sequence of burns,
   sales, a self-transfer, a voided unlink, relinks and a buy-back, and checks that its `levelOf`
   and `linkOf` equal the contracts' for every bear and wallet.
+
+## Royalty split (reference)
+
+`computeSplit(rows, funding, { carriedIn? })` computes the split, and `bin/split.ts` runs it
+against a node.
+
+- **Weights:** a wallet's weight is the sum of its bears' weights (basis 100). The eligible total
+  excludes bears held by `0x000000000000000000000000000000000000dEaD`. Contract-held bears keep
+  their weight; whether to pay a contract is MINT's policy.
+- **Amounts:** each wallet gets `floor(distributable × weight / eligibleWeight)`, where
+  `distributable = funding + carriedIn`. `carried = distributable − Σ allocations` is always fewer
+  base units than there are wallets. Allocations plus carried equal the funding exactly, and a
+  fixture test pins the numbers.
+- **Rows:** ids exactly 1..4,444, each once, each with an owner. `computeSplit` throws on a
+  duplicate, an out-of-range id or an ownerless row.
+
+The inputs come from an **archive node** at the closing block. On Robinhood Chain that is the L2
+block number; `block.number` inside a contract reads L1. There are two modes, and a test on anvil
+shows they agree:
+
+- **`rowsFromEvents`** (default): owners from the collection's indexed `Transfer` events up to the
+  closing block, and weights from `weightOf` at that block. There is no owner walk, so the cost is
+  flat. It reads `weightOf` only for ids that have an owner. `weightOf` answers 100 for an id never
+  minted, so before sell-out a sum over the whole range would count phantom bears.
+- **`rowsFromSnapshot`**: `Activation.snapshot` over 1..4,444, paged by a **gas budget** (default
+  30M). Each page is estimated first and halved until it fits. `snapshot` walks `ownerOf` back to
+  the start of an untransferred mint batch, so its cost is quadratic in such a batch: 56.2M gas for
+  the full range at two bears per wallet, and more for long batches. A single full-range call is
+  not dependable. Ids with no owner are dropped.
+
+```shell
+npx tsx bin/split.ts --rpc $ARCHIVE_RPC --bears $BEARS --activation $ACTIVATION \
+  --from-block $COLLECTION_DEPLOY_BLOCK --block $CLOSING_BLOCK --funding $AMOUNT \
+  [--carried-in $LAST_CARRIED] [--mode events|snapshot] [--gas-budget 30000000] [--block-range 10000]
+```
+
+It prints JSON with amounts as decimal strings, and sends nothing.
+
+## Not here yet
+
+The mystery box (`MysteryBox`, `PrizeDraw`, `PrizeVault`: opens and prize claims on each chain)
+is tranche 2. Its calls will join this package as `src/mysteryBox.ts` with their own tests. Nothing
+in the tranche-1 modules depends on it.

@@ -9,3 +9,5 @@ export * from "./whitelist.js";
 export * from "./activation.js";
 export * from "./transfer.js";
 export * from "./events.js";
+export * from "./split/compute.js";
+export * from "./split/inputs.js";
