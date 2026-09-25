@@ -55,3 +55,7 @@ becomes a Task with Spec Ref `NONE` when picked.
 - [x] 5.1 Rewrite `CLAUDE.md`'s architecture sections to the tranche-1 code
 - [x] 5.2 Rewrite `test/*.tree.md` against the requirement ids; keep INV-N obligations documented, unimplemented
 - [x] 5.3 Update `docs/HANDOVER.md` "Where things stand" at tranche end
+
+## 6. Integration
+
+- [ ] 6.1 DEL-6 — typed TypeScript client library (`packages/contracts-client`) and the reference royalty-split script

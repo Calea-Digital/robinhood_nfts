@@ -57,3 +57,48 @@ jobs:
       # test/fixtures/sourcify/, read through a file:// SOURCIFY_URL. No network is touched.
       - name: Verification script — verdict over recorded answers
         run: bash test/verify.test.sh
+
+  # DEL-6: the TypeScript client library. Its ABIs are generated from the Forge build and checked
+  # in, so the drift check fails when a contract's interface changes without them; its tests run
+  # against anvil with the contracts deployed from out/.
+  contracts-client:
+    name: Client library
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: packages/contracts-client
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Run Forge build
+        working-directory: .
+        run: forge build
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: packages/contracts-client/package-lock.json
+
+      - name: Install
+        run: npm ci --ignore-scripts
+
+      - name: ABIs match the Forge build
+        run: npm run check:abi
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        run: npm test

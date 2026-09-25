@@ -34,6 +34,7 @@ The specification calls for six contracts, three of them in tranche 1: `MintABea
 | `script/verify.sh` | bash, `jq`, `curl` | OPS-3: Sourcify verification and check of every contract a `Deploy.s.sol` broadcast created; dry run checked in CI against `test/fixtures/broadcast`, and its verdict by `test/verify.test.sh` against recorded Sourcify answers; refuses a broadcast set that created nothing |
 | `script/Enforcement.s.sol` | forge-std `Script` | OPS-6: `status`, `disable`, `enable` (one `setTransferValidator` call each, refusing a no-op) and `safeTransaction` for a Safe admin; the operator's steps are `docs/RUNBOOK.md`, "Transfer enforcement" |
 | `script/WhitelistExport.s.sol` | forge-std `Script` | read-only: `export` writes the claimant CSV for Studio; `compare` fails unless the allowlist root on SeaDrop is the root of the registry's rows (tree in `script/lib/AllowListTree.sol`); both refuse while claims are still possible (`CampaignStillOpen`) |
+| `packages/contracts-client/` | TypeScript, viem 2 | DEL-6: the typed client over the tranche-1 ABIs for getminted.io — SeaDrop mint with the allowlist tree (mirrors `AllowListTree.sol`, pinned against merkletreejs 0.2.32), whitelist claim and the voucher backend's rules (`/backend`), burn, link, guarded transfers, reads, emitter-scoped events and a reference indexer, and the royalty split (`bin/split.ts`). `src/abi/` is generated from `out/` (`npm run gen:abi`) and CI fails on drift. Tests run against anvil with the contracts deployed from `out/`; `test/mocks/MockOzMNTD.sol` exists for them. Location provisional until CQ-14 |
 
 **The transfer counter is the load-bearing idea (COL-3, COL-4).** `MintABear` increments `transferNonce[tokenId]` on every transfer and never on mint, and emits `TransferNonceAdvanced(tokenId, nonce)` in the same transaction as `Transfer`. `Activation` stores a level alongside the counter value it was recorded at, and treats it as void once the counter moves. The reset is therefore a consequence of the transfer rather than an action that must succeed — it cannot be skipped, and a defect in `Activation` cannot block a transfer. Do not replace this with a callback from the token; that pattern fails open. Indexers key the reset on `TransferNonceAdvanced`.
 
@@ -61,6 +62,13 @@ forge test                 # full suite
 forge fmt --check          # format gate — run before pushing
 forge coverage --no-match-coverage 'test/|lib/'
 slither . --exclude-dependencies
+```
+
+The client library (`packages/contracts-client`, after `forge build`):
+
+```shell
+npm ci && npm run check:abi && npm run typecheck && npm run build && npm test
+npm run gen:abi            # after any contract interface change; commit src/abi/
 ```
 
 The coverage filter `'test/|lib/'` also hides `script/lib/`; `forge coverage --no-match-coverage '^(test|lib)/'` shows `AllowListTree` as well.
@@ -118,4 +126,4 @@ Write specs and docs as **final state, not changelog** — no "was X, now Y" in 
 
 ## CI gates
 
-Push and PR run `forge fmt --check`, `forge build --sizes`, `forge test -vvv` (under `FOUNDRY_PROFILE=ci`), the spec lint and the generated-prose check, then `script/verify.sh`'s dry run over `test/fixtures/broadcast` diffed against `test/fixtures/verify-dry-run.expected`, and `test/verify.test.sh` over the recorded Sourcify answers. All must pass.
+Push and PR run `forge fmt --check`, `forge build --sizes`, `forge test -vvv` (under `FOUNDRY_PROFILE=ci`), the spec lint and the generated-prose check, then `script/verify.sh`'s dry run over `test/fixtures/broadcast` diffed against `test/fixtures/verify-dry-run.expected`, and `test/verify.test.sh` over the recorded Sourcify answers. A second job, "Client library", runs `forge build`, then in `packages/contracts-client` `npm ci`, the ABI drift check, typecheck, build and the vitest suite against anvil. All must pass.

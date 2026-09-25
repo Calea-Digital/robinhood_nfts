@@ -24,3 +24,7 @@ __pycache__/
 
 # Whitelist CSVs written by script/WhitelistExport.s.sol — regenerated from the chain, never committed
 exports/
+
+# The TypeScript client library (packages/contracts-client): dependencies and build output
+node_modules/
+packages/contracts-client/dist/

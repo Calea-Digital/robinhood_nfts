@@ -1,0 +1,46 @@
+{
+  "name": "@mintabear/contracts-client",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Typed TypeScript client for the MintABear contracts on Robinhood Chain (DEL-6)",
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./backend": {
+      "types": "./dist/backend.d.ts",
+      "default": "./dist/backend.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "gen:abi": "node scripts/gen-abis.mjs",
+    "check:abi": "node scripts/gen-abis.mjs --check",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "build": "tsc -p tsconfig.build.json",
+    "test": "vitest run",
+    "split": "tsx bin/split.ts"
+  },
+  "peerDependencies": {
+    "viem": "^2.30.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.4",
+    "ethers": "^5.8.0",
+    "merkletreejs": "^0.2.32",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "viem": "^2.56.9",
+    "vitest": "^3.2.7"
+  }
+}
