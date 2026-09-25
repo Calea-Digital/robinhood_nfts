@@ -29,7 +29,8 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "build": "tsc -p tsconfig.build.json",
     "test": "vitest run",
-    "split": "tsx bin/split.ts"
+    "split": "tsx bin/split.ts",
+    "docs:errors": "tsx scripts/error-table.ts"
   },
   "peerDependencies": {
     "viem": "^2.30.0"
