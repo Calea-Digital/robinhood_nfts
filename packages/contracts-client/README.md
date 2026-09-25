@@ -117,3 +117,74 @@ tests pin them. It is server-only.
    qualifies). The contract recovers with `ecrecover` only. A key rotated out with `setSigner` is
    never rotated back in: a test shows its unexpired vouchers working again when it is.
 5. **`deadline` is short.** `planVoucher` defaults to 10 minutes; the contract sets no cap.
+
+## Burn (ACT-4, ACT-7, ACT-8)
+
+To burn: approve **`Activation`** on $MNTD, then call `burn(tokenId, amount)` from the bear's
+owner, with the amount from `costToReach(tokenId, targetLevel)`.
+
+- `planBurn(client, { activation, bears, mntd }, { tokenId, owner, targetLevel, countOpenListings? })`
+  sizes the burn and checks it the way `burn` will. It returns `{ ok: false, reason }` for
+  `NonexistentToken`, `ContractPaused`, `NotBearOwner`, `AlreadyAtMaxLevel`, `TargetReached` or
+  `InsufficientBalance`. Otherwise it returns the calls, `[approve?, burn]`: approve is included
+  only when the allowance is short, and it approves exactly the amount.
+- Its warnings:
+  - `OPEN_LISTINGS`: the bear has open listings. A listing filled after the burn costs the seller
+    the $MNTD and gives the buyer level 0, so offer to cancel them first. The library has no
+    marketplace client; pass `countOpenListings`, backed by OpenSea's API.
+  - `NOT_LINKED`: the burner's wallet doesn't link this bear, so its Status gains nothing until it
+    does, level 5 included.
+- Anything above the level-5 remainder is refused (`Overshoot`), so nothing is destroyed for
+  nothing. `planBurn`'s amount is exactly `costToReach`, so it can never overshoot.
+- A burn is always the caller's own $MNTD, for a bear the caller owns. For a smart wallet, that
+  caller is the smart account.
+
+| Revert (check order) | Meaning |
+|---|---|
+| `ContractPaused` | burning has not opened yet, or is suspended |
+| `ZeroAmount` | amount 0 |
+| `NotBearOwner` | the sender does not own the bear |
+| `AlreadyAtMaxLevel` | the bear is at level 5 |
+| `Overshoot` | amount above `costToReach(tokenId, 5)` |
+| `OwnerQueryForNonexistentToken` | the id was never minted (from the collection, before `NotBearOwner`); `linkBear` too |
+| the token's own | allowance or balance short, from `burnFrom` (OpenZeppelin v5 `ERC20InsufficientAllowance` / `ERC20InsufficientBalance`, or a v4 string); the record is undone with it |
+| `Reentrancy` | never in normal use |
+
+## Status link (ACT-9)
+
+- `linkCall(a, tokenId)` and `unlinkCall(a)`. `unlinkBear` is a silent no-op when there is no
+  link, and works while paused.
+- A new `linkBear` replaces the wallet's earlier link without a `BearUnlinked` for the old bear.
+- `readLink(client, a, wallet)` returns the bear carrying the wallet's boost and its level, or
+  `tokenId` 0 once that bear has moved.
+- `readLinkStatus(client, a, wallet, fromBlock)` separates `none` from `voided`, where the last
+  link's bear was sold. Show a voided link to the seller.
+- `linkPrompt(client, a, wallet, tokenId)`: prompt after a purchase and after a holder's first
+  burn. A wallet has no Status boost until it links, level 5 included.
+- **One link per wallet.** How several wallets' links combine for one getminted.io account is
+  MINT's Status service's rule (CQ-21, open). The library reads each wallet on its own and
+  encodes no answer.
+
+## Transfers
+
+Every transfer resets the bear's level and voids any link to it. That includes a self-transfer
+and an approved operator's transfer (COL-3, ACT-5).
+
+- `planTransfer(client, a, { from, to, tokenId, safe? })` throws `ClientRefusal` for
+  `SELF_TRANSFER` (`from == to`: nothing moves, but the bear resets) and for `ZERO_ADDRESS`.
+  Otherwise it returns the call, with `RESETS_LEVEL` (the level and $MNTD lost) and `VOIDS_LINK`
+  warnings to confirm.
+- Sent anyway, a transfer to the zero address reverts `BurnDisabled` from `transferFrom` and
+  `safeTransferFrom` alike.
+- An operator's transfer passes only if the transfer validator allows that operator. The
+  validator's own error comes through.
+
+## Reads (COL-12, ACT-14)
+
+`readLevel`, `readCumulative`, `readLifetimeBurned`, `readWeight`, `readWeightFor`,
+`readThreshold`, `readCostToReach`, `readLink`, `readSnapshot`, `readPaused`,
+`readTransferNonce`, `readExists`, `readOwner`, and `readBear`, which reads them all for one bear.
+Reads are free, so poll them.
+
+An id that was never minted answers `weightOf` 100 and `snapshot` zeroes, and `ownerOf`
+reverts. Check `exists` first.

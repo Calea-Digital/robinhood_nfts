@@ -20,7 +20,7 @@ import {
 import { foundry } from "viem/chains";
 import { mnemonicToAccount, type HDAccount } from "viem/accounts";
 
-import { mintABearAbi } from "../../src/abi/index.js";
+import { mintABearAbi, seaDropAbi } from "../../src/abi/index.js";
 
 const repo = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
 
@@ -110,3 +110,50 @@ export async function deployFixture(rpcUrl: string): Promise<Fixture> {
 
 /** The $MNTD stand-in's ABI (test/mocks/MockMNTD.sol): `mint` for funding test holders. */
 export const mockMntdAbi = artifact("MockMNTD").abi;
+
+/**
+ * Opens a free public stage on SeaDrop (payout and fee recipient set, up to 65,535 per wallet) so
+ * tests can mint bears the way holders do.
+ */
+export async function openFreeMint(f: Fixture): Promise<void> {
+  const deployer = f.wallet(accounts.deployer);
+  const now = (await f.publicClient.getBlock()).timestamp;
+  const calls: [string, readonly unknown[]][] = [
+    ["updateCreatorPayoutAddress", [f.seaDrop, accounts.payout.address]],
+    ["updateAllowedFeeRecipient", [f.seaDrop, accounts.feeRecipient.address, true]],
+    [
+      "updatePublicDrop",
+      [
+        f.seaDrop,
+        { mintPrice: 0n, startTime: now, endTime: now + 365n * 86_400n, maxTotalMintableByWallet: 65_535, feeBps: 0, restrictFeeRecipients: true },
+      ],
+    ],
+  ];
+  for (const [functionName, args] of calls) {
+    const hash = await deployer.writeContract({ address: f.bears, abi: mintABearAbi, functionName: functionName as "updatePublicDrop", args: args as never });
+    await f.publicClient.waitForTransactionReceipt({ hash });
+  }
+}
+
+/** Mints `quantity` bears to `account` through SeaDrop's public stage (after `openFreeMint`). */
+export async function mintBears(f: Fixture, account: HDAccount, quantity: bigint): Promise<void> {
+  const hash = await f.wallet(account).writeContract({
+    address: f.seaDrop,
+    abi: seaDropAbi,
+    functionName: "mintPublic",
+    args: [f.bears, accounts.feeRecipient.address, "0x0000000000000000000000000000000000000000", quantity],
+  });
+  const receipt = await f.publicClient.waitForTransactionReceipt({ hash });
+  if (receipt.status !== "success") throw new Error("mint reverted");
+}
+
+/** Gives `account` `whole` $MNTD from the stand-in (no approval). */
+export async function fundMntd(f: Fixture, account: Address, whole: bigint): Promise<void> {
+  const hash = await f.wallet(accounts.deployer).writeContract({
+    address: f.mntd,
+    abi: mockMntdAbi,
+    functionName: "mint",
+    args: [account, whole * UNIT],
+  });
+  await f.publicClient.waitForTransactionReceipt({ hash });
+}

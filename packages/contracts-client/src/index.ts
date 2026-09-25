@@ -6,3 +6,5 @@ export * from "./constants.js";
 export * from "./errors.js";
 export * from "./mint.js";
 export * from "./whitelist.js";
+export * from "./activation.js";
+export * from "./transfer.js";
