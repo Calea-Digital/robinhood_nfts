@@ -3,7 +3,8 @@
 
 A test whose `/* Scenario:` block opens `Scenario: <ID> — <title>` must repeat the Scenario's title
 and every GIVEN / WHEN / THEN / AND line of `<ID>` in `openspec/specs/*/spec.md` (whitespace,
-backticks and emphasis ignored); every other test opens a bare `Scenario:` (CLAUDE.md, "Test
+backticks and emphasis ignored), in the Solidity tests under `test/` and the client library's
+TypeScript tests under `packages/*/test/`; every other test opens a bare `Scenario:` (CLAUDE.md, "Test
 conventions"). Prints the count of quoting blocks and every block that does not quote, and exits 1
 if there is one.
 
@@ -32,7 +33,9 @@ for path in glob.glob("openspec/specs/*/spec.md"):
 
 bad = collections.defaultdict(list)
 good = collections.Counter()
-for path in [p for p in glob.glob("test/**/*.sol", recursive=True) if not p.startswith("test/fixtures")]:
+paths = [p for p in glob.glob("test/**/*.sol", recursive=True) if not p.startswith("test/fixtures")]
+paths += glob.glob("packages/*/test/**/*.ts", recursive=True)  # the client library (DEL-6)
+for path in paths:
     text = open(path).read()
     for m in re.finditer(r"/\* Scenario: ([A-Z]+-\d+) — (.*?)\n(.*?)\*/", text, re.S):
         rid, line = m.group(1), text[: m.start()].count("\n") + 1
