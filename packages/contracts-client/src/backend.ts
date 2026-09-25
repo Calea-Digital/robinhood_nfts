@@ -29,13 +29,21 @@ import { campaignOpen, claimTypedData, readAccountClaims, readCampaign, readClai
 type Client = PublicClient<Transport, Chain | undefined>;
 
 /**
- * The canonical form of an account id that a person can type differently: Unicode NFKC, trimmed,
- * lower-cased — so `" Alice@Example.com"` and `"alice@example.com"` are one account. An immutable
- * internal user id, where MINT has one, is a better input than an email; which id MINT uses is its
- * choice.
+ * A getminted.io account, by the id the backend hashes. An `email` is something a person types,
+ * so its case and spacing vary; a `userId` is an identifier the system issued (an internal user id,
+ * a Privy user id), compared exactly — lower-casing it could merge two accounts. Which one MINT
+ * uses is its choice; an immutable `userId` is the better input where there is one.
  */
-export function canonicalAccountId(id: string): string {
-  return id.normalize("NFKC").trim().toLowerCase();
+export type AccountId = { email: string } | { userId: string };
+
+/**
+ * The canonical string an account id is hashed as. An email is Unicode NFKC, trimmed and
+ * lower-cased, so `" Alice@Example.com"` and `"alice@example.com"` are one account; a user id is
+ * trimmed only. A kind prefix keeps an email and a user id that spell the same from colliding.
+ */
+export function canonicalAccountId(id: AccountId): string {
+  if ("email" in id) return `email:${id.email.normalize("NFKC").trim().toLowerCase()}`;
+  return `user:${id.userId.trim()}`;
 }
 
 /**
@@ -43,11 +51,11 @@ export function canonicalAccountId(id: string): string {
  * key is at least 32 random bytes, kept server-side and never rotated (a new key makes every
  * account new, past the cap).
  */
-export async function accountHash(serverKey: Uint8Array, accountId: string): Promise<Hex> {
+export async function accountHash(serverKey: Uint8Array, id: AccountId): Promise<Hex> {
   if (serverKey.length < 32) throw new Error("accountHash: the server key must be at least 32 bytes");
   const subtle = globalThis.crypto.subtle;
   const key = await subtle.importKey("raw", serverKey, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-  const mac = await subtle.sign("HMAC", key, stringToBytes(canonicalAccountId(accountId)));
+  const mac = await subtle.sign("HMAC", key, stringToBytes(canonicalAccountId(id)));
   return bytesToHex(new Uint8Array(mac));
 }
 

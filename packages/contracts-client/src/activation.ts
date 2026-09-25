@@ -158,6 +158,9 @@ export type BurnPlan =
  * never minted, balance short. The amount is exactly `costToReach`, so it can never overshoot.
  */
 export async function planBurn(client: Client, a: ActivationAddresses, p: PlanBurnArgs): Promise<BurnPlan> {
+  if (!Number.isInteger(p.targetLevel) || p.targetLevel < 1 || p.targetLevel > MAX_LEVEL) {
+    throw new RangeError(`targetLevel must be 1..${MAX_LEVEL}, not ${p.targetLevel}`);
+  }
   if (!(await readExists(client, a, p.tokenId))) return { ok: false, reason: "NonexistentToken" };
   const [paused, owner, amount, costToMax, balance, allowance, link] = await Promise.all([
     readPaused(client, a),

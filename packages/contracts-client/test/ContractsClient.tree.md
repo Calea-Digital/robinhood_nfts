@@ -55,7 +55,8 @@ typed data
 └── the chain id or the registry changes the digest
 accountHash (backend rule 1)
 ├── HMAC-SHA256 under the server key over the canonical id (node:crypto agrees)
-├── case and spacing make one account
+├── an email's case and spacing make one account
+├── a user id is compared exactly, and never collides with an email spelled the same
 ├── not the unsalted hash; changes with the key
 └── a key under 32 bytes is refused
 on chain
@@ -79,6 +80,7 @@ burn
 ├── planBurn: exactly costToReach, approve then burn; BearActivated 0 → 2; readBear follows
 ├── planBurn with the allowance covering it: burn alone; sent as a raw transaction
 ├── warnings: OPEN_LISTINGS with the count, NOT_LINKED
+├── a target level outside 1..5: RangeError
 ├── planBurn refuses NonexistentToken, NotBearOwner, InsufficientBalance, AlreadyAtMaxLevel,
 │   TargetReached, ContractPaused
 ├── ContractPaused before ZeroAmount before NotBearOwner
@@ -130,6 +132,7 @@ computeSplit
 └── duplicate id, id outside 1..4,444, ownerless row: refused
 inputs at a closing block
 ├── events mode: owners from Transfer logs (paged by block range), weights from weightOf
+├── events mode missing bears (fromBlock after the first mint): refused against totalSupply
 ├── snapshot mode over exactly 1..4,444, paged by gas, ownerless ids dropped: the same rows
 ├── both modes give the same split: 393,939 / 363,636 / 121,212 / 121,212, 825 eligible, 1 carried
 ├── weightOf answers 100 for an unminted id; events mode never reads one

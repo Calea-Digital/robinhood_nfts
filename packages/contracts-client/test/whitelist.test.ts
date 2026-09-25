@@ -87,20 +87,32 @@ describe("whitelist voucher typed data", () => {
 describe("account hash (backend rule 1)", () => {
   it("is HMAC-SHA256 under the server key over the canonical id", async () => {
     /* Scenario:
-       Given a server key and an account id
+       Given a server key and an email account id
        When accountHash is computed
-       Then it equals HMAC-SHA256(key, canonical id) as node:crypto computes it */
-    const expected = "0x" + createHmac("sha256", SERVER_KEY).update("alice@example.com").digest("hex");
-    expect(await accountHash(SERVER_KEY, "alice@example.com")).toBe(expected);
+       Then it equals HMAC-SHA256(key, "email:" + the canonical email) as node:crypto computes it */
+    const expected = "0x" + createHmac("sha256", SERVER_KEY).update("email:alice@example.com").digest("hex");
+    expect(await accountHash(SERVER_KEY, { email: "alice@example.com" })).toBe(expected);
   });
 
-  it("makes one account of an id typed with other case or spacing", async () => {
+  it("makes one account of an email typed with other case or spacing", async () => {
     /* Scenario:
        Given " Alice@Example.COM " and "alice@example.com"
-       When each is hashed
+       When each is hashed as an email
        Then both give the same account, so the two-per-account cap holds across the spellings */
-    expect(canonicalAccountId(" Alice@Example.COM ")).toBe("alice@example.com");
-    expect(await accountHash(SERVER_KEY, " Alice@Example.COM ")).toBe(await accountHash(SERVER_KEY, "alice@example.com"));
+    expect(canonicalAccountId({ email: " Alice@Example.COM " })).toBe("email:alice@example.com");
+    expect(await accountHash(SERVER_KEY, { email: " Alice@Example.COM " })).toBe(await accountHash(SERVER_KEY, { email: "alice@example.com" }));
+  });
+
+  it("compares a user id exactly, and keeps it apart from an email spelled the same", async () => {
+    /* Scenario:
+       Given the user ids "AbC" and "abc", and the email "abc"
+       When each is hashed
+       Then all three differ: a system-issued id is never case-folded into another account */
+    const upper = await accountHash(SERVER_KEY, { userId: "AbC" });
+    const lower = await accountHash(SERVER_KEY, { userId: "abc" });
+    expect(upper).not.toBe(lower);
+    expect(lower).not.toBe(await accountHash(SERVER_KEY, { email: "abc" }));
+    expect(await accountHash(SERVER_KEY, { userId: " abc " })).toBe(lower);
   });
 
   it("is not the unsalted hash of the id, and changes with the key", async () => {
@@ -108,9 +120,10 @@ describe("account hash (backend rule 1)", () => {
        Given an account id
        When it is hashed with two keys and without one
        Then all three differ: the public topic cannot be matched to a guessed id without the key */
-    const a = await accountHash(SERVER_KEY, "alice@example.com");
+    const a = await accountHash(SERVER_KEY, { email: "alice@example.com" });
     expect(a).not.toBe(keccak256(stringToHex("alice@example.com")));
-    expect(a).not.toBe(await accountHash(new Uint8Array(32).fill(8), "alice@example.com"));
+    expect(a).not.toBe(keccak256(stringToHex("email:alice@example.com")));
+    expect(a).not.toBe(await accountHash(new Uint8Array(32).fill(8), { email: "alice@example.com" }));
   });
 
   it("refuses a server key shorter than 32 bytes", async () => {
@@ -118,7 +131,7 @@ describe("account hash (backend rule 1)", () => {
        Given a 16-byte key
        When accountHash is called
        Then it throws */
-    await expect(accountHash(new Uint8Array(16), "alice")).rejects.toThrow(/32 bytes/);
+    await expect(accountHash(new Uint8Array(16), { userId: "alice" })).rejects.toThrow(/32 bytes/);
   });
 });
 
@@ -130,7 +143,7 @@ describe("whitelist claim on chain", () => {
 
   const signer = privateKeyToAccount(KAT.signerKey); // anvil account 1: the fixture's eligibility signer
   const now = async () => (await f.publicClient.getBlock()).timestamp;
-  const acct = (name: string) => accountHash(SERVER_KEY, name);
+  const acct = (name: string) => accountHash(SERVER_KEY, { userId: name });
 
   async function voucherFor(wallet: Address, account: Hex, allocationIndex: number, deadline?: bigint) {
     const voucher: Voucher = { wallet, allocationIndex, account, deadline: deadline ?? (await now()) + 600n };

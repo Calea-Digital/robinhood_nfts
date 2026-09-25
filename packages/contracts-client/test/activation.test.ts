@@ -183,6 +183,16 @@ describe("activation: burn, link and reads", () => {
       expect(await plan(3n, 1)).toEqual({ ok: false, reason: "ContractPaused" });
     });
 
+    it("refuses a target level outside 1..5 before reading anything", async () => {
+      /* Scenario:
+         Given bear 1
+         When a burn is planned to level 0, 6 or 2.5
+         Then planBurn throws a RangeError rather than meeting the contract's InvalidLevel */
+      for (const targetLevel of [0, 6, 2.5]) {
+        await expect(planBurn(f.publicClient, a, { tokenId: 1n, owner: accounts.alice.address, targetLevel })).rejects.toThrow(RangeError);
+      }
+    });
+
     it("reverts ContractPaused before ZeroAmount before NotBearOwner", async () => {
       /* Scenario:
          Given Activation paused

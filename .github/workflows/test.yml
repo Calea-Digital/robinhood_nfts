@@ -89,7 +89,7 @@ jobs:
           cache-dependency-path: packages/contracts-client/package-lock.json
 
       - name: Install
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: ABIs match the Forge build
         run: npm run check:abi

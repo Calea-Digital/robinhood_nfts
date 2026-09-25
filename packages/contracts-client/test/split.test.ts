@@ -152,6 +152,14 @@ describe("split inputs on chain", () => {
     expect(byId(await rowsFromEvents(f.publicClient, c(), { fromBlock, closingBlock, blockRange: 3n }))).toEqual(expectedRows());
   });
 
+  it("refuses events-mode inputs that miss bears, as from a fromBlock after the first mint", async () => {
+    /* Scenario:
+       Given the collection's first mints before the chosen fromBlock
+       When the inputs are read in events mode
+       Then it throws, naming the owned count against totalSupply at the closing block, instead of dropping those bears */
+    await expect(rowsFromEvents(f.publicClient, c(), { fromBlock: closingBlock - 2n, closingBlock })).rejects.toThrow(/totalSupply at block/);
+  });
+
   it("reads the same rows from snapshot, paged, and drops ids never minted", async () => {
     /* Scenario:
        Given the same closing block

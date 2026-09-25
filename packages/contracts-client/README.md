@@ -103,8 +103,10 @@ sends `claimCall(registry, voucher, signature)` itself and pays the gas.
 The backend is MINT's code. This entry point is a reference implementation of its rules, and the
 tests pin them. It is server-only.
 
-1. **`account = accountHash(serverKey, id)`**: HMAC-SHA256 over the canonical id (NFKC, trimmed,
-   lower-cased), with a key of at least 32 bytes that never rotates. `account` is an indexed topic
+1. **`account = accountHash(serverKey, { userId } | { email })`**: HMAC-SHA256, with a key of at
+   least 32 bytes that never rotates, over the canonical id. An email is NFKC, trimmed and
+   lower-cased; a system-issued user id (an internal id, a Privy user id) is compared exactly, since
+   case-folding it could merge two accounts. Prefer an immutable user id where there is one. `account` is an indexed topic
    of `WhitelistClaimed`: an unsalted hash of a low-entropy id would publicly tie wallets to casino
    accounts, and a non-canonical id (email case, whitespace) would split one person into two
    accounts past the cap.
@@ -117,6 +119,10 @@ tests pin them. It is server-only.
    qualifies). The contract recovers with `ecrecover` only. A key rotated out with `setSigner` is
    never rotated back in: a test shows its unexpired vouchers working again when it is.
 5. **`deadline` is short.** `planVoucher` defaults to 10 minutes; the contract sets no cap.
+
+`signVoucher` does not read the chain. Compare the signing key's address with
+`readCampaign(...).signer` at start-up and after any `setSigner`: a key that is no longer the
+signer produces vouchers that revert `BadSigner`.
 
 ## Burn (ACT-4, ACT-7, ACT-8)
 
@@ -158,7 +164,8 @@ owner, with the amount from `costToReach(tokenId, targetLevel)`.
 - `readLink(client, a, wallet)` returns the bear carrying the wallet's boost and its level, or
   `tokenId` 0 once that bear has moved.
 - `readLinkStatus(client, a, wallet, fromBlock)` separates `none` from `voided`, where the last
-  link's bear was sold. Show a voided link to the seller.
+  link's bear was sold. Show a voided link to the seller. It reads the wallet's link events in one
+  `eth_getLogs` from `fromBlock`; on an RPC that caps log ranges, serve it from an indexer instead.
 - `linkPrompt(client, a, wallet, tokenId)`: prompt after a purchase and after a holder's first
   burn. A wallet has no Status boost until it links, level 5 included.
 - **One link per wallet.** How several wallets' links combine for one getminted.io account is

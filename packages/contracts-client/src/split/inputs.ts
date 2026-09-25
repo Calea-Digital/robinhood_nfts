@@ -52,14 +52,23 @@ export async function ownersFromTransferLogs(
  * Split inputs, mode (a): owners from `Transfer` events up to the closing block, weights from
  * `weightOf` at that block — only for ids that have an owner. `weightOf` answers 100 for an id
  * never minted, so summing it over the whole 1..4,444 range before sell-out would count phantom
- * bears. Needs an archive node for reads at a past block.
+ * bears. Needs an archive node for reads at a past block. Refuses unless the owners found equal
+ * `totalSupply` at the closing block, so a late `fromBlock` or a truncated log read cannot drop bears.
  */
 export async function rowsFromEvents(
   client: Client,
   c: { bears: Address; activation: Address },
   a: EventsModeArgs,
 ): Promise<BearRow[]> {
-  const owners = await ownersFromTransferLogs(client, c.bears, a);
+  const [owners, totalSupply] = await Promise.all([
+    ownersFromTransferLogs(client, c.bears, a),
+    client.readContract({ address: c.bears, abi: mintABearAbi, functionName: "totalSupply", blockNumber: a.closingBlock }),
+  ]);
+  // A fromBlock after the first mint, or an RPC that silently truncates getLogs, would drop bears
+  // and underpay their owners; no bear can be burned, so every minted id has an owner.
+  if (BigInt(owners.size) !== totalSupply) {
+    throw new Error(`Transfer logs give ${owners.size} owned bears but totalSupply at block ${a.closingBlock} is ${totalSupply}: check fromBlock and the RPC's log range`);
+  }
   const ids = [...owners.keys()].filter((id) => id >= 1n && id <= BigInt(MAX_BEARS)).sort((x, y) => (x < y ? -1 : 1));
   const rows: BearRow[] = [];
   const concurrency = a.concurrency ?? 50;
@@ -111,14 +120,17 @@ export async function rowsFromSnapshot(
   for (let start = 0; start < ids.length; ) {
     const page = ids.slice(start, start + size);
     let fits = false;
+    let failure: unknown;
     try {
       const gas = await client.estimateGas({ to: c.activation, data: snapshotData(page), blockNumber: a.closingBlock, account: zeroAddress });
       fits = gas <= budget;
-    } catch {
-      fits = false; // out of gas under the node's cap
+    } catch (error) {
+      failure = error; // out of gas under the node's cap, or the RPC refused the estimate
     }
     if (!fits) {
-      if (page.length === 1) throw new Error(`snapshot of id ${page[0]} alone exceeds the gas budget ${budget}`);
+      if (page.length === 1) {
+        throw new Error(`snapshot of id ${page[0]} alone does not fit the gas budget ${budget}`, { cause: failure });
+      }
       size = Math.max(1, Math.floor(page.length / 2));
       continue;
     }
