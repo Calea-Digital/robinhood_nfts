@@ -32,6 +32,8 @@
   },
   "devDependencies": {
     "@types/node": "^22.20.4",
+    "ethers": "^5.8.0",
+    "merkletreejs": "^0.2.32",
     "tsx": "^4.23.15",
     "typescript": "^5.9.3",
     "viem": "^2.56.9",
