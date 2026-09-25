@@ -8,6 +8,10 @@ outside viem: merkletreejs 0.2.32 and Foundry's `cast`. Deterministic tests only
 builds its root the same way is rehearsal item 3, not a leaf here; the real V3's operator error
 belongs to Fork-2.
 
+Two layers: `test/` verifies behaviour against the contracts; `examples/` shows how a client calls
+the library — one flow per file, through the package name and the facade only, each step
+commented. Both run in CI.
+
 ## Call surface (`surface.test.ts`)
 
 ```
@@ -15,7 +19,45 @@ surface
 ├── DEL-6: every function the page, the voucher backend and the split call is in the generated ABI
 │   and is made by a library export
 ├── every state-changing function of WhitelistClaim and Activation is the app's or owner-only
-└── the README's revert tables name every revert the library lists
+├── the README's error-code table is the one generated from src/errors.ts, naming every documented revert
+└── every facade method the README lists exists
+```
+
+## Error model (`errors.test.ts`)
+
+```
+MintABearError
+├── every documented revert (mint, claim, burn, link, the collection's, the token's) maps to a code with a message
+├── every code has a message
+├── a revert decodes with its arguments by name; NotActive and the wallet limit fill their messages in
+├── a declined prompt is USER_REJECTED; a MintABearError passes through; anything else is UNKNOWN_ERROR with its cause
+└── an unknown selector is UNKNOWN_REVERT with the raw data
+```
+
+## Usage examples (`examples/`)
+
+```
+01 getting started   ├── read-only before login: campaign, an unminted bear, thresholds; a write throws NO_WALLET
+                     └── after login: reads default to the wallet; decimals, parseMntd
+02 public mint       ├── mint two at the stage price; the ids; stats
+                     └── a third: MINT_WALLET_LIMIT with the limit in the message and the args by name
+03 whitelist         ├── backend endpoint → claim; spot 1, allocation 1; a second voucher refused NOT_YET_ELIGIBLE
+                     ├── the account's second allocation claimed from another wallet is number 2
+                     ├── an expired voucher: VOUCHER_EXPIRED
+                     └── after the close: allowlist from the claimants, loaded by Studio; entry → mint; no entry, not listed
+04 burn              ├── plan (3,333 $MNTD, approve + burn) → warnings (listing, link) → executeBurn → level 2
+                     ├── TARGET_REACHED and NOT_BEAR_OWNER returned by the plan, with messages
+                     ├── burnTo in one call; ALREADY_MAX_LEVEL thrown after level 5
+                     └── the plan as one smart-wallet batch (toTransaction)
+05 link and transfer ├── link prompt after a burn; link; linkStatus active
+                     ├── transfer warnings (RESETS_LEVEL, VOIDS_LINK) → transfer → buyer at level 0, seller's link voided, buyer prompted
+                     └── SELF_TRANSFER refused with a message
+06 errors            ├── a provider answering 4001: USER_REJECTED
+                     ├── a wallet with no ETH: INSUFFICIENT_GAS_FUNDS
+                     ├── ContractRevertError: code, userMessage, revert.errorName, functionName, message
+                     └── a plan interrupted after approve: ACTIVATION_PAUSED with completed = [approve]; the retry is burn alone
+07 indexing, split   ├── typed BearActivated args; the indexer's level, link and owners
+                     └── split.run in both modes: 750,000 / 250,000 of an eligible 400, dead address excluded
 ```
 
 ## Allowlist tree (`allowlist.test.ts`)

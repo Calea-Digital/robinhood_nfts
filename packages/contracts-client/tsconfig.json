@@ -3,8 +3,12 @@
     "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "lib": ["ES2022"],
-    "types": ["node"],
+    "lib": [
+      "ES2022"
+    ],
+    "types": [
+      "node"
+    ],
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
@@ -14,9 +18,24 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
-    "declaration": true,
+    "declaration": false,
     "sourceMap": true,
-    "outDir": "dist"
+    "outDir": "dist",
+    "paths": {
+      "@mintabear/contracts-client": [
+        "./src/index.ts"
+      ],
+      "@mintabear/contracts-client/backend": [
+        "./src/backend.ts"
+      ]
+    }
   },
-  "include": ["src", "test", "bin", "vitest.config.ts"]
+  "include": [
+    "src",
+    "test",
+    "examples",
+    "bin",
+    "scripts/*.ts",
+    "vitest.config.ts"
+  ]
 }

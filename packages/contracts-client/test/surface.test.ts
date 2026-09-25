@@ -6,6 +6,7 @@ import type { Abi } from "viem";
 
 import * as client from "../src/index.js";
 import * as backend from "../src/backend.js";
+import { renderReadme } from "../scripts/error-table.js";
 
 const { activationAbi, mintABearAbi, seaDropAbi, whitelistClaimAbi } = client;
 
@@ -119,14 +120,37 @@ describe("call surface", () => {
     }
   });
 
-  it("documents a revert table for every call family in the README", () => {
+  it("keeps the README's error-code table equal to the code's", () => {
     /* Scenario:
-       Given the package README
-       When its sections are read
-       Then it has a revert table for mint, claim and burn, and every revert the library lists for them appears in it */
+       Given the package README and src/errors.ts
+       When the error-code table is generated from the code
+       Then the README's table is exactly it, and it names every documented revert */
     const readme = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "README.md"), "utf8");
+    expect(renderReadme(readme)).toBe(readme);
     for (const name of [...client.MINT_REVERTS, ...client.CLAIM_REVERTS, ...client.BURN_REVERTS, "OwnerQueryForNonexistentToken", "BurnDisabled"]) {
       expect(readme.includes(`\`${name}\``), name).toBe(true);
+    }
+  });
+
+  it("offers every call through the facade", () => {
+    /* Scenario:
+       Given a facade created with a public client and addresses
+       When its groups are read
+       Then every method the README lists exists and is a function */
+    const mintabear = client.createMintABearClient({
+      publicClient: {} as never,
+      addresses: { bears: "0x0000000000000000000000000000000000000001", activation: "0x0000000000000000000000000000000000000002", registry: "0x0000000000000000000000000000000000000003", mntd: "0x0000000000000000000000000000000000000004" },
+    });
+    const methods: Record<string, readonly string[]> = {
+      mint: ["publicStage", "public", "allowList", "allowListMatchesChain", "stats", "remainingWhitelistMints"],
+      whitelist: ["campaign", "isOpen", "claimsOf", "accountClaims", "claimants", "allowList", "claim"],
+      bears: ["get", "level", "costToReach", "thresholds", "weights", "paused", "snapshot", "planBurn", "executeBurn", "burnTo", "link", "unlink", "linkOf", "linkStatus", "linkPrompt", "planTransfer", "executeTransfer"],
+      events: ["read", "decode", "index"],
+      split: ["rows", "compute", "run"],
+      units: ["decimals", "formatMntd", "parseMntd"],
+    };
+    for (const [group, names] of Object.entries(methods)) {
+      for (const name of names) expect(typeof (mintabear as unknown as Record<string, Record<string, unknown>>)[group]![name], `${group}.${name}`).toBe("function");
     }
   });
 });

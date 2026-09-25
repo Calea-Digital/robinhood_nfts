@@ -149,10 +149,12 @@ what makes "exactly the prize count is awarded" true.
 
 ### Integration
 
-DEL-6 is built and in review (MNT-69): `packages/contracts-client`, the typed TypeScript client
+DEL-6 is built (MNT-69; usability pass MNT-131): `packages/contracts-client`, the typed TypeScript client
 over the tranche-1 ABIs (viem 2, tested against anvil), and the reference royalty split with the
-dead-address exclusion (`bin/split.ts`). Its `README.md` is the portal team's reference: every call,
-the revert reasons in check order, the voucher backend's rules, events and indexing, and the split.
+dead-address exclusion (`bin/split.ts`). Its `README.md` is the portal team's reference: a quick
+start through the `createMintABearClient` facade, the error codes with the message each shows a
+holder, the voucher backend's rules, events and indexing, and the split. `examples/` holds one
+runnable file per flow (mint, whitelist, burn, link and transfer, errors, indexing and split).
 The package stays in this repository until CQ-14 names the repository that holds it; it moves
 unchanged. The mystery box's calls join it in tranche 2. Calea's part of the UI is the call
 surface, review of contract-touching pull requests, and clarifications; the rest is MINT's.

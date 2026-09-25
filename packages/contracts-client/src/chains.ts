@@ -4,6 +4,11 @@ import { defineChain } from "viem";
  * Robinhood Chain mainnet (chain id 4663), with the one RPC endpoint verified for this project
  * (`docs/HANDOVER.md`, "Verified on-chain facts"). Pass it to Privy's `supportedChains` and to
  * viem clients; replace `rpcUrls` with a provider of your own for production traffic.
+ *
+ * @example
+ * ```tsx
+ * <PrivyProvider appId={APP_ID} config={{ defaultChain: robinhoodChain, supportedChains: [robinhoodChain] }}>
+ * ```
  */
 export const robinhoodChain = defineChain({
   id: 4663,

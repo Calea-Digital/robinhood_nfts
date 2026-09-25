@@ -151,7 +151,7 @@ describe("whitelist claim on chain", () => {
   }
 
   async function claim(from: keyof typeof accounts, v: { voucher: Voucher; signature: Hex }) {
-    return execute(f.publicClient, f.wallet(accounts[from]), claimCall(f.registry, v.voucher, v.signature));
+    return (await execute(f.publicClient, f.wallet(accounts[from]), claimCall(f.registry, v.voucher, v.signature))).receipt;
   }
 
   async function expectRevert(promise: Promise<unknown>, name: (typeof CLAIM_REVERTS)[number]) {
@@ -160,7 +160,7 @@ describe("whitelist claim on chain", () => {
       (e: unknown) => e,
     );
     expect(error).toBeInstanceOf(ContractRevertError);
-    expect((error as ContractRevertError).revert.name).toBe(name);
+    expect((error as ContractRevertError).revert.errorName).toBe(name);
   }
 
   async function ownerCall(functionName: "setSigner" | "setWindow", args: readonly unknown[]) {
@@ -233,20 +233,11 @@ describe("whitelist claim on chain", () => {
     const b = await acct("b");
     const t = await now();
     await claim("alice", await voucherFor(accounts.alice.address, a, 1));
-    expect(await planVoucher(f.publicClient, f.registry, { wallet: accounts.alice.address, account: a, eligibleAllocations: 1, now: t })).toEqual({
-      ok: false,
-      reason: "NotYetEligible",
-    });
+    expect(await planVoucher(f.publicClient, f.registry, { wallet: accounts.alice.address, account: a, eligibleAllocations: 1, now: t })).toMatchObject({ ok: false, code: "NOT_YET_ELIGIBLE" });
     await claim("alice", await voucherFor(accounts.alice.address, b, 1));
-    expect(await planVoucher(f.publicClient, f.registry, { wallet: accounts.alice.address, account: await acct("c"), eligibleAllocations: 2, now: t })).toEqual({
-      ok: false,
-      reason: "WalletLimit",
-    });
+    expect(await planVoucher(f.publicClient, f.registry, { wallet: accounts.alice.address, account: await acct("c"), eligibleAllocations: 2, now: t })).toMatchObject({ ok: false, code: "WALLET_LIMIT" });
     await claim("bob", await voucherFor(accounts.bob.address, a, 2));
-    expect(await planVoucher(f.publicClient, f.registry, { wallet: accounts.carol.address, account: a, eligibleAllocations: 2, now: t })).toEqual({
-      ok: false,
-      reason: "AccountLimit",
-    });
+    expect(await planVoucher(f.publicClient, f.registry, { wallet: accounts.carol.address, account: a, eligibleAllocations: 2, now: t })).toMatchObject({ ok: false, code: "ACCOUNT_LIMIT" });
   });
 
   it("refuses to plan outside the window", async () => {
@@ -260,7 +251,7 @@ describe("whitelist claim on chain", () => {
       eligibleAllocations: 2,
       now: f.closeAt + 1n,
     });
-    expect(plan).toEqual({ ok: false, reason: "CampaignClosed" });
+    expect(plan).toMatchObject({ ok: false, code: "CAMPAIGN_CLOSED" });
   });
 
   describe("reverts, in check order", () => {
@@ -332,10 +323,7 @@ describe("whitelist claim on chain", () => {
       await f.testClient.setStorageAt({ address: f.registry, index: toHex(0, { size: 32 }), value: toHex(value, { size: 32 }) });
       expect((await readCampaign(f.publicClient, f.registry)).spotsLeft).toBe(0n);
       await expectRevert(claim("alice", await voucherFor(accounts.alice.address, await acct("a"), 1)), "SoldOut");
-      expect(await planVoucher(f.publicClient, f.registry, { wallet: accounts.alice.address, account: await acct("a"), eligibleAllocations: 2, now: await now() })).toEqual({
-        ok: false,
-        reason: "SoldOut",
-      });
+      expect(await planVoucher(f.publicClient, f.registry, { wallet: accounts.alice.address, account: await acct("a"), eligibleAllocations: 2, now: await now() })).toMatchObject({ ok: false, code: "WHITELIST_SOLD_OUT" });
     });
 
     it("WalletLimit: a wallet with two allocations", async () => {

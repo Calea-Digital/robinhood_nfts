@@ -11,6 +11,7 @@
 import { parseArgs } from "node:util";
 import { createPublicClient, getAddress, http } from "viem";
 
+import { explainError } from "../src/errors.js";
 import { computeSplit } from "../src/split/compute.js";
 import { rowsFromEvents, rowsFromSnapshot } from "../src/split/inputs.js";
 
@@ -45,24 +46,30 @@ const closingBlock = BigInt(required("block"));
 const funding = BigInt(required("funding"));
 const carriedIn = BigInt(values["carried-in"] ?? "0");
 
-let rows;
-if (values.mode === "events") {
-  rows = await rowsFromEvents(
-    client,
-    { bears, activation },
-    {
-      fromBlock: BigInt(required("from-block")),
-      closingBlock,
-      blockRange: values["block-range"] ? BigInt(values["block-range"]) : undefined,
-    },
-  );
-} else if (values.mode === "snapshot") {
-  rows = (await rowsFromSnapshot(client, { activation }, { closingBlock, gasBudget: values["gas-budget"] ? BigInt(values["gas-budget"]) : undefined }))
-    .rows;
-} else {
-  console.error(`--mode is events or snapshot, not ${values.mode}`);
-  process.exit(2);
-}
+try {
+  let rows;
+  if (values.mode === "events") {
+    rows = await rowsFromEvents(
+      client,
+      { bears, activation },
+      {
+        fromBlock: BigInt(required("from-block")),
+        closingBlock,
+        blockRange: values["block-range"] ? BigInt(values["block-range"]) : undefined,
+      },
+    );
+  } else if (values.mode === "snapshot") {
+    rows = (await rowsFromSnapshot(client, { activation }, { closingBlock, gasBudget: values["gas-budget"] ? BigInt(values["gas-budget"]) : undefined }))
+      .rows;
+  } else {
+    console.error(`--mode is events or snapshot, not ${values.mode}`);
+    process.exit(2);
+  }
 
-const result = computeSplit(rows, funding, { carriedIn });
-console.log(JSON.stringify({ closingBlock, bears: rows.length, ...result }, (_, v) => (typeof v === "bigint" ? v.toString() : v), 2));
+  const result = computeSplit(rows, funding, { carriedIn });
+  console.log(JSON.stringify({ closingBlock, bears: rows.length, ...result }, (_, v) => (typeof v === "bigint" ? v.toString() : v), 2));
+} catch (error) {
+  const { code, userMessage } = explainError(error);
+  console.error(`${code}: ${userMessage}`);
+  process.exit(1);
+}

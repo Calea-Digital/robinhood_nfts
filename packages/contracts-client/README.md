@@ -1,257 +1,263 @@
 # @mintabear/contracts-client
 
-The typed TypeScript client for the MintABear contracts on Robinhood Chain (DEL-6): every call the
-getminted.io play page makes to `MintABear`, `WhitelistClaim`, `Activation` and SeaDrop, the revert
-reasons a caller handles, and the reference royalty split. The mystery box is tranche 2 and is not
-here yet.
+The TypeScript client for the MintABear contracts on Robinhood Chain. It covers every call the
+getminted.io play page makes (mint, whitelist claim, burn for a level, Status link, transfers,
+reads), the voucher backend's rules, event indexing, and the reference royalty split. Every write
+returns what it did; every error has a code and a message you can show a holder.
 
-**Location is provisional.** The package lives in `packages/contracts-client` of the contracts
-repository until CQ-14 settles which repository holds it; it has no dependency on its location
-beyond `scripts/gen-abis.mjs` reading the Forge build at `../../out`.
+The mystery box is tranche 2 and is not here yet.
 
-## Toolchain
+## Quick start
 
-- TypeScript (strict, ESM), [viem](https://viem.sh) 2 as the only peer dependency.
-- The ABIs in `src/abi/` are generated from the Forge build and checked in: `forge build` at the
-  repository root, then `npm run gen:abi`. CI runs `npm run check:abi` and fails on any drift.
-- Tests: vitest against anvil, with the contracts deployed from `out/` (`npm test`; needs
-  `forge build` and `anvil` on the path).
+```ts
+import { createPublicClient, createWalletClient, custom, http, type Address } from "viem";
+import { createMintABearClient, explainError, formatMntd, getDeployment, robinhoodChain } from "@mintabear/contracts-client";
 
-## Wallets (Privy)
+// Two viem clients: one to read, one from the holder's wallet (here, Privy's embedded wallet).
+const provider = await privyWallet.getEthereumProvider();
+const mintabear = createMintABearClient({
+  publicClient: createPublicClient({ chain: robinhoodChain, transport: http() }),
+  walletClient: createWalletClient({ chain: robinhoodChain, transport: custom(provider), account: privyWallet.address as Address }),
+  addresses: getDeployment(robinhoodChain.id),
+  feeRecipient: OPENSEA_FEE_RECIPIENT,   // the fee recipient Studio allows for the drop
+});
 
-The library takes a viem `PublicClient` for reads and any viem `WalletClient` for writes, so it
-works with whatever produces one — Privy included (`createWalletClient({ chain: robinhoodChain,
-transport: custom(await wallet.getEthereumProvider()) })`, or `@privy-io/wagmi`). It depends on
-neither. `robinhoodChain` and `robinhoodChainTestnet` are the chain objects Privy's
-`supportedChains` needs.
+// Read: free, no wallet needed.
+const bear = await mintabear.bears.get(7n);
+if (bear.exists) console.log(`Level ${bear.level}; ${formatMntd(bear.costToMax)} $MNTD to level 5`);
 
-**Dev-only dependencies.** `merkletreejs@0.2.32` and `ethers@5` exist only for the allowlist
-known-answer test (the versions SeaDrop's reference tests use); `npm audit` flags `crypto-js`
-under the old merkletreejs. None of them is a runtime dependency or reaches the built package.
+// Write: plan, show, send.
+const plan = await mintabear.bears.planBurn({ tokenId: 7n, targetLevel: 3 });
+if (!plan.ok) {
+  showError(plan.userMessage);                                // "This bear is already at level 5."
+} else if (await confirm(`Burn ${formatMntd(plan.amount)} $MNTD?`, plan.warnings.map((w) => w.message))) {
+  try {
+    const { activated } = await mintabear.bears.executeBurn(plan);
+    showSuccess(`Bear #7 is now level ${activated.newLevel}`);
+  } catch (error) {
+    const { code, userMessage } = explainError(error);
+    if (code !== "USER_REJECTED") showError(userMessage);
+  }
+}
+```
 
-## Calls and reverts
+**The examples are the manual.** Each file in [`examples/`](examples) is one flow, written the way
+the page would use it, with every step commented. They run in CI, so they stay correct:
 
-Every write is a builder returning a `Call` — `{ address, abi, functionName, args, value }` —
-which `execute(publicClient, walletClient, call)` simulates, sends and waits for, and
-`toTransaction(call)` turns into the raw `{ to, data, value }` a smart wallet batches. A revert,
-in simulation or on chain, is thrown as `ContractRevertError`; switch on `error.revert.name`.
-Reverts bubble through contracts unchanged, so the decoder knows the errors of all four contracts
-(and OpenZeppelin v5's ERC-20 errors for $MNTD). `simulate(publicClient, account, call)` checks a
-call without sending it.
-
-## Mint (SeaDrop)
-
-- `mintPublicCall(c, { feeRecipient, quantity, mintPrice, minter? })` — `SeaDrop.mintPublic`,
-  paying `mintPrice × quantity`; `readPublicDrop(client, c)` gives the stage and its price.
-- `mintAllowListCall(c, { feeRecipient, quantity, mintParams, proof, minter? })` —
-  `SeaDrop.mintAllowList`. The whitelist stage is Studio's first stage open to non-team wallets
-  (WL-4).
-- `buildAllowList(rows, stage)` builds the tree exactly as `script/lib/AllowListTree.sol` and
-  merkletreejs 0.2.32 (`hashLeaves`, `sortLeaves`, `sortPairs`) do: each row's leaf is
-  `keccak256(abi.encode(wallet, MintParams))` with `maxTotalMintableByWallet` set to the row's
-  allocations. `entry(wallet)` gives the `mintParams` and `proof`; `allowListMatchesChain` checks
-  the root against the one Studio set. The rows are `WhitelistClaim.claimants`, the stage the exact
-  values Studio configured — any difference changes every leaf.
-- `readRemainingWhitelistMints(client, c, wallet, allocations)` is `allocations − numberMinted`:
-  SeaDrop's per-wallet limit counts every mint to the wallet, a public one included.
-- `c.seaDrop` defaults to canonical SeaDrop `0x00005EA0…4bf5`. A minter other than the payer
-  needs the payer allowed by the collection (`PayerNotAllowed` otherwise).
-
-| Revert | Meaning |
+| Example | Shows |
 |---|---|
-| `NotActive` | the stage has not started or has ended |
-| `MintQuantityCannotBeZero` | quantity 0 |
-| `MintQuantityExceedsMaxMintedPerWallet` | past the stage's per-wallet limit (for the whitelist, the row's allocations) |
-| `MintQuantityExceedsMaxSupply` | past `maxSupply`; fires before `ExceedsMaxBears` while `maxSupply` is 4,444 |
-| `MintQuantityExceedsMaxTokenSupplyForStage` | past the stage's supply |
-| `IncorrectPayment` | value is not `mintPrice × quantity` |
-| `InvalidProof` | the proof, the mint params or the minter do not match the root |
-| `FeeRecipientNotAllowed` / `FeeRecipientCannotBeZeroAddress` | fee recipient not one Studio allows |
-| `PayerNotAllowed` | minting for another address from a payer the collection has not allowed |
-| `ExceedsMaxBears` | the collection's cap of 4,444, binding only if `maxSupply` is raised (COL-2) |
+| [`01-getting-started`](examples/01-getting-started.test.ts) | creating the client before and after login; reads; units |
+| [`02-public-mint`](examples/02-public-mint.test.ts) | minting in the public stage; the ids minted; a refusal's message |
+| [`03-whitelist`](examples/03-whitelist.test.ts) | the backend's voucher endpoint; `claim`; the account's allocation number; an expired voucher; the whitelist-stage mint |
+| [`04-burn`](examples/04-burn.test.ts) | plan → warnings → send; refusals; a script's one-call burn; batching for a smart wallet |
+| [`05-link-and-transfer`](examples/05-link-and-transfer.test.ts) | the link prompt; linking; transfer warnings; a link voided by a sale; the self-transfer refusal |
+| [`06-errors`](examples/06-errors.test.ts) | the `catch` pattern; a declined wallet prompt; no ETH for gas; the contract's own error; a plan interrupted halfway |
+| [`07-indexing-and-split`](examples/07-indexing-and-split.test.ts) | typed events; the reference indexer; the royalty split |
 
-## Whitelist claim (WL-3)
+## The client
 
-The backend signs a short-lived voucher once the wager API confirms a threshold. The wallet
-sends `claimCall(registry, voucher, signature)` itself and pays the gas.
+`createMintABearClient({ publicClient, walletClient?, addresses, feeRecipient?, countOpenListings?, deployBlock?, extraErrors? })`
 
-- Reads: `readCampaign` (`spotsLeft` of 1,000, `openAt`, `closeAt`, `signer`), `campaignOpen`,
-  `readClaimsOf(wallet)`, `readAccountClaims(account)`, and `readClaimants`, which pages through
-  the rows the Studio allowlist is built from.
-- The typed data is `claimTypedData(chainId, registry, voucher)`. The type is exactly
-  `Claim(address wallet,uint8 allocationIndex,bytes32 account,uint256 deadline)` and the domain is
-  `WhitelistClaim` / `1` / chain id / registry. A known-answer test pins the digest and the
-  signature against values computed independently with Foundry's `cast`.
-- `allocationIndex` is the **account's** allocation number (1 at $50, 2 at $100), whichever
-  wallet claims it.
-- For a smart wallet, `voucher.wallet` is the smart account's address, because that address
-  sends the claim. Holders never sign typed data, so ERC-1271 never applies.
+Methods that take a `wallet` default to the connected one. Writes need `walletClient`; without it
+they throw `NO_WALLET`.
 
-| Revert (check order) | Meaning |
+| Group | Method | Returns |
+|---|---|---|
+| `mint` | `publicStage()` | price (wei per bear), window, per-wallet limit |
+| | `public({ quantity, minter?, feeRecipient? })` | `{ tokenIds, hash, receipt, events }`; pays the current price |
+| | `allowList({ quantity, mintParams, proof, … })` | `{ tokenIds, … }`; pass `allowList.entry(wallet)` |
+| | `allowListMatchesChain(allowList)` | whether Studio set this list |
+| | `stats(wallet?)` | `{ numberMinted, totalSupply, maxSupply }` |
+| | `remainingWhitelistMints(wallet?)` | allocations minus every bear already minted to the wallet |
+| `whitelist` | `campaign()` | `{ spotsLeft, openAt, closeAt, signer }` |
+| | `isOpen()` | whether claims are accepted now |
+| | `claimsOf(wallet?)`, `accountClaims(account)` | 0–2 |
+| | `claimants()` | every claimant with its allocations |
+| | `allowList(stage)` | the whitelist stage's allowlist: `root`, `entry(wallet)` |
+| | `claim({ voucher, signature })` | `{ spotNumber, allocationIndex, … }` |
+| `bears` | `get(tokenId)` | `{ exists: false }`, or owner, level, burns, weight, `costToMax` |
+| | `level`, `costToReach`, `thresholds`, `weights`, `paused`, `snapshot` | the reads |
+| | `planBurn({ tokenId, targetLevel })` | `{ ok: true, amount, calls, warnings }` or `{ ok: false, code, userMessage }` |
+| | `executeBurn(plan)` | `{ results, activated: { previousLevel, newLevel, amount, cumulative } }` |
+| | `burnTo({ tokenId, targetLevel })` | plan and send in one call (scripts; no warnings shown) |
+| | `link(tokenId)`, `unlink()` | the write's result |
+| | `linkOf(wallet?)`, `linkStatus(wallet?)`, `linkPrompt(tokenId, wallet?)` | the link, `none` / `active` / `voided`, whether to prompt |
+| | `planTransfer({ to, tokenId })`, `executeTransfer(plan)` | `{ call, warnings }`; the write's result |
+| `events` | `read(fromBlock?, toBlock?)`, `decode(logs)`, `index(toBlock?)` | typed events; a `ReferenceIndexer` |
+| `split` | `rows({ closingBlock, mode? })`, `compute(rows, funding)`, `run({ closingBlock, funding, carriedIn?, mode? })` | the royalty split |
+| `units` | `decimals()`, `formatMntd(amount)`, `parseMntd(text)` | $MNTD at the chain's decimals |
+
+Every function the facade uses is exported as well (`planBurn`, `execute`, `readBear`,
+`mintPublicCall`, …), each with TSDoc, for flows the facade does not cover.
+
+### Types and units
+
+- **`bigint`** for token ids, amounts and timestamps. $MNTD and ETH amounts are always in
+  **base units** (wei; $MNTD's smallest unit), and timestamps are Unix seconds.
+- **`number`** for small counts: levels (0–5), allocations (0–2), weights (basis 100: 100 … 200).
+- Show $MNTD with `formatMntd(amount)`, and read what a holder types with `parseMntd(text)`.
+  `3333n * 10n ** 18n` formats as `"3333"`.
+
+### Wallets (Privy)
+
+- **Any wallet works.** The library takes any viem `WalletClient`: Privy's provider through
+  `custom(...)`, `@privy-io/wagmi`, or anything else. It depends on neither Privy nor wagmi.
+  `robinhoodChain` and `robinhoodChainTestnet` are the chain objects Privy's `supportedChains`
+  needs.
+- **Smart wallets batch.** A Privy smart wallet can send a plan's calls as one user operation:
+  `sendTransaction({ calls: plan.calls.map(toTransaction) })`.
+- **The smart account is the wallet.** With a smart wallet, the smart account's address is the
+  whitelist wallet, the allowlist minter and the bear owner. Holders never sign typed data, so
+  ERC-1271 never comes up.
+
+## Errors
+
+Everything the library throws is a `MintABearError`:
+
+| Field | What |
 |---|---|
-| `NotClaimant` | the sender is not `voucher.wallet` |
-| `BadSigner` | not signed by the current signer, or the signer is a contract |
-| `Expired` | past `voucher.deadline` |
-| `CampaignClosed` | outside `openAt`..`closeAt` |
-| `SoldOut` | all 1,000 allocations are claimed |
-| `WalletLimit` | the wallet already holds two |
-| `AccountLimit` | the account already holds two |
-| `WrongAllocation` | `allocationIndex` is not `accountClaims(account) + 1` |
+| `code` | stable, to branch on (the `ErrorCode` type) |
+| `userMessage` | plain English for the holder; safe to show as is |
+| `details` | the facts, by name: a revert's arguments (`{ total, allowed }`), a refusal's numbers |
+| `cause` | the underlying error (viem's, the wallet's) |
+| `message` | a technical line for logs: `linkBear reverted with NotBearOwner: [NOT_BEAR_OWNER] …` |
 
-### The backend's rules (`@mintabear/contracts-client/backend`)
+- `ContractRevertError` means a contract refused. It adds `functionName` and `revert.errorName`,
+  the contract's own error name.
+- `ClientRefusal` means the library refused before anything was sent.
+- A plan's expected "no" is **returned**, not thrown, as `{ ok: false, code, userMessage }`, with
+  the same codes.
+- `executePlan` and `executeBurn` attach `completed` (the calls already mined) when a later step
+  fails.
+
+In a `catch`, `explainError(error)` gives `{ code, userMessage, details }` for anything thrown.
+`isMintABearError(error, "OVERSHOOT")` narrows the type.
+
+<!-- error-codes:begin (generated by scripts/error-table.ts) -->
+| Code | Contract errors | Default `userMessage` |
+|---|---|---|
+| `MINT_NOT_ACTIVE` | `NotActive` | This mint stage is not open right now. |
+| `MINT_ZERO_QUANTITY` | `MintQuantityCannotBeZero`, `MintZeroQuantity` | Choose at least one bear to mint. |
+| `MINT_WALLET_LIMIT` | `MintQuantityExceedsMaxMintedPerWallet` | This wallet has reached its mint limit for this stage. |
+| `MINT_EXCEEDS_SUPPLY` | `MintQuantityExceedsMaxSupply`, `ExceedsMaxBears` | There are not enough bears left to mint that many. |
+| `MINT_EXCEEDS_STAGE_SUPPLY` | `MintQuantityExceedsMaxTokenSupplyForStage` | This stage does not have that many bears left. |
+| `MINT_WRONG_PAYMENT` | `IncorrectPayment` | The payment did not match the mint price. Refresh the price and try again. |
+| `NOT_ON_ALLOWLIST` | `InvalidProof` | This wallet is not on the whitelist for this stage, or the whitelist has changed. |
+| `FEE_RECIPIENT_NOT_ALLOWED` | `FeeRecipientNotAllowed`, `FeeRecipientCannotBeZeroAddress` | The mint was sent with a fee recipient this drop does not accept. |
+| `PAYER_NOT_ALLOWED` | `PayerNotAllowed` | This wallet is not allowed to mint on behalf of another wallet. |
+| `TOKEN_DOES_NOT_EXIST` | `OwnerQueryForNonexistentToken`, `URIQueryForNonexistentToken`, `ApprovalQueryForNonexistentToken` | That bear has not been minted. |
+| `NOT_TOKEN_OWNER_OR_APPROVED` | `TransferCallerNotOwnerNorApproved`, `TransferFromIncorrectOwner`, `ApprovalCallerNotOwnerNorApproved` | This wallet does not own that bear and is not approved to move it. |
+| `BURN_DISABLED` | `BurnDisabled`, `TransferToZeroAddress` | Bears cannot be burned or sent to the zero address. |
+| `RECEIVER_NOT_ERC721` | `TransferToNonERC721ReceiverImplementer` | The receiving contract cannot accept NFTs. |
+| `SELF_TRANSFER` | — | Sending a bear to the wallet that already holds it moves nothing, but it resets the bear's level and its Status link. |
+| `CLAIM_WRONG_WALLET` | `NotClaimant` | This whitelist pass was issued for a different wallet. Connect the wallet you chose when claiming. |
+| `VOUCHER_INVALID` | `BadSigner` | This whitelist pass is not valid. Request a new one. |
+| `VOUCHER_EXPIRED` | `Expired` | This whitelist pass has expired. Request a new one. |
+| `CAMPAIGN_CLOSED` | `CampaignClosed` | The whitelist campaign is not open. |
+| `WHITELIST_SOLD_OUT` | `SoldOut` | All 1,000 whitelist spots have been claimed. |
+| `WALLET_LIMIT` | `WalletLimit` | This wallet already holds two whitelist spots, the most one wallet can hold. |
+| `ACCOUNT_LIMIT` | `AccountLimit` | This account has already claimed both of its whitelist spots. |
+| `WRONG_ALLOCATION` | `WrongAllocation` | This whitelist pass is out of date: the account's spots changed since it was issued. Request a new one. |
+| `NOT_YET_ELIGIBLE` | — | This account has not wagered enough yet for another whitelist spot. |
+| `ACTIVATION_PAUSED` | `ContractPaused` | Burning and Status linking are not open yet. |
+| `ZERO_AMOUNT` | `ZeroAmount` | Choose an amount of $MNTD above zero. |
+| `NOT_BEAR_OWNER` | `NotBearOwner` | Only the bear's owner can do this, and this wallet does not own it. |
+| `ALREADY_MAX_LEVEL` | `AlreadyAtMaxLevel` | This bear is already at level 5. |
+| `TARGET_REACHED` | — | This bear has already reached that level. |
+| `OVERSHOOT` | `Overshoot` | That is more $MNTD than this bear needs to reach level 5. Burn only what the next level costs. |
+| `INVALID_LEVEL` | `InvalidLevel` | Levels run from 0 to 5. |
+| `REENTRANCY` | `Reentrancy` | The burn was interrupted. Try again. |
+| `INSUFFICIENT_MNTD_BALANCE` | `ERC20InsufficientBalance`, `InsufficientBalance` | This wallet does not hold enough $MNTD for this burn. |
+| `INSUFFICIENT_MNTD_ALLOWANCE` | `ERC20InsufficientAllowance`, `InsufficientAllowance` | $MNTD has not been approved for this burn. Approve it, then burn. |
+| `NOT_CONTRACT_OWNER` | `OnlyOwner`, `Unauthorized` | Only the contract's owner can do this. |
+| `USER_REJECTED` | — | The request was cancelled in the wallet. |
+| `INSUFFICIENT_GAS_FUNDS` | — | This wallet does not have enough ETH to pay the network fee. |
+| `NO_WALLET` | — | Connect a wallet first. |
+| `TRANSACTION_REVERTED` | — | The transaction failed on chain. |
+| `INVALID_ARGUMENT` | — | An argument was out of range. |
+| `EMPTY_ALLOWLIST` | — | The whitelist has no rows. |
+| `WEAK_SERVER_KEY` | — | The server key must be at least 32 bytes. |
+| `SPLIT_INVALID_INPUT` | — | The split's input rows are invalid. |
+| `SPLIT_MISSING_BEARS` | — | The Transfer logs account for undefined bears but undefined exist at block undefined. Check fromBlock and the RPC's log range. |
+| `SPLIT_GAS_BUDGET` | — | Reading bear #undefined alone does not fit the gas budget of undefined. |
+| `UNKNOWN_DEPLOYMENT` | — | No MintABear deployment is recorded for chain undefined. |
+| `UNKNOWN_REVERT` | — | The contract refused the transaction. |
+| `UNKNOWN_ERROR` | — | Something went wrong. |
+<!-- error-codes:end -->
+
+Messages with numbers fill them in from `details`, as in "This wallet can mint at most 2 in this
+stage…". Mint reverts: while `maxSupply` is 4,444, SeaDrop's `MintQuantityExceedsMaxSupply` fires
+before the collection's `ExceedsMaxBears`.
+
+## The voucher backend (`@mintabear/contracts-client/backend`, server-only)
 
 The backend is MINT's code. This entry point is a reference implementation of its rules, and the
-tests pin them. It is server-only.
+tests pin them. [`examples/03-whitelist`](examples/03-whitelist.test.ts) shows it as an endpoint.
 
 1. **`account = accountHash(serverKey, { userId } | { email })`**: HMAC-SHA256, with a key of at
    least 32 bytes that never rotates, over the canonical id. An email is NFKC, trimmed and
-   lower-cased; a system-issued user id (an internal id, a Privy user id) is compared exactly, since
-   case-folding it could merge two accounts. Prefer an immutable user id where there is one. `account` is an indexed topic
-   of `WhitelistClaimed`: an unsalted hash of a low-entropy id would publicly tie wallets to casino
-   accounts, and a non-canonical id (email case, whitespace) would split one person into two
-   accounts past the cap.
+   lower-cased; a system-issued user id (an internal id, a Privy user id) is compared exactly,
+   since case-folding it could merge two accounts. `account` is an indexed topic of
+   `WhitelistClaimed`: an unsalted hash of a guessable id would publicly tie wallets to casino
+   accounts.
 2. **`allocationIndex` comes from the chain**: it is `accountClaims(account) + 1`, not the wager
-   tier. Index 2 is issued only once index 1 is claimed. `planVoucher` does this, and answers
-   `NotYetEligible`, `WalletLimit`, `AccountLimit`, `CampaignClosed` or `SoldOut` instead of a
-   voucher when one can't be claimed.
-3. **Check `claimsOf(wallet) < 2`** before signing.
+   tier. `planVoucher` does this, and returns a refusal (`NOT_YET_ELIGIBLE`, `WALLET_LIMIT`,
+   `ACCOUNT_LIMIT`, `CAMPAIGN_CLOSED`, `WHITELIST_SOLD_OUT`) instead of a voucher when the claim
+   would fail.
+3. **Check `claimsOf(wallet) < 2`** before signing; `planVoucher` does.
 4. **The signer is an EOA key** (`signVoucher` takes a viem `LocalAccount`; a Privy server wallet
-   qualifies). The contract recovers with `ecrecover` only. A key rotated out with `setSigner` is
-   never rotated back in: a test shows its unexpired vouchers working again when it is.
-5. **`deadline` is short.** `planVoucher` defaults to 10 minutes; the contract sets no cap.
-
-`signVoucher` does not read the chain. Compare the signing key's address with
-`readCampaign(...).signer` at start-up and after any `setSigner`: a key that is no longer the
-signer produces vouchers that revert `BadSigner`.
-
-## Burn (ACT-4, ACT-7, ACT-8)
-
-To burn: approve **`Activation`** on $MNTD, then call `burn(tokenId, amount)` from the bear's
-owner, with the amount from `costToReach(tokenId, targetLevel)`.
-
-- `planBurn(client, { activation, bears, mntd }, { tokenId, owner, targetLevel, countOpenListings? })`
-  sizes the burn and checks it the way `burn` will. It returns `{ ok: false, reason }` for
-  `NonexistentToken`, `ContractPaused`, `NotBearOwner`, `AlreadyAtMaxLevel`, `TargetReached` or
-  `InsufficientBalance`. Otherwise it returns the calls, `[approve?, burn]`: approve is included
-  only when the allowance is short, and it approves exactly the amount.
-- Its warnings:
-  - `OPEN_LISTINGS`: the bear has open listings. A listing filled after the burn costs the seller
-    the $MNTD and gives the buyer level 0, so offer to cancel them first. The library has no
-    marketplace client; pass `countOpenListings`, backed by OpenSea's API.
-  - `NOT_LINKED`: the burner's wallet doesn't link this bear, so its Status gains nothing until it
-    does, level 5 included.
-- Anything above the level-5 remainder is refused (`Overshoot`), so nothing is destroyed for
-  nothing. `planBurn`'s amount is exactly `costToReach`, so it can never overshoot.
-- A burn is always the caller's own $MNTD, for a bear the caller owns. For a smart wallet, that
-  caller is the smart account.
-
-| Revert (check order) | Meaning |
-|---|---|
-| `ContractPaused` | burning has not opened yet, or is suspended |
-| `ZeroAmount` | amount 0 |
-| `NotBearOwner` | the sender does not own the bear |
-| `AlreadyAtMaxLevel` | the bear is at level 5 |
-| `Overshoot` | amount above `costToReach(tokenId, 5)` |
-| `OwnerQueryForNonexistentToken` | the id was never minted (from the collection, before `NotBearOwner`); `linkBear` too |
-| the token's own | allowance or balance short, from `burnFrom` (OpenZeppelin v5 `ERC20InsufficientAllowance` / `ERC20InsufficientBalance`, or a v4 string); the record is undone with it |
-| `Reentrancy` | never in normal use |
-
-## Status link (ACT-9)
-
-- `linkCall(a, tokenId)` and `unlinkCall(a)`. `unlinkBear` is a silent no-op when there is no
-  link, and works while paused.
-- A new `linkBear` replaces the wallet's earlier link without a `BearUnlinked` for the old bear.
-- `readLink(client, a, wallet)` returns the bear carrying the wallet's boost and its level, or
-  `tokenId` 0 once that bear has moved.
-- `readLinkStatus(client, a, wallet, fromBlock)` separates `none` from `voided`, where the last
-  link's bear was sold. Show a voided link to the seller. It reads the wallet's link events in one
-  `eth_getLogs` from `fromBlock`; on an RPC that caps log ranges, serve it from an indexer instead.
-- `linkPrompt(client, a, wallet, tokenId)`: prompt after a purchase and after a holder's first
-  burn. A wallet has no Status boost until it links, level 5 included.
-- **One link per wallet.** How several wallets' links combine for one getminted.io account is
-  MINT's Status service's rule (CQ-21, open). The library reads each wallet on its own and
-  encodes no answer.
-
-## Transfers
-
-Every transfer resets the bear's level and voids any link to it. That includes a self-transfer
-and an approved operator's transfer (COL-3, ACT-5).
-
-- `planTransfer(client, a, { from, to, tokenId, safe? })` throws `ClientRefusal` for
-  `SELF_TRANSFER` (`from == to`: nothing moves, but the bear resets) and for `ZERO_ADDRESS`.
-  Otherwise it returns the call, with `RESETS_LEVEL` (the level and $MNTD lost) and `VOIDS_LINK`
-  warnings to confirm.
-- Sent anyway, a transfer to the zero address reverts `BurnDisabled` from `transferFrom` and
-  `safeTransferFrom` alike.
-- An operator's transfer passes only if the transfer validator allows that operator. The
-  validator's own error comes through.
-
-## Reads (COL-12, ACT-14)
-
-`readLevel`, `readCumulative`, `readLifetimeBurned`, `readWeight`, `readWeightFor`,
-`readThreshold`, `readCostToReach`, `readLink`, `readSnapshot`, `readPaused`,
-`readTransferNonce`, `readExists`, `readOwner`, and `readBear`, which reads them all for one bear.
-Reads are free, so poll them.
-
-An id that was never minted answers `weightOf` 100 and `snapshot` zeroes, and `ownerOf`
-reverts. Check `exists` first.
+   qualifies). The contract recovers with `ecrecover` only. Never rotate a key back in after
+   `setSigner`: its unexpired vouchers would work again. `signVoucher` does not read the chain, so
+   compare the key's address with `campaign().signer` at start-up.
+5. **`deadline` is short.** It defaults to 10 minutes; the contract sets no cap.
 
 ## Events and indexing
 
-- `decodeSystemLogs(logs, { bears, activation, registry?, mntd? })` and `readSystemEvents(client,
-  addresses, fromBlock)` decode **by emitter**. The collection's ERC-721 `Transfer` and $MNTD's
-  ERC-20 `Transfer` share one topic, and a burn transaction carries $MNTD's `Transfer(holder, 0x0,
-  amount)` (and its `Approval`) beside `BearActivated`. Decoded by topic alone, that would read as
-  a bear sent to the zero address.
-- `TransferNonceAdvanced(tokenId, nonce)` is the reset. It fires on every transfer, never on mint,
-  and precedes the collection's `Transfer` in the same transaction's logs. The indexer voids the
-  bear's level and every wallet's link to it there.
-- A new `BearLinked(wallet, tokenId)` replaces the wallet's earlier link without a `BearUnlinked`
-  for the old bear. A later `BearUnlinked` for a link voided by a reset changes nothing.
-- `BearActivated(tokenId, burner, previousLevel, newLevel, amount, cumulative)` carries no `ref`.
-- `ReferenceIndexer` is the reference reducer. A test replays every event of a sequence of burns,
-  sales, a self-transfer, a voided unlink, relinks and a buy-back, and checks that its `levelOf`
-  and `linkOf` equal the contracts' for every bear and wallet.
+- **Decode by emitter.** `events.read` and `events.decode` decode each log only with the ABI of
+  the contract that emitted it. A burn transaction carries $MNTD's ERC-20 `Transfer(holder, 0x0,
+  amount)`, whose topic is the collection's ERC-721 `Transfer`.
+- **Typed events.** Check `emitter` and `eventName`, and `args` is typed.
+- **`TransferNonceAdvanced(tokenId, nonce)` is the reset.** It fires on every transfer, never on
+  mint, and precedes `Transfer` in the same transaction. The indexer voids the bear's level and
+  every link to it there.
+- **A new `BearLinked` replaces the wallet's link** without a `BearUnlinked`. A later
+  `BearUnlinked` for a voided link changes nothing.
+- **`ReferenceIndexer` is the reference.** A test replays a long sequence of events and checks
+  that its `levelOf` and `linkOf` equal the contracts'.
 
 ## Royalty split (reference)
 
-`computeSplit(rows, funding, { carriedIn? })` computes the split, and `bin/split.ts` runs it
-against a node.
+`split.run({ closingBlock, funding, carriedIn? })`, or `bin/split.ts` from the command line:
 
-- **Weights:** a wallet's weight is the sum of its bears' weights (basis 100). The eligible total
-  excludes bears held by `0x000000000000000000000000000000000000dEaD`. Contract-held bears keep
-  their weight; whether to pay a contract is MINT's policy.
-- **Amounts:** each wallet gets `floor(distributable × weight / eligibleWeight)`, where
-  `distributable = funding + carriedIn`. `carried = distributable − Σ allocations` is always fewer
-  base units than there are wallets. Allocations plus carried equal the funding exactly, and a
-  fixture test pins the numbers.
-- **Rows:** ids exactly 1..4,444, each once, each with an owner. `computeSplit` throws on a
-  duplicate, an out-of-range id or an ownerless row.
-
-The inputs come from an **archive node** at the closing block. On Robinhood Chain that is the L2
-block number; `block.number` inside a contract reads L1. There are two modes, and a test on anvil
-shows they agree:
-
-- **`rowsFromEvents`** (default): owners from the collection's indexed `Transfer` events up to the
-  closing block, and weights from `weightOf` at that block. There is no owner walk, so the cost is
-  flat. It reads `weightOf` only for ids that have an owner. `weightOf` answers 100 for an id never
-  minted, so before sell-out a sum over the whole range would count phantom bears.
-- **`rowsFromSnapshot`**: `Activation.snapshot` over 1..4,444, paged by a **gas budget** (default
-  30M). Each page is estimated first and halved until it fits. `snapshot` walks `ownerOf` back to
-  the start of an untransferred mint batch, so its cost is quadratic in such a batch: 56.2M gas for
-  the full range at two bears per wallet, and more for long batches. A single full-range call is
-  not dependable. Ids with no owner are dropped.
+- **Weights:** a wallet's weight is the sum of its bears' weights. Bears held by `0x…dEaD` are
+  excluded; contract-held bears keep their weight.
+- **Amounts:** each wallet gets `floor(distributable × weight / eligibleWeight)`, and the rest is
+  `carried`, fewer base units than there are wallets. Allocations plus carried equal the funding
+  exactly.
+- **Inputs:** read at the closing block from an **archive node**. On Robinhood Chain that is the L2
+  block number.
+  - `mode: "events"` (the default) takes owners from `Transfer` logs and weights from `weightOf`. It
+    refuses (`SPLIT_MISSING_BEARS`) unless the owners found equal `totalSupply`.
+  - `mode: "snapshot"` reads `Activation.snapshot`, paged by a gas budget (default 30M), because its
+    cost is quadratic over a long untransferred mint batch.
 
 ```shell
 npx tsx bin/split.ts --rpc $ARCHIVE_RPC --bears $BEARS --activation $ACTIVATION \
-  --from-block $COLLECTION_DEPLOY_BLOCK --block $CLOSING_BLOCK --funding $AMOUNT \
-  [--carried-in $LAST_CARRIED] [--mode events|snapshot] [--gas-budget 30000000] [--block-range 10000]
+  --from-block $DEPLOY_BLOCK --block $CLOSING_BLOCK --funding $AMOUNT [--carried-in $LAST] [--mode snapshot]
 ```
 
-It prints JSON with amounts as decimal strings, and sends nothing.
+## Development
 
-## Not here yet
-
-The mystery box (`MysteryBox`, `PrizeDraw`, `PrizeVault`: opens and prize claims on each chain)
-is tranche 2. Its calls will join this package as `src/mysteryBox.ts` with their own tests. Nothing
-in the tranche-1 modules depends on it.
+- **Location:** the package lives in `packages/contracts-client` of the contracts repository until
+  CQ-14 settles which repository holds it. It moves unchanged; only `scripts/gen-abis.mjs` reads
+  the Forge build at `../../out`.
+- **Toolchain:** TypeScript (strict, ESM), with viem 2 as the only peer dependency. The ABIs in
+  `src/abi/` are generated from the Forge build: `forge build` at the repository root, then
+  `npm run gen:abi`. CI runs `npm run check:abi`.
+- **Tests:** `npm test` runs vitest against anvil, with the contracts deployed from `out/`. Run
+  `forge build` first; `anvil` must be on the path. `test/` is the verification suite and
+  `examples/` the usage layer.
+- **Generated README section:** `npm run docs:errors` regenerates the error-code table above, and
+  a test fails when it is stale.
+- **Dev-only dependencies:** `merkletreejs@0.2.32` and `ethers@5` exist only for the allowlist
+  known-answer test. `npm audit` flags `crypto-js` under them. None ships in the package.

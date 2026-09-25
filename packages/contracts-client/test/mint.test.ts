@@ -72,7 +72,7 @@ describe("mint through SeaDrop", () => {
       (e: unknown) => e,
     );
     expect(error).toBeInstanceOf(ContractRevertError);
-    expect((error as ContractRevertError).revert.name).toBe(name);
+    expect((error as ContractRevertError).revert.errorName).toBe(name);
   }
 
   beforeAll(async () => {

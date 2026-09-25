@@ -1,24 +1,29 @@
-import { zeroAddress, type Address, type Chain, type Hex, type PublicClient, type Transport } from "viem";
+/**
+ * Minting through SeaDrop.
+ *
+ * Bears are minted by OpenSea's SeaDrop, never by the collection directly. Studio configures two
+ * kinds of stage: the public stage (`mintPublic`) and allowlist stages (`mintAllowList`, with a
+ * Merkle proof). The whitelist stage is Studio's first stage open to non-team wallets (WL-4):
+ * SeaDrop's per-wallet limit counts every mint to a wallet in any stage.
+ *
+ * The facade's `mintabear.mint` wraps these with the price read for you.
+ *
+ * @module
+ */
+import { zeroAddress, type Address, type Hex } from "viem";
 
 import { mintABearAbi, seaDropAbi } from "./abi/index.js";
+import { seaDropOf, type MintABearAddresses } from "./addresses.js";
 import type { AllowList, MintParams } from "./allowlist.js";
-import type { Call } from "./calls.js";
-import { SEADROP_ADDRESS } from "./constants.js";
+import type { AnyPublicClient, Call } from "./calls.js";
 
-type Client = PublicClient<Transport, Chain | undefined>;
-
-/** Where the collection and its minter live. `seaDrop` defaults to OpenSea's canonical SeaDrop. */
-export interface CollectionAddresses {
-  bears: Address;
-  seaDrop?: Address;
-}
-
-const seaDropOf = (c: CollectionAddresses): Address => c.seaDrop ?? SEADROP_ADDRESS;
+/** The addresses a mint needs: the collection, and SeaDrop (canonical when omitted). */
+export type CollectionAddresses = Pick<MintABearAddresses, "bears" | "seaDrop">;
 
 /**
- * The reverts a mint through SeaDrop can meet, as a caller handles them. While `maxSupply` is
- * 4,444, SeaDrop's `MintQuantityExceedsMaxSupply` fires before the collection's own
- * `ExceedsMaxBears`, which binds only if Studio ever raises `maxSupply` (COL-2).
+ * The contract errors a mint can meet. While `maxSupply` is 4,444, SeaDrop's
+ * `MintQuantityExceedsMaxSupply` fires before the collection's own `ExceedsMaxBears`, which binds only
+ * if Studio ever raises `maxSupply` (COL-2). Each maps to a code in `REVERT_CODES`.
  */
 export const MINT_REVERTS = [
   "NotActive",
@@ -34,25 +39,78 @@ export const MINT_REVERTS = [
   "ExceedsMaxBears",
 ] as const;
 
-/** The public stage as SeaDrop holds it for the collection. */
-export async function readPublicDrop(client: Client, c: CollectionAddresses) {
-  return client.readContract({ address: seaDropOf(c), abi: seaDropAbi, functionName: "getPublicDrop", args: [c.bears] });
+/** The public stage as SeaDrop holds it. Times are Unix seconds; `mintPrice` is wei per bear. */
+export interface PublicStage {
+  mintPrice: bigint;
+  startTime: bigint;
+  endTime: bigint;
+  /** Most bears one wallet may mint across all stages. */
+  maxTotalMintableByWallet: number;
+  feeBps: number;
+  restrictFeeRecipients: boolean;
 }
 
-/** The allowlist root Studio set on SeaDrop for the collection. */
-export async function readAllowListRoot(client: Client, c: CollectionAddresses): Promise<Hex> {
-  return client.readContract({ address: seaDropOf(c), abi: seaDropAbi, functionName: "getAllowListMerkleRoot", args: [c.bears] });
+/**
+ * The public stage SeaDrop holds for the collection.
+ *
+ * @param client - Any viem public client on the chain.
+ * @param addresses - The collection (and SeaDrop).
+ * @returns The stage: price, window, per-wallet limit, fee settings.
+ */
+export async function readPublicDrop(client: AnyPublicClient, addresses: CollectionAddresses): Promise<PublicStage> {
+  const d = await client.readContract({ address: seaDropOf(addresses), abi: seaDropAbi, functionName: "getPublicDrop", args: [addresses.bears] });
+  return {
+    mintPrice: d.mintPrice,
+    startTime: BigInt(d.startTime),
+    endTime: BigInt(d.endTime),
+    maxTotalMintableByWallet: d.maxTotalMintableByWallet,
+    feeBps: d.feeBps,
+    restrictFeeRecipients: d.restrictFeeRecipients,
+  };
 }
 
-/** True when `allowList` is the one Studio set: a proof from it will verify on SeaDrop. */
-export async function allowListMatchesChain(client: Client, c: CollectionAddresses, allowList: AllowList): Promise<boolean> {
-  return (await readAllowListRoot(client, c)).toLowerCase() === allowList.root.toLowerCase();
+/**
+ * The allowlist root Studio set on SeaDrop for the collection.
+ *
+ * @param client - Any viem public client on the chain.
+ * @param addresses - The collection (and SeaDrop).
+ */
+export async function readAllowListRoot(client: AnyPublicClient, addresses: CollectionAddresses): Promise<Hex> {
+  return client.readContract({ address: seaDropOf(addresses), abi: seaDropAbi, functionName: "getAllowListMerkleRoot", args: [addresses.bears] });
 }
 
-/** `getMintStats`: how many bears `minter` has minted, how many exist, and the advertised `maxSupply`. */
-export async function readMintStats(client: Client, c: CollectionAddresses, minter: Address) {
+/**
+ * Whether `allowList` is the one Studio set, so its proofs will verify on SeaDrop.
+ *
+ * @param client - Any viem public client on the chain.
+ * @param addresses - The collection (and SeaDrop).
+ * @param allowList - From `buildAllowList`.
+ * @returns `true` when the roots match.
+ */
+export async function allowListMatchesChain(client: AnyPublicClient, addresses: CollectionAddresses, allowList: AllowList): Promise<boolean> {
+  return (await readAllowListRoot(client, addresses)).toLowerCase() === allowList.root.toLowerCase();
+}
+
+/** A wallet's mint count and the collection's supply. */
+export interface MintStats {
+  /** Bears minted to the wallet, in every stage. */
+  numberMinted: bigint;
+  /** Bears in existence. */
+  totalSupply: bigint;
+  /** The advertised maximum (4,444). */
+  maxSupply: bigint;
+}
+
+/**
+ * The collection's `getMintStats` for `minter`.
+ *
+ * @param client - Any viem public client on the chain.
+ * @param addresses - The collection.
+ * @param minter - The wallet.
+ */
+export async function readMintStats(client: AnyPublicClient, addresses: Pick<MintABearAddresses, "bears">, minter: Address): Promise<MintStats> {
   const [numberMinted, totalSupply, maxSupply] = await client.readContract({
-    address: c.bears,
+    address: addresses.bears,
     abi: mintABearAbi,
     functionName: "getMintStats",
     args: [minter],
@@ -61,66 +119,97 @@ export async function readMintStats(client: Client, c: CollectionAddresses, mint
 }
 
 /**
- * Whitelist mints left to a claimant: `allocations − numberMinted`, never below zero. SeaDrop's
- * per-wallet limit counts every mint to the wallet in any stage, so a public mint made first uses
- * up an allocation too (WL-4).
+ * Whitelist mints left to a claimant: `allocations − numberMinted`, never below zero. A public mint
+ * made first uses up an allocation too (WL-4).
+ *
+ * @param allocations - The wallet's allocations (1 or 2).
+ * @param numberMinted - From {@link readMintStats}.
  */
 export function remainingWhitelistMints(allocations: number | bigint, numberMinted: bigint): bigint {
   const left = BigInt(allocations) - numberMinted;
   return left > 0n ? left : 0n;
 }
 
-/** `remainingWhitelistMints` read from the chain for `wallet`. */
+/**
+ * {@link remainingWhitelistMints} read from the chain.
+ *
+ * @param client - Any viem public client on the chain.
+ * @param addresses - The collection.
+ * @param wallet - The claimant.
+ * @param allocations - Its allocations (`readClaimsOf`).
+ */
 export async function readRemainingWhitelistMints(
-  client: Client,
-  c: CollectionAddresses,
+  client: AnyPublicClient,
+  addresses: Pick<MintABearAddresses, "bears">,
   wallet: Address,
   allocations: number | bigint,
 ): Promise<bigint> {
-  return remainingWhitelistMints(allocations, (await readMintStats(client, c, wallet)).numberMinted);
+  return remainingWhitelistMints(allocations, (await readMintStats(client, addresses, wallet)).numberMinted);
 }
 
+/** Arguments of {@link mintPublicCall}. */
 export interface MintPublicArgs {
   /** The fee recipient Studio allows for the drop (OpenSea's). */
   feeRecipient: Address;
+  /** Bears to mint. */
   quantity: bigint;
-  /** The stage's price per bear (`readPublicDrop(...).mintPrice`); the call pays `mintPrice × quantity`. */
+  /** The stage's price per bear in wei (`readPublicDrop(...).mintPrice`). The call pays `mintPrice × quantity`. */
   mintPrice: bigint;
-  /** The recipient when it is not the payer; omit to mint to the sender. */
-  minter?: Address;
-}
-
-/** `SeaDrop.mintPublic` for the collection. */
-export function mintPublicCall(c: CollectionAddresses, a: MintPublicArgs) {
-  return {
-    address: seaDropOf(c),
-    abi: seaDropAbi,
-    functionName: "mintPublic",
-    args: [c.bears, a.feeRecipient, a.minter ?? zeroAddress, a.quantity],
-    value: a.mintPrice * a.quantity,
-  } as const satisfies Call;
-}
-
-export interface MintAllowListArgs {
-  feeRecipient: Address;
-  quantity: bigint;
-  /** The row's mint params and proof, from `AllowList.entry(wallet)`. */
-  mintParams: MintParams;
-  proof: readonly Hex[];
+  /** Mint to this address instead of the sender. The sender must then be an allowed payer. */
   minter?: Address;
 }
 
 /**
- * `SeaDrop.mintAllowList` for the collection. The whitelist stage is Studio's first stage open to
- * non-team wallets (WL-4). The proof is for the minter's address, which for a smart wallet is the
- * smart account, not its signer.
+ * The `SeaDrop.mintPublic` call.
+ *
+ * @param addresses - The collection (and SeaDrop).
+ * @param args - Fee recipient, quantity, price and optional recipient.
+ * @returns A {@link Call} paying exactly `mintPrice × quantity`.
+ *
+ * @example
+ * ```ts
+ * const stage = await readPublicDrop(client, addresses);
+ * await execute(client, wallet, mintPublicCall(addresses, { feeRecipient, quantity: 2n, mintPrice: stage.mintPrice }));
+ * ```
  */
-export function mintAllowListCall(c: CollectionAddresses, a: MintAllowListArgs) {
+export function mintPublicCall(addresses: CollectionAddresses, args: MintPublicArgs) {
   return {
-    address: seaDropOf(c),
+    address: seaDropOf(addresses),
+    abi: seaDropAbi,
+    functionName: "mintPublic",
+    args: [addresses.bears, args.feeRecipient, args.minter ?? zeroAddress, args.quantity],
+    value: args.mintPrice * args.quantity,
+  } as const satisfies Call;
+}
+
+/** Arguments of {@link mintAllowListCall}. */
+export interface MintAllowListArgs {
+  /** The fee recipient Studio allows for the drop. */
+  feeRecipient: Address;
+  /** Bears to mint; at most the wallet's remaining whitelist mints. */
+  quantity: bigint;
+  /** The wallet's mint params, from `AllowList.entry(wallet)`. */
+  mintParams: MintParams;
+  /** The wallet's proof, from `AllowList.entry(wallet)`. */
+  proof: readonly Hex[];
+  /** Mint to this address instead of the sender (an allowed payer only). */
+  minter?: Address;
+}
+
+/**
+ * The `SeaDrop.mintAllowList` call. The proof is for the minter's address — for a smart wallet,
+ * the smart account, not its signer.
+ *
+ * @param addresses - The collection (and SeaDrop).
+ * @param args - Fee recipient, quantity, and the wallet's entry from the allowlist.
+ * @returns A {@link Call} paying `mintParams.mintPrice × quantity`.
+ */
+export function mintAllowListCall(addresses: CollectionAddresses, args: MintAllowListArgs) {
+  return {
+    address: seaDropOf(addresses),
     abi: seaDropAbi,
     functionName: "mintAllowList",
-    args: [c.bears, a.feeRecipient, a.minter ?? zeroAddress, a.quantity, a.mintParams, a.proof],
-    value: a.mintParams.mintPrice * a.quantity,
+    args: [addresses.bears, args.feeRecipient, args.minter ?? zeroAddress, args.quantity, args.mintParams, args.proof],
+    value: args.mintParams.mintPrice * args.quantity,
   } as const satisfies Call;
 }
