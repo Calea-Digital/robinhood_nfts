@@ -14,11 +14,18 @@ draft and the version signed after it are separate files. The merged document is
 (WordprocessingML built here, no third-party library) and saved as .pages by Pages through
 AppleScript. Tables carry no fixed row heights, so Pages sizes rows to their content.
 
+`--operational` writes the extract for a call with MINT instead: the front matter's title and
+version line under a short introduction, then the decisions section with its table of what is
+needed from MINT, then "Where the work stands" — everything before §1 Scope — and nothing after
+(no callouts, no appendix, no sign-off). It is named `MintABear-Operational-v<version>`, beside the
+full document of the same version, which it points to.
+
 Usage (from the repository root):
 
-    python3 docs/tools/build_client_doc.py              # writes docs/client/*.pages
-    python3 docs/tools/build_client_doc.py --docx       # also keeps docs/client/*.docx
-    python3 docs/tools/build_client_doc.py --docx-only  # stops at .docx (no Pages)
+    python3 docs/tools/build_client_doc.py                  # writes docs/client/*.pages
+    python3 docs/tools/build_client_doc.py --docx           # also keeps docs/client/*.docx
+    python3 docs/tools/build_client_doc.py --docx-only      # stops at .docx (no Pages)
+    python3 docs/tools/build_client_doc.py --operational    # the call extract instead
 
 Markdown subset understood: ATX headings, paragraphs, `-` and `1.` lists, pipe tables,
 `>` blockquotes, `---` rules, and inline **bold**, *emphasis*, `code`, [links]().
@@ -424,7 +431,7 @@ def question_links(parsed) -> tuple[list, dict[str, list], dict[str, list[str]]]
     return open_q, waits, holds
 
 
-def needs_blocks(parsed) -> list[dict]:
+def needs_blocks(parsed, operational: bool = False) -> list[dict]:
     """The agenda's opening table: every question still open, soonest first."""
     open_q, _, holds = question_links(parsed)
     rows = []
@@ -438,8 +445,11 @@ def needs_blocks(parsed) -> list[dict]:
         {"kind": "heading", "level": 3, "text": "What we need from MINT, soonest first"},
         {"kind": "para", "text": "Every question still open, with the requirements it holds up and the date "
                                  "it is needed by. The last column but one is what Calea builds if it is "
-                                 "not answered in time. Each question is set out in full under the section "
-                                 "it affects, and each requirement it holds up says so."},
+                                 "not answered in time. " + (
+                                     "Each question is set out in full in the specification, under the "
+                                     "section it affects." if operational else
+                                     "Each question is set out in full under the section "
+                                     "it affects, and each requirement it holds up says so.")},
         {"kind": "table", "header": ["ID", "Question", "Holds up", "Needed by", "If not answered", "Status"],
          "rows": rows, "widths": NEEDS_WIDTHS},
     ]
@@ -466,9 +476,25 @@ def with_waits(blocks: list[dict], waits: dict[str, list]) -> list[dict]:
     return out
 
 
+def operational_front(front_md: str, version: str) -> str:
+    """The extract's front matter: the title and version line, then what the extract is."""
+    lines = front_md.splitlines()
+    end = next(i for i, line in enumerate(lines) if line.strip() == "<!-- openspec:end -->")
+    head = [line.replace("# MintABear — Specification", "# MintABear — Operational summary") for line in lines[:end + 1]]
+    intro = (
+        f"The part of specification v{version} to work from on a call: what MINT is asked to decide or "
+        "supply, soonest first, and where the work stands. Everything else — the requirements, "
+        "each question set out in full, the register and the sign-off — is in "
+        f"*MintABear-Specification-v{version}*, which this summary follows exactly."
+    )
+    return "\n".join(head + ["", intro, ""])
+
+
 def merge(spec_md: str, by_section: dict, register: dict | None, closed: dict | None = None,
-          parsed=None) -> str:
-    """Body XML: spec sections with their questions appended; register appendix; sign-off last."""
+          parsed=None, operational: bool = False) -> str:
+    """Body XML: spec sections with their questions appended; register appendix; sign-off last.
+
+    With `operational`, only the front matter, the decisions section and the sections before §1."""
     waits = question_links(parsed)[1] if parsed else {}
     lines = spec_md.splitlines()
     chunks: list[tuple[str | None, list[str]]] = []
@@ -485,7 +511,14 @@ def merge(spec_md: str, by_section: dict, register: dict | None, closed: dict | 
     front, rest = chunks[0], chunks[1:]
     agenda = [c for c in rest if c[0] and "Decisions" in c[0]]
     rest = [c for c in rest if c not in agenda]
-    chunks = [front] + agenda + rest
+    if operational:
+        # Stop at the first numbered section (§1 Scope): the extract is what comes before it.
+        first_numbered = next(i for i, c in enumerate(rest) if c[0] and re.match(r"^## \d+\.", c[0]))
+        version = VERSION.search(spec_md)
+        front = (None, operational_front("\n".join(front[1]), version.group("ver") if version else "draft").splitlines())
+        chunks = [front] + agenda + rest[:first_numbered]
+    else:
+        chunks = [front] + agenda + rest
 
     used: set[str] = set()
     parts: list[str] = []
@@ -500,15 +533,18 @@ def merge(spec_md: str, by_section: dict, register: dict | None, closed: dict | 
             continue
         section_blocks = with_waits(parse_blocks(heading + "\n" + body_md), waits)
         if parsed and "Decisions" in heading:
-            section_blocks[1:1] = needs_blocks(parsed)
+            section_blocks[1:1] = needs_blocks(parsed, operational)
         part = blocks_xml(section_blocks)
         tag_match = SECTION_TAG.match(heading)
-        if tag_match:
+        if tag_match and not operational:
             tag = tag_match.group("tag")
             for title, qblocks, settled in by_section.get(tag, []):
                 part += callout_xml(title, qblocks, settled)
             used.add(tag)
         parts.append(part)
+
+    if operational:
+        return "".join(parts)
 
     leftovers = [q for tag, qs in by_section.items() if tag not in used for q in qs]
     if leftovers:
@@ -630,16 +666,18 @@ def write_docx(path: Path, body: str) -> None:
 def main(argv: list[str]) -> int:
     docx_only = "--docx-only" in argv
     keep_docx = docx_only or "--docx" in argv
+    operational = "--operational" in argv
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
     spec_md = SPEC.read_text(encoding="utf-8")
     by_section, register, closed = parse_questions(QUESTIONS.read_text(encoding="utf-8"))
     openspec = ROOT / "openspec"
     parsed = parse_openspec(openspec / "specs", openspec / "decisions.md", openspec / "config.yaml", ROOT)
-    body = merge(spec_md, by_section, register, closed, parsed)
+    body = merge(spec_md, by_section, register, closed, parsed, operational)
 
     version = VERSION.search(spec_md)
-    out_name = f"MintABear-Specification-v{version.group('ver') if version else 'draft'}"
+    kind = "Operational" if operational else "Specification"
+    out_name = f"MintABear-{kind}-v{version.group('ver') if version else 'draft'}"
     docx_path = OUT_DIR / f"{out_name}.docx"
     pages_path = OUT_DIR / f"{out_name}.pages"
     write_docx(docx_path, body)

@@ -49,8 +49,11 @@ format, the export to the Studio allowlist, and the client calls (DEL-6).
 `WhitelistClaim` on Robinhood Chain (`→ CQ-18`; WL-6 is the alternative). A
 voucher is the EIP-712 message whose type is exactly
 `Claim(address wallet,uint8 allocationIndex,bytes32 account,uint256 deadline)`, signed by the
-eligibility signer, with a short `deadline` (minutes), `account` a hash of the getminted.io
-account id, so the chain carries no personal data, and `allocationIndex` the account's
+eligibility signer, with a short `deadline` (minutes), `account` a keyed hash —
+HMAC-SHA256 under a key held server-side — over a canonical form of the getminted.io account id
+(an immutable user id, or an email case-folded and trimmed), so the chain carries no personal data
+and the indexed `account` of `WhitelistClaimed` cannot be matched to a guessed id, and
+`allocationIndex` the account's
 allocation number — 1 for the allocation $50 unlocks, 2 for the one $100 unlocks (WL-1).
 `claim(voucher,
 signature)` reverts unless: `msg.sender == wallet` (`NotClaimant`), the one condition D4 option
@@ -69,7 +72,12 @@ same contract without the `NotClaimant` condition (`→ CQ-18`). Reads: `TOTAL_S
 `claimants(offset, limit) → (wallet, allocations)[]`, `openAt`, `closeAt`, `signer`. Owner (MINT
 admin): `setSigner`, `setWindow(openAt, closeAt)`, and ownership transfer — one-step
 `transferOwnership` or the two-step handover. `renounceOwnership` reverts for every caller, so the
-signer can always be rotated. Nobody can remove or reassign a claim.
+signer can always be rotated. Nobody can remove or reassign a claim. The eligibility signer
+is an externally owned key, since the registry recovers signatures with `ecrecover` alone and a
+contract's vouchers revert `BadSigner`. It issues `allocationIndex` as
+`accountClaims(account) + 1`, and only while `claimsOf(wallet) < MAX_PER_WALLET`. A key rotated
+out by `setSigner` is never rotated back in, since its unexpired vouchers would be valid again.
+DEL-6's backend reference pins these rules.
 
 #### Scenario: A valid voucher claims a spot
 - **GIVEN** a voucher signed by the signer for wallet W, allocation 1, within its deadline and the campaign window

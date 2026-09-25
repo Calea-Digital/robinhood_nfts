@@ -2,9 +2,9 @@
 # MintABear — Specification
 
 <!-- openspec:begin version -->
-**Version** 2.2 · **Date** 24 September 2026 · **Status** records the decisions of the
-MINT–Calea call of 21 September 2026 and the tranche-1 build and review of 22–24 September;
-sign-off follows the open items in §10
+**Version** 2.3 · **Date** 25 September 2026 · **Status** records the decisions of the
+MINT–Calea call of 21 September 2026, the tranche-1 build and review of 22–24 September and the
+TypeScript client library of 25 September; sign-off follows the open items in §10
 <!-- openspec:end -->
 
 Prepared by Calea for MINT. Sources: *MINTaBear development statement of work* (MINT, 14 September
@@ -26,41 +26,47 @@ confirmed; yellow callouts are decisions for the call.
 
 ## Where the work stands
 
-As of 24 September 2026. Tranche 1 — the collection, the whitelist registry and the activation
-contract — is built and reviewed; nothing is deployed yet. Tranche 2, the mystery box, is
-specified and waits on the prize count and chains (CQ-20).
+As of 25 September 2026. Tranche 1 is built and reviewed: the collection, the whitelist registry,
+the activation contract, and the TypeScript client library the play page is built on. Nothing is
+deployed yet. Tranche 2, the mystery box, is specified and waits on the prize count and chains
+(CQ-20).
 
 | Item | Where it stands |
 |---|---|
-| `MintABear` (§3) | Built and reviewed. Deploys with the transfer validator set, `maxSupply` at 4,444, ownership offered to MINT's admin in two steps |
-| `WhitelistClaim` (§4) | Built and reviewed. The claimant export to the Studio allowlist and a check of Studio's root against the registry are scripted |
+| `MintABear` (§3) | Built and reviewed. Deploys with the transfer validator set, `maxSupply` at 4,444, and ownership offered to MINT's admin in two steps |
+| `WhitelistClaim` (§4) | Built and reviewed. The claimant export to the Studio allowlist, and a check of Studio's root against the registry, are scripted |
 | `Activation` (§5) | Built and reviewed. Burns $MNTD itself; paused from deployment until the switch-on date |
-| Deployment, verification, enforcement (§7) | Scripts written and tested; the runbook covers the handover, the whitelist export, enforcement, royalties and `Activation` |
-| Tests | 214 deterministic unit tests at full line and branch coverage; fuzzing, invariants and fork tests are the internal auditor's (DEL-3) |
-| Review | Every tranche-1 requirement reviewed with Calea's reviewer; 29 defects found and fixed in the code, tests and documents before hand-off to the auditor |
+| Client library (DEL-6) | Built and reviewed. One TypeScript client for every tranche-1 call the play page makes: mint, whitelist claim, burn for a level, Status link, transfers and reads. Every error carries a stable code and a message ready to show a holder. Runnable examples cover each flow, and a reference for the voucher backend is included |
+| Royalty split (DEL-6) | Built. The reference script reproduces the split at a closing block, dead-address exclusion included, and refuses inputs that miss a bear (ACT-10) |
+| Deployment, verification, enforcement (§7) | Scripts written and tested. The runbook covers the handover, the whitelist export, enforcement, royalties and `Activation` |
+| Tests | 214 deterministic contract tests at full line and branch coverage, and 121 client-library tests run against a local chain with the contracts deployed. Fuzzing, invariants and fork tests are the internal auditor's (DEL-3) |
+| Review | Every tranche-1 requirement and the client library reviewed with Calea's reviewer; the defects found were fixed in the code, tests and documents before hand-off to the auditor |
 | Testnet rehearsal (OPS-4) | Next, once MINT's testnet $MNTD and addresses are in hand (CQ-2, CQ-12) |
-| Integration package (DEL-6) | Next: the TypeScript client library and the royalty-split script |
-| Mystery box (§6) | Specified; built after CQ-20 is answered |
+| Mystery box (§6) | Specified; built after CQ-20 is answered. Its calls join the client library then |
 
-**Changes since version 2.1.** Each went through Calea's review; the requirements above read as
-the final state.
+**What the client library needs from MINT.** None of these changes a contract. Each is needed
+before the page it serves goes live.
 
-- `Activation` burns $MNTD itself, in the same transaction as the record, instead of taking
-  credits from an adapter: no key can record a level without a burn (ACT-1, ACT-4, ACT-7). The
-  thresholds are given in whole $MNTD and scaled by the token's `decimals` at deployment (ACT-2).
-- After a transfer a bear weighs the level-0 weight, so an unactivated bear still counts in the
-  royalty split (ACT-5).
-- Ownership of the collection, the whitelist registry and `Activation` can never be renounced,
-  so the signer can always be rotated and the pause always set (COL-10, WL-3, ACT-11).
-- A whitelist allocation belongs to the getminted.io account: allocation 1 at $50, 2 at $100,
-  each claimed once, in order, whichever wallet the holder selects (WL-1, WL-3).
-- The whitelist stage is the first stage open to wallets other than the team's, because the
-  allowlist's per-wallet limit counts every bear a wallet mints (WL-4, CQ-18).
-- Royalty enforcement covers every sale a marketplace operates; a sale arranged outside a
-  marketplace pays no creator earnings (COL-7).
-- No address is set after a contract is deployed, and the deployment refuses a collection
-  address that is not `MintABear` (OPS-2).
-- A new question: how Status counts an account's several links (CQ-21).
+- **The account id the voucher backend hashes**, and a 32-byte server key for it that never
+  changes. An immutable user id (Privy's user id) is the better choice than an email (WL-3).
+- **OpenSea's fee recipient for the drop**, which every mint names. Also access to OpenSea's
+  listings API, so the page can warn a holder whose bear is listed before a burn.
+- **An archive RPC endpoint for Robinhood Chain**, for the royalty split at each closing block
+  (ACT-10).
+- **The wording of the messages holders see.** The library carries plain-English defaults for
+  every error, and MINT may replace or translate them by code.
+- **$MNTD's revert errors** (O5), so a short balance or allowance shows its own message.
+
+**Changes since version 2.2.** Both went through Calea's review; the requirements read as the
+final state.
+
+- The royalty split counts every bear that has an owner at the closing block. The reference script
+  reads the inputs from an archive node, from `Transfer` events and `weightOf`, or from `snapshot`
+  paged by gas, because one call over the whole range is not dependable (ACT-10).
+- The whitelist's `account` is a keyed hash (HMAC-SHA256 under a key held server-side) over a
+  canonical account id. An unsalted hash of an email could be matched to the person by anyone
+  reading the chain. The eligibility signer is an ordinary key, issues allocation numbers from the
+  chain, and is never rotated back in once replaced (WL-3).
 
 ## 1. Scope
 
@@ -325,8 +331,11 @@ format, the export to the Studio allowlist, and the client calls (DEL-6).
 **WL-3 Registry.** `WhitelistClaim` on Robinhood Chain (`→ CQ-18`; WL-6 is the alternative). A
 voucher is the EIP-712 message whose type is exactly
 `Claim(address wallet,uint8 allocationIndex,bytes32 account,uint256 deadline)`, signed by the
-eligibility signer, with a short `deadline` (minutes), `account` a hash of the getminted.io
-account id, so the chain carries no personal data, and `allocationIndex` the account's
+eligibility signer, with a short `deadline` (minutes), `account` a keyed hash —
+HMAC-SHA256 under a key held server-side — over a canonical form of the getminted.io account id
+(an immutable user id, or an email case-folded and trimmed), so the chain carries no personal data
+and the indexed `account` of `WhitelistClaimed` cannot be matched to a guessed id, and
+`allocationIndex` the account's
 allocation number — 1 for the allocation $50 unlocks, 2 for the one $100 unlocks (WL-1).
 `claim(voucher,
 signature)` reverts unless: `msg.sender == wallet` (`NotClaimant`), the one condition D4 option
@@ -345,7 +354,12 @@ same contract without the `NotClaimant` condition (`→ CQ-18`). Reads: `TOTAL_S
 `claimants(offset, limit) → (wallet, allocations)[]`, `openAt`, `closeAt`, `signer`. Owner (MINT
 admin): `setSigner`, `setWindow(openAt, closeAt)`, and ownership transfer — one-step
 `transferOwnership` or the two-step handover. `renounceOwnership` reverts for every caller, so the
-signer can always be rotated. Nobody can remove or reassign a claim.
+signer can always be rotated. Nobody can remove or reassign a claim. The eligibility signer
+is an externally owned key, since the registry recovers signatures with `ecrecover` alone and a
+contract's vouchers revert `BadSigner`. It issues `allocationIndex` as
+`accountClaims(account) + 1`, and only while `claimsOf(wallet) < MAX_PER_WALLET`. A key rotated
+out by `setSigner` is never rotated back in, since its unexpired vouchers would be valid again.
+DEL-6's backend reference pins these rules.
 
 *Acceptance.* Given a voucher signed by the signer for wallet W, allocation 1, within its deadline and the campaign window; when W calls `claim`; then `spotsLeft` falls by one, `claimsOf(W)` reads 1 and `WhitelistClaimed` is emitted; and the same call from another wallet reverts with `NotClaimant`, and a voucher for the same account's allocation 1 for another wallet reverts with `WrongAllocation`.
 
@@ -464,14 +478,21 @@ several wallets combine, are MINT's, off-chain (`→ CQ-21`).
 *Acceptance.* Given a wallet owning a bear at level 2; when it calls `linkBear(tokenId)`; then `linkOf(wallet)` reads `(tokenId, 2)`; and after the bear moves it reads `(0, 0)`.
 
 **ACT-10 Snapshot view.** `snapshot(uint256[] ids) → (address owner, uint8 level, uint16
-weight)[]`, returning zeroes for ids that do not exist. MINT's royalty accounting reads it for
-`1..4444` at each closing block; a wallet's weight is the sum over its bears and the total
-eligible weight is the sum over all bears whose owner is not the canonical dead address
-`0x000000000000000000000000000000000000dEaD` (COL-8). Because transfers reset weight without any
-call into `Activation`, there is no on-chain running total; the sum is taken off-chain from
-this view. A reference script reproducing the split, dead-address exclusion included, is
-delivered (DEL-6); MINT credits the resulting shares to getminted.io accounts through its
-wallet (§2).
+weight)[]`, returning zeroes for ids that do not exist. MINT's royalty accounting counts, at each
+closing block, every bear that has an owner among ids `1..4444`: a wallet's weight is the sum over
+its bears, and the total eligible weight is the sum over all bears whose owner is not the canonical
+dead address `0x000000000000000000000000000000000000dEaD` (COL-8). Because transfers reset weight
+without any call into `Activation`, there is no on-chain running total; the sum is taken off-chain.
+The reference script (DEL-6) reads the inputs from an archive node at the closing block, in either
+of two ways that agree:
+- owners from the collection's `Transfer` events and weights from `weightOf`, for owned ids only,
+  since `weightOf` answers the level-0 weight for an id never minted;
+- `snapshot`, paged by a gas budget. Each id's owner lookup walks back to the start of its mint
+  batch, so one call over the whole range is not dependable (56.2M gas at two bears per wallet).
+
+The script refuses inputs that miss a minted bear, and its allocations plus the rounding carried to
+the next distribution equal the funding. MINT credits the resulting shares to getminted.io accounts
+through its wallet (§2).
 
 *Acceptance.* When `snapshot([1, 2, 4445])` is read; then it returns owner, level and weight for ids 1 and 2 and zeroes for the id that does not exist.
 
@@ -968,10 +989,16 @@ wherever a contract needs one at birth, as MINT asked. **Recommended:** a Safe f
 its interface supports Robinhood Chain, otherwise one EOA per chain held by Iñigo; EOAs for
 worker and signer; a royalty receiver that is the pot and not the admin.
 
-**O5 — The $MNTD interface (CQ-2).** Not a decision but a dependency: does the deployed token
-expose `burnFrom(address, uint256)`, how many `decimals`, is its address final, and can a copy be
-on testnet 46630 for the burn rehearsal? `Activation` fixes the token's address and reads its
-`decimals` in its constructor, so all of it is needed before `Activation` is deployed.
+**O5 — The $MNTD interface (CQ-2).** Not a decision but a dependency:
+- Does the deployed token expose `burnFrom(address, uint256)`?
+- How many `decimals` does it have?
+- Is its address final?
+- Can a copy be on testnet 46630 for the burn rehearsal?
+- Which errors does `burnFrom` revert with when the allowance or the balance is short? The client
+  library shows each of them as its own message, and recognises OpenZeppelin's.
+
+`Activation` fixes the token's address and reads its `decimals` in its constructor, so all of it
+is needed before `Activation` is deployed.
 
 **O6 — Calendar (CQ-1).** Left to be decided at the call. The three anchors stand — TGE
 20 October, mint 29 October, burns and level-up from 29 October — and every other row of §8
@@ -980,7 +1007,9 @@ game runs continuously and each win carries its own 30-day claim window, so awar
 outlive the 19 November handover and the end of technical support.
 
 **O7 — Repository and CI (CQ-14).** Not reached at the call, and no longer settled by CQ-19.
-**Recommended:** `packages/contracts` as `@mint/contracts` beside a typed
+The client library is built as `packages/contracts-client` in Calea's contracts repository for
+now. It is a standalone package with its own CI job, and it moves into MINT's repository
+unchanged. **Recommended:** `packages/contracts` as `@mint/contracts` beside
 `packages/contracts-client`, Foundry dependencies as git submodules that CI checks out, and Calea
 owning the CI configuration. Which repository holds them needs naming, against the getminted.io
 split D9 made.
@@ -994,7 +1023,8 @@ what the registry guarantees.
 **O9 — Status links across an account's wallets (CQ-21).** Each wallet nominates one bear to
 carry its Status boost (ACT-9), and a getminted.io account may use several wallets, so one
 account can hold several links. Say how MINT's Status counts them. **Recommended:** one boost per
-account, from the highest-level bear among its wallets' links; no answer changes the contract.
+account, from the highest-level bear among its wallets' links. No answer changes the contract or
+the client library, which reads each wallet's link on its own.
 
 ## 11. Sign-off
 
@@ -1004,6 +1034,6 @@ account, from the highest-level bear among its wallets' links; no answer changes
 | Calea | Bojan Jovin | | |
 | Rayco | | | |
 
-Version 2.2, 24 September 2026. The version signed carries the open items of §10 resolved;
+Version 2.3, 25 September 2026. The version signed carries the open items of §10 resolved;
 amendments are issued as new versions of this document; requirement identifiers are never
 reused.
