@@ -248,9 +248,9 @@ and its client module.
 **In plain words.** Chainlink VRF is a paid service that returns a random number nobody can
 predict or alter, with a proof checked on-chain. Whoever uses it holds a **subscription** — an
 account on Chainlink's coordinator contract — which is topped up with LINK or with ETH and lists
-the contracts allowed to draw from it. Each mystery box round makes one request, paid from the
-subscription; on Base a request costs in the order of a few dollars, so the balance needs a top-up
-now and then. The subscription is managed through Chainlink's web interface by the wallet that
+the contracts allowed to draw from it. Each mystery box open makes one request, paid from the
+subscription; on Arbitrum One a request costs the network fee plus Chainlink's premium, so the
+balance needs a top-up now and then. The subscription is managed through Chainlink's web interface by the wallet that
 created it.
 
 **Options.**
