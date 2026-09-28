@@ -42,7 +42,7 @@ Answers from each call are marked as such below.
 | CQ-5 | ACT | Weight table | 1.00 / 1.10 / 1.25 / 1.45 / 1.70 / 2.00, six levels | — | Answered |
 | CQ-6 | COL | May holders burn bears? | No; supply stays 4,444 | — | Answered |
 | CQ-7 | COL | Enforce royalties on-chain | Yes, from deployment | — | Answered |
-| CQ-8 | RAF | Where the prize assets live | MINT's prize wallet; no vaults | before the vaults are deployed | Answered |
+| CQ-8 | RAF | Where the prize assets live | MINT's prize wallet; no vaults | — | Answered |
 | CQ-9 | RAF | Mystery box model | Cycles set by the owner; one shot per bear per cycle | — | Answered |
 | CQ-10 | RAF | Claim window | Superseded by CQ-22 | — | Closed |
 | CQ-11 | RAF | Owner withdrawals | Superseded; custody is MINT's wallet | — | Closed |
@@ -477,7 +477,7 @@ published; if OpenSea cannot fill orders, one owner call lifts enforcement until
 
 ### CQ-8 — Where the prize assets live
 - **Section:** RAF
-- **Needed by:** before the vaults are deployed
+- **Needed by:** —
 - **Status:** Answered (call, 28 September 2026)
 - **Resolution:** prizes are NFTs and tokens held in MINT's prize wallet `0xf6c02F0fDAC5c03EE9f1cc60A5D9875Efc4c83e3` on Robinhood Chain, Ethereum and possibly ApeChain, and paid from it to the winner on the prize's chain; no contract is deployed on a prize chain.
 

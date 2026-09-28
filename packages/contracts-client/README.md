@@ -7,6 +7,13 @@ returns what it did; every error has a code and a message you can show a holder.
 
 The mystery box is tranche 2 and is not here yet.
 
+**Spec v2.5.** The whitelist is off-chain, in MINT's backend (WL-8), and neither whitelist
+registry is deployed. The `whitelist` claim calls, the voucher backend and `whitelistImport` below
+describe those undeployed registries and are not delivered. The mint's allowlist proofs come from
+MINT's final CSV (`buildAllowList(parseAllocationCsv(csv), stage)`). `mint.remainingWhitelistMints`
+and `whitelist.allowList` still read a registry until `tasks.md` 6.2 gives them a CSV path. The
+Status link calls go with `tasks.md` 3.15.
+
 ## Quick start
 
 ```ts

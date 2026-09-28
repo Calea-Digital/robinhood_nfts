@@ -63,3 +63,4 @@ becomes a Task with Spec Ref `NONE` when picked.
 ## 6. Integration
 
 - [x] 6.1 DEL-6 — typed TypeScript client library (`packages/contracts-client`) and the reference royalty-split script
+- [ ] 6.2 DEL-6 — the whitelist from MINT's CSV (WL-8): `whitelist.allowList` and `mint.remainingWhitelistMints` without a registry; the registry modules marked undeployed
