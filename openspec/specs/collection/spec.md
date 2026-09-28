@@ -34,10 +34,9 @@ exactly 4,444 once minted out.
 
 ### Requirement: COL-3 — Transfer counter
 **Kind:** work-item
-`transferNonce(tokenId)` increments on every transfer except mint —
-sales, gifts, self-initiated moves and return transfers to a previous owner alike — and never
-resets. It is the mechanism by which every ownership change resets level, weight and Status
-link (ACT-5).
+`transferNonce(tokenId)` increments on every transfer except mint — sales, gifts,
+self-initiated moves and return transfers to a previous owner alike — and never resets. It is
+the mechanism by which every ownership change resets level and weight (ACT-5).
 
 #### Scenario: A transfer advances the counter, a mint does not
 - **GIVEN** a bear whose `transferNonce` reads n
@@ -72,7 +71,7 @@ does not vary with level.
 ### Requirement: COL-6 — Royalties
 **Kind:** work-item
 ERC-2981 through SeaDrop's `setRoyaltyInfo`: **5% (500 basis points)**,
-receiver the royalty-pot address MINT names, distinct from the admin and from every vault. Set
+receiver the royalty-pot address MINT names, distinct from the admin and from the prize wallet (RAF-33). Set
 by Iñigo in Studio at any point before the first sale; it does not hold up deployment. `→ CQ-15`
 (receiver).
 
@@ -113,8 +112,8 @@ restores it (OPS-6). Every change emits `TransferValidatorUpdated`.
 The transfer hook refuses `to == address(0)` with `BurnDisabled`, so
 `ERC721SeaDrop.burn` always reverts and no bear can be destroyed by anyone, its owner included;
 `totalSupply` never falls. A bear sent to an address nobody controls (for example `0x…dEaD`)
-remains a bear in the supply: nobody can enter it in a raffle (RAF-21), and the royalty snapshot
-excludes the canonical dead address (ACT-10).
+remains a bear in the supply: nobody can open a mystery box with it (RAF-28), and the royalty
+snapshot excludes the canonical dead address (ACT-10).
 
 #### Scenario: No bear can be destroyed
 - **WHEN** anyone, the owner included, calls `burn` or transfers a bear to the zero address

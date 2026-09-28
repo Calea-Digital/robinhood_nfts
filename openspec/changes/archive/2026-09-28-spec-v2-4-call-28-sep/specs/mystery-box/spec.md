@@ -1,15 +1,6 @@
-# Mystery box raffle Specification
+# Spec Delta
 
-## Purpose
-A holder opens a mystery box with a bear they own and learns the outcome there and then. The box
-runs in cycles the owner schedules: within a cycle each playable bear is one shot, and the next
-cycle gives every bear a shot again, whoever holds it (MINT, CQ-9). Two contracts: `MysteryBox`
-on Robinhood Chain, where the bears are, so an open is checked against live ownership, and
-`PrizeDraw` on Arbitrum One, which decides each open with a Chainlink word of its own and records
-each payout. The prizes stay in MINT's prize wallet on the chain where each one sits, and are paid
-from there.
-
-## Requirements
+## ADDED Requirements
 
 ### Requirement: RAF-32 — Cycles
 **Kind:** work-item
@@ -40,6 +31,45 @@ Both chains emit `CycleScheduled`, so anyone can check that they were given the 
 - **WHEN** a holder opens a box before `start`, between `start` and `end`, and after `end`
 - **THEN** only the open between `start` and `end` succeeds, and the others revert with `CycleNotOpen`
 - **AND** scheduling cycle 2 while cycle 1 is open reverts with `CycleInProgress`
+
+### Requirement: RAF-33 — Prize custody and the payout record
+**Kind:** work-item
+Prizes are held in MINT's prize wallet `0xf6c02F0fDAC5c03EE9f1cc60A5D9875Efc4c83e3`, an
+externally owned account, on each chain that holds a prize (MINT, CQ-8, CQ-20): Robinhood Chain,
+Ethereum and possibly ApeChain. No contract is deployed on a prize chain and no contract holds a
+prize. A prize is paid by an ordinary transfer from that wallet to the opener's address on the
+prize's chain. Whether MINT pushes every win or the winner requests it within a window is
+`→ CQ-22`; the default is that MINT pushes. Nothing on-chain forces a payout, and MINT can move
+any prize at any time: custody is MINT's by its choice, and the chain records what was paid.
+
+The worker records each payout on `PrizeDraw` with `recordPayout(openIndex, chainId, txHash)`.
+The call is refused unless the outcome of `openIndex` is a win (`NotAWin`) and has not been
+recorded as paid (`AlreadyPaid`). It emits `PrizePaid(cycleId, openIndex, chainId, txHash)`, so
+anyone can match each recorded win to a transfer on the named chain, and see a win with no
+`PrizePaid`. The recipient is the opener. There is no on-chain nomination: a holder whose
+address cannot receive on a prize chain is MINT's to settle by hand, and the UI warns
+contract-wallet holders before they open.
+
+#### Scenario: A win is paid once, and on the record
+- **GIVEN** open 7 recorded as a win
+- **WHEN** the worker calls `recordPayout(7, 1, txHash)`
+- **THEN** `PrizePaid(cycleId, 7, 1, txHash)` is emitted
+- **AND** a second `recordPayout` for open 7 reverts with `AlreadyPaid`, and one for an open that did not win reverts with `NotAWin`
+
+### Requirement: RAF-34 — Pause
+**Kind:** work-item
+Pausing the hub blocks `open`. Pausing `PrizeDraw` blocks `resolve`, so no new word is requested,
+while words already requested are still applied when they arrive. Neither pause blocks
+`recordPayout` or any read. A cycle's window runs on while the hub is paused: a pause shortens
+the time holders have, and it does not move `end`.
+
+#### Scenario: Pause stops new opens and new requests
+- **GIVEN** the hub and the draw each paused
+- **WHEN** `open` and `resolve` are called
+- **THEN** each reverts with `ContractPaused`
+- **AND** `recordPayout` and every read still succeed
+
+## MODIFIED Requirements
 
 ### Requirement: RAF-27 — Playable ids and the prize pool
 **Kind:** work-item
@@ -153,30 +183,6 @@ the chain the bears live on.
 - **THEN** exactly one VRF v2.5 request is made from the subscription with `PrizeDraw` as consumer
 - **AND** the outcome uses that request's word alone
 
-### Requirement: RAF-33 — Prize custody and the payout record
-**Kind:** work-item
-Prizes are held in MINT's prize wallet `0xf6c02F0fDAC5c03EE9f1cc60A5D9875Efc4c83e3`, an
-externally owned account, on each chain that holds a prize (MINT, CQ-8, CQ-20): Robinhood Chain,
-Ethereum and possibly ApeChain. No contract is deployed on a prize chain and no contract holds a
-prize. A prize is paid by an ordinary transfer from that wallet to the opener's address on the
-prize's chain. Whether MINT pushes every win or the winner requests it within a window is
-`→ CQ-22`; the default is that MINT pushes. Nothing on-chain forces a payout, and MINT can move
-any prize at any time: custody is MINT's by its choice, and the chain records what was paid.
-
-The worker records each payout on `PrizeDraw` with `recordPayout(openIndex, chainId, txHash)`.
-The call is refused unless the outcome of `openIndex` is a win (`NotAWin`) and has not been
-recorded as paid (`AlreadyPaid`). It emits `PrizePaid(cycleId, openIndex, chainId, txHash)`, so
-anyone can match each recorded win to a transfer on the named chain, and see a win with no
-`PrizePaid`. The recipient is the opener. There is no on-chain nomination: a holder whose
-address cannot receive on a prize chain is MINT's to settle by hand, and the UI warns
-contract-wallet holders before they open.
-
-#### Scenario: A win is paid once, and on the record
-- **GIVEN** open 7 recorded as a win
-- **WHEN** the worker calls `recordPayout(7, 1, txHash)`
-- **THEN** `PrizePaid(cycleId, 7, 1, txHash)` is emitted
-- **AND** a second `recordPayout` for open 7 reverts with `AlreadyPaid`, and one for an open that did not win reverts with `NotAWin`
-
 ### Requirement: RAF-14 — Roles
 **Kind:** work-item
 Owner (MINT's admin):
@@ -196,19 +202,6 @@ No role can open a box for a holder, change an outcome, or move a bear.
 - **WHEN** a non-owner calls `excludeRange`, `scheduleCycle` or `setWorker`, or a non-worker calls `resolve` or `recordPayout`
 - **THEN** each reverts
 - **AND** `open` needs no role but the bear's ownership
-
-### Requirement: RAF-34 — Pause
-**Kind:** work-item
-Pausing the hub blocks `open`. Pausing `PrizeDraw` blocks `resolve`, so no new word is requested,
-while words already requested are still applied when they arrive. Neither pause blocks
-`recordPayout` or any read. A cycle's window runs on while the hub is paused: a pause shortens
-the time holders have, and it does not move `end`.
-
-#### Scenario: Pause stops new opens and new requests
-- **GIVEN** the hub and the draw each paused
-- **WHEN** `open` and `resolve` are called
-- **THEN** each reverts with `ContractPaused`
-- **AND** `recordPayout` and every read still succeed
 
 ### Requirement: RAF-16 — Events
 **Kind:** work-item
@@ -277,26 +270,48 @@ Each of these has a test:
 - **WHEN** the tranche-2 test suite runs
 - **THEN** every listed case has a passing deterministic test
 
-## Retired Requirements
+## REMOVED Requirements
 
-- RAF-1 (a single raffle chain) → RAF-32, RAF-33
-- RAF-7 (passive ownership snapshot) → RAF-28
-- RAF-9 (draw over calldata entries) → RAF-30
-- RAF-10 (carry forward between rounds) → RAF-32
-- RAF-12 (round cancellation) → RAF-32
-- RAF-13 (per-round `minLevel` eligibility) → RAF-27
-- RAF-20 (rounds on the hub) → RAF-32
-- RAF-21 (entry into a round) → RAF-28
-- RAF-22 (one seed per round) → RAF-29
-- RAF-23 (the per-round draw) → RAF-30
-- RAF-2 (vault addresses) → RAF-33
-- RAF-3 (asset approval on the vaults) → RAF-27, RAF-33
-- RAF-4 (deposit intake) → RAF-33
-- RAF-5 (vault inventory states) → RAF-30, RAF-33
-- RAF-6 (committing prizes from the vaults) → RAF-27, RAF-32
-- RAF-11 (claims from a vault) → RAF-33
-- RAF-15 (pause with vault claims) → RAF-34
-- RAF-24 (a prize vault per chain) → RAF-33
-- RAF-25 (recipient nomination) → RAF-33
-- RAF-26 (one game over the collection) → RAF-32
-- RAF-31 (closing the game) → RAF-32, RAF-33
+### Requirement: RAF-26 — The game
+**Reason:** The mystery box runs in cycles the owner schedules, not as one game (MINT, 28 September 2026).
+**Migration:** See RAF-32.
+
+### Requirement: RAF-31 — Closing the game
+**Reason:** A cycle ends at its scheduled `end`, and unawarded prizes stay in MINT's prize wallet.
+**Migration:** See RAF-32 and RAF-33.
+
+### Requirement: RAF-2 — Addresses
+**Reason:** No vault contracts; prizes are held in MINT's prize wallet (MINT, 28 September 2026).
+**Migration:** See RAF-33.
+
+### Requirement: RAF-3 — Asset approval
+**Reason:** No vault contracts, so no asset approval on-chain; each cycle's prize list names its assets.
+**Migration:** See RAF-27 and RAF-33.
+
+### Requirement: RAF-4 — Intake
+**Reason:** No vault contracts, so no deposit registration.
+**Migration:** See RAF-33.
+
+### Requirement: RAF-5 — Inventory states
+**Reason:** Custody is MINT's wallet; the contracts track outcomes and payout records, not inventory.
+**Migration:** See RAF-30 and RAF-33.
+
+### Requirement: RAF-6 — Committing prizes
+**Reason:** The prize list is published by MINT with its hash on-chain, not committed by vaults.
+**Migration:** See RAF-27 and RAF-32.
+
+### Requirement: RAF-24 — Prize vaults
+**Reason:** No contract on any prize chain (MINT, 28 September 2026).
+**Migration:** See RAF-33.
+
+### Requirement: RAF-25 — Recipient nomination
+**Reason:** Dropped at the call of 28 September 2026: the opener is the recipient, and exceptions are MINT's by hand.
+**Migration:** See RAF-33.
+
+### Requirement: RAF-11 — Claims
+**Reason:** No vault to claim from; the payout is a transfer from MINT's prize wallet, pushed or requested per CQ-22.
+**Migration:** See RAF-33.
+
+### Requirement: RAF-15 — Pause
+**Reason:** Its guarantees concerned vault claims, expiry and nomination, which are gone.
+**Migration:** See RAF-34.

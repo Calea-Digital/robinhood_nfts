@@ -1,9 +1,11 @@
-# Operations, roles and handover Specification
+# Spec Delta
 
-## Purpose
-MINT needs to receive contracts that are correct from their first block, verified on every chain, and handed over with every key, role and a runbook — so that operating them after 19 November needs nothing from Calea.
+## RENAMED Requirements
 
-## Requirements
+- FROM: `### Requirement: OPS-4 — Rehearsal on testnets (46630, Sepolia, Curtis, Base Sepolia)`
+- TO: `### Requirement: OPS-4 — Rehearsal on testnets (46630, Arbitrum Sepolia, Sepolia)`
+
+## MODIFIED Requirements
 
 ### Requirement: OPS-1 — Addresses
 **Kind:** work-item
@@ -95,7 +97,7 @@ support runs through 19 November 2026 with agreed response hours (DEL-10).
 The runbook is one document, produced via `forge script` tooling. It covers:
 - the deploy order (OPS-2);
 - the enforcement toggle (OPS-6);
-- `Activation`'s pause and unpause around the burn switch-on date (ACT-15);
+- `Activation`'s pause and unpause around the burn switch-on date (ACT-11);
 - the whitelist export or import (WL-4, WL-7);
 - the mystery-box cycle and worker sequence (RAF-18).
 
@@ -103,19 +105,6 @@ The runbook is one document, produced via `forge script` tooling. It covers:
 - **WHEN** handover completes
 - **THEN** every contract's owner is MINT's admin, every source is verified and the runbook is delivered
 - **AND** Calea holds no owner key, and no role other than the worker's where CQ-23 gives it one
-
-### Requirement: OPS-6 — Enforcement runbook
-**Kind:** work-item
-Enabled at deployment: `MintABear.setTransferValidator(0x721C002B…)`
-with the validator's zero-state policy. Optional, from the admin: `createList`,
-`addAccountsToWhitelist`, `addAccountsToAuthorizers`, `applyListToCollection`,
-`setTransferSecurityLevelOfCollection` (never level 5 or above). Disable:
-`setTransferValidator(address(0))`. Every step is an owner call and reversible.
-
-#### Scenario: Enforcement toggles by one call
-- **GIVEN** enforcement enabled
-- **WHEN** the admin calls `setTransferValidator(address(0))` and then sets V3 again
-- **THEN** each call emits `TransferValidatorUpdated` and the policy follows the current value
 
 ### Requirement: OPS-7 — Chain constraints
 **Kind:** informative

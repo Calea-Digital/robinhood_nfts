@@ -192,7 +192,7 @@ The rate is collection-wide: every id answers the same. SeaDrop refuses a zero r
 (`RoyaltyAddressCannotBeZeroAddress`) and a rate above 10,000 basis points
 (`InvalidRoyaltyBasisPoints`). Every change emits `RoyaltyInfoUpdated(receiver, bps)`.
 
-## Activation (OPS-2, ACT-11)
+## Activation (OPS-2, ACT-15)
 
 **Read everything back the day it is deployed.** `Activation`'s collection, token, thresholds and
 weights are fixed in its constructor; a wrong one means a new `Activation`, which costs nothing
@@ -217,8 +217,8 @@ sends `setPaused(true)` straight away: it changes nothing (the contract is alrea
 
 **Rehearsal windows and switch-on.** `Activation` stays paused until the switch-on date; no
 address is exempt. For each rehearsal against real $MNTD the admin sends `setPaused(false)`, the
-rehearsal burns, and the admin sends `setPaused(true)` again; reads, `unlinkBear` and transfers
-work throughout. On the switch-on date the admin sends `setPaused(false)` and leaves it.
+rehearsal burns, and the admin sends `setPaused(true)` again; reads and transfers work
+throughout. On the switch-on date the admin sends `setPaused(false)` and leaves it.
 `renounceOwnership` reverts, so the pause can always be set and lifted.
 
 **Team and treasury mints: at most about 200 bears per transaction.** The collection records one

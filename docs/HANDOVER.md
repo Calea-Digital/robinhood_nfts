@@ -1,25 +1,31 @@
 # MintABear — handover
 
-Written 2026-09-15, current as of 2026-09-24. Read this first when resuming.
+Written 2026-09-15, current as of 2026-09-28. Read this first when resuming.
 
 ## Where things stand
 
-**The specification lives in `openspec/`** (v2.2: the MINT–Calea call of 21 September 2026,
-and the amendments of the tranche-1 review, 23–24 September): `openspec/specs/<family>/spec.md` carries every requirement with its Kind and its
-Scenario, `openspec/decisions.md` the `CQ-n` register that belongs to MINT. `docs/SPECIFICATION.md`
-and `docs/OPEN-QUESTIONS.md` are the prose views MINT reads: narrative edited in place, the
-requirement and register blocks generated between markers by `docs/tools/spec_tools/` (CI fails
-when they are stale). MINT has one combined document in `docs/client/`, generated from those two
-files by `docs/tools/build_client_doc.py` — never edit the `.pages` by hand. The output name
-carries the version line in full, suffix included, so each draft is its own file. The current one is `MintABear-Specification-v2.3.pages` (built 25 September 2026, 42 pages).
-It opens with the open questions, each with what it holds up and when it is needed, then where
-the work stands, what the client library needs from MINT and the changes since v2.2. It names each
-open question under the requirements it holds up. `MintABear-Operational-v2.3.pages` (6 pages) is
-its extract for the call of 28 September: everything before §1 Scope, built with
-`build_client_doc.py --operational`. `v1.0` to `v2.2` stay beside them as the records MINT
-answered, decided against and last received. **The board (YouTrack MNT) follows `openspec/`** through
-`docs/tools/board.sh`; the work loop that picks requirements off it is in `CLAUDE.md`
-("Specification and board") and its pick order is `openspec/changes/tranche-1/tasks.md`.
+**The specification lives in `openspec/`** (v2.4: the MINT–Calea calls of 21 and
+28 September 2026, and the tranche-1 review of 23–24 September):
+- `openspec/specs/<family>/spec.md` carries every requirement with its Kind and its Scenario.
+- `openspec/decisions.md` is the `CQ-n` register that belongs to MINT.
+- `docs/SPECIFICATION.md` and `docs/OPEN-QUESTIONS.md` are the prose views MINT reads. The
+  narrative is edited in place; the requirement and register blocks are generated between markers
+  by `docs/tools/spec_tools/`, and CI fails when they are stale.
+
+MINT has one combined document in `docs/client/`, generated from those two files by
+`docs/tools/build_client_doc.py`. Never edit the `.pages` by hand. The output name carries the
+version line in full, suffix included, so each draft is its own file.
+- **The current one** is `MintABear-Specification-v2.4.pages` (built 28 September 2026). It opens
+  with the open questions, each with what it holds up and when it is needed, then where the work
+  stands, what the client library needs from MINT and the changes since v2.3.
+- **`MintABear-Operational-v2.4.pages`** is its extract for a call: everything before §1 Scope,
+  built with `build_client_doc.py --operational`.
+- **`v1.0` to `v2.3`** stay beside them as the records MINT answered, decided against and last
+  received.
+
+**The board (YouTrack MNT) follows `openspec/`** through `docs/tools/board.sh`. The work loop that
+picks requirements off it is in `CLAUDE.md` ("Specification and board"), and its pick order is
+`openspec/changes/tranche-1/tasks.md`.
 
 To check a client-document build without opening Pages, export it to PDF through `osascript` and
 render or count text per page with a short Swift PDFKit script. A table that does not fit the rest
@@ -27,82 +33,123 @@ of a page moves whole to the next one, so a heading left alone on a page means t
 is too tall; a one-cell callout taller than the space left is clipped at the page edge instead —
 v2.1's CQ-18 and CQ-9 callouts are cut off that way — so read each callout's last line too.
 
-The call of 21 September is folded in. Seven of the nine decisions are settled — $MNTD native on
-4663, cumulative thresholds, the on-chain whitelist registry, the instant mystery box, the VRF
-subscription, the existing-contract review deferred, and MINT building the play page on
-getminted.io in TypeScript. Section 10 carries those as settled and lists nine open items,
-O1–O9, each with Calea's recommendation, which is also the default built if it is deferred.
-CQ-20 asks for the prize count and the excluded team ids; CQ-21, raised in the tranche-1 review,
-how MINT's Status counts the links of an account's several wallets.
+Both calls are folded in.
 
-**The mystery box is one instant game over the collection**, not a series of rounds (§6).
-`MysteryBox` on 4663 checks ownership, spends the id and registers the open; `PrizeDraw` on the
-Chainlink chain takes one VRF word per open, in `openIndex` order, and applies a fixed pool drawn
-without replacement; a `PrizeVault` on each prize chain pays out. RAF-26 to RAF-31 carry the
-game; RAF-10, 12, 13, 20, 21, 22 and 23 are retired with pointers to them.
+**The call of 28 September** answered most of v2.3's O1–O9:
+- **Mystery box:** cycles the owner schedules; 222 excluded ids (which ones, to follow); the draw
+  on Arbitrum One; prizes in MINT's own wallet; no vaults.
+- **Status links** are off-chain, so ACT-9 is retired.
+- **Addresses:** the admin `0x1530…6141` and the royalty receiver `0xf7E7…0e63`.
+- **$MNTD's interface** is known from the reference token.
+- **The repository recommendation** is accepted.
+- **The whitelist registry** is wanted on 29 September, never audited.
 
-**Tranche 1's code is on branch `tranche-1`**, branched from `main` at `746acbe`, never pushed and
-not merged into `main`; `main` still carries the pre-specification code. **The paired review of
-every tranche-1 Task is complete** (`reports/tranche-1-review-log.md`): COL-1…13, WL-1, 3, 4, 5,
-ACT-1…14, OPS-2, 3, 6 and the non-spec MNT-92…94, 96…98 are Done, with the Defects the review
-raised (MNT-99…112, 115…118, 120…130) and the architecture change MNT-113 (`Activation` burns
-$MNTD itself, spec v2.2). An integrity check of spec, prose, client document, code and board ran
-first (the log's "Integrity check"), and three tranche-end `solidity-auditor` passes after
-(the log's "Tranche-end pass"); `reports/tranche-1-review.md` summarises it all. OPS-4, the rehearsal, is still ahead, with Subtask MNT-95
-(Sourcify on 46630). Each Task carries a claim comment, a summary with its commits and gates, a
-`Reviewed — Done` comment and logged time; the human merges `tranche-1` into `main`.
+MINT asked for a whitelist its admin imports from a CSV. Calea put a counter-offer, and both
+variants are built, WL-3 `WhitelistClaim` and WL-7 `WhitelistImport`. §10 lists ten open items,
+O1–O10, each with Calea's recommendation, which is also the default built if it is deferred.
+Two decisions are new: CQ-22 (who sends a payout, push or request) and CQ-23 (who operates the
+worker).
+
+**The mystery box runs in cycles** (§6):
+- `MysteryBox` on 4663 records the excluded ids once, then each cycle's window, prize count and
+  prize-list hash. It checks ownership and spends a bear for the cycle.
+- `PrizeDraw` on Arbitrum One carries the same cycle terms, takes one VRF word per open in
+  `openIndex` order, applies a fixed pool drawn without replacement per cycle, and records each
+  payout (`recordPayout` → `PrizePaid`).
+- Prizes sit in MINT's prize wallet `0xf6c0…e3e3` on Robinhood Chain, Ethereum and possibly
+  ApeChain, and are paid by transfer. No contract goes on a prize chain.
+
+RAF-32 (cycles), RAF-27 to RAF-30, RAF-8, RAF-33 (custody and the payout record) and RAF-34
+(pause) carry it. RAF-2 to 6, 11, 15 and 24 to 26 and 31 are retired.
+
+**Tranche 1's code** is on `main` up to `8fc37ac` (merged, never pushed). `tranche-1` carries
+WL-7 and spec v2.4 on top. **The paired review of every tranche-1 Task is complete**
+(`reports/tranche-1-review-log.md`):
+- COL-1…13, WL-1, 3, 4, 5, ACT-1…14, OPS-2, 3, 6 and the non-spec MNT-92…94, 96…98 are Done;
+- with them, the Defects the review raised (MNT-99…112, 115…118, 120…130);
+- and the architecture change MNT-113 (`Activation` burns $MNTD itself, spec v2.2).
+
+An integrity check of spec, prose, client document, code and board ran first (the log's
+"Integrity check"), and three tranche-end `solidity-auditor` passes after (the log's
+"Tranche-end pass"); `reports/tranche-1-review.md` summarises it all.
+
+**WL-7** (MNT-134) was built on 28 September by the developer, with tests and self-review. It is
+outside the audit (DEL-8), and its numbers are on the Task.
+
+Still ahead:
+- **OPS-4**, the rehearsal, with Subtask MNT-95 (Sourcify on 46630).
+- **ACT-9's removal** from the code: a Task under ACT-12 (spec v2.4).
+
+Each Task carries a claim comment, a summary with its commits and gates, a `Reviewed — Done`
+comment and logged time. The human merges `tranche-1` into `main`.
 
 | | |
 |---|---|
-| Contracts | 3 of the 6 the spec calls for: `MintABear`, `WhitelistClaim`, `Activation`; `MysteryBox`, `PrizeVault`, `PrizeDraw` are tranche 2 |
-| Scripts | `Deploy.s.sol` (OPS-2), `verify.sh` (OPS-3), `Enforcement.s.sol` (OPS-6), `WhitelistExport.s.sol` (WL-4); `docs/RUNBOOK.md`: ownership handover, whitelist export, transfer enforcement, royalties, Activation |
-| Tests | 214, all passing; 100% line, branch and function coverage (gate ≥90 / ≥80); every tranche-1 work-item Scenario has a test except the operational OPS-1, OPS-3 (live), OPS-4, OPS-5 |
+| Contracts | `MintABear`, `WhitelistClaim` and `WhitelistImport` (MINT deploys one), `Activation`; tranche 2 is `MysteryBox` (4663) and `PrizeDraw` (Arbitrum One) |
+| Scripts | `Deploy.s.sol` (OPS-2), `verify.sh` (OPS-3), `Enforcement.s.sol` (OPS-6), `WhitelistExport.s.sol` (WL-4); `docs/RUNBOOK.md`: ownership handover, whitelist export and import, transfer enforcement, royalties, Activation |
+| Tests | 214 before WL-7 (its own count is on MNT-134), all passing; 100% line, branch and function coverage (gate ≥90 / ≥80); every tranche-1 work-item Scenario has a test except the operational OPS-1, OPS-3 (live), OPS-4, OPS-5 |
 | CI gates | `fmt --check`, `build --sizes` (no warnings), `test`, spec lint, generated prose, `verify.sh` dry run and verdict test — all green |
 | Slither | no High or Critical; 2 accepted Mediums, both `locked-ether` (below) |
 
-Requirements amended since v2.1, each through an archived OpenSpec change with the reviewer's
-go: ACT-5 (after a transfer the weight reads the level-0 weight) and OPS-2 (`WhitelistClaim`
-takes MINT's admin as owner) on 2026-09-23; on 2026-09-24, in the tranche-1 review, COL-10
-(ownership is never renounced), WL-3 (the voucher's index is the account's allocation; renounce
-refused), WL-1 (thresholds make the account eligible), and spec v2.2 — `Activation` burns $MNTD
-itself and `DirectBurnAdapter` is gone (ACT-1, 2, 4, 6, 7, 8, 11–14, OPS-1, 2, 4, DEL-8); ACT-9
-points to the new decision CQ-21; and CQ-2 and CQ-21 block what they gate downstream (OPS-2 and
-OPS-4; DEL-6).
+Requirements amended since v2.1, each through an archived OpenSpec change:
+- **23 September:** ACT-5 (after a transfer the weight reads the level-0 weight) and OPS-2
+  (`WhitelistClaim` takes MINT's admin as owner).
+- **24 September, in the tranche-1 review:**
+  - COL-10 (ownership is never renounced);
+  - WL-3 (the voucher's index is the account's allocation; renounce refused);
+  - WL-1 (thresholds make the account eligible);
+  - spec v2.2: `Activation` burns $MNTD itself (ACT-1…14, OPS-1, 2, 4, DEL-8).
+- **28 September:**
+  - WL-7 (the owner-imported registry);
+  - spec v2.4, the call of that day: RAF-32 to RAF-34 added, RAF-2…6, 11, 15, 24…26, 31 retired,
+    RAF-8, 14, 16…19, 27…30 modified; ACT-9 and ACT-11 retired, ACT-15 added, ACT-5, 12, 13, 14
+    modified; WL-2…5, COL-3, 6, 8, OPS-1…5, 7 and DEL-6, 8, 9, 10, 12 modified.
 
 Submodule pins: `forge-std` `bf647bd` (v1.16.2), `seadrop` `757590f`, `solady` `acd959a`
 (v0.1.26). The chain's contract size limit is ~96 KB; every contract clears even Ethereum's
 24,576.
 
-## Next session — integrity check and review, then the rehearsal
+## Next session — the whitelist delivery, then ACT-9 and the rehearsal
 
-1. **The merge, then DEL-6.** The human merges `tranche-1` into `main`; the DEL-6 client package
-   follows from `docs/prompts/del-6-client.md` (it asks first where the packages live — CQ-14).
-2. **The OPS-4 rehearsal on 46630** (human-led; `tasks.md` 4.4). It needs from MINT the admin and
-   signer addresses (CQ-12), the campaign dates (CQ-1) and the testnet $MNTD's address (CQ-2;
-   `Activation` reads its `decimals`), written into `script/config/46630.json` from `script/config/example.json`; and from the
-   operator a funded deployer key and OpenSea Studio access. It runs the three `Deploy.s.sol`
-   entry points with Sourcify verification (closing MNT-95), attaches Studio, completes
-   `acceptOwnership`, reads `Activation` back and has the admin prove control (runbook,
-   "Activation"), walks a whitelist claim through `WhitelistExport.s.sol`'s export and compare
-   into an allowlist mint, burns through `Activation`, and toggles enforcement once.
-3. **The internal auditor** takes the tranche after the rehearsal: the trees' INV-N and Fork-N
-   obligations are theirs.
-4. **Tranche 2 waits on O1 (CQ-20)** — the prize count, the excluded token ids and the closed list
-   of prize chains.
+1. **29 September: deliver the whitelist registry MINT picks** (CQ-18, O1). Deliver it with its
+   client module into the repository MINT names (CQ-14, O9). Deploy it with MINT's window (CQ-1,
+   O2) and, for WL-3, the signer (CQ-12). The deploy entry points are
+   `Deploy.s.sol runWhitelist` / `runWhitelistImport`; whether 46630 goes first is MINT's call.
+2. **ACT-9 out of the code** (Task under ACT-12): remove `linkBear`, `unlinkBear`, `linkOf`,
+   `BearLinked`, `BearUnlinked`, the ACT-12 interface pin's entries, the tests, trees and the
+   client's link module. Rename the ACT-11 references to ACT-15.
+3. **The OPS-4 rehearsal on 46630** (human-led; `tasks.md` 4.4). It needs:
+   - from MINT: the testnet $MNTD's address (CQ-2) and the campaign dates (CQ-1), written into
+     `script/config/46630.json` from `script/config/example.json`;
+   - from the operator: a funded deployer key and OpenSea Studio access.
+
+   It then runs, in order:
+   - the `Deploy.s.sol` entry points, with Sourcify verification (closing MNT-95);
+   - Studio attached, and `acceptOwnership` completed;
+   - `Activation` read back, and the admin proving control (runbook, "Activation");
+   - the whitelist taken to an allowlist mint through `WhitelistExport.s.sol`'s export and
+     compare;
+   - a burn through `Activation`;
+   - enforcement toggled once.
+4. **The internal auditor** takes `MintABear` and `Activation` after the rehearsal. The trees'
+   INV-N and Fork-N obligations are theirs. The whitelist registries are outside the audit.
+5. **Tranche 2 waits on the 222 excluded ids** (CQ-20, O3). It also needs CQ-22 and CQ-23 before
+   `PrizeDraw` is deployed.
 
 What each open item blocks:
 
 | Open item | Blocks |
 |---|---|
-| O1 prize count, excluded ids, prize chains (CQ-20) | All of tranche 2 — they are `PrizeDraw`'s constructor values |
-| O2 confirm the mystery box design (CQ-9) | Tranche 2's shape, if MINT wants it different |
-| O3 VRF network and subscription wallet (CQ-17) | `PrizeDraw` deployment; Calea recommends Base |
-| O4 addresses (CQ-12, CQ-15) | The rehearsal's and mainnet's `script/config/<chain>.json`, not code |
-| O5 $MNTD `burnFrom`, `decimals` and final address (CQ-2) | `Activation`'s deployment: the token is fixed in its constructor, which reads its `decimals`; the runbook's "Activation" read-back checks the scaled thresholds |
-| O6 calendar (CQ-1) | Scheduling; the campaign dates fix when `WhitelistClaim` must be live |
-| O7 repository and CI (CQ-14) | Where the packages land at handover |
-| O8 whitelist export direction and any owner bulk-add (CQ-18) | One `WhitelistClaim` function, if MINT needs it; none is built |
-| O9 Status links across an account's wallets (CQ-21) | MINT's Status logic and the portal's link prompts (DEL-6), not code |
+| O1 which whitelist registry (CQ-18) | Tomorrow's delivery and deployment; for WL-3 the signer |
+| O2 whitelist window and dates (CQ-1) | The registry's constructor (`closeAt`, and `openAt` for WL-3); the deploy script's 48-hour check against the stage |
+| O3 the 222 excluded ids (CQ-20) | The first cycle; `PrizeDraw`'s `PLAYABLE` |
+| O4 prize delivery (CQ-22) | How payouts are sent and whether a request window exists; `recordPayout` is built either way |
+| O5 VRF subscription holder (CQ-17) | `PrizeDraw`'s deployment (subscription id); DEL-10 if Calea holds it |
+| O6 worker operator (CQ-23) | The worker's address; OPS-5's handover; DEL-10 |
+| O7 admin for every contract (CQ-12) | Mainnet configs; the accepted risk on the minter list |
+| O8 testnet and mainnet $MNTD addresses (CQ-2) | `Activation`'s deployment and the rehearsal |
+| O9 repository URL (CQ-14) | Tomorrow's delivery |
+| O10 existing-contract review (CQ-13) | DEL-7, when MINT names a contract |
 
 ## Sources and precedence
 
@@ -118,12 +165,21 @@ client replies cite them.
 
 ## Calendar
 
-Three anchors are MINT's: TGE 20 October ($MNTD live on Robinhood Chain), mint 29 October, and
-burns, level-up and the first mystery box round all starting 29 October. Every other date is
-proposed in §8 of the specification and confirmed under D7. Two decouplings hold whatever moves:
-the collection deploys and mints without the hub, the vaults or `Activation`, and `Activation`
-stays paused until its burn has been exercised against real $MNTD. The whitelist registry
-must be live before the campaign opens (proposed 6 October).
+MINT's fixed dates:
+- the whitelist registry, delivered and deployed on 29 September;
+- TGE on 20 October ($MNTD live on Robinhood Chain);
+- the mint on 29 October;
+- burns and level-up from 29 October.
+
+The mystery box's cycles are the owner's to schedule after that. Every other date is proposed in
+§8 and confirmed under CQ-1.
+
+Two decouplings hold whatever moves:
+- the collection deploys and mints without the mystery box or `Activation`;
+- `Activation` stays paused until its burn has been exercised against real $MNTD.
+
+The whitelist registry's window is fixed at deployment and closes at least 48 hours before the
+whitelist stage.
 
 ## What is left
 
@@ -137,17 +193,22 @@ The code is written and reviewed (above). What remains before the internal audit
 3. **Mainnet configs** `script/config/4663.json` once CQ-12, CQ-1 and CQ-2 are answered.
 4. **OPS-1 and OPS-5** — the recorded addresses and the handover — at deployment.
 
-### Tranche 2 — after O1
+### Tranche 2 — after the excluded ids
 
-`MysteryBox` on 4663 (RAF-26 to RAF-28, RAF-31), `PrizeDraw` on the Chainlink chain (RAF-8,
-RAF-29, RAF-30, RAF-25), and `PrizeVault` on every chain MINT funds (RAF-24 and the RAF-2 to
-RAF-6, RAF-11, RAF-14, RAF-15 rules); testnet rehearsal on 46630, Base Sepolia and every prize
-chain's testnet; the repository move per O7.
+- **`MysteryBox` on 4663:** RAF-32, RAF-27, RAF-28, RAF-34.
+- **`PrizeDraw` on Arbitrum One:** RAF-8, RAF-29, RAF-30, RAF-33.
+- **Both:** RAF-14, RAF-16 to RAF-19.
+- Testnet rehearsal on 46630, Arbitrum Sepolia and Sepolia, two cycles included.
+- The admin-page and worker calls in the client library (DEL-6).
 
-The two things to get right: `PrizeDraw` must refuse an `openIndex` out of turn, so the worker
-cannot choose which open meets which state of the pool; and the win rule is
-`(word mod idsLeft) < prizesLeft` with both counters decremented on every resolution, which is
-what makes "exactly the prize count is awarded" true.
+The things to get right:
+- **`PrizeDraw` must refuse an `openIndex` out of turn**, so the worker cannot choose which open
+  meets which state of the pool.
+- **The win rule** is `(word mod idsLeft) < prizesLeft` per cycle, with both counters
+  decremented on every resolution.
+- **Each cycle's terms are fixed from its `start`**, and match across the two chains
+  (`CycleScheduled` on both).
+- **A bear is spent per cycle**, not for good.
 
 ### Integration
 
@@ -157,30 +218,34 @@ dead-address exclusion (`bin/split.ts`). Its `README.md` is the portal team's re
 start through the `createMintABearClient` facade, the error codes with the message each shows a
 holder, the voucher backend's rules, events and indexing, and the split. `examples/` holds one
 runnable file per flow (mint, whitelist, burn, link and transfer, errors, indexing and split).
-The package stays in this repository until CQ-14 names the repository that holds it; it moves
-unchanged. The mystery box's calls join it in tranche 2. Calea's part of the UI is the call
+It moves unchanged into the repository MINT names (CQ-14, accepted 28 September). The whitelist
+registry's module goes first, on 29 September. The mystery box's calls and MINT's admin-page calls
+(the CSV import, exclusions, cycle scheduling, pauses) join it in tranche 2. Calea's part of the UI is the call
 surface, review of contract-touching pull requests, and clarifications; the rest is MINT's.
 
 ## For the portal team
 
-The call surface after tranche 1 is WL-3, ACT-14 and COL-12 in the spec; after tranche 2,
+The call surface after tranche 1 is WL-3 or WL-7, ACT-14 and COL-12 in the spec; after tranche 2,
 RAF-17. Four constraints:
 
-0. **The client library is Calea's deliverable and it is TypeScript** (DEL-6, D9): typed
-   against the ABIs, covering every call the app makes, with its own tests and the revert
-   reasons a caller has to handle. MINT builds the page on getminted.io against it; it lives in
+0. **The client library is Calea's deliverable and it is TypeScript** (DEL-6, D9). It is typed
+   against the ABIs, covers every call the app makes, and carries its own tests and the revert
+   reasons a caller has to handle. MINT builds the page on getminted.io against it. It lives in
    `packages/contracts-client`, and its `README.md` is the reference for everything below.
-1. **Whitelist claims are voucher-then-transaction.** The backend signs a short-lived voucher
-   after the wager API confirms a threshold; the wallet submits it. The voucher's
-   `allocationIndex` is the account's allocation number — 1 once $50 is wagered, 2 once $100 is —
-   whichever wallet the holder selects, and the EIP-712 type is exactly
-   `Claim(address wallet,uint8 allocationIndex,bytes32 account,uint256 deadline)`. `spotsLeft()` is the live
-   counter; a claim after sell-out reverts with `SoldOut`.
-2. **Activation is approve, then one click.** Approve `Activation` on $MNTD, then `burn(tokenId,
-   amount)` with `amount` from `costToReach(tokenId, targetLevel)`; anything above the level-5
-   remainder is refused, so nothing is destroyed for nothing.
-3. **Reads are free; poll them.** `levelOf`, `weightOf`, `linkOf`, `costToReach`, `snapshot`,
-   `spotsLeft`, `claimsOf`, `triesLeft`.
+1. **The whitelist is voucher-then-transaction (WL-3), or a read (WL-7).**
+   - **WL-3:** the backend signs a short-lived voucher after the wager API confirms a threshold,
+     and the wallet submits it. The voucher's `allocationIndex` is the account's allocation
+     number — 1 once $50 is wagered, 2 once $100 is — whichever wallet the holder selects. The
+     EIP-712 type is exactly
+     `Claim(address wallet,uint8 allocationIndex,bytes32 account,uint256 deadline)`.
+   - **WL-7:** the admin page imports the CSV in batches, and holders read `claimsOf(wallet)`.
+   - Either way, `spotsLeft()` is the live counter.
+2. **Activation is approve, then one click.** Approve `Activation` on $MNTD, then call
+   `burn(tokenId, amount)` with `amount` from `costToReach(tokenId, targetLevel)`. Anything above
+   the level-5 remainder is refused, so nothing is destroyed for nothing. Status links are MINT's,
+   kept against the Privy account; `levelOf` is what Status reads.
+3. **Reads are free; poll them.** `levelOf`, `weightOf`, `costToReach`, `snapshot`, `spotsLeft`,
+   `claimsOf`; after tranche 2, `shotsLeft`, `odds` and `outcomeOf`.
 4. **There is a reset event.** `TransferNonceAdvanced` fires on every non-mint transfer, in the
    same transaction as `Transfer`. Index it as the reset.
 
@@ -204,16 +269,22 @@ RAF-17. Four constraints:
 - **A burn is recorded only for the bear's current owner.** `burn` reads `ownerOf` and the
   counter in the same call, so an approved operator cannot spend an owner's $MNTD, and a burn
   never lands on a bear that has changed hands.
-- **Instant reveal, one word per open.** MINT's decision of 21 September. Robinhood Chain makes
+- **Cycles set by the owner, one shot per bear per cycle.** MINT's decision of 28 September:
+  the owner schedules each cycle's window and prizes, and every bear gets a shot again in the
+  next cycle. Exclusions are fixed for good before the first cycle.
+- **Instant reveal, one word per open.** MINT's decision of 21 September, confirmed on the
+  28th. Robinhood Chain makes
   no randomness, so the only arrangement in which an instant outcome is unpredictable to
   everyone — MINT included — is a fresh Chainlink word per open. A pre-committed seed was
   offered and refused for that reason. The cost is one VRF request per open.
 - **Resolution strictly in `openIndex` order.** It is what stops the worker choosing which open
   meets which state of the pool. Without it the worker could reorder relays and shift individual
   odds. Do not relax it for latency.
-- **A fixed pool drawn without replacement.** `(word mod idsLeft) < prizesLeft`. It makes
-  "5 prizes among 4,400 bears" literally true and gives every holder the same odds going in; a
-  fixed per-open probability would not.
+- **A fixed pool drawn without replacement, per cycle.** `(word mod idsLeft) < prizesLeft`. It
+  gives every holder the same odds going in. A cycle that ends with bears unopened awards fewer
+  prizes, and the rest roll forward (MINT's option (a), 28 September).
+- **No vaults.** Prizes are held and paid by MINT's prize wallet; `PrizeDraw` records the payout
+  (MINT, 28 September).
 - **Fuzz and invariant harnesses are the internal auditor's.** The developer writes
   deterministic unit tests; the SoW's "fuzzing report" is the auditor's output.
 - **Final-state prose in specs and docs.** No "was / now".
@@ -224,26 +295,34 @@ RAF-17. Four constraints:
   setting, so the owner — Calea until `acceptOwnership`, then MINT's admin — could allow its own
   address and mint bears outside Studio's stages, without fee or allowlist, up to `MAX_BEARS`.
   Canonical SeaDrop as the only allowed minter (COL-1) is a deployment and ownership property,
-  not a constant. Accepted; the mitigation is MINT's admin being a Safe (COL-10) and the
-  runbook's handover, which resets the list to canonical SeaDrop straight after acceptance.
+  not a constant. MINT's admin is one EOA, `0x1530…6141` (CQ-12), not a Safe, so the mitigation
+  is that key alone and the runbook's handover, which resets the list to canonical SeaDrop
+  straight after acceptance.
+- **One EOA owns every contract** (assumed, CQ-12). A compromise of `0x1530…6141` controls the
+  collection's settings, the whitelist import until its freeze, the pause of `Activation`, and
+  the mystery box's exclusions and cycles. It cannot move a holder's bear, record a level
+  without a burn, or change an outcome.
+- **The whitelist registries are not audited** (MINT, 28 September). `WhitelistClaim` had Calea's
+  paired review in tranche 1; `WhitelistImport` has the developer's tests and self-review only.
+- **With WL-7 the owner writes the whitelist.** The list is MINT's alone until `closeAt`, visible
+  on-chain with every write, and frozen after it. The chain proves what was written, not who was
+  eligible.
 - **Slither "locked ether"** on `Activation` and `WhitelistClaim`: Solady marks ownership
   functions `payable`, and anyone can call `requestOwnershipHandover` and
   `cancelOwnershipHandover`, so anyone could lock their own ETH by attaching value; neither
   contract withdraws it. The loss is only ever the sender's own. Accepted, and said in each
   contract's NatSpec.
-- **The eligibility signer decides who may claim.** The signer, and the owner through
+- **With WL-3 the eligibility signer decides who may claim.** The signer, and the owner through
   `setSigner`, can sign vouchers for wallets they control with fresh account hashes, up to all
-  1,000 allocations: the register proves a voucher, not the wagering behind it. Accepted; the
-  signer is MINT's backend key (WL-2), rotated by `setSigner`, and every claim and every
-  `SignerSet` is on-chain.
-- **`setWindow` can reopen a closed campaign.** Claims made after the export would be in the
+  1,000 allocations: the register proves a voucher, not the wagering behind it. Accepted; every
+  claim and every `SignerSet` is on-chain.
+- **`setWindow` can reopen a closed campaign** (WL-3). Claims made after the export would be in the
   registry and not in Studio's allowlist. Accepted; the runbook runs the export and `compare`
   after the last `WindowSet`, and `compare` fails on any difference.
 - **`Activation` calls $MNTD, which is outside this codebase.** The record is written before
   `burnFrom`, and `burn` is `nonReentrant`: a token that calls back cannot burn again, and any
-  revert undoes the record. What remains trusted is that $MNTD's `burnFrom` reverts on failure
-  rather than returning without burning (CQ-2, Fork-3). Accepted; the hostile-token tests pin the
-  refusal.
+  revert undoes the record. The reference token is OpenZeppelin 5.5 `ERC20Burnable`, which reverts
+  on failure (CQ-2); Fork-3 confirms the deployed one.
 - **Reading owners over an untransferred mint batch is expensive.** ERC721A records one owner
   per mint batch, and `ownerOf` walks back to the batch's start, so `snapshot` (which reads the
   owner of every id) costs roughly the square of an untransferred batch's length. Measured on the
@@ -263,23 +342,27 @@ RAF-17. Four constraints:
 - **A sale arranged outside a marketplace pays no creator earnings.** At level 0 the holder's own
   transfers pass, so a direct or escrow-mediated sale settles without royalties (COL-7). Inherent
   to every level that lets holders move their bears; the level is settled.
-- **The worker relays each open and each award.** It cannot change an outcome — Chainlink
-  decides it — and it cannot reorder, because `PrizeDraw` refuses an `openIndex` out of turn. It
-  can delay one, which is visible as a `BoxOpened` with no `OutcomeRecorded`. Accepted; the
-  alternative is cross-chain messaging, and 4663 has no endpoint.
-- **One VRF request per open is a real cost.** At roughly one request per playable id, the
-  subscription has to be funded for the whole collection and watched with a balance alarm. On
-  Base that is cents per request; on Ethereum it would not be viable. Accepted as the price of
-  an instant outcome nobody can foresee (O2, O3).
-- **A bridged $MNTD (D1 option a2) strands rather than burns.** Accepted only with MINT's public
-  statement; the contract cannot tell the difference.
-- **Contract wallets on 4663 may not exist on other prize chains.** The nomination window
-  (RAF-25) and a UI warning cover it.
+- **Prizes are in MINT's wallet, not in a contract.** Nothing on-chain forces a payout or keeps a
+  listed prize in the wallet; a cycle's prize list is committed by hash only. What is checkable is
+  the record: every win is an `OutcomeRecorded`, and every payout a `PrizePaid`. A win without a
+  `PrizePaid` is visible to anyone. MINT's decision (28 September).
+- **The worker relays each open and records each payout.** It cannot change an outcome, because
+  Chainlink decides it, and it cannot reorder, because `PrizeDraw` refuses an `openIndex` out of
+  turn. It can delay one, which is visible as a `BoxOpened` with no `OutcomeRecorded`. Accepted;
+  the alternative is cross-chain messaging, and 4663 has no endpoint. If Calea operates it
+  (CQ-23), it is the one role Calea keeps.
+- **One VRF request per open is a real cost.** At up to one request per playable bear per cycle,
+  the subscription is funded for a cycle's worth and watched with a balance alarm. On Arbitrum a
+  request costs the network fee plus Chainlink's premium. Accepted as the price of an instant
+  outcome nobody can foresee.
+- **A holder whose address cannot receive on a prize chain** (a contract wallet on 4663) is MINT's
+  to settle by hand; there is no on-chain nomination. The UI warns before the open.
 
 ## Verified on-chain facts
 
 Measured against chain 4663 on 2026-09-10 and 2026-09-15; Chainlink and ApeChain facts on
-2026-09-18. Do not re-research these.
+2026-09-18; Arbitrum, MINT's addresses and the reference $MNTD on 2026-09-28. Do not re-research
+these.
 
 | | Address / value |
 |---|---|
@@ -294,13 +377,18 @@ Measured against chain 4663 on 2026-09-10 and 2026-09-15; Chainlink and ApeChain
 | ERC-6551 registry | `0x000000006551c19487814612e58FE06813775758` — byte-identical to Ethereum |
 | CREATE2 deployer | `0x4e59b44847b379578588920cA78FbF26c0B4956C` — present |
 | LayerZero EndpointV2 | absent at its canonical address |
-| Chainlink VRF v2.5 | Base `0xd5D517aBE5cF79B7e95eC98dB0f0277788aFF634`; Base Sepolia `0x5C210eF41CD1a72de73bF76eC39637bB0d3d7BEE`; Ethereum `0xD7f86b4b8Cae7D942340FF628F82735b7a20893a` (code present); **none on 4663, none on ApeChain** (Chainlink supported-networks page) |
+| Chainlink VRF v2.5 | Ethereum `0xD7f86b4b8Cae7D942340FF628F82735b7a20893a` (code present); Base `0xd5D517aBE5cF79B7e95eC98dB0f0277788aFF634` (not used); **none on 4663, none on ApeChain** (Chainlink supported-networks page) |
 | ApeChain | chain id **33139**, RPC `https://rpc.apechain.com/http`; Curtis testnet 33111 |
+| Chainlink VRF v2.5, Arbitrum | Arbitrum One (42161) `0x3C0Ca683b403E37668AE3DC4FB62F4B29B6f7a3e`, LINK `0xf97f4df75117a78c1A5a0DBb814Af92458539FB4`; Arbitrum Sepolia (421614) `0x5CE8D5A2BC84beb22a398CCA51996F7930313D61`; both answer `getActiveSubscriptionIds` with 256-bit ids and `MAX_NUM_WORDS` 500 |
+| MINT's admin | `0x153052B43c8fD4ec01f14D1Edd8660778daa6141` — EOA; transactions on 4663 and Ethereum |
+| Royalty receiver | `0xf7E70F5ef311232dBd1b0E4dFB1e3e8FBE7b0e63` — EOA, unused |
+| Prize wallet | `0xf6c02F0fDAC5c03EE9f1cc60A5D9875Efc4c83e3` — EOA; active on 4663 and Ethereum, nothing on Arbitrum or ApeChain |
+| Reference $MNTD | Base Sepolia `0xa21273093af1b3b880b73afd54514bb3d6269968`: OpenZeppelin 5.5 `ERC20 + ERC20Burnable + ERC20Permit`, 18 decimals, 1,000,000,000 minted once, no owner, no proxy; solc 0.8.28, `cancun` |
 
 - **Contract size limit is ~96 KB**, four times Ethereum's.
 - **`block.number` returns the L1 Ethereum height.** Key logic on `block.timestamp`. Block time ~100 ms.
 - **The block header's `gasLimit` reads 2^50** — Arbitrum-style; the per-transaction gas limit is what binds, so long loops (the draw) are chunked.
-- **No usable randomness on 4663.** `block.prevrandao` is constant; no Chainlink. Randomness lives on Base.
+- **No usable randomness on 4663.** `block.prevrandao` is constant; no Chainlink. Randomness lives on Arbitrum One.
 - **`block.blobbasefee` reverts.** The one unsupported opcode.
 - **Sequencer-level compliance screening is active.** No part of the system may break when one holder cannot transact.
 - **Mainnet Blockscout's API sits behind a bot challenge.** Verify through Sourcify (4663 and 46630).
@@ -312,16 +400,20 @@ Measured against chain 4663 on 2026-09-10 and 2026-09-15; Chainlink and ApeChain
 2. Does OpenSea emit SignedZone-restricted orders for a Limit-Break-validated collection on 4663? (mainnet: one team bear listed and sold before the drop page is published)
 3. A whitelist claim end to end: voucher → `claim` → export → Studio allowlist stage → allowlist mint. It passes when `WhitelistExport.s.sol compare` passes against the root Studio set, a two-allocation wallet mints two, and a one-allocation wallet is refused its second — which shows Studio builds its tree like `script/lib/AllowListTree.sol` and keeps each wallet's own limit. (testnet)
 4. A burn through `Activation` against $MNTD on 46630 through to a recorded level; then against the real token on mainnet between 20 and 28 October. The pause has no exemption, so that rehearsal runs in a window the owner opens and closes again; holders' access opens on 29 October (ACT-11, §8).
-5. A full multi-chain game on the testnets: deposit, commit, exclude, open the game, boxes opened, relays in order, words, outcomes, awards, claims and expiry — including one open that wins and one that does not, and a relay offered out of turn and refused.
-6. Does Safe's web interface support chain 4663? (D3)
+5. Two mystery-box cycles on the testnets (46630 and Arbitrum Sepolia): exclusion, scheduling on both chains, boxes opened, relays in order, words and outcomes — one open that wins and one that does not, a relay offered out of turn and refused — a win paid from a test prize wallet and recorded with `recordPayout`, and a bear opened again in the second cycle.
+6. Moot while MINT's admin is an EOA: does Safe's web interface support chain 4663?
 
 ## Open questions with the client
 
-Twenty-one in `docs/OPEN-QUESTIONS.md`, each with the section it affects, when it is needed, the
-answer where one exists, and the default otherwise: nine resolved (CQ-3, 4, 5, 6, 7, 8, 10, 16,
-19), seven in follow-up (CQ-1, 2, 9, 11, 15, 17, 18) and five open (CQ-12, 13, 14, 20, 21). They
-map onto O1–O9 in §10. Tranche 1's code is written; its rehearsal and
-deployment wait on MINT's values (O4, O5, O6); tranche 2 waits on CQ-20.
+Twenty-three are in `docs/OPEN-QUESTIONS.md`, each with the section it affects, when it is
+needed, the answer where one exists, and the default otherwise:
+- **resolved or closed (13):** CQ-3, 4, 5, 6, 7, 8, 9, 10, 11, 15, 16, 19, 21;
+- **in follow-up (7):** CQ-1, 2, 12, 14, 17, 18, 20;
+- **open (3):** CQ-13, 22, 23.
+
+They map onto O1–O10 in §10. Tranche 1's code is written. The whitelist registry deploys on
+29 September to MINT's values; the rehearsal waits on the testnet $MNTD; tranche 2 waits on the
+excluded ids.
 
 ## Related documents
 
