@@ -36,12 +36,12 @@ the owner schedules, and is built once MINT supplies the excluded ids (CQ-20).
 |---|---|
 | `MintABear` (§3) | Built and reviewed. Deploys with the transfer validator set, `maxSupply` at 4,444, and ownership offered to MINT's admin in two steps |
 | `WhitelistClaim` (§4, WL-3) | Built and reviewed: holders claim with vouchers from MINT's signer. The claimant export to the Studio allowlist, and a check of Studio's root against the registry, are scripted. Outside the audit (DEL-8) |
-| `WhitelistImport` (§4, WL-7) | Built 28 September: MINT's admin imports the list from a CSV, and it freezes at `closeAt`. The same export and check. Outside the audit |
+| `WhitelistImport` (§4, WL-7) | Built 28 September: MINT's admin imports the list from a CSV in batches, and it freezes at `closeAt`. The same export and check, and a client module for the admin page. Outside the audit |
 | `Activation` (§5) | Built and reviewed. Burns $MNTD itself; paused from deployment until the switch-on date. The Status link comes out (ACT-9 retired) |
 | Client library (DEL-6) | Built and reviewed. One TypeScript client for every tranche-1 call: mint, whitelist claim or eligibility, burn for a level, transfers and reads. Every error carries a stable code and a message ready to show a holder. Runnable examples cover each flow, and a reference for the voucher backend is included. The admin page's calls join it with the mystery box |
 | Royalty split (DEL-6) | Built. The reference script reproduces the split at a closing block, dead-address exclusion included, and refuses inputs that miss a bear (ACT-10) |
 | Deployment, verification, enforcement (§7) | Scripts written and tested. The runbook covers the handover, the whitelist export and import, enforcement, royalties and `Activation` |
-| Tests | Deterministic contract tests at full line and branch coverage, and client-library tests run against a local chain with the contracts deployed. Fuzzing, invariants and fork tests are the internal auditor's (DEL-3) |
+| Tests | 242 deterministic contract tests at full line and branch coverage, and 133 client-library tests run against a local chain with the contracts deployed. Fuzzing, invariants and fork tests are the internal auditor's (DEL-3) |
 | Review | Every tranche-1 requirement and the client library reviewed with Calea's reviewer; the defects found were fixed in the code, tests and documents before hand-off to the auditor |
 | Testnet rehearsal (OPS-4) | Next, once MINT's testnet $MNTD is on 46630 (CQ-2) |
 | Mystery box (§6) | Specified: `MysteryBox` on Robinhood Chain and `PrizeDraw` on Arbitrum One, with prizes paid from MINT's wallet. Built once the 222 excluded ids arrive (CQ-20) |
@@ -426,8 +426,8 @@ on-chain. `→ CQ-18`.
 
 **WL-7 Owner-imported registry.** `WhitelistImport` on Robinhood Chain is the variant of the registry for a whitelist MINT fills
 itself from a CSV (`→ CQ-18`). WL-3 is the alternative, and MINT deploys one of the two.
-Constructor: `WhitelistImport(owner, closeAt)`; the owner is MINT's admin and is not the zero
-address. Until `closeAt` the owner can write the list:
+Constructor: `WhitelistImport(owner, closeAt)`; the owner is MINT's admin. A zero owner is
+refused (`NewOwnerIsZeroAddress`), and so is a close in the past (`InvalidWindow`). Until `closeAt` the owner can write the list:
 - `addAllocations(address[] wallets, uint8[] counts)` gives each wallet `counts[i]` more
   allocations. The call is refused whole, with no partial state, on any of these:
   - after `closeAt` (`ListFrozen`);
@@ -447,7 +447,8 @@ reassign an allocation, and `claimsOf(wallet)` is the wallet's eligibility for t
 stage.
 
 Events:
-- `AllocationsAdded(wallet, count, total)` for each wallet;
+- `AllocationsAdded(wallet, count, total)` for each wallet, where `total` is the wallet's
+  allocations after the add, so an indexer can rebuild `claimsOf` from events alone;
 - `AllocationsRemoved(wallet, count)`;
 - `CloseSet(closeAt)`.
 
@@ -458,6 +459,8 @@ either registry:
 - `claimants(offset, limit) → (wallet, allocations)[]`, each listed wallet once;
 - `closeAt`, `frozen()`.
 
+The export (WL-4) refuses a list that is not yet frozen (`CampaignStillOpen`), even when all
+1,000 allocations are written, because it can still be corrected until `closeAt`.
 `renounceOwnership` reverts for every caller. There is no voucher, no signer and no per-account
 cap: who is eligible is MINT's alone to decide, and the chain records what the owner wrote and
 when.

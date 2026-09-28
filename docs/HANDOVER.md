@@ -73,8 +73,9 @@ An integrity check of spec, prose, client document, code and board ran first (th
 "Integrity check"), and three tranche-end `solidity-auditor` passes after (the log's
 "Tranche-end pass"); `reports/tranche-1-review.md` summarises it all.
 
-**WL-7** (MNT-134) was built on 28 September by the developer, with tests and self-review. It is
-outside the audit (DEL-8), and its numbers are on the Task.
+**WL-7** (MNT-134, merge `451554c`, In Review) was built on 28 September by the developer, with
+tests and self-review (`reports/wl-7-diff-review.md`). It is outside the audit (DEL-8). With it:
+242 contract tests and 133 client tests; 200 rows cost 14.0M gas to add.
 
 Still ahead:
 - **OPS-4**, the rehearsal, with Subtask MNT-95 (Sourcify on 46630).
@@ -87,9 +88,9 @@ comment and logged time. The human merges `tranche-1` into `main`.
 |---|---|
 | Contracts | `MintABear`, `WhitelistClaim` and `WhitelistImport` (MINT deploys one), `Activation`; tranche 2 is `MysteryBox` (4663) and `PrizeDraw` (Arbitrum One) |
 | Scripts | `Deploy.s.sol` (OPS-2), `verify.sh` (OPS-3), `Enforcement.s.sol` (OPS-6), `WhitelistExport.s.sol` (WL-4); `docs/RUNBOOK.md`: ownership handover, whitelist export and import, transfer enforcement, royalties, Activation |
-| Tests | 214 before WL-7 (its own count is on MNT-134), all passing; 100% line, branch and function coverage (gate ≥90 / ≥80); every tranche-1 work-item Scenario has a test except the operational OPS-1, OPS-3 (live), OPS-4, OPS-5 |
+| Tests | 242 contract tests and 133 client tests, all passing; 100% line, branch and function coverage (gate ≥90 / ≥80); every tranche-1 work-item Scenario has a test except the operational OPS-1, OPS-3 (live), OPS-4, OPS-5 |
 | CI gates | `fmt --check`, `build --sizes` (no warnings), `test`, spec lint, generated prose, `verify.sh` dry run and verdict test — all green |
-| Slither | no High or Critical; 2 accepted Mediums, both `locked-ether` (below) |
+| Slither | no High or Critical; 3 accepted Mediums, all `locked-ether` (below) |
 
 Requirements amended since v2.1, each through an archived OpenSpec change:
 - **23 September:** ACT-5 (after a transfer the weight reads the level-0 weight) and OPS-2
@@ -303,11 +304,12 @@ RAF-17. Four constraints:
   the mystery box's exclusions and cycles. It cannot move a holder's bear, record a level
   without a burn, or change an outcome.
 - **The whitelist registries are not audited** (MINT, 28 September). `WhitelistClaim` had Calea's
-  paired review in tranche 1; `WhitelistImport` has the developer's tests and self-review only.
+  paired review in tranche 1; `WhitelistImport` has the developer's tests and self-review only
+  (`reports/wl-7-diff-review.md`: one Low fixed, three informational).
 - **With WL-7 the owner writes the whitelist.** The list is MINT's alone until `closeAt`, visible
   on-chain with every write, and frozen after it. The chain proves what was written, not who was
   eligible.
-- **Slither "locked ether"** on `Activation` and `WhitelistClaim`: Solady marks ownership
+- **Slither "locked ether"** on `Activation`, `WhitelistClaim` and `WhitelistImport`: Solady marks ownership
   functions `payable`, and anyone can call `requestOwnershipHandover` and
   `cancelOwnershipHandover`, so anyone could lock their own ETH by attaching value; neither
   contract withdraws it. The loss is only ever the sender's own. Accepted, and said in each
