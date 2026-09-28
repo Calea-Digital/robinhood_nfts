@@ -10,11 +10,11 @@ verbatim in the tracker and in the client document.
 ### CQ-1 — Dates after the 29 October mint
 - **Statement:** Dates after the 29 Oct mint
 - **State:** follow-up
-- **Status note:** call, 21 September 2026
+- **Status note:** call, 28 September 2026
 - **Section:** CAL
 - **Needed by:** 2026-10-29 — before the mint
-- **Resolution:** the three anchors stand — TGE 20 October, mint 29 October, burns and level-up from 29 October. Every other row of §8 is unconfirmed.
-- **Summary:** To be decided; the anchors stand, every other §8 row unconfirmed
+- **Resolution:** the three anchors stand — TGE 20 October, mint 29 October, burns and level-up from 29 October; the whitelist registry is delivered and deployed on 29 September. Every other row of §8 is unconfirmed.
+- **Summary:** Anchors stand; the whitelist registry is due 29 September; other §8 rows unconfirmed
 
 **Question.** The SoW schedule chains off a 15 October mint. With the mint at 29 October, which
 dates hold and which move?
@@ -29,21 +29,26 @@ should kick off 29th as well."
 **Answer (call, 21 September 2026).** To be decided. The dates below were not settled, so §8's
 non-anchor rows stay marked with their basis and none of them is a commitment.
 
-**Remaining.** Please confirm or move the proposed rows: whitelist campaign 6–26 October; round 1
-entries 29 October to 1 November, draw 1 November, claims to 1 December; first royalty closing
-block 5 November; operations handed over 19 November. Two consequences of the anchors to be
-aware of: burns open nine days after TGE, so the burn is rehearsed against real $MNTD on
-Robinhood Chain between 20 and 28 October, and a $MNTD deployment on testnet 46630 by 5 October
-makes that rehearsal independent of TGE (CQ-2).
+**Answer (call, 28 September 2026).** "We can leave the 3 anchors stand. The only change is that
+they need the WhitelistClaim contract ASAP. Tomorrow if possible." The registry is delivered to
+MINT's repository and is expected to be deployed the same day, outside the audit (DEL-8, DEL-9).
+
+**Remaining.** The whitelist campaign's `openAt` and `closeAt` (or, for WL-7, the import's
+`closeAt`) and the whitelist stage's start, which the deploy script checks is at least 48 hours
+after the close; whether the registry goes to testnet 46630 before mainnet; the first mystery-box
+cycle's window, which the owner now sets (RAF-32); the first royalty closing block; the
+19 November handover. Burns open nine days after TGE, so the burn is rehearsed against real
+$MNTD on Robinhood Chain between 20 and 28 October, and the testnet $MNTD makes that rehearsal
+independent of TGE (CQ-2).
 
 ### CQ-2
 - **Statement:** $MNTD burn route
 - **State:** follow-up
-- **Status note:** call, 21 September 2026
+- **Status note:** call, 28 September 2026; the testnet and mainnet addresses to follow
 - **Section:** ACT
 - **Needed by:** 2026-10-20 — before `Activation` is deployed
-- **Resolution:** option (a1) — $MNTD is **native** to Robinhood Chain, burned by `Activation` in the same transaction as the record.
-- **Summary:** Native on Robinhood Chain, with burning and staking beside it; token interface to confirm
+- **Resolution:** option (a1) — $MNTD is **native** to Robinhood Chain, burned by `Activation` in the same transaction as the record. The token is OpenZeppelin `ERC20Burnable` with 18 decimals, fixed supply and no owner or proxy, so its address is final once deployed.
+- **Summary:** Native; OpenZeppelin `ERC20Burnable`, 18 decimals, immutable; addresses to follow
 - **Blocks:** ACT-7, OPS-2, OPS-4
 
 **Question.** On which chain does the $MNTD burn happen, what does the token's level-up function
@@ -83,104 +88,35 @@ fixes the address in its constructor, so a different token later means a new `Ac
 deploys it, and can a copy be on testnet 46630 for the burn rehearsal? Is it live on 4663 at TGE?
 All of it is needed before `Activation` is deployed.
 
-### CQ-9 — Raffle entry model
-- **Statement:** Mystery box model
-- **State:** follow-up
-- **Status note:** call, 21 September 2026
-- **Section:** RAF
-- **Needed by:** 2026-10-05 — before tranche 2 starts
-- **Resolution:** **instant reveal**. A holder opens a box with a bear they own and learns the outcome then; one bear is one shot and the id is spent by it. Rounds, entry windows and the scheduled draw are dropped.
-- **Summary:** Instant reveal on opening; one bear is one shot and the id is spent
-- **Blocks:** RAF-28, RAF-29, RAF-30, RAF-31
+**Answer (call, 28 September 2026).** "It does expose burnFrom, 18 decimals, address will be
+final, copy will be on test net 46630 but it is not there yet. They will notify us when it is
+ready. The token will look exactly like this one:
+https://sepolia.basescan.org/address/0xa21273093af1b3b880b73afd54514bb3d6269968#code"
 
-**Question.** Every bear at a published block is a ticket and holders do nothing — or an
-explicit opt-in?
+**Read from the reference token** (Base Sepolia `0xa21273093af1b3b880b73afd54514bb3d6269968`,
+verified source, read 28 September 2026). `MNTD is ERC20, ERC20Burnable, ERC20Permit` on
+OpenZeppelin 5.5: the whole supply of 1,000,000,000 is minted once to a distributor in the
+constructor, and there is no owner, no mint function and no proxy. `decimals` is 18.
+`burnFrom(account, value)` spends the caller's allowance, then burns, and reverts on failure with
+`ERC20InsufficientAllowance(spender, allowance, needed)` or
+`ERC20InsufficientBalance(sender, balance, needed)`; an unlimited approval is never used down. The
+client library already names both errors. It also supports EIP-2612 `permit`; `Activation` does
+not use it, and a one-transaction burn with a permit would be a change to ACT-12's interface,
+not proposed. Compiled for `cancun`, which Robinhood Chain runs apart from `blobbasefee`.
 
-**Answer (MINT).** "Not passive; they need to enter the raffle by clicking 'open mystery box'
-for the raffle entry. Once they click we do the relevant ownership/spend checks — he might have
-already opened twice and holds 10 bears, so we would say 8/10 lucky tries left, for example."
-
-**Recorded as.** RAF-28: a holder opens a box with a bear they own and learns the outcome then;
-one bear is one shot; the outcome belongs to the wallet that opened it; an opened bear is
-"spent" for good, stays freely transferable, and cannot be opened again by its buyer.
-`shotsLeft` gives the 8/10.
-
-**Answer (call, 21 September 2026).** "Rewards are immediate upon opening a mystery box by a
-user that owns an NFT or multiple NFTs. One NFT — one shot at prize, consuming one ID per
-attempt out of 4,444. There is a very high chance that team allocations will be removed from
-this functionality and will not be eligible for prizes. The amount of prizes is to be decided
-(for example 5 prizes for 4,444 NFTs − team allocation NFTs). Verifiable random function
-mechanics will handle randomization behind the mystery box on a separate chain since Robinhood
-lacks native verifiable random function support. So — Robinhood Chain for proof of NFT
-ownership. Any network that supports Chainlink for determining if player wins a prize. User
-claims his prizes from multiple chains."
-
-**What changes.** This is the *instant* model, not the scheduled draw §10 D5 recommended, and it
-replaces the round structure rather than adjusting it. Rounds, entry windows, `minLevel` gating,
-the per-round draw and the winners root all go; what takes their place is one game over the
-4,444 ids, each id spendable once, each spend resolved on its own.
-
-**Calea's note on the tradeoff, for the record.** Robinhood Chain produces no randomness, so an
-instant outcome is only unpredictable if a fresh Chainlink word backs it. One VRF request per
-open is unpredictable but costs a fee per open and takes a callback's latency; a seed
-pre-committed by MINT costs nothing but lets whoever holds it foresee every outcome, and a seed
-published before the opens lets anyone compute which bears win. The shape that keeps both the
-instant feel and the guarantee is the open question below.
-
-**Settled by Calea in §6 (21 September 2026), for MINT to confirm.** MINT set the shape; four
-things the shape left open are now specified, and they are stated here so MINT confirms rather
-than inherits them:
-
-- **Each open is decided by its own Chainlink word** (RAF-29, RAF-30), not by a shared or
-  pre-committed seed. It is the only arrangement in which an instant outcome is unpredictable to
-  everyone, MINT included; it costs one VRF request per open, which is what the subscription has
-  to carry (RAF-8).
-- **A win is drawn from a fixed pool without replacement** (RAF-30): each open wins with
-  probability `prizesLeft / idsLeft`, so exactly the prize count is awarded once every playable
-  id has been played, every holder faces the same odds before opening, and the pool can neither
-  run dry early nor be left over.
-- **No cap on how many prizes one wallet may win** (RAF-30). One bear is one shot, so a holder
-  of twenty bears has twenty of them.
-- **Prizes never won return to MINT when the game closes** (RAF-31).
-
-**Remaining.** Confirm the four above, and supply the prize count and the excluded team ids
-(CQ-20).
-
-### CQ-11 — May the owner withdraw inventory?
-- **Statement:** Owner withdrawals
-- **State:** follow-up
-- **Status note:** MINT reply, September 2026; reopened by the call, 21 September 2026
-- **Section:** RAF
-- **Resolution:** no withdrawal while a prize is committed to the live game.
-- **Summary:** Not while a prize is committed to the live game
-- **Blocks:** RAF-14
-- **Needed by:** 2026-10-05 — before tranche 2 starts
-
-**Question.** May the admin withdraw *unreserved* inventory, or is everything that enters the
-vault committed to future rounds?
-
-**Answer (MINT).** "We allow admin to withdraw as long as the mystery box is not active, so admin
-can fill X prizes and activate the raffle mystery box when ready. But when live, none can be
-withdrawn from inventory in the wallet."
-
-**Recorded as.** RAF-14: `sweep` is refused for anything committed to the game; a won prize
-stays locked until claimed or expired regardless.
-
-**Effect of the call.** MINT's rule was written against rounds — "withdraw as long as the mystery
-box is not active". Instant reveal has no rounds and the box is open continuously, so the rule
-needs restating as: a prize withdrawable while the game is closed, and locked from the moment it
-is committed to the pool until it is won and claimed, or the game is closed. Confirm that
-reading with CQ-9.
+**Remaining.** The address of the copy on testnet 46630 when MINT deploys it, and the mainnet
+address at TGE, each confirmed to carry this bytecode.
 
 ### CQ-12 — Addresses and the admin wallet
 - **Statement:** Addresses; Safe on 4663
-- **State:** open
-- **Status note:** call, 21 September 2026: still to be supplied
+- **State:** follow-up
+- **Status note:** call, 28 September 2026; admin supplied, signer and worker to follow
 - **Section:** OPS
 - **Needed by:** 2026-10-02 — before anything is deployed to mainnet
-- **Resolution:** Open; supplied on time, as constructor parameters where possible
-- **Default if deferred:** a Safe for the admin; EOAs for worker and signer.
+- **Resolution:** admin `0x153052B43c8fD4ec01f14D1Edd8660778daa6141`, an EOA, assumed to own every contract on every chain; the signer (WL-3 only) and the worker to follow.
+- **Default if deferred:** `0x1530…6141` owns every contract on every chain; the worker is an EOA Calea operates (CQ-23).
 - **Blocks:** OPS-1, OPS-2, WL-3, COL-10
+- **Summary:** Admin `0x1530…6141` (EOA) for every contract, to confirm; signer and worker to follow
 
 **Question.** Four addresses, as OPS-1 records them: the **admin** (owner of every contract on
 every chain), the **worker** key (raffle lifecycle, seed relay, winners root), the **eligibility
@@ -201,6 +137,20 @@ calls.
 argument, so a contract is correct from its first block and there is no window in which it is
 deployed but unconfigured. The one address set by a call rather than a constructor argument is
 `WhitelistClaim.setSigner`'s, owner-only, because a signer key must be rotatable.
+
+**Answer (call, 28 September 2026).** "0x153052B43c8fD4ec01f14D1Edd8660778daa6141 this is the
+collection owner wallet. 0xf7E70F5ef311232dBd1b0E4dFB1e3e8FBE7b0e63 this is the royalty
+receiver wallet. That is all we have for now." In the follow-up: assume `0x1530…6141` is the
+owner of every contract on every chain, to be confirmed.
+
+**Read on-chain (28 September 2026).** `0x1530…6141` is an externally owned account with
+transactions on 4663 and Ethereum; no Safe is involved. The accepted risk that the collection's
+owner can add a minter (§2, HANDOVER) was mitigated by a Safe admin; with one EOA it rests on the
+key alone, and the runbook's reset of the minter list at handover is the remaining check.
+
+**Remaining.** Confirm `0x1530…6141` for every contract on every chain, or name the exceptions;
+the eligibility signer's address if WL-3 is deployed (CQ-18); the worker's address, which
+follows CQ-23.
 
 ### CQ-13 — Existing smart-contract review: which contract, source, line limit
 - **Statement:** Existing-contract review target
@@ -228,12 +178,14 @@ size in lines, so the line limit in Rayco's agreement can be set. Findings only,
 
 ### CQ-14 — Monorepo placement and CI
 - **Statement:** Monorepo and CI
-- **State:** open
-- **Status note:** call, 21 September 2026: not reached
+- **State:** follow-up
+- **Status note:** call, 28 September 2026; repository to be named
 - **Section:** DEL
 - **Needed by:** before the tranche 1 handover
-- **Resolution:** Undecided; `packages/contracts`, submodules, Calea owns CI
+- **Resolution:** Calea's recommendation accepted: `packages/contracts` as `@mint/contracts` beside `packages/contracts-client`, Foundry dependencies as git submodules, Calea owns CI. The first delivery, on 29 September, is the whitelist registry and its client module only.
 - **Default if deferred:** `packages/contracts` as `@mint/contracts`; Foundry dependencies as git submodules; Calea ports its CI workflow.
+- **Summary:** Recommendation accepted; the whitelist registry first, 29 September; repository to be named
+- **Blocks:** DEL-9
 
 **Question.** Confirm the package location; whether `lib/` dependencies are git submodules or
 vendored copies; and who owns the CI configuration.
@@ -243,41 +195,23 @@ vendored copies; and who owns the CI configuration.
 **Answer (call, 21 September 2026).** Not reached. CQ-19 settled who builds what, but not where
 the code lives, so the repository question stands on its own now rather than riding on CQ-19.
 
-**Remaining.** Which repository holds `packages/contracts` and the client library; whether the
-Foundry dependencies are git submodules or vendored; who owns the CI configuration. Calea's
-default is unchanged. Note that the monorepo named in earlier drafts,
-`github.com/mintdotio/NFT`, needs confirming against the getminted.io split in CQ-19.
+**Answer (call, 28 September 2026).** "They do accept our recommendation, however we will need to
+update plan in order to facilitate the early delivery of WhitelistClaim contract." In the
+follow-up: MINT will provide the repository; the first delivery is only the whitelist registry
+and its client module.
 
-### CQ-15
-- **Statement:** Royalty rate and receiver
-- **State:** follow-up
-- **Status note:** MINT reply, September 2026
-- **Section:** COL
-- **Needed by:** 2026-10-02 — the receiver before the first sale (the team bear); the rate is settled
-- **Resolution:** 5% (500 basis points); receiver to follow.
-- **Summary:** 5%; receiver to follow
-- **Blocks:** COL-6
+**Recorded as (28 September).** DEL-9.
 
-**Question.** The ERC-2981 royalty percentage and the address that receives it.
-
-**Answer (MINT).** "Royalties — let's make them 5%; receiver I will send once we have the Studio
-collection owner wallet set up."
-
-**Recorded as.** COL-6.
-
-**Remaining.** The receiver address. Calea recommends that it is *not* the Studio owner (admin)
-wallet: the receiver is the royalty pot, a treasury that is swept on every cap or countdown, while
-the admin is a control key that should hold nothing. Either works technically; it is set through
-Studio at any time before the first sale.
+**Remaining.** The repository's URL and Calea's access to it.
 
 ### CQ-17 — VRF subscription
 - **Statement:** VRF subscription and network
 - **State:** follow-up
-- **Status note:** call, 21 September 2026
+- **Status note:** call, 28 September 2026; the network is settled, the subscription's holder is assumed
 - **Section:** RAF
 - **Needed by:** 2026-10-12 — before `PrizeDraw` is deployed
-- **Resolution:** option (a) — MINT creates, funds and owns the subscription from a wallet it controls; Calea adds `PrizeDraw` as a consumer during deployment. The network is still to pick.
-- **Summary:** MINT creates, funds and owns it; the network is Calea's to recommend
+- **Resolution:** **Arbitrum One**; the subscription is assumed to be owned and funded by MINT, with `PrizeDraw` as consumer.
+- **Summary:** Arbitrum One; MINT owns the subscription (assumed)
 
 **Question.** The Chainlink VRF v2.5 subscription on Base: MINT creates and funds it and adds the
 `PrizeDraw` as a consumer. Confirm, and name the account that will hold it.
@@ -297,6 +231,8 @@ created it.
   Calea adds `PrizeDraw` as a consumer during deployment — recommended.** MINT already owns
   every admin role and will be topping the balance up after handover.
 - **(b) Calea creates and funds it for the rehearsal and transfers it to MINT's wallet at
+- **Blocks:** RAF-8
+- **Default if deferred:** MINT creates, funds and owns the subscription on Arbitrum One; Calea adds `PrizeDraw` as a consumer at deployment.
   handover.** Same result, one extra transfer.
 
 **Answer (call, 21 September 2026).** Option (a): "MINT creates and funds the subscription on the
@@ -313,46 +249,34 @@ the outcome something a holder waits for. Ethereum
 expensive at one request per open or per batch. ApeChain and Robinhood Chain have no Chainlink
 VRF at all, checked 18 September 2026.
 
-**Remaining.** Confirm Base, and name the wallet that will hold the subscription. How much the
-subscription has to hold depends on how often a word is requested, which is CQ-9's remaining
-question.
+**Answer (call, 28 September 2026).** "MINT will no longer use Base, and agreement was reached to
+use Arbitrum." Calea had proposed Arbitrum for speed; Base is out of the picture. On the
+subscription: "There is a chance that we pay the VRF service and charge MINT through invoice."
+In the follow-up: assume MINT owns the subscription, and leave it open.
 
-### CQ-20 — Prize count, odds and the token ids out of play
-- **Statement:** Prize count, odds and excluded ids
-- **State:** open
-- **Status note:** new; from the call, 21 September 2026
-- **Section:** RAF
-- **Needed by:** 2026-10-05 — before tranche 2 starts; the numbers are deployment values
-- **Resolution:** To supply: how many prizes, and which token ids are out of play
-- **Default if deferred:** none; the game cannot be deployed without them.
-- **Blocks:** RAF-24, RAF-27
+**Recorded as (28 September).** RAF-8: `PrizeDraw` on Arbitrum One, VRF v2.5 coordinator
+`0x3C0Ca683b403E37668AE3DC4FB62F4B29B6f7a3e` (Arbitrum Sepolia
+`0x5CE8D5A2BC84beb22a398CCA51996F7930313D61`), both read on-chain on 28 September 2026 as VRF v2.5
+coordinators. How the chains combine: an open on Robinhood Chain emits `BoxOpened`; the worker
+relays it in order to `PrizeDraw` on Arbitrum, where a Chainlink word decides it; a win is paid
+from MINT's prize wallet on the prize's chain and recorded on `PrizeDraw` (RAF-29, RAF-33). No
+bridge is involved; the worker is the one trusted relay, and it can delay an open but cannot
+change or reorder one.
 
-**Question.** The instant mystery box (CQ-9) needs three numbers that only MINT can give.
-
-- **How many prizes**, and what each one is: which asset, on which chain, and in what quantity.
-  MINT's illustration was "5 prizes for 4,444 NFTs − team allocation NFTs"; five is an example,
-  not a decision.
-- **Which token ids are out of play.** MINT expects team allocations to be excluded from prize
-  eligibility. Give the ids as ranges. They have to be fixed before the first open and frozen
-  after it, because a set that can change mid-game changes everybody's odds; and an excluded bear
-  is excluded whoever holds it, so a team bear that is sold stays out.
-- **Whether every prize chain is known.** Each chain holding a prize needs its own vault deployed,
-  verified and funded, so the list closes before tranche 2 deploys and cannot be added to
-  afterwards without a new deployment.
-
-**Why it cannot wait.** The prize count and the excluded set together fix the odds of an open,
-and the odds are the product. They are also immutable once the game opens, in the same way the
-burn thresholds are immutable once `Activation` is deployed.
+**Remaining.** Who holds the subscription. If Calea holds and funds it and invoices MINT, Calea
+keeps a role after handover (OPS-5) and it becomes a priced item (DEL-10). A request's cost on
+Arbitrum is small — the network fee plus Chainlink's premium per word — and the subscription is
+funded for a cycle's worth of opens, at most 4,222.
 
 ### CQ-18 — How whitelist claims are recorded
 - **Statement:** Whitelist claim recording
 - **State:** follow-up
-- **Status note:** call, 21 September 2026; the export direction and any owner bulk-add still to confirm (§10 O8)
+- **Status note:** call, 28 September 2026; MINT asked for an owner-imported list, Calea's counter-offer is pending
 - **Section:** WL
-- **Needed by:** before the campaign opens
-- **Resolution:** option **(A)** — an on-chain registry on Robinhood Chain; the holder sends the claim and pays the gas. The CSV loaded into OpenSea is exported from that registry.
-- **Summary:** On-chain registry, holder pays gas (A); the OpenSea CSV is exported from it
-- **Blocks:** WL-4, OPS-4
+- **Needed by:** 2026-09-29 — the registry is delivered and deployed that day
+- **Resolution:** an on-chain registry on Robinhood Chain, in one of two variants MINT picks: `WhitelistClaim`, holders claim with signed vouchers (WL-3), or `WhitelistImport`, the owner imports the list from a CSV and it freezes at `closeAt` (WL-7). Both are built; the CSV loaded into OpenSea is exported from the one deployed.
+- **Summary:** Vouchers (WL-3) or owner import (WL-7); MINT to pick
+- **Blocks:** WL-4, OPS-4, WL-7
 
 **Question.** MINT provides the Privy mirror login and an API for the signed-in account's
 wagering; Calea records the whitelist claims of those who meet the requirement. Where is the
@@ -370,6 +294,7 @@ record kept, and who sends the claim?
   and pays the gas, so holders need nothing on Robinhood Chain before the mint. Adds a small
   relay service on MINT's side.
 - **(B) Off-chain register.** MINT's database with an atomic counter; Calea supplies the claim
+- **Default if deferred:** `WhitelistImport` (WL-7), as MINT asked.
   API contract and the export to the Studio allowlist and deploys nothing. Fastest to build and
   free of gas; claim order and sell-out rest on MINT's server, nothing is publicly checkable, and
   the SeaDrop allowlist root is the only trace on-chain.
@@ -403,32 +328,118 @@ mint, with no stage overlapping it, because the allowlist's per-wallet limit cou
 mints in every stage (WL-4); and that Season 1 wagering and the $50 back-credit are MINT's data,
 with Calea recording only the result.
 
-### CQ-21 — How MINT's Status counts links across an account's wallets
-- **Statement:** Status links per account
+**Answer (call, 28 September 2026).** "Whitelist will entirely be provided by csv and will be
+entirely inputed by contract owner in bulk, as per their wish." Calea did not accept this at the
+call because it is wholly centralised, and put a counter-offer to MINT, whose answer is awaited.
+
+**The counter-offer.**
+- **(A) Vouchers, as built (WL-3).** The chain enforces the 1,000 cap, two per wallet, two per
+  account, the window and the order of claims. Nobody, the owner included, can add, remove or
+  reassign a claim outside a signed voucher. The signer decides who is eligible.
+- **(A′) Relayed vouchers.** The same, with MINT's backend submitting each voucher and paying the
+  gas, so holders do nothing on-chain before the mint.
+- **(A+) Vouchers plus an owner allocation**, within the same caps and with its own event, for
+  partners and corrections.
+- **(B) No registry.** MINT's CSV goes straight to Studio.
+
+A registry filled by the owner from a CSV proves no more than Studio's allowlist root does, so if
+MINT wants the whole list to be its own, the honest options are (B) or the frozen import below.
+
+**Recorded as (28 September).** WL-7: `WhitelistImport`, which MINT's admin fills from the CSV in
+batches within the 1,000 total and two per wallet. The admin can correct it until `closeAt`, and
+after that it is frozen for good and `claimsOf` is the eligibility read. It is built beside
+`WhitelistClaim`, and MINT deploys one of the two. Neither is audited (DEL-8).
+
+**Remaining.** Which variant MINT deploys on 29 September. For WL-3, the signer's address. For
+either, the window (CQ-1) and the whitelist stage's start. "1,000 spots" is 1,000 allocations.
+The whitelist stage is the first stage in which any wallet but the team's can mint, with no other
+stage overlapping it (WL-4).
+
+### CQ-20 — Prize count, odds and the token ids out of play
+- **Statement:** Prize count, odds and excluded ids
+- **State:** follow-up
+- **Status note:** call, 28 September 2026; the excluded ids to follow
+- **Section:** RAF
+- **Needed by:** 2026-10-05 — before tranche 2 starts; the numbers are deployment values
+- **Resolution:** the owner sets each cycle's prize count and prize list from MINT's admin page; **222** team ids are excluded, fixed for good; prizes are held on Robinhood Chain, Ethereum and possibly ApeChain in MINT's prize wallet.
+- **Default if deferred:** none for the excluded ids: the first cycle cannot be scheduled without them.
+- **Blocks:** RAF-27
+
+**Question.** The instant mystery box (CQ-9) needs three numbers that only MINT can give.
+
+- **How many prizes**, and what each one is: which asset, on which chain, and in what quantity.
+  MINT's illustration was "5 prizes for 4,444 NFTs − team allocation NFTs"; five is an example,
+  not a decision.
+- **Which token ids are out of play.** MINT expects team allocations to be excluded from prize
+  eligibility. Give the ids as ranges. They have to be fixed before the first open and frozen
+  after it, because a set that can change mid-game changes everybody's odds; and an excluded bear
+  is excluded whoever holds it, so a team bear that is sold stays out.
+- **Whether every prize chain is known.** Each chain holding a prize needs its own vault deployed,
+- **Summary:** Prizes per cycle by the owner; 222 ids excluded for good (which, to follow); prize chains Robinhood, Ethereum, maybe ApeChain
+  verified and funded, so the list closes before tranche 2 deploys and cannot be added to
+  afterwards without a new deployment.
+
+**Why it cannot wait.** The prize count and the excluded set together fix the odds of an open,
+and the odds are the product. They are also immutable once the game opens, in the same way the
+burn thresholds are immutable once `Activation` is deployed.
+
+**Answer (call, 28 September 2026).** "Prize count and prize distribution (how many prizes there
+are, and what they constitute of) will be decided by an admin (owner) via a special admin page
+in the app. This owner account will have the ability to freeze and open Raffle game." In the
+follow-up: team ids are excluded, 222 of them, fixed for good; the ids themselves are MINT's to
+supply; ApeChain is not yet confirmed, and no contract goes on any prize chain.
+
+**Recorded as (28 September).** RAF-27: the excluded ranges are recorded once and frozen when the
+first cycle is scheduled, so `PLAYABLE` is 4,222. RAF-32: each cycle's prize count and the hash of
+its published prize list are set by the owner. DEL-6: the admin page's calls are in the client
+library.
+
+**Remaining.** The 222 excluded ids, as ranges. Whether ApeChain holds prizes. It needs no
+deployment either way, but the UI names the chains.
+
+### CQ-22 — How a prize is delivered
+- **Statement:** Prize delivery from the prize wallet
 - **State:** open
-- **Status note:** new; from the tranche-1 review, 24 September 2026
-- **Section:** ACT
-- **Needed by:** 2026-10-29 — before burns, level-up and Status linking open
-- **Resolution:** Open; Calea recommends the account's single highest-level link
-- **Default if deferred:** MINT's Status counts one link per getminted.io account: the highest-level bear among the links of the account's wallets.
-- **Blocks:** ACT-9, DEL-6
+- **Status note:** new; from the call, 28 September 2026
+- **Section:** RAF
+- **Needed by:** 2026-10-12 — before `PrizeDraw` is deployed
+- **Resolution:** Open; Calea recommends that MINT pushes each win to the opener
+- **Default if deferred:** MINT pushes each win from the prize wallet to the opener's address on the prize's chain, and the worker records it with `recordPayout`.
+- **Blocks:** RAF-33
 
-**Question.** `Activation` lets each **wallet** nominate one bear to carry its Status boost
-(ACT-9), and a getminted.io account may use several wallets — the whitelist already counts two
-per account across them (WL-1, WL-3). So one account can hold several links at once, one per
-wallet. How does MINT's Status treat them: one link per account (and if so, which — the highest
-level, the most recent, a wallet the account marks as primary), or every wallet's link, each
-boosting the account?
+**Question.** Prizes sit in MINT's prize wallet `0xf6c0…e3e3` (CQ-8), an externally owned
+account, and are paid by transfer. Two things follow that only MINT can decide.
 
-**In plain words.** A holder with two wallets could link a bear in each. The contract records
-both and reads each bear's current level; what the Status boost is worth, and whether two links
-count twice, is MINT's rule, off-chain.
+- **Who sends the payout.** Either MINT, by hand from the wallet, or automation. Automation puts
+  the prize wallet's key on the worker's server, which Calea would be operating if CQ-23 goes
+  that way.
+- **Push or request.**
+  - (a) MINT pushes every win to the opener's address. This is recommended: no holder action, no
+    window, and nothing depends on a holder acting by a deadline (OPS-7).
+  - (b) The winner requests the prize in the app within 30 days, or it is renounced (CQ-10).
 
-**Calea's recommendation.** One boost per account: MINT reads `linkOf` for every wallet the
-account's Privy login ties to it and applies the highest level among them. It keeps "one Status
-boost" true per account whatever the number of wallets, needs nothing from the holder beyond the
-links they already make, and needs no contract change. Any other answer needs no contract change
-either — only MINT's Status service and the portal's wording follow it.
+**Recorded as.** RAF-33: whichever way it is paid, each payout is recorded on `PrizeDraw` with
+`recordPayout(openIndex, chainId, txHash)`, so a win without a `PrizePaid` is visible to anyone.
+
+### CQ-23 — Who operates the worker
+- **Statement:** Worker operator after handover
+- **State:** open
+- **Status note:** new; from the call, 28 September 2026
+- **Section:** OPS
+- **Needed by:** 2026-10-12 — before `PrizeDraw` is deployed
+- **Resolution:** Open; assumed that Calea operates the worker
+- **Default if deferred:** Calea operates the worker as a service priced in Rayco's agreement; MINT's admin can replace it at any time with `setWorker`.
+- **Blocks:** OPS-5, RAF-18
+
+**Question.** The worker relays every open from Robinhood Chain to `PrizeDraw` on Arbitrum, in
+order, and records every payout (RAF-18, RAF-33). The mystery box runs cycle after cycle past the
+19 November handover. Who runs it then: MINT's automation, as the SoW assumed, or Calea as a
+service?
+
+**Recorded as (28 September).** Assumed Calea, and left open. The worker holds only `resolve`
+and `recordPayout` on `PrizeDraw`. It cannot change an outcome, reorder opens or move a bear or a
+prize, and the admin can replace it (OPS-5, RAF-14). If Calea operates it, it is the one role
+Calea keeps after handover, and operating it beyond 19 November is a priced item (DEL-10).
 
 ## RESOLVED Decisions
 
@@ -558,12 +569,12 @@ published; if OpenSea cannot fill orders, one owner call lifts enforcement until
 ### CQ-8
 - **Statement:** Where the prize assets live
 - **State:** resolved
-- **Status note:** call, 21 September 2026
+- **Status note:** call, 28 September 2026
 - **Section:** RAF
 - **Needed by:** before the vaults are deployed
-- **Resolution:** prizes sit on several chains and are NFTs and tokens alike; each is claimed on the chain it sits on.
-- **Summary:** Several chains; NFTs and tokens alike
-- **Blocks:** RAF-24
+- **Resolution:** prizes are NFTs and tokens held in MINT's prize wallet `0xf6c02F0fDAC5c03EE9f1cc60A5D9875Efc4c83e3` on Robinhood Chain, Ethereum and possibly ApeChain, and paid from it to the winner on the prize's chain; no contract is deployed on a prize chain.
+- **Summary:** MINT's prize wallet on Robinhood Chain, Ethereum and possibly ApeChain; no vaults
+- **Blocks:** RAF-33
 
 **Question.** On which chain are the prize assets held, and where should the vault live?
 
@@ -584,14 +595,100 @@ list has to be closed before tranche 2 is deployed.
 on a chain with Chainlink VRF, and the holder claims each prize on the chain it sits on. How
 many prizes there are, and on which chains, is CQ-20.
 
+**Answer (call, 28 September 2026).** "Chains that will hold the prizes will certainly be
+Robinhood, Ethereum and maybe Apechain (yet to be confirmed). The raffle prize wallet will be
+0xf6c02F0fDAC5c03EE9f1cc60A5D9875Efc4c83e3. This address will hold rewards on all 2 or 3
+chains." And in the follow-up: the wallet is the custody itself, and "there will not be a vault
+nor registry on Apechain" — nor on any prize chain.
+
+**Recorded as (28 September).** RAF-33: the prize wallet holds every prize and pays it by
+transfer; the vault contracts and their rules (RAF-2 to RAF-6, RAF-11, RAF-24) are retired. The
+wallet is an externally owned account, active on 4663 and Ethereum (read 28 September 2026).
+
+### CQ-9 — Raffle entry model
+- **Statement:** Mystery box model
+- **State:** resolved
+- **Status note:** call, 28 September 2026
+- **Section:** RAF
+- **Resolution:** **cycles**. The owner schedules each cycle's window and prizes; in a cycle each playable bear is one shot, decided instantly by its own Chainlink word, from a fixed pool without replacement; prizes not awarded stay with MINT and may roll into a later cycle; the only cap on a wallet's wins is one shot per bear per cycle.
+- **Summary:** Owner-scheduled cycles; one shot per bear per cycle; own VRF word; fixed pool, unawarded prizes roll forward
+- **Blocks:** RAF-28, RAF-29, RAF-30, RAF-32
+
+**Question.** Every bear at a published block is a ticket and holders do nothing — or an
+explicit opt-in?
+
+**Answer (MINT).** "Not passive; they need to enter the raffle by clicking 'open mystery box'
+for the raffle entry. Once they click we do the relevant ownership/spend checks — he might have
+already opened twice and holds 10 bears, so we would say 8/10 lucky tries left, for example."
+
+**Recorded as.** RAF-28: a holder opens a box with a bear they own and learns the outcome then;
+one bear is one shot; the outcome belongs to the wallet that opened it; an opened bear is
+"spent" for good, stays freely transferable, and cannot be opened again by its buyer.
+`shotsLeft` gives the 8/10.
+
+**Answer (call, 21 September 2026).** "Rewards are immediate upon opening a mystery box by a
+user that owns an NFT or multiple NFTs. One NFT — one shot at prize, consuming one ID per
+attempt out of 4,444. There is a very high chance that team allocations will be removed from
+this functionality and will not be eligible for prizes. The amount of prizes is to be decided
+(for example 5 prizes for 4,444 NFTs − team allocation NFTs). Verifiable random function
+mechanics will handle randomization behind the mystery box on a separate chain since Robinhood
+lacks native verifiable random function support. So — Robinhood Chain for proof of NFT
+ownership. Any network that supports Chainlink for determining if player wins a prize. User
+claims his prizes from multiple chains."
+
+**What changes.** This is the *instant* model, not the scheduled draw §10 D5 recommended, and it
+replaces the round structure rather than adjusting it. Rounds, entry windows, `minLevel` gating,
+the per-round draw and the winners root all go; what takes their place is one game over the
+4,444 ids, each id spendable once, each spend resolved on its own.
+
+**Calea's note on the tradeoff, for the record.** Robinhood Chain produces no randomness, so an
+instant outcome is only unpredictable if a fresh Chainlink word backs it. One VRF request per
+open is unpredictable but costs a fee per open and takes a callback's latency; a seed
+pre-committed by MINT costs nothing but lets whoever holds it foresee every outcome, and a seed
+published before the opens lets anyone compute which bears win. The shape that keeps both the
+instant feel and the guarantee is the open question below.
+
+**Settled by Calea in §6 (21 September 2026), for MINT to confirm.** MINT set the shape; four
+things the shape left open are now specified, and they are stated here so MINT confirms rather
+than inherits them:
+
+- **Each open is decided by its own Chainlink word** (RAF-29, RAF-30), not by a shared or
+  pre-committed seed. It is the only arrangement in which an instant outcome is unpredictable to
+  everyone, MINT included; it costs one VRF request per open, which is what the subscription has
+  to carry (RAF-8).
+- **A win is drawn from a fixed pool without replacement** (RAF-30): each open wins with
+  probability `prizesLeft / idsLeft`, so exactly the prize count is awarded once every playable
+  id has been played, every holder faces the same odds before opening, and the pool can neither
+  run dry early nor be left over.
+- **No cap on how many prizes one wallet may win** (RAF-30). One bear is one shot, so a holder
+  of twenty bears has twenty of them.
+- **Prizes never won return to MINT when the game closes** (RAF-31).
+
+**Answer (call, 28 September 2026).** "Yes on Chainlink. [...] The only cap on how many prizes a
+wallet can win depends on the number of NFTs held by that wallet (1 NFT - one chance per cycle).
+Confirmation on everything else." On O1: "Once opened the game will last for a pre-determined
+period of time, but the owner dictates when the next game starts after the current is closed,
+thus effectively having the ability to freeze the game until rewards for the following cycle
+are in place." In the follow-up: every playable bear gets one shot per cycle and may be opened
+again in the next, whoever holds it; the owner sets each cycle's start and end before it starts;
+and for a cycle that ends with bears unopened, option (a): the odds stay fixed and the prizes not
+awarded roll forward.
+
+**Recorded as (28 September).** RAF-32 (cycles), RAF-28 (one shot per bear per cycle), RAF-29
+and RAF-30 (per-cycle counters, one `openIndex` sequence), RAF-8 (Arbitrum). RAF-26 and RAF-31
+are retired. The four points §6 settled are confirmed: an open's own Chainlink word, the fixed
+pool without replacement, no cap beyond one shot per bear, and prizes not awarded returning to
+MINT.
+
 ### CQ-10
 - **Statement:** Claim window
 - **State:** resolved
-- **Status note:** MINT reply, September 2026; carried over at the call, 21 September 2026
+- **Status note:** superseded at the call, 28 September 2026
 - **Section:** RAF
-- **Resolution:** 30 days, now running from the win rather than from a round's root; an unclaimed prize is renounced.
-- **Summary:** 30 days, from the win
-- **Blocks:** RAF-11
+- **Resolution:** superseded: there is no vault to claim from; a win is paid from MINT's prize wallet, pushed or requested as CQ-22 decides, and a 30-day window applies only if it is requested.
+- **Summary:** Superseded by CQ-22 (prize delivery)
+- **Blocks:** RAF-33
+- **Status label:** Closed
 
 **Question.** How long does a winner have to claim?
 
@@ -605,6 +702,62 @@ unreserved inventory; RAF-5 for the states it passes through.
 from the moment the win is recorded and an expired prize returns to the inventory the game still
 draws from. Where it goes once the game is over is part of CQ-9's remaining question on prizes
 never won.
+
+**Superseded (call, 28 September 2026).** Prizes are held in MINT's prize wallet and paid by
+transfer (CQ-8, RAF-33), so there is no `claim` or `expirePrize` on-chain. Whether the winner
+has to request a prize within 30 days is part of CQ-22.
+
+### CQ-11 — May the owner withdraw inventory?
+- **Statement:** Owner withdrawals
+- **State:** resolved
+- **Status note:** superseded at the call, 28 September 2026
+- **Section:** RAF
+- **Resolution:** superseded: prizes are held in MINT's own wallet, so nothing on-chain locks or releases them; MINT's rule that nothing is withdrawn while a cycle is live is MINT's to keep.
+- **Summary:** Superseded — custody is MINT's wallet
+- **Status label:** Closed
+
+**Question.** May the admin withdraw *unreserved* inventory, or is everything that enters the
+vault committed to future rounds?
+
+**Answer (MINT).** "We allow admin to withdraw as long as the mystery box is not active, so admin
+can fill X prizes and activate the raffle mystery box when ready. But when live, none can be
+withdrawn from inventory in the wallet."
+
+**Recorded as.** RAF-14: `sweep` is refused for anything committed to the game; a won prize
+stays locked until claimed or expired regardless.
+
+**Effect of the call.** MINT's rule was written against rounds — "withdraw as long as the mystery
+box is not active". Instant reveal has no rounds and the box is open continuously, so the rule
+needs restating as: a prize withdrawable while the game is closed, and locked from the moment it
+is committed to the pool until it is won and claimed, or the game is closed. Confirm that
+reading with CQ-9.
+
+**Superseded (call, 28 September 2026).** With the prizes in MINT's externally owned prize
+wallet (CQ-8, RAF-33) there is no vault to refuse a withdrawal. The published prize list of a
+cycle (RAF-27) is MINT's commitment, and every win and every payout is on the record, but only
+MINT's own practice keeps a committed prize in the wallet until it is won.
+
+### CQ-15
+- **Statement:** Royalty rate and receiver
+- **State:** resolved
+- **Status note:** call, 28 September 2026
+- **Section:** COL
+- **Resolution:** 5% (500 basis points) to `0xf7E70F5ef311232dBd1b0E4dFB1e3e8FBE7b0e63`.
+- **Summary:** 5% to `0xf7E7…0e63`
+- **Blocks:** COL-6
+
+**Question.** The ERC-2981 royalty percentage and the address that receives it.
+
+**Answer (MINT).** "Royalties — let's make them 5%; receiver I will send once we have the Studio
+collection owner wallet set up."
+
+**Recorded as.** COL-6.
+
+**Answer (call, 28 September 2026).** "0xf7E70F5ef311232dBd1b0E4dFB1e3e8FBE7b0e63 this is the
+royalty receiver wallet." It is not the admin, as Calea recommended; an unused externally owned
+account on 4663 (read 28 September 2026).
+
+**Recorded as (28 September).** COL-6, OPS-1: set through Studio before the first sale.
 
 ### CQ-16 — Compliance requirements
 - **Statement:** Compliance (freeze / clawback)
@@ -679,3 +832,38 @@ belongs to, the wagering history, the two-per-account whitelist cap and the roya
 *mint.io accounts*. Since nothing in this project is to touch mint.io, all four are now
 getminted.io accounts — recorded in §2, WL-1, WL-3 and ACT-10. Please confirm the reading, since
 it also says where the wager API and the splitter wallet read and write.
+
+### CQ-21 — How MINT's Status counts links across an account's wallets
+- **Statement:** Status links per account
+- **State:** resolved
+- **Status note:** call, 28 September 2026: out of scope
+- **Section:** ACT
+- **Resolution:** out of scope: MINT assigns Status links to holders' Privy accounts off-chain; the on-chain link (ACT-9) is removed.
+- **Blocks:** ACT-12
+- **Status label:** Closed
+- **Summary:** Out of scope — Status links are off-chain; ACT-9 removed
+
+**Question.** `Activation` lets each **wallet** nominate one bear to carry its Status boost
+(ACT-9), and a getminted.io account may use several wallets — the whitelist already counts two
+per account across them (WL-1, WL-3). So one account can hold several links at once, one per
+wallet. How does MINT's Status treat them: one link per account (and if so, which — the highest
+level, the most recent, a wallet the account marks as primary), or every wallet's link, each
+boosting the account?
+
+**In plain words.** A holder with two wallets could link a bear in each. The contract records
+both and reads each bear's current level; what the Status boost is worth, and whether two links
+count twice, is MINT's rule, off-chain.
+
+**Calea's recommendation.** One boost per account: MINT reads `linkOf` for every wallet the
+account's Privy login ties to it and applies the highest level among them. It keeps "one Status
+boost" true per account whatever the number of wallets, needs nothing from the holder beyond the
+links they already make, and needs no contract change. Any other answer needs no contract change
+either — only MINT's Status service and the portal's wording follow it.
+
+**Answer (call, 28 September 2026).** "Status links will be assigned to their users Privy accounts
+off-chain, so this one falls out of scope for us." In the follow-up: the on-chain link can be
+removed.
+
+**Recorded as (28 September).** ACT-9 is retired. `linkBear`, `unlinkBear`, `linkOf`,
+`BearLinked` and `BearUnlinked` leave `Activation` and the client library. MINT's Status reads
+`levelOf` for the bear the account names.

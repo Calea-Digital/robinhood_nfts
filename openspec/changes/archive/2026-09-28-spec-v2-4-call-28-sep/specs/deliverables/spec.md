@@ -1,37 +1,6 @@
-# Deliverables and acceptance Specification
+# Spec Delta
 
-## Purpose
-The engagement needs each deliverable and the bar it is accepted against written down — so that both parties can tell when the work is done and what remains.
-
-## Requirements
-
-### Requirement: DEL-1 — Source
-**Kind:** acceptance-standard
-Warning-free `forge build`; Slither with no High or Critical finding, every
-accepted Medium documented.
-
-#### Scenario: The build is clean
-- **WHEN** `forge build` and Slither run on the delivered source
-- **THEN** the build carries no warning and Slither reports no High or Critical finding, every accepted Medium documented
-
-### Requirement: DEL-2 — Tests
-**Kind:** acceptance-standard
-Deterministic unit and integration tests with a branching tree per contract;
-at least 90% line coverage.
-
-#### Scenario: Coverage holds
-- **WHEN** `forge coverage` runs
-- **THEN** line coverage reads at least 90% and every contract has a branching tree
-
-### Requirement: DEL-3 — Review report
-**Kind:** work-item
-Static and manual review, plus fuzzing and invariant harnesses, written
-and run by Calea's internal auditor independently of the developer; report delivered with each
-tranche.
-
-#### Scenario: The report travels with the tranche
-- **WHEN** a tranche is delivered
-- **THEN** the internal auditor's report, with the fuzzing and invariant results, is delivered with it
+## MODIFIED Requirements
 
 ### Requirement: DEL-6 — Integration package
 **Kind:** work-item
@@ -58,17 +27,6 @@ testable by MINT.
 #### Scenario: Every call the app makes is covered
 - **WHEN** MINT integrates the play page and the admin page
 - **THEN** every contract call they make is covered by the typed TypeScript library, with passing tests and documented revert reasons, and the reference script reproduces the royalty split
-
-### Requirement: DEL-7 — Existing-contract review
-**Kind:** work-item
-A read of the contract MINT names, within the agreed line
-limit; findings only, no remediation. Unscheduled: no contract has been named, so it books no
-time until one is (`→ CQ-13`).
-
-#### Scenario: Findings only
-- **GIVEN** MINT has named a contract within the line limit
-- **WHEN** the review is delivered
-- **THEN** it lists findings only, with no remediation
 
 ### Requirement: DEL-8 — Audit tranches
 **Kind:** informative
@@ -122,18 +80,6 @@ Two items are priced only if MINT confirms them:
 - **WHEN** Rayco's agreement is drawn up
 - **THEN** each listed item appears in it
 
-### Requirement: DEL-11 — Frontend collaboration
-**Kind:** commercial
-MINT builds and owns the page holders play on — mint, raffle,
-burn and level-up — in TypeScript, served from **getminted.io** (MINT, CQ-19). Calea owns the
-Solidity and the TypeScript client library of DEL-6, and reviews every change that touches a
-contract call before it merges. The Framer landing page stays where it is and is neither built
-nor reviewed by Calea. Which repository holds these packages is `→ CQ-14`.
-
-#### Scenario: Contract-touching changes are reviewed
-- **WHEN** a change that touches a contract call is merged on getminted.io
-- **THEN** Calea has reviewed it first
-
 ### Requirement: DEL-12 — Review sign-off
 **Kind:** acceptance-standard
 Every Critical and High finding from DEL-3's review is fixed before mainnet deployment of the
@@ -142,8 +88,3 @@ contract it concerns, for every contract in an audit tranche (DEL-8).
 #### Scenario: Nothing Critical or High reaches mainnet
 - **WHEN** mainnet deployment of an audited contract is scheduled
 - **THEN** every Critical and High finding from the review report reads fixed
-
-## Retired Requirements
-
-- DEL-4 (verified testnet addresses) → OPS-3, OPS-4
-- DEL-5 (deployment scripts and runbook) → OPS-2, OPS-5

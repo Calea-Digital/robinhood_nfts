@@ -2,18 +2,18 @@
 # MintABear — Specification
 
 <!-- openspec:begin version -->
-**Version** 2.3 · **Date** 25 September 2026 · **Status** records the decisions of the
-MINT–Calea call of 21 September 2026, the tranche-1 build and review of 22–24 September and the
-TypeScript client library of 25 September; sign-off follows the open items in §10
+**Version** 2.4 · **Date** 28 September 2026 · **Status** records the decisions of the
+MINT–Calea calls of 21 and 28 September 2026, the tranche-1 build and review of 22–25 September
+and the owner-imported whitelist variant of 28 September; sign-off follows the open items in §10
 <!-- openspec:end -->
 
 Prepared by Calea for MINT. Sources: *MINTaBear development statement of work* (MINT, 14 September
 2026); *Mint <> Calea* meeting (15 September 2026); *MintABear questionnaire v2.0*; MINT's written
 answers to specification v1.0 (September 2026); *WL Wager Based Checker* (MINT, September 2026);
-the MINT–Calea call of 21 September 2026. Where the sources differ, this document states the
+the MINT–Calea calls of 21 and 28 September 2026. Where the sources differ, this document states the
 resolution. Where a point is still MINT's to decide, the requirement states Calea's recommendation
 — which is also what Calea builds if the decision is deferred — and points to the question (`→
-CQ-n`) in the register. Section 10 records what the call settled and what is still open.
+CQ-n`) in the register. Section 10 records what the calls settled and what is still open.
 
 **How to read.** Requirements carry stable identifiers: `COL-n` collection contract, `WL-n`
 whitelist claim, `ACT-n` activation and burn route, `RAF-n` mystery box raffle, `OPS-n`
@@ -26,47 +26,64 @@ confirmed; yellow callouts are decisions for the call.
 
 ## Where the work stands
 
-As of 25 September 2026. Tranche 1 is built and reviewed: the collection, the whitelist registry,
-the activation contract, and the TypeScript client library the play page is built on. Nothing is
-deployed yet. Tranche 2, the mystery box, is specified and waits on the prize count and chains
-(CQ-20).
+As of 28 September 2026. Tranche 1 is built and reviewed: the collection, the whitelist registry,
+the activation contract, and the TypeScript client library the play page is built on. MINT needs
+the whitelist registry on 29 September, outside the audit, so it comes in two variants, for
+MINT to pick one. Nothing is deployed yet. The mystery box is specified in its new shape, cycles
+the owner schedules, and is built once MINT supplies the excluded ids (CQ-20).
 
 | Item | Where it stands |
 |---|---|
 | `MintABear` (§3) | Built and reviewed. Deploys with the transfer validator set, `maxSupply` at 4,444, and ownership offered to MINT's admin in two steps |
-| `WhitelistClaim` (§4) | Built and reviewed. The claimant export to the Studio allowlist, and a check of Studio's root against the registry, are scripted |
-| `Activation` (§5) | Built and reviewed. Burns $MNTD itself; paused from deployment until the switch-on date |
-| Client library (DEL-6) | Built and reviewed. One TypeScript client for every tranche-1 call the play page makes: mint, whitelist claim, burn for a level, Status link, transfers and reads. Every error carries a stable code and a message ready to show a holder. Runnable examples cover each flow, and a reference for the voucher backend is included |
+| `WhitelistClaim` (§4, WL-3) | Built and reviewed: holders claim with vouchers from MINT's signer. The claimant export to the Studio allowlist, and a check of Studio's root against the registry, are scripted. Outside the audit (DEL-8) |
+| `WhitelistImport` (§4, WL-7) | Built 28 September: MINT's admin imports the list from a CSV, and it freezes at `closeAt`. The same export and check. Outside the audit |
+| `Activation` (§5) | Built and reviewed. Burns $MNTD itself; paused from deployment until the switch-on date. The Status link comes out (ACT-9 retired) |
+| Client library (DEL-6) | Built and reviewed. One TypeScript client for every tranche-1 call: mint, whitelist claim or eligibility, burn for a level, transfers and reads. Every error carries a stable code and a message ready to show a holder. Runnable examples cover each flow, and a reference for the voucher backend is included. The admin page's calls join it with the mystery box |
 | Royalty split (DEL-6) | Built. The reference script reproduces the split at a closing block, dead-address exclusion included, and refuses inputs that miss a bear (ACT-10) |
-| Deployment, verification, enforcement (§7) | Scripts written and tested. The runbook covers the handover, the whitelist export, enforcement, royalties and `Activation` |
-| Tests | 214 deterministic contract tests at full line and branch coverage, and 121 client-library tests run against a local chain with the contracts deployed. Fuzzing, invariants and fork tests are the internal auditor's (DEL-3) |
+| Deployment, verification, enforcement (§7) | Scripts written and tested. The runbook covers the handover, the whitelist export and import, enforcement, royalties and `Activation` |
+| Tests | Deterministic contract tests at full line and branch coverage, and client-library tests run against a local chain with the contracts deployed. Fuzzing, invariants and fork tests are the internal auditor's (DEL-3) |
 | Review | Every tranche-1 requirement and the client library reviewed with Calea's reviewer; the defects found were fixed in the code, tests and documents before hand-off to the auditor |
-| Testnet rehearsal (OPS-4) | Next, once MINT's testnet $MNTD and addresses are in hand (CQ-2, CQ-12) |
-| Mystery box (§6) | Specified; built after CQ-20 is answered. Its calls join the client library then |
+| Testnet rehearsal (OPS-4) | Next, once MINT's testnet $MNTD is on 46630 (CQ-2) |
+| Mystery box (§6) | Specified: `MysteryBox` on Robinhood Chain and `PrizeDraw` on Arbitrum One, with prizes paid from MINT's wallet. Built once the 222 excluded ids arrive (CQ-20) |
 
 **What the client library needs from MINT.** None of these changes a contract. Each is needed
 before the page it serves goes live.
 
-- **The account id the voucher backend hashes**, and a 32-byte server key for it that never
-  changes. An immutable user id (Privy's user id) is the better choice than an email (WL-3).
+- **For WL-3 only:** the account id the voucher backend hashes, and a 32-byte server key for it
+  that never changes. An immutable user id (Privy's user id) is a better choice than an email.
 - **OpenSea's fee recipient for the drop**, which every mint names. Also access to OpenSea's
   listings API, so the page can warn a holder whose bear is listed before a burn.
 - **An archive RPC endpoint for Robinhood Chain**, for the royalty split at each closing block
   (ACT-10).
 - **The wording of the messages holders see.** The library carries plain-English defaults for
   every error, and MINT may replace or translate them by code.
-- **$MNTD's revert errors** (O5), so a short balance or allowance shows its own message.
 
-**Changes since version 2.2.** Both went through Calea's review; the requirements read as the
-final state.
+**Changes since version 2.3.** From the call of 28 September 2026 and its follow-up.
 
-- The royalty split counts every bear that has an owner at the closing block. The reference script
-  reads the inputs from an archive node, from `Transfer` events and `weightOf`, or from `snapshot`
-  paged by gas, because one call over the whole range is not dependable (ACT-10).
-- The whitelist's `account` is a keyed hash (HMAC-SHA256 under a key held server-side) over a
-  canonical account id. An unsalted hash of an email could be matched to the person by anyone
-  reading the chain. The eligibility signer is an ordinary key, issues allocation numbers from the
-  chain, and is never rotated back in once replaced (WL-3).
+- **Mystery box.**
+  - It runs in cycles the owner schedules, each with its window, its prize count and the hash of
+    its published prize list (RAF-32).
+  - Each playable bear has one shot per cycle, and every bear gets a shot again in the next
+    (RAF-28). 222 team ids are excluded for good (RAF-27).
+  - Within a cycle the odds are fixed, and prizes not awarded stay with MINT to roll forward
+    (RAF-30).
+  - The draw runs on Arbitrum One (RAF-8).
+  - Prizes are held in MINT's prize wallet on Robinhood Chain, Ethereum and possibly ApeChain,
+    paid by transfer and recorded on `PrizeDraw` (RAF-33). No contract is deployed on a prize
+    chain: the vaults and the on-chain nomination are retired.
+- **Whitelist.** A second registry, `WhitelistImport`, that MINT's admin fills from a CSV and that
+  freezes at `closeAt` (WL-7). MINT deploys one of the two. Neither is audited, at MINT's choice,
+  so the registry can be delivered on 29 September (DEL-8).
+- **Activation.** The Status link is removed. MINT assigns Status links to holders' Privy
+  accounts off-chain (ACT-9 retired, CQ-21).
+- **Addresses.**
+  - the collection owner `0x1530…6141`, assumed to own every contract;
+  - the royalty receiver `0xf7E7…0e63`;
+  - the prize wallet `0xf6c0…e3e3` (OPS-1).
+- **$MNTD.** Read from the reference token MINT pointed to: OpenZeppelin `ERC20Burnable`, 18
+  decimals, fixed supply, no owner and no proxy (CQ-2).
+- **Repository.** Calea's recommendation is accepted, and the whitelist registry is the first
+  delivery (DEL-9).
 
 ## 1. Scope
 
@@ -74,14 +91,15 @@ final state.
 
 - **MintABear** collection contract on Robinhood Chain (chain id 4663), SeaDrop-compatible,
   managed through OpenSea Studio by MINT, royalties enforced.
-- **WhitelistClaim** registry on Robinhood Chain: records first-come-first-served whitelist
-  allocations against MINT-signed wagering eligibility and exports the allowlist for Studio
-  (`→ CQ-18`).
+- **Whitelist registry** on Robinhood Chain, in two variants for MINT to pick (`→ CQ-18`):
+  `WhitelistClaim` records first-come-first-served allocations against MINT-signed wagering
+  eligibility, and `WhitelistImport` holds the list MINT's admin imports and freezes it. Either
+  one exports the allowlist for Studio.
 - **Activation** contract on Robinhood Chain: burns $MNTD for a bear and records it, level
-  derivation (0–5), royalty-weight table, Status link.
-- **Mystery box**: `MysteryBox` on Robinhood Chain (ownership, the spent id, the open register),
-  `PrizeDraw` on the Chainlink chain (one VRF word per open, the win rule, the outcome), and a
-  `PrizeVault` on each chain that holds prizes (`→ CQ-20`).
+  derivation (0–5), royalty-weight table.
+- **Mystery box**: `MysteryBox` on Robinhood Chain (ownership, cycles, the bear spent for the
+  cycle, the open register) and `PrizeDraw` on Arbitrum One (one VRF word per open, the win rule,
+  the outcome, the payout record) (`→ CQ-20`).
 - Deterministic unit and integration tests; deployment and verification scripts, runbook,
   testnet deployments, interface/event/role documentation with examples, static and manual
   review, fuzzing and invariant report.
@@ -99,8 +117,10 @@ Also out of scope: ERC-6551 token-bound accounts (COL-9); artwork, metadata host
 (MINT); the Privy mirror login, the wager API, the eligibility checker and the web app or Framer
 pages (MINT); backend workers and indexing; running the royalty pot — the $MNTD
 purchase, the splitter wallet and the crediting of getminted.io accounts, Calea delivering only a
-reference script that reproduces the split (DEL-6); the Status boost; monitoring and alerts (MINT);
-bridging prize assets between chains; cross-chain messaging infrastructure.
+reference script that reproduces the split (DEL-6); the Status boost and the Status links, kept
+against Privy accounts; holding and paying the prizes, from MINT's prize wallet (RAF-33); the admin
+page; monitoring and alerts (MINT); bridging prize assets between chains; cross-chain messaging
+infrastructure.
 
 ### 1.3 Parties and responsibilities
 
@@ -112,8 +132,9 @@ bridging prize assets between chains; cross-chain messaging infrastructure.
 | Lorenzo (MINT) | Shared Privy login; account, Status and wager APIs; names the contract for review (`→ CQ-13`) |
 | Vlad (MINT) | Privy connect on getminted.io and the wager API, with Lorenzo |
 | Guri (MINT) | Eligibility checker |
-| MINT automation | Worker key: deposit registration, prize commitment, relaying each open to the draw in order, posting awards. Eligibility signer: whitelist vouchers |
-| Calea / Rayco | Contracts, tests, scripts, runbook, testnets, review, integration support; deploys and hands over; retains no keys or roles |
+| MINT | Admin (`0x1530…6141`): the whitelist import (WL-7), the excluded ids, each cycle's schedule and prize list, pauses. Prize wallet (`0xf6c0…e3e3`): holds and pays the prizes. Eligibility signer (WL-3 only): whitelist vouchers |
+| Worker | Relays each open to the draw in order and records each payout. Assumed to be operated by Calea (`→ CQ-23`) |
+| Calea / Rayco | Contracts, tests, scripts, runbook, testnets, review, integration support; deploys and hands over; keeps no owner key, and no role but the worker's if CQ-23 gives it |
 | Calea internal auditor | Fuzzing and invariant harnesses, review report |
 
 ## 2. System overview (SYS)
@@ -122,63 +143,79 @@ bridging prize assets between chains; cross-chain messaging infrastructure.
 
 | Chain | Id | Hosts | Testnet |
 |---|---|---|---|
-| Robinhood Chain | 4663 | `MintABear`, `WhitelistClaim`, `Activation`, `MysteryBox`, one `PrizeVault` | 46630 |
-| Ethereum | 1 | `PrizeVault` | Sepolia 11155111 |
-| ApeChain | 33139 | `PrizeVault` | Curtis 33111 |
-| Base | 8453 | `PrizeDraw` (Chainlink VRF v2.5) — Calea's recommendation, `→ CQ-17` | Base Sepolia 84532 |
+| Robinhood Chain | 4663 | `MintABear`, `WhitelistClaim` or `WhitelistImport`, `Activation`, `MysteryBox`; prizes in MINT's wallet | 46630 |
+| Arbitrum One | 42161 | `PrizeDraw` (Chainlink VRF v2.5) | Arbitrum Sepolia 421614 |
+| Ethereum | 1 | prizes in MINT's wallet; no contract | Sepolia 11155111 |
+| ApeChain | 33139 | prizes in MINT's wallet if MINT confirms it; no contract (`→ CQ-20`) | Curtis 33111 |
 
-Robinhood Chain stores the bears and is the source of truth for ownership, levels, whitelist
-claims and which boxes have been opened. Prizes stay on the chain where MINT holds them, so the
-prize chains are whichever chains MINT funds (`→ CQ-20`). Randomness comes from a chain with
-Chainlink VRF v2.5: Calea recommends Base, which MINT already uses; Ethereum has it too, ApeChain
-and Robinhood Chain do not (checked 18 September 2026).
+Robinhood Chain stores the bears and is the source of truth for ownership, levels, the whitelist
+and which bears have been opened in a cycle. Randomness comes from Arbitrum One, which has
+Chainlink VRF v2.5; Robinhood Chain and ApeChain have none. Prizes stay in MINT's prize wallet
+`0xf6c0…e3e3` on the chain where each one sits, and are paid from there (RAF-33).
 
 **Contracts.**
 
 | Contract | Chain | Purpose |
 |---|---|---|
 | `MintABear` | 4663 | ERC721SeaDrop collection, 4,444 supply, transfer counter, enforced royalties |
-| `WhitelistClaim` | 4663 | 1,000 first-come-first-served whitelist allocations against signed eligibility |
-| `Activation` | 4663 | $MNTD burned for a bear → level → weight; Status link |
-| `MysteryBox` | 4663 | The open register: ownership check, the spent id, the excluded ids |
-| `PrizeVault` | each prize chain | Prize inventory, commitment to the game, awards and claims |
-| `PrizeDraw` | Chainlink chain | One VRF word per open, the win rule, the recorded outcome |
+| `WhitelistClaim` | 4663 | 1,000 first-come-first-served whitelist allocations against signed eligibility (WL-3) |
+| `WhitelistImport` | 4663 | the same 1,000 allocations, imported by MINT's admin and frozen at the close (WL-7) |
+| `Activation` | 4663 | $MNTD burned for a bear → level → weight |
+| `MysteryBox` | 4663 | Cycles, the excluded ids, the ownership check and the open register |
+| `PrizeDraw` | 42161 | One VRF word per open, the win rule, the recorded outcome, the payout record |
 
-**Trust model.** Contracts enforce ownership, supply, the transfer counter, level derivation, the
-weights table, the whitelist count and per-wallet caps, raffle entries, prize locking, the draw
-and claims. MINT holds two keys with narrow powers. The **eligibility signer** decides *who* may
-claim a whitelist spot; the contract decides *how many* and *in what order*. The **worker**
-supplies inputs the contracts cannot obtain themselves — deposit registration, the relay of each
-open from Robinhood Chain to the draw, and the posting of each award to the vault that holds the
-prize. Both relays are publicly checkable, against `BoxOpened` on 4663 and `OutcomeRecorded` on
-the draw. The draw refuses an open out of turn, so the worker cannot choose which open meets
-which state of the pool; it can delay one, and a delayed open is visible. The worker cannot
-alter weights or thresholds, raise a level without a burn, open a box, change an outcome, move a
-committed or won prize, or create a whitelist spot.
+MINT deploys one of the two whitelist registries.
 
-**On-chain.** Ownership and transfers; the transfer counter and its event; whitelist claims and
-the live spot count; recorded burns, cumulative totals, levels and weights; Status nominations;
-raffle entries, seeds, awards and roots; prize inventory and its states; claims.
+**Trust model.**
+- **The contracts enforce** ownership, supply, the transfer counter, level derivation, the weights
+  table, the whitelist caps and the freeze, one shot per bear per cycle, the excluded ids, and the
+  draw and its order.
+- **MINT holds the admin key**, one externally owned account for every contract (assumed, `→
+  CQ-12`). It schedules each cycle and publishes its prize list, and with WL-7 it writes the
+  whitelist.
+- **MINT's prize wallet holds and pays the prizes.** Nothing on-chain forces a payout, and MINT can
+  move any prize at any time. What the chain does guarantee is the record: every win is an
+  `OutcomeRecorded` on Arbitrum, and every payout a `PrizePaid` naming the chain and the
+  transaction.
+- **The worker relays each open** from Robinhood Chain to the draw, and records each payout. It is
+  publicly checkable against `BoxOpened` and `OutcomeRecorded`. The draw refuses an open out of
+  turn, so the worker cannot choose which open meets which state of the pool. It can delay one,
+  and a delayed open is visible. The worker cannot alter weights or thresholds, raise a level
+  without a burn, open a box, change an outcome, or create a whitelist spot.
+- **With WL-3, the eligibility signer** decides who may claim a whitelist spot; the contract
+  decides how many and in what order.
 
-**Off-chain (MINT).** Wager measurement and the Season 1 back-credit; the Privy login that ties
-a wallet to a getminted.io account; the royalty pot and its split — when the pot reaches its ETH
-or its countdown ends, half the ETH buys $MNTD, and ETH and $MNTD move to a splitter wallet that
-credits getminted.io accounts by wallet weight (ACT-10); crediting an account requires knowing
-which account a holding wallet belongs to, which the Privy login supplies and the chain does not; the
-Status boost; indexing, alerts and the UI. What level 5 is *worth* is MINT's to define; the
-chain records that it was reached.
+**On-chain.** Ownership and transfers; the transfer counter and its event; the whitelist and its
+spot count; recorded burns, cumulative totals, levels and weights; cycles, excluded ids and opens;
+words, outcomes and payout records.
 
-**Flow.** (1) Whitelist campaign: a holder wagers and logs in on getminted.io; MINT's
-backend signs a voucher; the holder claims a spot on `WhitelistClaim`; at close MINT loads the
-list into the Studio allowlist stage. (2) Iñigo runs the drop in Studio; holders mint via OpenSea
-or the getminted.io mirror. (3) Holders burn $MNTD for a bear on `Activation`, which records the
-burn, and the bear's level and weight follow. (4) Any transfer advances the counter and voids level,
-weight and link. (5) The mystery box: MINT deposits prizes into the vaults; the worker commits
-them; the owner records the excluded ids and opens the game; a holder opens a box with a bear,
-which spends that id; the worker relays the open in turn; a Chainlink word decides it; a winner
-nominates a recipient and the worker posts the award to the prize's vault; the winner claims
-there. (6) MINT reads `Activation.snapshot` at each royalty closing block and
-splits the pot off-chain.
+**Off-chain (MINT).**
+- Wager measurement and the Season 1 back-credit, and with WL-7 the eligible list itself.
+- The Privy login that ties a wallet to a getminted.io account, and the Status links kept against
+  it.
+- The royalty pot and its split: when the pot reaches its ETH or its countdown ends, half the ETH
+  buys $MNTD, and ETH and $MNTD move to a splitter wallet that credits getminted.io accounts by
+  wallet weight (ACT-10). Crediting an account requires knowing which account a holding wallet
+  belongs to, which the Privy login supplies and the chain does not.
+- The prize lists and the prizes.
+- The Status boost; indexing, alerts, the UI and the admin page.
+
+What level 5 is *worth* is MINT's to define; the chain records that it was reached.
+
+**Flow.**
+1. **Whitelist.** Either holders claim spots with vouchers on `WhitelistClaim` after wagering on
+   getminted.io, or MINT's admin imports the eligible list into `WhitelistImport`. At close, MINT
+   loads the list into the Studio allowlist stage.
+2. **Drop.** Iñigo runs the drop in Studio; holders mint via OpenSea or the getminted.io mirror.
+3. **Burn.** Holders burn $MNTD for a bear on `Activation`, which records the burn, and the bear's
+   level and weight follow.
+4. **Transfer.** Any transfer advances the counter and voids level and weight.
+5. **Mystery box.** The owner records the excluded ids once. For each cycle it publishes the prize
+   list and schedules the cycle on both chains. A holder opens a box with a bear, which spends
+   that bear for the cycle. The worker relays the open in turn, and a Chainlink word decides it.
+   A win is paid from MINT's prize wallet on the prize's chain and recorded on `PrizeDraw`.
+6. **Royalties.** MINT reads `Activation.snapshot` at each royalty closing block and splits the pot
+   off-chain.
 
 ## 3. Collection contract — MintABear (COL)
 
@@ -203,10 +240,9 @@ exactly 4,444 once minted out.
 
 *Acceptance.* Given 4,444 bears minted; when SeaDrop mints one more, whatever `maxSupply` says; then the transaction reverts with `ExceedsMaxBears`.
 
-**COL-3 Transfer counter.** `transferNonce(tokenId)` increments on every transfer except mint —
-sales, gifts, self-initiated moves and return transfers to a previous owner alike — and never
-resets. It is the mechanism by which every ownership change resets level, weight and Status
-link (ACT-5).
+**COL-3 Transfer counter.** `transferNonce(tokenId)` increments on every transfer except mint — sales, gifts,
+self-initiated moves and return transfers to a previous owner alike — and never resets. It is
+the mechanism by which every ownership change resets level and weight (ACT-5).
 
 *Acceptance.* Given a bear whose `transferNonce` reads n; when it is transferred to another wallet; then `transferNonce` reads n + 1; and a freshly minted bear reads 0.
 
@@ -225,7 +261,7 @@ does not vary with level.
 *Acceptance.* Given `baseURI` set through Studio; when `tokenURI(id)` is read; then it returns `baseURI` followed by `id`; and raising the bear's level changes nothing in it.
 
 **COL-6 Royalties.** ERC-2981 through SeaDrop's `setRoyaltyInfo`: **5% (500 basis points)**,
-receiver the royalty-pot address MINT names, distinct from the admin and from every vault. Set
+receiver the royalty-pot address MINT names, distinct from the admin and from the prize wallet (RAF-33). Set
 by Iñigo in Studio at any point before the first sale; it does not hold up deployment. `→ CQ-15`
 (receiver).
 
@@ -255,8 +291,8 @@ restores it (OPS-6). Every change emits `TransferValidatorUpdated`.
 **COL-8 No burn.** The transfer hook refuses `to == address(0)` with `BurnDisabled`, so
 `ERC721SeaDrop.burn` always reverts and no bear can be destroyed by anyone, its owner included;
 `totalSupply` never falls. A bear sent to an address nobody controls (for example `0x…dEaD`)
-remains a bear in the supply: nobody can enter it in a raffle (RAF-21), and the royalty snapshot
-excludes the canonical dead address (ACT-10).
+remains a bear in the supply: nobody can open a mystery box with it (RAF-28), and the royalty
+snapshot excludes the canonical dead address (ACT-10).
 
 *Acceptance.* When anyone, the owner included, calls `burn` or transfers a bear to the zero address; then it reverts with `BurnDisabled`; and `totalSupply` is unchanged.
 
@@ -324,11 +360,14 @@ MINT needs a first-come-first-served whitelist of 1,000 allocations that only wa
 
 **WL-2 Division of work.** MINT: the Privy mirror login on getminted.io; the wager API that
 returns, for the logged-in account, historical wagering capped at $50 and in-campaign wagering;
-the eligibility checker; the UI; and the **eligibility signer**, a backend key that signs a
-voucher when the API confirms a threshold. Calea: the `WhitelistClaim` contract, the voucher
-format, the export to the Studio allowlist, and the client calls (DEL-6).
+the eligibility checker; the UI; and either the **eligibility signer**, a backend key that signs
+a voucher when the API confirms a threshold (WL-3), or the CSV of eligible wallets and its
+import through the admin page (WL-7) (`→ CQ-18`). Calea: the `WhitelistClaim` and
+`WhitelistImport` contracts, the voucher format, the export to the Studio allowlist, and the
+client calls (DEL-6).
 
-**WL-3 Registry.** `WhitelistClaim` on Robinhood Chain (`→ CQ-18`; WL-6 is the alternative). A
+**WL-3 Registry.** `WhitelistClaim` on Robinhood Chain, the voucher variant of the registry (`→ CQ-18`); WL-7 is
+the owner-imported variant, MINT deploys one of the two, and WL-6 is the off-chain alternative. A
 voucher is the EIP-712 message whose type is exactly
 `Claim(address wallet,uint8 allocationIndex,bytes32 account,uint256 deadline)`, signed by the
 eligibility signer, with a short `deadline` (minutes), `account` a keyed hash —
@@ -363,8 +402,8 @@ DEL-6's backend reference pins these rules.
 
 *Acceptance.* Given a voucher signed by the signer for wallet W, allocation 1, within its deadline and the campaign window; when W calls `claim`; then `spotsLeft` falls by one, `claimsOf(W)` reads 1 and `WhitelistClaimed` is emitted; and the same call from another wallet reverts with `NotClaimant`, and a voucher for the same account's allocation 1 for another wallet reverts with `WrongAllocation`.
 
-**WL-4 Into the mint.** After the window closes or the spots sell out, MINT exports the claimant
-list — one row per wallet with its allocation count — and loads it as the whitelist stage's
+**WL-4 Into the mint.** After the window closes or the spots sell out (WL-3), or once the imported list is frozen
+(WL-7), MINT exports the claimant list — one row per wallet with its allocation count — and loads it as the whitelist stage's
 allowlist in Studio. SeaDrop allowlist entries carry a per-wallet mint limit, so "one or two" is
 enforced by the mint itself. That limit counts every bear minted to the wallet in any stage, so
 the whitelist stage is the first in which any wallet but the team's can mint and no other stage
@@ -373,8 +412,8 @@ overlaps it; a later stage's per-wallet limit counts the whitelist mints too. Th
 
 *Acceptance.* Given a closed campaign; when `claimants(offset, limit)` is read across the whole list; then every wallet appears once with its allocation count, and the Studio allowlist loaded from it carries the same rows.
 
-**WL-5 Timing.** The registry is deployed and its signer set before the campaign opens; the
-campaign closes at least 48 hours before the whitelist stage opens, for the export, the Studio
+**WL-5 Timing.** The registry is deployed before the campaign opens, with its signer for WL-3. The campaign, or
+for WL-7 the import, closes at least 48 hours before the whitelist stage opens, for the export, the Studio
 import and the publication of proofs. Dates `→ CQ-18`; calendar in §8.
 
 *Acceptance.* Given `openAt` and `closeAt` set with the close at least 48 hours before the whitelist stage; when a claim arrives before `openAt` or after `closeAt`; then it reverts with `CampaignClosed`.
@@ -475,12 +514,12 @@ token's `burnFrom` is refused.
 
 *Acceptance.* Given the owner of a bear below level 5 who has approved `Activation` on $MNTD; when the owner calls `burn(tokenId, amount)`; then the cumulative and `lifetimeBurned` grow by `amount`, `BearActivated` is emitted and the owner's $MNTD falls by `amount`; and a `burn` made from inside the token's `burnFrom` reverts.
 
-**ACT-5 Reset.** Cumulative and level read as zero, the weight reads the level-0 weight (ACT-3) and the link
-reads `(0, 0)` whenever the counter value they were recorded at differs from the current
-`transferNonce`. The reset is a consequence of the transfer (COL-3), not an action: it cannot
-be skipped and cannot block a transfer. Return transfers reset like any other.
+**ACT-5 Reset.** Cumulative and level read as zero, and the weight reads the level-0 weight (ACT-3), whenever
+the counter value they were recorded at differs from the current `transferNonce`. The reset is
+a consequence of the transfer (COL-3), not an action: it cannot be skipped and cannot block a
+transfer. Return transfers reset like any other.
 
-*Acceptance.* Given a bear at level 2 with a Status link; when it is transferred to another wallet; then `levelOf` and `cumulativeOf` read zero, `weightOf` reads `weightFor(0)` and `linkOf` reads `(0, 0)`, with no call into `Activation`.
+*Acceptance.* Given a bear at level 2; when it is transferred to another wallet; then `levelOf` and `cumulativeOf` read zero and `weightOf` reads `weightFor(0)`, with no call into `Activation`.
 
 **ACT-6 Lifetime.** `lifetimeBurned(tokenId)` accumulates every burn ever recorded for a bear
 and never resets.
@@ -508,15 +547,6 @@ which returns the exact remainder or zero.
 
 *Acceptance.* Given a bear whose `costToReach(id, 5)` reads x; when the holder calls `burn(id, x + 1)`; then it reverts with `Overshoot` and no $MNTD is burned.
 
-**ACT-9 Status link.** `linkBear(tokenId)`, owner of the bear only, one nomination per wallet,
-recorded with the current counter value; `unlinkBear()` clears it and is safe to call when
-nothing is linked; `linkOf(wallet) → (tokenId, level)` returns `(0, 0)` when nothing is linked
-or the bear has since moved. A wallet aggregates royalty weight across all its bears (ACT-10)
-but carries exactly one Status boost; the boost's value, and how the links of an account's
-several wallets combine, are MINT's, off-chain (`→ CQ-21`).
-
-*Acceptance.* Given a wallet owning a bear at level 2; when it calls `linkBear(tokenId)`; then `linkOf(wallet)` reads `(tokenId, 2)`; and after the bear moves it reads `(0, 0)`.
-
 **ACT-10 Snapshot view.** `snapshot(uint256[] ids) → (address owner, uint8 level, uint16
 weight)[]`, returning zeroes for ids that do not exist. MINT's royalty accounting counts, at each
 closing block, every bear that has an owner among ids `1..4444`: a wallet's weight is the sum over
@@ -536,30 +566,30 @@ through its wallet (§2).
 
 *Acceptance.* When `snapshot([1, 2, 4445])` is read; then it returns owner, level and weight for ids 1 and 2 and zeroes for the id that does not exist.
 
-**ACT-11 Pause.** The owner may pause. While paused, `burn` and `linkBear` revert; reads,
-`unlinkBear` and every transfer are unaffected. No $MNTD is burned while paused; this is how
-burns stay closed between deployment and the switch-on date (§8). The pause admits no exemption —
-no address may burn while it is on — so the mainnet rehearsal against real $MNTD runs in a window
-the owner opens and closes again (§8). `renounceOwnership` reverts for every caller, so the pause
-can always be set and lifted.
+**ACT-15 Pause.** The owner may pause. While paused, `burn` reverts; reads and every transfer are unaffected. No
+$MNTD is burned while paused, which is how burns stay closed between deployment and the
+switch-on date (§8). The pause admits no exemption: no address may burn while it is on. So the
+mainnet rehearsal against real $MNTD runs in a window the owner opens and closes again (§8).
+`renounceOwnership` reverts for every caller, so the pause can always be set and lifted.
 
-*Acceptance.* Given the owner has paused; when a holder calls `burn` or `linkBear`; then both revert with `ContractPaused`; and reads, `unlinkBear` and every transfer still succeed.
+*Acceptance.* Given the owner has paused; when a holder calls `burn`; then it reverts with `ContractPaused`; and reads and every transfer still succeed.
 
-**ACT-12 Roles.** Owner (MINT admin): `setPaused` and ownership transfer; `renounceOwnership`
-reverts. A bear's owner: `burn` for that bear, `linkBear`, `unlinkBear`. Nothing else is
-administrable: the token, thresholds, weights and records are immutable, and no address can record
-a level without burning. There is no freeze or clawback path into a bear anywhere (MINT, CQ-16).
+**ACT-12 Roles.** Owner (MINT's admin): `setPaused` and ownership transfer; `renounceOwnership` reverts. A bear's
+owner: `burn` for that bear. Nothing else is administrable: the token, thresholds, weights and
+records are immutable, and no address can record a level without burning. There is no freeze or
+clawback path into a bear anywhere (MINT, CQ-16). Which bear carries an account's Status boost
+is MINT's, recorded against the holder's Privy account off-chain (MINT, CQ-21); `Activation`
+records levels only.
 
 *Acceptance.* When a non-owner calls `setPaused`, or anyone calls `renounceOwnership`; then it reverts; and no function anywhere changes the token, thresholds, weights or a bear's record other than its owner's `burn`.
 
-**ACT-13 Events.** `BearActivated(tokenId, burner, previousLevel, newLevel, amount,
-cumulative)` (ACT-4), `BearLinked(wallet, tokenId)`, `BearUnlinked(wallet, tokenId)`,
+**ACT-13 Events.** `BearActivated(tokenId, burner, previousLevel, newLevel, amount, cumulative)` (ACT-4) and
 `PausedSet(paused)`.
 
-*Acceptance.* When a burn, a link, an unlink and a pause happen; then `BearActivated`, `BearLinked`, `BearUnlinked` and `PausedSet` are emitted with the documented arguments.
+*Acceptance.* When a burn and a pause happen; then `BearActivated` and `PausedSet` are emitted with the documented arguments.
 
-**ACT-14 Reads.** `levelOf`, `cumulativeOf`, `lifetimeBurned`, `weightOf`, `weightFor`,
-`thresholdFor`, `costToReach`, `linkOf`, `snapshot`, `paused`, `BEARS`, `MNTD`, `DECIMALS`.
+**ACT-14 Reads.** `levelOf`, `cumulativeOf`, `lifetimeBurned`, `weightOf`, `weightFor`, `thresholdFor`,
+`costToReach`, `snapshot`, `paused`, `BEARS`, `MNTD`, `DECIMALS`.
 
 *Acceptance.* When every listed read is called for a bear that has been burned for; then each returns without reverting; and `BEARS` and `MNTD` return the deployed addresses and `DECIMALS` the token's decimals.
 <!-- openspec:end -->
@@ -568,226 +598,217 @@ cumulative)` (ACT-4), `BearLinked(wallet, tokenId)`, `BearUnlinked(wallet, token
 
 
 <!-- openspec:begin family RAF -->
-A holder opens a mystery box with a bear they own and learns the outcome there and then. One
-bear is one shot: the open spends that id for good, and nobody can play it again, whoever holds
-the bear afterwards. There are no rounds, no entry window and no scheduled draw (MINT, CQ-9).
-Three contracts: `MysteryBox` on Robinhood Chain, where the bears are, so an open is checked
-against live ownership; `PrizeDraw` on a chain with Chainlink VRF, which decides each open with
-a random word of its own; and a `PrizeVault` on every chain that holds prizes, because a prize
-can only be handed over where it sits.
+A holder opens a mystery box with a bear they own and learns the outcome there and then. The box
+runs in cycles the owner schedules: within a cycle each playable bear is one shot, and the next
+cycle gives every bear a shot again, whoever holds it (MINT, CQ-9). Two contracts: `MysteryBox`
+on Robinhood Chain, where the bears are, so an open is checked against live ownership, and
+`PrizeDraw` on Arbitrum One, which decides each open with a Chainlink word of its own and records
+each payout. The prizes stay in MINT's prize wallet on the chain where each one sits, and are paid
+from there.
 
-**RAF-26 The game.** One game over the collection, not a series of rounds. States: **Setup** —
-prizes deposited, registered and committed, excluded ids recorded, nothing openable; **Open** —
-holders open boxes; **Closed** — no further opens, prizes never won released. The owner makes
-each transition once and neither is reversible.
+**RAF-32 Cycles.** The mystery box runs in **cycles**, and the owner (MINT's admin) sets each one before it starts
+(MINT, CQ-9, CQ-20). `scheduleCycle(start, end, prizeCount, manifestHash)` on `MysteryBox`
+records the next cycle:
+- the window in which boxes may be opened;
+- how many prizes it carries;
+- the hash of the prize list MINT publishes for it (RAF-27).
 
-*Acceptance.* Given the game in Setup with prizes committed and ids excluded; when the owner opens it and later closes it; then each transition happens once and a second call to either reverts.
+Scheduling is refused while a cycle is open (`CycleInProgress`). It is also refused for a
+window that starts in the past, starts before the previous cycle ends or ends before it starts
+(`InvalidWindow`), and for a prize count of zero or above `PLAYABLE` (`InvalidPrizeCount`).
 
-**RAF-27 Playable ids and the prize pool.** Two numbers fix the odds, and both freeze when the
-game opens (`→ CQ-20`). The **excluded ids** are recorded as ranges by the owner during Setup
-(`excludeRange(from, to)`, event `IdsExcluded`); an excluded bear is out of play whoever holds
-it, so a team bear that is sold stays out. `PLAYABLE = MAX_BEARS − excluded` is computed at the
-transition to Open and is immutable after it. The **prize pool** is the ordered manifest
-`(chainId, vault, prizeIndex)` of every prize the vaults have committed (RAF-3, RAF-4), chains
-in the fixed order the owner records and, within a vault, ERC-721 prizes in registration order
-then baskets in asset-approval order. It is public before the first open and nothing may be
-added once the game is Open. A game with no prizes cannot open.
+A cycle scheduled but not yet started may be replaced by scheduling again. From its `start` its
+terms are fixed. A cycle is **open** from `start` to `end` inclusive, and nothing opens a box
+outside it. When `end` passes, the cycle is over: the opens made inside it are still resolved
+(RAF-29). The prizes it did not award stay in MINT's prize wallet (RAF-33), for MINT to carry
+into a later cycle's list. The owner decides when the next cycle starts, so the game can stand
+still between cycles for as long as MINT needs to fund the next one.
 
-`PLAYABLE` and the prize count are also `PrizeDraw`'s constructor arguments, because it runs on
-another chain and cannot read the hub. The excluded ranges are therefore final before `PrizeDraw`
-is deployed, and the hub's `GameOpened(playable, prizeCount, manifestHash)` publishes all three so
-that anyone can check the two chains were given the same game.
+`PrizeDraw` carries each cycle's `prizeCount` and `manifestHash` too, set by the owner with
+`scheduleCycle(cycleId, prizeCount, manifestHash)` before the cycle's first open is resolved.
+Both chains emit `CycleScheduled`, so anyone can check that they were given the same cycle.
 
-*Acceptance.* Given ranges excluded during Setup and prizes committed; when the owner opens the game; then `GameOpened(playable, prizeCount, manifestHash)` publishes `MAX_BEARS − excluded`, the manifest length and its hash; and `excludeRange` after opening reverts.
+*Acceptance.* Given the owner has scheduled cycle 1 from `start` to `end` with 5 prizes; when a holder opens a box before `start`, between `start` and `end`, and after `end`; then only the open between `start` and `end` succeeds, and the others revert with `CycleNotOpen`; and scheduling cycle 2 while cycle 1 is open reverts with `CycleInProgress`.
 
-**RAF-28 Opening a box.** `open(uint256 tokenId)` on `MysteryBox`, by the wallet that is
-`ownerOf(tokenId)` at that moment. It reverts unless the game is Open (`GameNotOpen`),
-`ownerOf(tokenId) == msg.sender` (`NotBearOwner`), the id is not excluded (`IdExcluded`) and the
-id has not been opened (`AlreadyOpened`). Effects: the id is marked spent for good, the next
-`openIndex` is assigned, and `BoxOpened(openIndex, tokenId, opener)` is emitted. Opening is free
-apart from gas. A spent bear stays freely transferable and its buyer cannot open it again.
-`shotsLeft(wallet)` returns the wallet's bears that are playable and unopened — a holder of ten
-bears who has opened two sees eight.
+**RAF-27 Playable ids and the prize pool.** Two numbers fix the odds of a cycle: the playable ids and the cycle's prize count.
 
-*Acceptance.* Given an open game and a holder of a playable, unopened bear; when the holder calls `open(tokenId)`; then `BoxOpened(openIndex, tokenId, opener)` is emitted and `shotsLeft(holder)` falls by one; and the buyer of that bear cannot open it again, reverting with `AlreadyOpened`.
+**Excluded ids.** The owner records them as ranges with `excludeRange(from, to)` (event
+`IdsExcluded`). This is allowed only until the first cycle is scheduled, and the set is frozen
+for good after that (`ExclusionFrozen`). MINT excludes **222** team bears; which ids is
+`→ CQ-20`. An excluded bear is out of play whoever holds it, so a team bear that is sold stays
+out. `PLAYABLE = MAX_BEARS − excluded`, 4,222 with MINT's figure. It is fixed when the first
+cycle is scheduled, and it is `PrizeDraw`'s constructor argument, so the excluded ranges are
+final before `PrizeDraw` is deployed.
 
-**RAF-29 Resolution, in order.** Each open is resolved on `PrizeDraw` by `resolve(uint64
-openIndex, address opener)`, which the worker relays from the `BoxOpened` event. `PrizeDraw`
-refuses any `openIndex` but the next unresolved one (`OutOfOrder`), so the worker cannot choose
-which open meets which state of the pool; it can only delay one, and a delayed open is visible
-as a `BoxOpened` with no `OutcomeRecorded`. `resolve` requests one Chainlink word and emits
-`DrawRequested(openIndex, requestId)`. Requests may be in flight at once, and outcomes are
+**Prize list.** Each cycle's prize list is published by MINT before the cycle starts: for each
+prize, its chain, its token and its id or amount, in order. Its hash is the cycle's
+`manifestHash` (RAF-32). The *n*-th prize awarded in a cycle is entry *n* of its list. Only the
+count and the hash are on-chain. The prizes themselves are in MINT's prize wallet (RAF-33), so
+the list is MINT's commitment, and the contracts cannot check it against a balance.
+
+*Acceptance.* Given ranges excluded totalling 222 ids; when the owner schedules the first cycle; then `PLAYABLE` reads 4,222 and `excludeRange` reverts with `ExclusionFrozen`.
+
+**RAF-28 Opening a box.** `open(uint256 tokenId)` on `MysteryBox`, by the wallet that is `ownerOf(tokenId)` at that
+moment. It reverts in any of these cases:
+- the hub is paused (`ContractPaused`);
+- no cycle is open (`CycleNotOpen`);
+- the caller is not `ownerOf(tokenId)` (`NotBearOwner`);
+- the id is excluded (`IdExcluded`);
+- the id has already been opened in this cycle (`AlreadyOpened`).
+
+Effects: the id is spent for the cycle, the next `openIndex` is assigned (one sequence across
+all cycles), and `BoxOpened(openIndex, cycleId, tokenId, opener)` is emitted. Opening is free
+apart from gas.
+
+**One bear, one shot per cycle** (MINT, CQ-9): a spent bear stays freely transferable, and
+nobody can open it again in the same cycle, its buyer included. In the next cycle whoever holds
+it may open it again. `shotsLeft(wallet)` returns the wallet's playable bears not yet opened in
+the open cycle: a holder of ten bears who has opened two sees eight.
+
+*Acceptance.* Given an open cycle and a holder of a playable bear not yet opened in it; when the holder calls `open(tokenId)`; then `BoxOpened(openIndex, cycleId, tokenId, opener)` is emitted and `shotsLeft(holder)` falls by one; and the buyer of that bear cannot open it again in the same cycle, reverting with `AlreadyOpened`, and may open it in the next.
+
+**RAF-29 Resolution, in order.** Each open is resolved on `PrizeDraw` by `resolve(uint64 openIndex, uint64 cycleId,
+address opener)`, which the worker relays from the `BoxOpened` event. `PrizeDraw` refuses:
+- any `openIndex` but the next unresolved one (`OutOfOrder`), so the worker cannot choose which
+  open meets which state of the pool;
+- a cycle it has not been given, or one earlier than the last it resolved (`UnknownCycle`).
+
+The worker can only delay an open, and a delayed open is visible as a `BoxOpened` with no
+`OutcomeRecorded`. `resolve` requests one Chainlink word and emits
+`DrawRequested(openIndex, requestId)`. Several requests may be in flight at once. Outcomes are
 applied strictly in `openIndex` order as the words arrive, so an open waits on the words of the
-opens before it and on nothing else.
+opens before it and on nothing else. An open made before its cycle's `end` is resolved even if
+the word arrives after it.
 
-*Acceptance.* Given opens 1 and 2 recorded and neither resolved; when the worker calls `resolve(2, opener)`; then it reverts with `OutOfOrder`; and `resolve(1, opener)` requests one Chainlink word and emits `DrawRequested`.
+*Acceptance.* Given opens 1 and 2 recorded and neither resolved; when the worker calls `resolve(2, cycleId, opener)`; then it reverts with `OutOfOrder`; and `resolve(1, cycleId, opener)` requests one Chainlink word and emits `DrawRequested`.
 
-**RAF-30 The win rule (normative).** Let `idsLeft` be the playable ids not yet resolved and
-`prizesLeft` the prizes not yet awarded, both starting at RAF-27's values. On the word `w` for
+**RAF-30 The win rule (normative).** Within a cycle, let `idsLeft` be the playable ids not yet resolved and `prizesLeft` the prizes
+not yet awarded. They start at `PLAYABLE` and the cycle's prize count. On the word `w` for
 `openIndex i`:
 
 - `won = (w mod idsLeft) < prizesLeft`;
-- if `won`, the next unawarded prize of the manifest is assigned to `i`'s opener and `prizesLeft`
-  decreases by one;
+- if `won`, the next unawarded entry of the cycle's prize list is assigned to `i`'s opener, and
+  `prizesLeft` decreases by one;
 - `idsLeft` decreases by one either way;
-- `OutcomeRecorded(openIndex, opener, won, prizeIndex)` is emitted, `prizeIndex` carrying no
-  meaning when `won` is false.
+- `OutcomeRecorded(openIndex, cycleId, opener, won, prizeIndex)` is emitted, where `prizeIndex`
+  is the entry of the list and carries no meaning when `won` is false.
 
-Properties: every holder faces the same odds before opening, `prizesLeft / idsLeft`; exactly the
-prize count is awarded once every playable id has been opened and resolved, so the pool can
-neither run dry early nor be left over if the game is played out; a wallet's chances are
-proportional to the playable bears it holds; and there is no cap on how many prizes one wallet
-may win (MINT, CQ-9).
+Properties:
+- every holder faces the same odds before opening, `prizesLeft / idsLeft`;
+- a cycle in which every playable bear is opened awards exactly its prize count;
+- a cycle that ends with bears unopened awards fewer, with the rest staying in MINT's wallet
+  (RAF-32) — MINT's choice, fixed odds over prizes rolled forward (CQ-9);
+- a wallet's chances are proportional to the playable bears it holds, with one shot per bear per
+  cycle as the only cap (MINT, CQ-9).
 
-*Acceptance.* Given `idsLeft` at 10, `prizesLeft` at 2 and a word w with `w mod 10 == 1`; when the open is resolved; then `won` is true, the next manifest prize is assigned, `prizesLeft` reads 1 and `idsLeft` reads 9.
+*Acceptance.* Given a cycle with `idsLeft` at 10, `prizesLeft` at 2 and a word w with `w mod 10 == 1`; when the open is resolved; then `won` is true, the next entry of the cycle's prize list is assigned, `prizesLeft` reads 1 and `idsLeft` reads 9.
 
-**RAF-31 Closing the game.** The owner closes the game once, after which `open` reverts. Prizes
-never won — because their ids were never opened — return to unreserved inventory when the worker
-posts the close to each vault, and the owner may then withdraw them (RAF-14).
-`GameClosed(openCount, prizesAwarded)` on the hub, `PrizesReleased` on each vault. Nothing about
-an outcome already recorded can change, and a prize already won stays the winner's until it is
-claimed or expires.
+**RAF-8 Randomness.** Chainlink VRF v2.5, with one request and one word per open. `PrizeDraw` runs on **Arbitrum One**
+(chain id 42161), agreed with MINT on 28 September 2026: coordinator
+`0x3C0Ca683b403E37668AE3DC4FB62F4B29B6f7a3e`, and on Arbitrum Sepolia (421614)
+`0x5CE8D5A2BC84beb22a398CCA51996F7930313D61`. `PrizeDraw` is the subscription's consumer. The
+subscription is assumed to be owned and funded by MINT (`→ CQ-17`). One request per open is what
+buys an outcome nobody can predict, MINT included. The subscription is funded for a cycle's
+worth of requests, at most `PLAYABLE`, and topped up on a balance alarm, not on a schedule.
+Robinhood Chain has no Chainlink VRF and no usable `prevrandao`, which is why the draw is not on
+the chain the bears live on.
 
-*Acceptance.* Given an open game with one committed prize never won; when the owner closes the game and the worker posts the close to the vault; then `open` reverts, `GameClosed` and `PrizesReleased` are emitted and the prize is unreserved inventory again.
+*Acceptance.* When `resolve` runs; then exactly one VRF v2.5 request is made from the subscription with `PrizeDraw` as consumer; and the outcome uses that request's word alone.
 
-**RAF-2 Addresses.** Each `PrizeVault` is the dedicated deposit address on its chain, separate
-from the royalty pot and from the admin. Neither `MysteryBox` nor `PrizeDraw` holds assets.
+**RAF-33 Prize custody and the payout record.** Prizes are held in MINT's prize wallet `0xf6c02F0fDAC5c03EE9f1cc60A5D9875Efc4c83e3`, an
+externally owned account, on each chain that holds a prize (MINT, CQ-8, CQ-20): Robinhood Chain,
+Ethereum and possibly ApeChain. No contract is deployed on a prize chain and no contract holds a
+prize. A prize is paid by an ordinary transfer from that wallet to the opener's address on the
+prize's chain. Whether MINT pushes every win or the winner requests it within a window is
+`→ CQ-22`; the default is that MINT pushes. Nothing on-chain forces a payout, and MINT can move
+any prize at any time: custody is MINT's by its choice, and the chain records what was paid.
 
-*Acceptance.* When the deployed addresses are compared; then each vault differs from the royalty pot and the admin, and `MysteryBox` and `PrizeDraw` hold no assets.
-
-**RAF-3 Asset approval.** The owner approves each asset on each vault once: `approveAsset(token,
-kind, basketSize)` with `kind ∈ {ERC20, ERC721}`; `basketSize` is in base units for ERC-20 (for
-$MNTD on Robinhood Chain, 5,000 × 10^decimals) and ignored for ERC-721, where each token is its
-own prize. `revokeAsset` stops an asset entering the pool and never touches a committed or won
-prize. Unapproved assets never enter the pool. ERC-1155 is not supported.
-
-*Acceptance.* Given an ERC-20 approved with basket size b; when the vault holds 2b + 1 units and commits; then two baskets are committed; and a deposit of an unapproved token never enters the pool.
-
-**RAF-4 Intake.** Deposits are plain transfers to a vault. Nothing happens until the worker
-registers them: `registerERC721(token, id)` requires `ownerOf(id) == vault` and the id not yet
-tracked; `syncERC20(token)` adds `balanceOf(vault) − tracked` to unreserved inventory. Token
-transfers alone never change the game's state. Each registration emits `DepositRegistered`.
-
-*Acceptance.* Given an ERC-721 transferred to the vault; when the worker calls `registerERC721(token, id)`; then `DepositRegistered` is emitted and the prize is unreserved inventory; and before registration the game's state is unchanged.
-
-**RAF-5 Inventory states.** Unreserved → committed (to the game) → won → claimed; or won →
-expired → unreserved; or committed → unreserved when the game closes without the prize being
-won. A committed or won prize cannot be withdrawn, swept or moved by anyone but its winner,
-paused or not.
-
-*Acceptance.* Given a committed prize; when the owner calls `sweep` for it; then the call reverts; and once won and expired the prize is unreserved again.
-
-**RAF-6 Committing prizes.** During Setup the worker calls `commitToGame()` on each vault that
-holds prizes: every unreserved full basket of every approved ERC-20 and every unreserved
-registered ERC-721 is committed; ERC-20 remainders below a basket stay unreserved; the vault
-emits `PrizesCommitted(prizes[])` with its ordered list. The hub's manifest (RAF-27) is the
-concatenation of those lists, and a manifest that differs from the vaults' events is detectable
-by anyone. MINT fills the vaults with exactly the prizes the game should carry, then the worker
-commits and the owner opens.
-
-*Acceptance.* Given a vault with approved baskets and registered ERC-721s; when the worker calls `commitToGame()`; then `PrizesCommitted(prizes[])` lists every full basket and every registered token in order; and remainders below a basket stay unreserved.
-
-**RAF-8 Randomness.** Chainlink VRF v2.5, one request and one word per open, with the
-subscription owned and funded by MINT and `PrizeDraw` as its consumer (MINT, CQ-17).
-**Calea recommends Base** (coordinator `0xd5D517aBE5cF79B7e95eC98dB0f0277788aFF634`): MINT
-already uses it, a request costs cents rather than the dollars Ethereum charges, and two-second
-blocks keep the wait a holder sees down to seconds. Ethereum
-(`0xD7f86b4b8Cae7D942340FF628F82735b7a20893a`) is the alternative and is correct but slow and
-dear at one request per open. ApeChain has no Chainlink VRF; Robinhood Chain has none and no
-usable `prevrandao` — which is why the draw is not on the chain the bears live on. One request
-per open is what buys an outcome nobody can predict; the subscription has to carry the whole
-collection's worth of requests, so it is funded for `PLAYABLE` of them and topped up on a
-balance alarm, not on a schedule (`→ CQ-17`).
-
-*Acceptance.* When `resolve` runs; then exactly one VRF v2.5 request is made from MINT's subscription with `PrizeDraw` as consumer; and the outcome uses that request's word alone.
-
-**RAF-24 Prize vaults.** One `PrizeVault` code, deployed on every chain that holds prizes.
-Lifecycle: approval (RAF-3), intake (RAF-4), `commitToGame()` (RAF-6); `award(prizeIndex,
-recipient)` by the worker, once per prize and only for a prize the game recorded as won, which
-anyone can check against `PrizeDraw`'s `OutcomeRecorded`; `claim(prizeIndex)` by the recipient
-(RAF-11); `expirePrize` (RAF-11); `closeGame()` releasing the uncommitted remainder (RAF-31);
-`sweep` (RAF-14).
-
-*Acceptance.* Given a prize the draw recorded as won; when the worker calls `award(prizeIndex, recipient)` once; then `PrizeAwarded` is emitted; and a second `award` for the same prize, or one for a prize not recorded as won, reverts.
-
-**RAF-25 Recipient nomination.** A winner claims on the prize's chain from the address that
-opened the box on Robinhood Chain. An address that is a contract wallet on 4663 may not exist
-elsewhere, so for `nominationWindow` after the outcome (default 24 hours; the owner may set 0) a
-winner may call `nominateRecipient(openIndex, recipient)` on `PrizeDraw`; the worker posts the
-award only once that window has passed, and the recipient defaults to the opener. The UI warns
+The worker records each payout on `PrizeDraw` with `recordPayout(openIndex, chainId, txHash)`.
+The call is refused unless the outcome of `openIndex` is a win (`NotAWin`) and has not been
+recorded as paid (`AlreadyPaid`). It emits `PrizePaid(cycleId, openIndex, chainId, txHash)`, so
+anyone can match each recorded win to a transfer on the named chain, and see a win with no
+`PrizePaid`. The recipient is the opener. There is no on-chain nomination: a holder whose
+address cannot receive on a prize chain is MINT's to settle by hand, and the UI warns
 contract-wallet holders before they open.
 
-*Acceptance.* Given a win recorded at time t and a nomination window of 24 hours; when the winner calls `nominateRecipient(openIndex, r)` before t + 24 hours; then `recipientOf(openIndex)` reads r; and `award` before the window has passed reverts.
+*Acceptance.* Given open 7 recorded as a win; when the worker calls `recordPayout(7, 1, txHash)`; then `PrizePaid(cycleId, 7, 1, txHash)` is emitted; and a second `recordPayout` for open 7 reverts with `AlreadyPaid`, and one for an open that did not win reverts with `NotAWin`.
 
-**RAF-11 Claims.** `claim(prizeIndex)` on the vault holding the prize: the caller is the
-recorded recipient; the prize is unclaimed; `block.timestamp ≤ awardedAt + claimWindow`, with
-`claimWindow` **30 days** (MINT, CQ-10). The prize — an ERC-20 basket or an ERC-721 — is
-transferred to the caller. The right is single-use and non-transferable, and it belongs to the
-wallet that opened the box whatever it does with its bears afterwards. After the window
-`expirePrize` (anyone) returns the prize to unreserved inventory — MINT treats an unclaimed
-prize as renounced — and a claimed prize never expires.
+**RAF-14 Roles.** Owner (MINT's admin):
+- on `MysteryBox`: `excludeRange`, `scheduleCycle`, `setPaused`;
+- on `PrizeDraw`: `scheduleCycle`, `setWorker`, `setPaused`;
+- ownership transfer on both.
 
-*Acceptance.* Given a prize awarded to r at time a; when r calls `claim(prizeIndex)` before a + 30 days; then the prize is transferred to r and `PrizeClaimed` is emitted; and after 30 days anyone may call `expirePrize` and the prize returns to inventory.
+`renounceOwnership` reverts on both.
 
-**RAF-14 Roles.** Owner (MINT admin): `approveAsset`, `revokeAsset`, `setWorker`,
-`excludeRange`, `openGame`, `closeGame`, `setPaused`, `sweep`. `sweep` moves unapproved tokens
-and unreserved inventory out of a vault, with an event, **only while that vault has nothing
-committed**: from `commitToGame` until the game closes, nothing leaves the vault except to
-winners (MINT, CQ-11), and a won prize stays locked until claimed or expired regardless. Worker
-(MINT automation): `registerERC721`, `syncERC20`, `commitToGame`, `resolve`, `award`,
-`closeGame` on each vault. Anyone: `open` as a bear's owner, `nominateRecipient` as a winner,
-`claim` as a recipient, `expirePrize`, all reads.
+Worker: `resolve` and `recordPayout` on `PrizeDraw`. Its operator is `→ CQ-23`.
 
-*Acceptance.* When a non-owner calls `excludeRange`, `openGame` or `sweep`, or a non-worker calls `resolve` or `award`; then each reverts; and `open`, `claim` and `expirePrize` need no role.
+Anyone: `open` as a bear's owner, and all reads.
 
-**RAF-15 Pause.** Pausing the hub blocks `open`; pausing `PrizeDraw` blocks `resolve`, so no new
-word is requested while outcomes already paid for are settled; pausing a vault blocks
-registration and committing. None of them blocks `claim`, `expirePrize` or `nominateRecipient`.
+No role can open a box for a holder, change an outcome, or move a bear.
 
-*Acceptance.* Given the hub, the draw and a vault each paused; when `open`, `resolve` and `registerERC721` are called; then each reverts; and `claim`, `expirePrize` and `nominateRecipient` still succeed.
+*Acceptance.* When a non-owner calls `excludeRange`, `scheduleCycle` or `setWorker`, or a non-worker calls `resolve` or `recordPayout`; then each reverts; and `open` needs no role but the bear's ownership.
 
-**RAF-16 Events.** Hub: `IdsExcluded(from, to)`, `GameOpened(playable, prizeCount, manifestHash)`,
-`BoxOpened(openIndex, tokenId, opener)`, `GameClosed(openCount, prizesAwarded)`, `WorkerSet`,
-`PausedSet`. `PrizeDraw`: `DrawRequested(openIndex, requestId)`, `OutcomeRecorded(openIndex,
-opener, won, prizeIndex)`, `RecipientNominated(openIndex, recipient)`, `WorkerSet`, `PausedSet`.
-Vault: `AssetApproved`, `AssetRevoked`, `DepositRegistered`, `PrizesCommitted`,
-`PrizeAwarded(prizeIndex, recipient)`, `PrizeClaimed`, `PrizeExpired`, `PrizesReleased`,
-`Swept`, `WorkerSet`, `PausedSet`.
+**RAF-34 Pause.** Pausing the hub blocks `open`. Pausing `PrizeDraw` blocks `resolve`, so no new word is requested,
+while words already requested are still applied when they arrive. Neither pause blocks
+`recordPayout` or any read. A cycle's window runs on while the hub is paused: a pause shortens
+the time holders have, and it does not move `end`.
 
-*Acceptance.* When the game runs through exclusion, opening, an open, a resolution, an award, a claim and closing; then every listed event fires with the documented arguments.
+*Acceptance.* Given the hub and the draw each paused; when `open` and `resolve` are called; then each reverts with `ContractPaused`; and `recordPayout` and every read still succeed.
 
-**RAF-17 Reads.** Hub: game state, `PLAYABLE`, `MAX_BEARS`, `isExcluded(tokenId)`,
-`opened(tokenId)`, `openIndexOf(tokenId)`, `openCount()`, `shotsLeft(wallet)`, the manifest and
-its hash. `PrizeDraw`: `idsLeft()`, `prizesLeft()`, `nextToResolve()`, `outcomeOf(openIndex)`,
-`recipientOf(openIndex)`, `nominationWindow`, `odds()` returning `(prizesLeft, idsLeft)`. Vault:
-unreserved inventory per asset, prize by index (asset, id or amount, state, recipient),
-`awardedAt(prizeIndex)`, `claimable(wallet)`, `isApproved(token)`.
+**RAF-16 Events.** The events each contract emits:
+- **Hub:** `IdsExcluded(from, to)`, `CycleScheduled(cycleId, start, end, prizeCount,
+  manifestHash)`, `BoxOpened(openIndex, cycleId, tokenId, opener)`, `PausedSet`.
+- **`PrizeDraw`:** `CycleScheduled(cycleId, prizeCount, manifestHash)`,
+  `DrawRequested(openIndex, requestId)`, `OutcomeRecorded(openIndex, cycleId, opener, won,
+  prizeIndex)`, `PrizePaid(cycleId, openIndex, chainId, txHash)`, `WorkerSet`, `PausedSet`.
 
-*Acceptance.* When every listed read is called during an open game; then each returns without reverting and `odds()` returns `(prizesLeft, idsLeft)`.
+*Acceptance.* When a cycle runs through exclusion, scheduling, an open, a resolution and a payout record; then every listed event fires with the documented arguments.
 
-**RAF-18 Worker sequence.** Register deposits → commit each vault → owner records the excluded
-ids and opens the game → holders open boxes → relay each `BoxOpened` to `PrizeDraw` in order →
-words arrive and outcomes are recorded → nomination window → post each award to its vault →
-winners claim → after the claim window, expire what is unclaimed → owner closes the game → post
-the close to each vault. MINT's UI shows the pool, the live odds, a wallet's shots left, its
-outcomes and its claims.
+**RAF-17 Reads.** The reads each contract answers:
+- **Hub:** `MAX_BEARS`, `PLAYABLE`, `isExcluded(tokenId)`, `currentCycle()` and each cycle's
+  `(start, end, prizeCount, manifestHash)`, `isOpen()`, `opened(cycleId, tokenId)`,
+  `openCount()`, `shotsLeft(wallet)`.
+- **`PrizeDraw`:** `PLAYABLE`, each cycle's `(prizeCount, manifestHash, idsLeft, prizesLeft)`,
+  `nextToResolve()`, `outcomeOf(openIndex)`, `payoutOf(openIndex)`, and `odds(cycleId)`
+  returning `(prizesLeft, idsLeft)`.
 
-*Acceptance.* When the worker sequence runs on the testnets from registration to posting the close; then each step succeeds in the listed order and a relay offered out of turn is refused.
+*Acceptance.* When every listed read is called during an open cycle; then each returns without reverting and `odds(cycleId)` returns `(prizesLeft, idsLeft)`.
 
-**RAF-19 Acceptance cases.** Token baskets group correctly; two NFTs from one collection can go
-to two different wallets; a deposit registered after the game opens cannot enter the pool; a
-committed prize cannot be withdrawn or swept; an excluded id cannot be opened, before or after
-it is sold; an id already opened cannot be opened by its buyer; a holder who sells a bear after
-opening it still claims what it won; exactly the prize count is awarded when every playable id
-is played; the pool neither empties early nor is left over; a relay out of order is refused; an
-award that does not match `OutcomeRecorded` is detectable; a prize on ApeChain is claimed by a
-nominated recipient; an unclaimed prize expires and can be withdrawn after the game closes.
+**RAF-18 Worker sequence.** The sequence, in order:
+1. The owner records the excluded ids, once, before the first cycle.
+2. For each cycle, the owner publishes the prize list, schedules the cycle on the hub and on
+   `PrizeDraw` with the same count and hash, and MINT's prize wallet holds the prizes.
+3. Holders open boxes inside the window.
+4. The worker relays each `BoxOpened` to `PrizeDraw` in order.
+5. Words arrive and outcomes are recorded.
+6. Each win is paid from the prize wallet on its chain and recorded with `recordPayout`.
+7. After `end`, the owner schedules the next cycle whenever MINT is ready.
+
+MINT's UI shows the cycle's window, its prize list, the live odds, a wallet's shots left, its
+outcomes and its payouts, and warns contract-wallet holders before they open.
+
+*Acceptance.* When the sequence runs on the testnets through two cycles, from exclusion to the payout records; then each step succeeds in the listed order, a relay offered out of turn is refused, and a bear opened in cycle 1 opens again in cycle 2.
+
+**RAF-19 Acceptance cases.** Each of these has a test:
+- an excluded id cannot be opened, before or after it is sold;
+- exclusions cannot change once the first cycle is scheduled;
+- a box cannot be opened outside its cycle's window;
+- a bear cannot be opened twice in one cycle, by its holder or its buyer, and can be opened in
+  the next;
+- a cycle cannot be scheduled while one is open, and a scheduled cycle's terms cannot change
+  once it has started;
+- a relay out of order is refused;
+- a cycle in which every playable bear is opened awards exactly its prize count, and the pool
+  neither empties early nor is left over;
+- a cycle that ends early awards no more than its prize count;
+- a win is recorded as paid once, and a loss cannot be;
+- a holder who sells a bear after opening it keeps its outcome.
 
 *Acceptance.* When the tranche-2 test suite runs; then every listed case has a passing deterministic test.
 <!-- openspec:end -->
 
 <!-- openspec:begin retired -->
-**Retired identifiers.** DEL-4 (verified testnet addresses) → OPS-3 and OPS-4; DEL-5 (deployment scripts and runbook) → OPS-2 and OPS-5; RAF-1 (a single raffle chain) → RAF-24 and RAF-26; RAF-7 (passive ownership snapshot) → RAF-28; RAF-9 (draw over calldata entries) → RAF-30; RAF-10 (carry forward between rounds) → RAF-31; RAF-12 (round cancellation) → RAF-31; RAF-13 (per-round `minLevel` eligibility) → RAF-27; RAF-20 (rounds on the hub) → RAF-26; RAF-21 (entry into a round) → RAF-28; RAF-22 (one seed per round) → RAF-29; RAF-23 (the per-round draw) → RAF-30.
+**Retired identifiers.** ACT-9 (the on-chain Status link) → ACT-12; ACT-11 (pause over burns and links) → ACT-15; DEL-4 (verified testnet addresses) → OPS-3 and OPS-4; DEL-5 (deployment scripts and runbook) → OPS-2 and OPS-5; RAF-1 (a single raffle chain) → RAF-32 and RAF-33; RAF-7 (passive ownership snapshot) → RAF-28; RAF-9 (draw over calldata entries) → RAF-30; RAF-10 (carry forward between rounds) → RAF-32; RAF-12 (round cancellation) → RAF-32; RAF-13 (per-round `minLevel` eligibility) → RAF-27; RAF-20 (rounds on the hub) → RAF-32; RAF-21 (entry into a round) → RAF-28; RAF-22 (one seed per round) → RAF-29; RAF-23 (the per-round draw) → RAF-30; RAF-2 (vault addresses) → RAF-33; RAF-3 (asset approval on the vaults) → RAF-27 and RAF-33; RAF-4 (deposit intake) → RAF-33; RAF-5 (vault inventory states) → RAF-30 and RAF-33; RAF-6 (committing prizes from the vaults) → RAF-27 and RAF-32; RAF-11 (claims from a vault) → RAF-33; RAF-15 (pause with vault claims) → RAF-34; RAF-24 (a prize vault per chain) → RAF-33; RAF-25 (recipient nomination) → RAF-33; RAF-26 (one game over the collection) → RAF-32; RAF-31 (closing the game) → RAF-32 and RAF-33.
 <!-- openspec:end -->
 
 ## 7. Operations, roles and handover (OPS)
@@ -796,64 +817,81 @@ nominated recipient; an unclaimed prize expires and can be withdrawn after the g
 <!-- openspec:begin family OPS -->
 MINT needs to receive contracts that are correct from their first block, verified on every chain, and handed over with every key, role and a runbook — so that operating them after 19 November needs nothing from Calea.
 
-**OPS-1 Addresses.** The three control keys are recorded before mainnet deployment; the
-royalty receiver follows, before the first sale (COL-6). `→ CQ-12`, `→ CQ-15`.
+**OPS-1 Addresses.** The control keys are recorded before mainnet deployment, and the royalty receiver before the
+first sale (COL-6). `→ CQ-12`, `→ CQ-15`.
 
-| Role | Holds | Recommendation |
+| Role | Holds | Address or holder |
 |---|---|---|
-| Admin | owner of every contract on every chain | Safe multisig controlled by Iñigo; one EOA per chain if Safe's interface does not cover a chain |
-| Worker | `MysteryBox`, every `PrizeVault`, `PrizeDraw` | EOA held by MINT automation, funded on each chain |
-| Eligibility signer | `WhitelistClaim.signer` | Backend key held by MINT; rotatable by the admin |
-| Royalty receiver | ERC-2981 receiver — the pot | MINT, separate from the admin |
-| Prize vaults | the `PrizeVault` contracts, one per prize chain | — |
+| Admin | owner of every contract on every chain | `0x153052B43c8fD4ec01f14D1Edd8660778daa6141`, an EOA (MINT, 28 September 2026; for every contract, still to confirm) |
+| Worker | `resolve` and `recordPayout` on `PrizeDraw` | EOA, funded on Arbitrum; operated by Calea (assumed, `→ CQ-23`) |
+| Eligibility signer | `WhitelistClaim.signer`, only if WL-3 is deployed | Backend key held by MINT; rotatable by the admin |
+| Royalty receiver | ERC-2981 receiver — the pot | `0xf7E70F5ef311232dBd1b0E4dFB1e3e8FBE7b0e63` (MINT, 28 September 2026) |
+| Prize wallet | every prize, on every prize chain (RAF-33) | `0xf6c02F0fDAC5c03EE9f1cc60A5D9875Efc4c83e3`, an EOA (MINT, 28 September 2026) |
+| VRF subscription | the Chainlink subscription `PrizeDraw` draws on | MINT (assumed, `→ CQ-17`) |
 
 *Acceptance.* When the mainnet deploy scripts run; then the admin, worker and signer addresses they read are the ones MINT recorded; and the royalty receiver is set in Studio before the first sale.
 
-**OPS-2 Deployment order.** Every address a contract needs at birth is a constructor argument,
-so a contract is correct from its first block and is never deployed-but-unconfigured (MINT,
-CQ-12). `WhitelistClaim.setSigner` exists so the admin can rotate the signer; the first signer is
-a constructor argument, and it stays owner-only. The calls made after construction are settings
+**OPS-2 Deployment order.** Every address a contract needs at birth is a constructor argument, so a contract is correct
+from its first block and is never deployed-but-unconfigured (MINT, CQ-12).
+`WhitelistClaim.setSigner` exists so the admin can rotate the signer; the first signer is a
+constructor argument, and it stays owner-only. The calls made after construction are settings
 and hand-overs, each in the order listed: `setMaxSupply`, `setTransferValidator`,
-`setPaused(true)` and ownership transfers. Robinhood Chain:
-`MintABear(name, symbol, [SeaDrop])` → `setMaxSupply(4444)` → `setTransferValidator(V3)`
-(COL-7) → two-step ownership transfer → provenance, `baseURI` and royalties set by Iñigo
-through Studio, before the drop page is published (COL-5, COL-6, COL-10).
-`WhitelistClaim(owner, signer, openAt, closeAt)`, with MINT's admin as `owner`, before the
-campaign opens. `Activation(bears, mntd, thresholds, weights)`, thresholds in whole $MNTD
-(ACT-2) → `setPaused(true)` until the switch-on date → ownership; requires $MNTD on 4663.
-`MysteryBox(bears, worker)` → ownership; `PrizeVault(worker)` → `approveAsset` per prize asset →
-ownership. Ethereum and ApeChain: `PrizeVault(worker)` → approvals → ownership. The Chainlink
-chain: `PrizeDraw(coordinator, subscriptionId, keyHash, worker, playable, prizeCount,
-manifestHash)` → added as consumer → ownership. Each contract is deployed before the page that
+`setPaused(true)` and ownership transfers. Each contract is deployed before the page that
 depends on it is published.
+
+**Robinhood Chain:**
+- `MintABear(name, symbol, [SeaDrop])` → `setMaxSupply(4444)` → `setTransferValidator(V3)`
+  (COL-7) → two-step ownership transfer → provenance, `baseURI` and royalties set by Iñigo
+  through Studio, before the drop page is published (COL-5, COL-6, COL-10).
+- Before the campaign opens, one of the two whitelist registries, with MINT's admin as `owner`
+  (`→ CQ-18`): `WhitelistClaim(owner, signer, openAt, closeAt)` or
+  `WhitelistImport(owner, closeAt)`.
+- `Activation(bears, mntd, thresholds, weights)`, thresholds in whole $MNTD (ACT-2) →
+  `setPaused(true)` until the switch-on date → ownership; requires $MNTD on 4663.
+- `MysteryBox(owner, bears)`.
+
+**Arbitrum One:** `PrizeDraw(owner, coordinator, subscriptionId, keyHash, worker, playable)` →
+added as the subscription's consumer. No contract is deployed on a prize chain (RAF-33).
 
 *Acceptance.* When the deploy script runs on a fresh chain; then each contract is created with its constructor arguments in the listed order and is never left deployed-but-unconfigured; and no address is set after construction; every call after construction is a listed setting or ownership transfer, in the listed order.
 
-**OPS-3 Verification.** Sourcify for 4663 and 46630 (mainnet Blockscout's API sits behind a bot
-challenge); Etherscan for Ethereum and Sepolia; Apescan for ApeChain and Curtis; Basescan for
-Base and Base Sepolia.
+**OPS-3 Verification.** Sourcify for 4663 and 46630, because mainnet Blockscout's API sits behind a bot challenge.
+Arbiscan (Etherscan's API) for Arbitrum One and Arbitrum Sepolia.
 
 *Acceptance.* When a contract is deployed on 4663 or 46630; then its source is verified through Sourcify and readable there.
 
-**OPS-4 Rehearsal on testnets (46630, Sepolia, Curtis, Base Sepolia).** Studio attaches to and
-manages a self-deployed, validated `MintABear`; both mint paths (OpenSea and the getminted.io
-mirror); a whitelist claim from voucher to exported allowlist to a two-per-wallet allowlist mint; a
-burn through `Activation` against $MNTD on 46630 through to a recorded level; a full multi-chain
-game — deposits on the testnets, commit, exclude, open, boxes opened, relays, words, outcomes,
-awards, claims and expiry, including one open that wins and one that does not; an OpenSea testnet
-listing of the validated collection. On mainnet, before the drop page is published: one team bear
-listed and sold on OpenSea (COL-7).
+**OPS-4 Rehearsal on testnets (46630, Arbitrum Sepolia, Sepolia).** The rehearsal covers these paths:
+- Studio attaches to and manages a self-deployed, validated `MintABear`.
+- Both mint paths: OpenSea and the getminted.io mirror.
+- The whitelist, for the registry MINT picks (CQ-18): from a voucher, or from the CSV import, to
+  the exported allowlist and a two-per-wallet allowlist mint.
+- A burn through `Activation` against $MNTD on 46630, through to a recorded level.
+- Two mystery-box cycles:
+  - exclusion;
+  - scheduling on 46630 and Arbitrum Sepolia;
+  - boxes opened;
+  - relays, words and outcomes, including one open that wins and one that does not;
+  - a win paid from a prize wallet on 46630 or Sepolia and recorded with `recordPayout`;
+  - a bear opened again in the second cycle.
+- An OpenSea testnet listing of the validated collection.
 
-*Acceptance.* When the rehearsal runs on 46630, Sepolia, Curtis and Base Sepolia; then each listed path completes end to end, including one open that wins and one that does not.
+On mainnet, before the drop page is published: one team bear listed and sold on OpenSea (COL-7).
 
-**OPS-5 Handover.** Calea deploys, configures, transfers ownership, verifies source, and delivers
-the runbook; after that it holds no key and no role. Technical support runs through
-19 November 2026 with agreed response hours (DEL-10). The runbook is one document, produced via
-`forge script` tooling, covering deploy order (OPS-2), the enforcement toggle (OPS-6) and
-Activation's pause/unpause around the burn switch-on date (ACT-11), the whitelist export (WL-4),
-and the mystery-box worker sequence (RAF-18).
+*Acceptance.* When the rehearsal runs on 46630, Arbitrum Sepolia and Sepolia; then each listed path completes end to end, including one open that wins and one that does not.
 
-*Acceptance.* When handover completes; then every contract's owner is MINT's admin, every source is verified and the runbook is delivered; and Calea holds no key and no role.
+**OPS-5 Handover.** Calea deploys, configures, transfers ownership, verifies source, and delivers the runbook. After
+that it holds no owner key. The one role it may keep is the worker's, if Calea operates the
+worker (`→ CQ-23`); `setWorker` lets MINT's admin take that role back at any time. Technical
+support runs through 19 November 2026 with agreed response hours (DEL-10).
+
+The runbook is one document, produced via `forge script` tooling. It covers:
+- the deploy order (OPS-2);
+- the enforcement toggle (OPS-6);
+- `Activation`'s pause and unpause around the burn switch-on date (ACT-15);
+- the whitelist export or import (WL-4, WL-7);
+- the mystery-box cycle and worker sequence (RAF-18).
+
+*Acceptance.* When handover completes; then every contract's owner is MINT's admin, every source is verified and the runbook is delivered; and Calea holds no owner key, and no role other than the worker's where CQ-23 gives it one.
 
 **OPS-6 Enforcement runbook.** Enabled at deployment: `MintABear.setTransferValidator(0x721C002B…)`
 with the validator's zero-state policy. Optional, from the admin: `createList`,
@@ -863,51 +901,62 @@ with the validator's zero-state policy. Optional, from the admin: `createList`,
 
 *Acceptance.* Given enforcement enabled; when the admin calls `setTransferValidator(address(0))` and then sets V3 again; then each call emits `TransferValidatorUpdated` and the policy follows the current value.
 
-**OPS-7 Chain constraints.** On Robinhood Chain `block.number` is the L1 height — contracts and
-scripts key on timestamps. Sequencer-level compliance screening can block an individual
-holder's transactions, so nothing in the system requires a holder to act by a deadline in
-order for the system to stay correct: an unclaimed prize expires back to inventory, a missed
-box left unopened is a shot not taken, and nothing else depends on either. Robinhood Chain
-applies an Arbitrum-style per-transaction gas limit, which is why no call in this system loops
-over the collection.
-Randomness is not available on Robinhood Chain or ApeChain, which is why the seed comes from
-Base.
+**OPS-7 Chain constraints.** On Robinhood Chain `block.number` is the L1 height, so contracts and scripts key on timestamps.
+Sequencer-level compliance screening can block an individual holder's transactions, so nothing
+in the system requires a holder to act by a deadline for the system to stay correct: a box left
+unopened in a cycle is a shot not taken, and nothing else depends on it. Robinhood Chain applies
+an Arbitrum-style per-transaction gas limit, which is why no call in this system loops over the
+collection. Randomness is not available on Robinhood Chain or ApeChain, which is why the draw
+runs on Arbitrum One.
 <!-- openspec:end -->
 
 ## 8. Calendar (CAL)
 
-Three anchors are fixed by MINT: TGE on 20 October, the mint on 29 October, and burns, level-up
-and the first mystery box round starting on 29 October; they carry basis *MINT*. The Basis
-column gives the source of every other row — *fixed* the call itself, *SoW* a date the statement
-of work sets, *derived* one that follows from an anchor, *proposed* Calea's suggestion, and
-*SoW; to confirm* a SoW date nobody has yet held. Every row but the three anchors and the call
-is MINT's to confirm or move (`→ CQ-1`, §10 D7).
+MINT fixes four dates:
+- the whitelist registry, delivered and deployed on 29 September;
+- TGE on 20 October;
+- the mint on 29 October;
+- burns and level-up starting on 29 October.
+
+These carry basis *MINT*. The Basis column gives the source of every other row:
+- *fixed*: the call itself;
+- *SoW*: a date the statement of work sets;
+- *derived*: a date that follows from an anchor;
+- *proposed*: Calea's suggestion;
+- *SoW; to confirm*: a SoW date nobody has yet held.
+
+Every other row is MINT's to confirm or move (`→ CQ-1`). The mystery box's cycles are set by the
+owner and are not calendar rows (RAF-32).
 
 | Date (2026) | Outcome | Lead | Basis |
 |---|---|---|---|
-| 21 Sep | Call: the decisions in §10 | Iñigo; Calea | fixed |
-| 22 Sep – 2 Oct | `MintABear` final, reviewed, deployed with the validator set; OpenSea page and URL live before promotion; team bear listed and sold; `WhitelistClaim` deployed and signer set; Studio attach proven on testnet | Calea; Iñigo | SoW |
-| by 5 Oct | $MNTD test deployment on 46630 for the burn rehearsal | MINT (Lorenzo) | proposed |
-| 5 – 9 Oct | `MysteryBox`, the vaults, `PrizeDraw`, the worker and the UI tested on testnets, baskets and the win rule included; reports and runbooks; no open Critical/High | Calea; Javier; MINT | SoW |
-| 6 – 26 Oct | Whitelist campaign open on getminted.io/mintabear | Iñigo; Javier; Vlad; Lorenzo | proposed |
-| 12 – 14 Oct | `MysteryBox`, `PrizeDraw` and the vaults deployed, verified and funded on every prize chain; roles and official addresses verified; a multi-chain game rehearsed | Calea; Iñigo; Javier; MINT | SoW |
+| 28 Sep | Call: the decisions in §10 | Iñigo; Calea | fixed |
+| 29 Sep | The whitelist registry MINT picks (WL-3 or WL-7) and its client module delivered to MINT's repository and deployed; outside the audit | Calea; MINT | MINT |
+| 29 Sep – 2 Oct | `MintABear` final, reviewed, deployed with the validator set; OpenSea page and URL live before promotion; team bear listed and sold; Studio attach proven on testnet | Calea; Iñigo | SoW |
+| when MINT deploys it | $MNTD test deployment on 46630 for the burn rehearsal | MINT (Lorenzo) | MINT |
+| 5 – 9 Oct | `MysteryBox`, `PrizeDraw`, the worker and the UI tested on 46630 and Arbitrum Sepolia, two cycles included; reports and runbooks; no open Critical/High | Calea; Javier; MINT | SoW |
+| to MINT's dates | Whitelist campaign or import open, and closed at least 48 hours before the whitelist stage; list exported, loaded into Studio, proofs published | Iñigo; Javier; Calea | to confirm |
+| 12 – 14 Oct | `MysteryBox` and `PrizeDraw` deployed and verified; roles and official addresses verified; the VRF subscription funded; a cycle rehearsed on the testnets | Calea; Iñigo; MINT | SoW |
 | 20 Oct | TGE: $MNTD live on Robinhood Chain; `Activation` deployed, verified against the real token, paused | MINT; Calea | MINT |
 | 20 – 28 Oct | Real burns rehearsed by MINT and Calea on mainnet, in windows the owner opens and closes again; `Activation` is paused outside them | Calea; MINT | derived |
-| 26 Oct | Whitelist campaign closes; list exported, loaded into the Studio whitelist stage, proofs published | Iñigo; Calea | proposed |
-| 29 Oct | Mint: whitelist stage, then the other stages per Studio; `Activation` unpaused — burns, level-up and Status linking open; the mystery box opens | Iñigo; Javier; Calea | MINT |
-| 1 Nov | Excluded ids and the prize pool published alongside the opening; the game runs continuously from 29 Oct | Iñigo; Calea | proposed |
-| from 29 Oct | Wins claimed on each prize chain — 30 days from each award (RAF-11); expiry afterwards | Winners; MINT worker | proposed |
+| 29 Oct | Mint: whitelist stage, then the other stages per Studio; `Activation` unpaused, so burns and level-up open | Iñigo; Javier; Calea | MINT |
+| after 29 Oct | The first mystery-box cycle, scheduled by the owner with its prize list | Iñigo; Calea | MINT |
 | 5 Nov | First royalty closing block and pot split; thereafter at each ETH cap or countdown (§2) | MINT | SoW; to confirm |
 | 19 Nov | Operations handed over; technical support ends (OPS-5, DEL-10) | Iñigo/Robert; Calea | SoW; to confirm |
 
-Two decouplings hold whatever moves: the collection deploys and mints without the hub, the
-vaults or `Activation` being live, and `Activation` opens to holders only once its burn has
-been exercised against real $MNTD — which the owner does by unpausing for a rehearsal and
-pausing again (ACT-11). One compression to note: burns open nine days after TGE, so the mainnet
-rehearsal against the real token has that window; the testnet deployment on 5 October takes the
-pressure off it. One overhang to note: the game runs continuously from 29 October and every win
-carries its own 30-day claim window, so claims outlive the 19 November handover and the end of
-technical support; the worker has to keep posting awards after both.
+Two decouplings hold whatever moves:
+- the collection deploys and mints without the mystery box or `Activation` being live;
+- `Activation` opens to holders only once its burn has been exercised against real $MNTD, which
+  the owner does by unpausing for a rehearsal and pausing again (ACT-15).
+
+Three things to note:
+- **The burn rehearsal is tight.** Burns open nine days after TGE, so the mainnet rehearsal
+  against the real token has that window; the testnet $MNTD takes the pressure off it.
+- **The worker outlives support.** Cycles run after the 19 November handover and the end of
+  technical support, and the worker keeps relaying opens and recording payouts after both
+  (`→ CQ-23`).
+- **The whitelist registry deploys a month before the mint.** Its window has to be set at
+  deployment and close at least 48 hours before the whitelist stage (WL-5).
 
 ## 9. Deliverables and acceptance (DEL)
 
@@ -927,17 +976,27 @@ tranche.
 
 *Acceptance.* When a tranche is delivered; then the internal auditor's report, with the fuzzing and invariant results, is delivered with it.
 
-**DEL-6 Integration package.** Interfaces, events, roles and calldata examples for every
-contract; a **TypeScript** client library for getminted.io, typed against the ABIs and covering
-every call the app makes — mint (SeaDrop stages, allowlist proofs, `mintPublic`), whitelist claim
-(voucher check and `claim`), burn (`costToReach`, approve, `burn`), link, and the mystery box (open
-and prize claims on each chain) — together with its own tests and the revert reasons a caller has
-to handle, so that MINT integrates against a library that has been exercised rather than against an
-ABI (`→ CQ-19`); a reference script that reproduces the royalty split from `Activation.snapshot`,
+**DEL-6 Integration package.** Interfaces, events, roles and calldata examples for every contract. A **TypeScript** client
+library for getminted.io, typed against the ABIs, that covers every call the app makes:
+- **the play page:**
+  - mint: SeaDrop stages, allowlist proofs, `mintPublic`;
+  - the whitelist: voucher check and `claim` (WL-3), or the eligibility read (WL-7);
+  - burn: `costToReach`, approve, `burn`;
+  - the mystery box: `open`, outcomes, odds, shots left and payout records;
+- **MINT's admin page:**
+  - the CSV import into `WhitelistImport` (WL-7);
+  - `excludeRange`;
+  - `scheduleCycle` on both chains;
+  - pauses;
+- **the worker:** `resolve` and `recordPayout`.
+
+It comes with its own tests and the revert reasons a caller has to handle, so that MINT
+integrates against a library that has been exercised rather than against an ABI (`→ CQ-19`).
+Also a reference script that reproduces the royalty split from `Activation.snapshot`,
 dead-address exclusion included, so that "allocations plus carried rounding equal funding" is
 testable by MINT.
 
-*Acceptance.* When MINT integrates the play page; then every contract call it makes is covered by the typed TypeScript library, with passing tests and documented revert reasons, and the reference script reproduces the royalty split.
+*Acceptance.* When MINT integrates the play page and the admin page; then every contract call they make is covered by the typed TypeScript library, with passing tests and documented revert reasons, and the reference script reproduces the royalty split.
 
 **DEL-7 Existing-contract review.** A read of the contract MINT names, within the agreed line
 limit; findings only, no remediation. Unscheduled: no contract has been named, so it books no
@@ -945,26 +1004,41 @@ time until one is (`→ CQ-13`).
 
 *Acceptance.* Given MINT has named a contract within the line limit; when the review is delivered; then it lists findings only, with no remediation.
 
-**DEL-8 Audit tranches.** Tranche 1: `MintABear`, `WhitelistClaim` and `Activation`. Tranche 2:
-`MysteryBox`, `PrizeVault` and `PrizeDraw`, once CQ-9's remaining questions and CQ-20 are
-answered. Iñigo accepts after Calea and MINT sign off; anything not accepted stays disabled in the
-UI.
+**DEL-8 Audit tranches.** Tranche 1: `MintABear` and `Activation`. Tranche 2: `MysteryBox` and `PrizeDraw`, once CQ-20's
+remaining values are supplied. `WhitelistClaim` and `WhitelistImport` are outside the internal
+audit: MINT needs the registry on 29 September 2026 and chose to deploy it unaudited
+(call, 28 September 2026). Calea's own review of `WhitelistClaim` in tranche 1 stands, and
+`WhitelistImport` has the developer's tests and self-review only. Iñigo accepts after Calea and
+MINT sign off; anything not accepted stays disabled in the UI.
 
-**DEL-9 Repository.** The contracts live in MINT's monorepo (`github.com/mintdotio/NFT`) as
-`packages/contracts` (`@mint/contracts`), a Foundry package with a thin `package.json` so
-`pnpm -r build|test|check` reach it, with the Foundry dependencies as git submodules that CI
-checks out; CI runs `forge fmt --check`, `forge build --sizes`, `forge test`, and Calea owns
-that configuration. This is Calea's recommendation and what it builds if the decision is
-deferred (`→ CQ-14`, `→ CQ-19`).
+**DEL-9 Repository.** The contracts go into MINT's repository as `packages/contracts` (`@mint/contracts`), beside
+`packages/contracts-client`. `packages/contracts` is a Foundry package with a thin
+`package.json`, so `pnpm -r build|test|check` reach it, and its Foundry dependencies are git
+submodules that CI checks out. CI runs `forge fmt --check`, `forge build --sizes` and
+`forge test`, and Calea owns that configuration (MINT accepted, 28 September 2026). MINT names
+the repository (`→ CQ-14`).
+
+The first delivery is the whitelist registry MINT picks (CQ-18), with its client module, on
+29 September 2026. The other contracts follow as their tranches are accepted.
 
 *Acceptance.* When the contracts land in the monorepo; then `pnpm -r build|test|check` reach the Foundry package and CI runs the three forge gates.
 
-**DEL-10 Commercial items for Rayco's agreement.** Listed here so nothing is implied: prize
-intake and unique-winner logic; weight interfaces; Studio and frontend assistance; mainnet
-execution and role handover on every chain; technical support through 19 November with agreed
-response hours; the existing-contract review; and two items beyond the SoW's single-chain vault
-and collection: the **whitelist registry** (WL) and **multi-chain prize delivery** (a vault per
-prize chain, the seed relay, the recipient nomination).
+**DEL-10 Commercial items for Rayco's agreement.** Listed here so nothing is implied:
+- prize logic and the unique-winner rule;
+- weight interfaces;
+- Studio and frontend assistance;
+- mainnet execution and role handover on every chain;
+- technical support through 19 November with agreed response hours;
+- the existing-contract review;
+- beyond the SoW's single-chain vault and collection:
+  - the **whitelist registry** in two variants (WL-3, WL-7), delivered early and unaudited;
+  - the **cross-chain draw**: the Chainlink draw on Arbitrum, the relay of each open, and the
+    payout record;
+  - the admin-page calls in the client library.
+
+Two items are priced only if MINT confirms them:
+- **operating the worker** after 19 November, if Calea runs it (`→ CQ-23`);
+- **holding the VRF subscription** and invoicing it, if MINT does not (`→ CQ-17`).
 
 **DEL-11 Frontend collaboration.** MINT builds and owns the page holders play on — mint, raffle,
 burn and level-up — in TypeScript, served from **getminted.io** (MINT, CQ-19). Calea owns the
@@ -972,99 +1046,89 @@ Solidity and the TypeScript client library of DEL-6, and reviews every change th
 contract call before it merges. The Framer landing page stays where it is and is neither built
 nor reviewed by Calea. Which repository holds these packages is `→ CQ-14`.
 
-**DEL-12 Review sign-off.** Every Critical and High finding from DEL-3's review is fixed before
-mainnet deployment.
+**DEL-12 Review sign-off.** Every Critical and High finding from DEL-3's review is fixed before mainnet deployment of the
+contract it concerns, for every contract in an audit tranche (DEL-8).
 <!-- openspec:end -->
 
 ## 10. Decisions
 
-The call of 21 September 2026 worked through the nine decisions this document carried into it.
-Seven are settled and are written into the requirements as final state; the rest, with
-what the call opened, are listed after them. Each open item states Calea's recommendation, which
-is also what Calea builds if the decision is deferred.
+The calls of 21 and 28 September 2026 worked through the decisions this document carried into
+them. What they settled is written into the requirements as final state. What is still open is
+listed after it, each item with Calea's recommendation, which is also what Calea builds if the
+decision is deferred.
 
-### Settled at the call of 21 September 2026
+### Settled at the call of 28 September 2026
 
 | | Decision | Recorded in |
 |---|---|---|
-| **D1** | $MNTD is **native** to Robinhood Chain — canonical supply issued there, `burnFrom` reduces it; MINT's staking sits beside it and touches nothing here (CQ-2) | ACT-7 |
-| **D2** | The burn thresholds are **cumulative**: 1,666 / 3,333 / 8,333 / 16,666 / 41,666 $MNTD is the total to reach each level, so level 5 costs 41,666 in all (CQ-4) | ACT-2 |
-| **D4** | Whitelist claims go in an **on-chain registry** and the holder pays the gas; the CSV loaded into OpenSea is exported from that registry (CQ-18) | WL-3, WL-4 |
-| **D5** | The mystery box is **instant**: one bear is one shot, the open spends that id, and the outcome is known then and there. Ownership is checked on 4663, the win is decided by a Chainlink word on the VRF chain, and each prize is claimed where it sits (CQ-9) | §6 |
-| **D6** | MINT creates, funds and owns the **VRF subscription**; Calea adds `PrizeDraw` as a consumer at deployment (CQ-17) | RAF-8 |
-| **D8** | The **existing-contract review** stands as a deliverable but is unscheduled; no contract has been named (CQ-13) | DEL-7 |
-| **D9** | MINT builds the page holders play on, in **TypeScript on getminted.io**; Calea delivers a typed, tested TypeScript client library; the Framer landing page is out of scope (CQ-19) | DEL-6, DEL-11 |
+| **Cycles** | The mystery box runs in cycles the owner schedules. In a cycle each playable bear is one shot, decided by its own Chainlink word from a fixed pool without replacement. Prizes a cycle does not award stay with MINT and may roll forward. One shot per bear per cycle is the only cap on a wallet's wins (CQ-9) | RAF-32, RAF-28, RAF-30 |
+| **Excluded ids** | 222 team bears, fixed for good before the first cycle (CQ-20) | RAF-27 |
+| **Draw chain** | Arbitrum One; Base is dropped (CQ-17) | RAF-8 |
+| **Prize custody** | MINT's prize wallet `0xf6c0…e3e3` on Robinhood Chain, Ethereum and possibly ApeChain; no contract on any prize chain; each payout recorded on `PrizeDraw`; no on-chain nomination (CQ-8) | RAF-33 |
+| **Status links** | Off-chain, against Privy accounts; the on-chain link is removed (CQ-21) | ACT-12 |
+| **Royalty receiver** | `0xf7E7…0e63` (CQ-15) | COL-6, OPS-1 |
+| **$MNTD** | OpenZeppelin `ERC20Burnable`, 18 decimals, fixed supply, immutable, as the reference token (CQ-2) | ACT-7 |
+| **Repository** | Calea's recommendation accepted; the whitelist registry is the first delivery (CQ-14) | DEL-9 |
+| **Audit** | The whitelist registry is never audited, at MINT's choice (CQ-1, CQ-18) | DEL-8, DEL-12 |
 
-Settled earlier and not reopened: **CQ-5** the weights 1.00 / 1.10 / 1.25 / 1.45 / 1.70 / 2.00;
-**CQ-6** no burn, supply 4,444 forever; **CQ-7** royalties enforced from deployment; **CQ-10** the
-30-day claim window; **CQ-11** nothing leaves a vault while it is committed; **CQ-16** no freeze
-and no clawback. **CQ-3** is closed: `Activation` burns $MNTD itself (ACT-7).
+Settled on 21 September and not reopened:
+- **D1:** $MNTD is native to Robinhood Chain.
+- **D2:** the burn thresholds are cumulative.
+- **D6:** MINT funds the VRF subscription (assumed; see O5).
+- **D8:** the existing-contract review is unscheduled.
+- **D9:** MINT builds the play page in TypeScript on getminted.io, against Calea's client library.
+
+Settled earlier:
+- **CQ-5:** the weights.
+- **CQ-6:** no burn.
+- **CQ-7:** royalties enforced.
+- **CQ-16:** no freeze and no clawback.
+
+Closed as superseded:
+- **CQ-3:** `credit`.
+- **CQ-10:** the vault claim window, now part of CQ-22.
+- **CQ-11:** vault withdrawals; custody is MINT's wallet.
 
 ### Open after the call
 
-**O1 — Prize count, excluded ids and prize chains (CQ-20).** How many prizes there are and what
-each one is; which token ids are out of play, as ranges; and the closed list of chains that hold
-prizes, since each needs its own vault deployed and funded. The prize count and the excluded set
-together are the odds, and both freeze when the game opens. Nothing in tranche 2 can be deployed
-without them.
+**O1 — Which whitelist registry (CQ-18).** MINT asked for a list its admin imports from a CSV.
+Calea's counter-offer is vouchers as built (WL-3), relayed vouchers, or vouchers plus an owner
+allocation. Both registries are built, so either can be delivered on 29 September. **Default:**
+`WhitelistImport` (WL-7), as MINT asked. For WL-3, name the eligibility signer.
 
-**O2 — Confirm the mystery box as specified (CQ-9).** MINT set the shape; §6 settles the four
-things the shape left open, and Calea asks MINT to confirm them rather than assume them. An open
-is decided by **its own Chainlink word**, not a shared or pre-committed seed, which is the only
-arrangement in which an instant outcome is unpredictable to everyone including MINT — at the cost
-of one VRF request per open. A win is drawn **from a fixed pool without replacement**, so exactly
-the prize count is awarded once every playable id is played and every holder faces the same odds
-going in. There is **no cap on how many prizes one wallet may win**. Prizes never won return to
-MINT when the game closes.
+**O2 — Whitelist window and dates (CQ-1).** Both registries take their close at deployment:
+- `openAt` and `closeAt` for WL-3, or `closeAt` for WL-7;
+- the whitelist stage's start, at least 48 hours after the close;
+- whether 46630 goes first.
 
-**O3 — VRF network and the subscription wallet (CQ-17).** **Calea recommends Base**: MINT
-already uses it, a request costs cents where Ethereum costs dollars, and two-second blocks keep
-the wait a holder sees down to seconds. The subscription must carry one request per open for the
-whole playable collection, so it is funded for that and watched with a balance alarm. Name the
-wallet that will hold it.
+Also the first royalty closing block and the 19 November handover.
 
-**O4 — Addresses (CQ-12).** Admin, worker and eligibility signer before anything reaches
-mainnet; the royalty receiver before the first sale (CQ-15). Supplied as constructor arguments
-wherever a contract needs one at birth, as MINT asked. **Recommended:** a Safe for the admin if
-its interface supports Robinhood Chain, otherwise one EOA per chain held by Iñigo; EOAs for
-worker and signer; a royalty receiver that is the pot and not the admin.
+**O3 — The excluded ids (CQ-20).** The 222 team ids as ranges, and whether ApeChain holds prizes.
+The first cycle cannot be scheduled without the ids.
 
-**O5 — The $MNTD interface (CQ-2).** Not a decision but a dependency:
-- Does the deployed token expose `burnFrom(address, uint256)`?
-- How many `decimals` does it have?
-- Is its address final?
-- Can a copy be on testnet 46630 for the burn rehearsal?
-- Which errors does `burnFrom` revert with when the allowance or the balance is short? The client
-  library shows each of them as its own message, and recognises OpenZeppelin's.
+**O4 — How a prize is delivered (CQ-22).** Who sends a payout from the prize wallet: MINT by hand,
+or automation holding the wallet's key. And whether MINT pushes each win or the winner requests it
+within 30 days. **Recommended:** MINT pushes each win to the opener, and the worker records it.
 
-`Activation` fixes the token's address and reads its `decimals` in its constructor, so all of it
-is needed before `Activation` is deployed.
+**O5 — The VRF subscription's holder (CQ-17).** Assumed MINT. If Calea holds and funds it and
+invoices MINT, it becomes a priced item and a role Calea keeps (DEL-10, OPS-5).
 
-**O6 — Calendar (CQ-1).** Left to be decided at the call. The three anchors stand — TGE
-20 October, mint 29 October, burns and level-up from 29 October — and every other row of §8
-carries its basis and is not a commitment until MINT confirms it. One consequence to weigh: the
-game runs continuously and each win carries its own 30-day claim window, so awards and claims
-outlive the 19 November handover and the end of technical support.
+**O6 — Who operates the worker (CQ-23).** Assumed Calea, as a service priced in Rayco's agreement
+and replaceable by MINT's admin at any time. The worker's address follows from this.
 
-**O7 — Repository and CI (CQ-14).** Not reached at the call, and no longer settled by CQ-19.
-The client library is built as `packages/contracts-client` in Calea's contracts repository for
-now. It is a standalone package with its own CI job, and it moves into MINT's repository
-unchanged. **Recommended:** `packages/contracts` as `@mint/contracts` beside
-`packages/contracts-client`, Foundry dependencies as git submodules that CI checks out, and Calea
-owning the CI configuration. Which repository holds them needs naming, against the getminted.io
-split D9 made.
+**O7 — The admin for every contract (CQ-12).** Assumed to be `0x1530…6141`, an externally owned
+account, for every contract on every chain. Confirm it or name the exceptions. With one EOA, the
+risk that the collection's owner can add a minter rests on that key alone (§2).
 
-**O8 — One question the whitelist answer leaves (CQ-18).** Confirm that the OpenSea CSV is
-exported *from* the registry rather than written *into* it, and say whether MINT ever needs to
-place an address on the whitelist without a wager voucher — for a partner or a correction. If it
-does, that is an owner function with its own event and it should be named now, because it changes
-what the registry guarantees.
+**O8 — The testnet $MNTD (CQ-2).** Its address on 46630 when MINT deploys it, and the mainnet
+address at TGE, each carrying the reference token's bytecode. `Activation` fixes the address in
+its constructor.
 
-**O9 — Status links across an account's wallets (CQ-21).** Each wallet nominates one bear to
-carry its Status boost (ACT-9), and a getminted.io account may use several wallets, so one
-account can hold several links. Say how MINT's Status counts them. **Recommended:** one boost per
-account, from the highest-level bear among its wallets' links. No answer changes the contract or
-the client library, which reads each wallet's link on its own.
+**O9 — The repository (CQ-14).** Its URL and Calea's access, before the delivery of
+29 September.
+
+**O10 — Existing-contract review (CQ-13).** Which contract, its source and its size, when MINT
+has one to name.
 
 ## 11. Sign-off
 
@@ -1074,6 +1138,6 @@ the client library, which reads each wallet's link on its own.
 | Calea | Bojan Jovin | | |
 | Rayco | | | |
 
-Version 2.3, 25 September 2026. The version signed carries the open items of §10 resolved;
+Version 2.4, 28 September 2026. The version signed carries the open items of §10 resolved;
 amendments are issued as new versions of this document; requirement identifiers are never
 reused.

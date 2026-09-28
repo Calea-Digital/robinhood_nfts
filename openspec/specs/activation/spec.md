@@ -71,15 +71,15 @@ token's `burnFrom` is refused.
 
 ### Requirement: ACT-5 — Reset
 **Kind:** work-item
-Cumulative and level read as zero, the weight reads the level-0 weight (ACT-3) and the link
-reads `(0, 0)` whenever the counter value they were recorded at differs from the current
-`transferNonce`. The reset is a consequence of the transfer (COL-3), not an action: it cannot
-be skipped and cannot block a transfer. Return transfers reset like any other.
+Cumulative and level read as zero, and the weight reads the level-0 weight (ACT-3), whenever
+the counter value they were recorded at differs from the current `transferNonce`. The reset is
+a consequence of the transfer (COL-3), not an action: it cannot be skipped and cannot block a
+transfer. Return transfers reset like any other.
 
 #### Scenario: A transfer resets everything
-- **GIVEN** a bear at level 2 with a Status link
+- **GIVEN** a bear at level 2
 - **WHEN** it is transferred to another wallet
-- **THEN** `levelOf` and `cumulativeOf` read zero, `weightOf` reads `weightFor(0)` and `linkOf` reads `(0, 0)`, with no call into `Activation`
+- **THEN** `levelOf` and `cumulativeOf` read zero and `weightOf` reads `weightFor(0)`, with no call into `Activation`
 
 ### Requirement: ACT-6 — Lifetime
 **Kind:** work-item
@@ -123,21 +123,6 @@ which returns the exact remainder or zero.
 - **WHEN** the holder calls `burn(id, x + 1)`
 - **THEN** it reverts with `Overshoot` and no $MNTD is burned
 
-### Requirement: ACT-9 — Status link
-**Kind:** work-item
-`linkBear(tokenId)`, owner of the bear only, one nomination per wallet,
-recorded with the current counter value; `unlinkBear()` clears it and is safe to call when
-nothing is linked; `linkOf(wallet) → (tokenId, level)` returns `(0, 0)` when nothing is linked
-or the bear has since moved. A wallet aggregates royalty weight across all its bears (ACT-10)
-but carries exactly one Status boost; the boost's value, and how the links of an account's
-several wallets combine, are MINT's, off-chain (`→ CQ-21`).
-
-#### Scenario: One nomination per wallet
-- **GIVEN** a wallet owning a bear at level 2
-- **WHEN** it calls `linkBear(tokenId)`
-- **THEN** `linkOf(wallet)` reads `(tokenId, 2)`
-- **AND** after the bear moves it reads `(0, 0)`
-
 ### Requirement: ACT-10 — Snapshot view
 **Kind:** work-item
 `snapshot(uint256[] ids) → (address owner, uint8 level, uint16
@@ -161,27 +146,28 @@ through its wallet (§2).
 - **WHEN** `snapshot([1, 2, 4445])` is read
 - **THEN** it returns owner, level and weight for ids 1 and 2 and zeroes for the id that does not exist
 
-### Requirement: ACT-11 — Pause
+### Requirement: ACT-15 — Pause
 **Kind:** work-item
-The owner may pause. While paused, `burn` and `linkBear` revert; reads,
-`unlinkBear` and every transfer are unaffected. No $MNTD is burned while paused; this is how
-burns stay closed between deployment and the switch-on date (§8). The pause admits no exemption —
-no address may burn while it is on — so the mainnet rehearsal against real $MNTD runs in a window
-the owner opens and closes again (§8). `renounceOwnership` reverts for every caller, so the pause
-can always be set and lifted.
+The owner may pause. While paused, `burn` reverts; reads and every transfer are unaffected. No
+$MNTD is burned while paused, which is how burns stay closed between deployment and the
+switch-on date (§8). The pause admits no exemption: no address may burn while it is on. So the
+mainnet rehearsal against real $MNTD runs in a window the owner opens and closes again (§8).
+`renounceOwnership` reverts for every caller, so the pause can always be set and lifted.
 
-#### Scenario: Pause closes burns and links only
+#### Scenario: Pause closes burns only
 - **GIVEN** the owner has paused
-- **WHEN** a holder calls `burn` or `linkBear`
-- **THEN** both revert with `ContractPaused`
-- **AND** reads, `unlinkBear` and every transfer still succeed
+- **WHEN** a holder calls `burn`
+- **THEN** it reverts with `ContractPaused`
+- **AND** reads and every transfer still succeed
 
 ### Requirement: ACT-12 — Roles
 **Kind:** work-item
-Owner (MINT admin): `setPaused` and ownership transfer; `renounceOwnership`
-reverts. A bear's owner: `burn` for that bear, `linkBear`, `unlinkBear`. Nothing else is
-administrable: the token, thresholds, weights and records are immutable, and no address can record
-a level without burning. There is no freeze or clawback path into a bear anywhere (MINT, CQ-16).
+Owner (MINT's admin): `setPaused` and ownership transfer; `renounceOwnership` reverts. A bear's
+owner: `burn` for that bear. Nothing else is administrable: the token, thresholds, weights and
+records are immutable, and no address can record a level without burning. There is no freeze or
+clawback path into a bear anywhere (MINT, CQ-16). Which bear carries an account's Status boost
+is MINT's, recorded against the holder's Privy account off-chain (MINT, CQ-21); `Activation`
+records levels only.
 
 #### Scenario: Only the owner administers
 - **WHEN** a non-owner calls `setPaused`, or anyone calls `renounceOwnership`
@@ -190,20 +176,24 @@ a level without burning. There is no freeze or clawback path into a bear anywher
 
 ### Requirement: ACT-13 — Events
 **Kind:** work-item
-`BearActivated(tokenId, burner, previousLevel, newLevel, amount,
-cumulative)` (ACT-4), `BearLinked(wallet, tokenId)`, `BearUnlinked(wallet, tokenId)`,
+`BearActivated(tokenId, burner, previousLevel, newLevel, amount, cumulative)` (ACT-4) and
 `PausedSet(paused)`.
 
 #### Scenario: Events carry the documented arguments
-- **WHEN** a burn, a link, an unlink and a pause happen
-- **THEN** `BearActivated`, `BearLinked`, `BearUnlinked` and `PausedSet` are emitted with the documented arguments
+- **WHEN** a burn and a pause happen
+- **THEN** `BearActivated` and `PausedSet` are emitted with the documented arguments
 
 ### Requirement: ACT-14 — Reads
 **Kind:** work-item
-`levelOf`, `cumulativeOf`, `lifetimeBurned`, `weightOf`, `weightFor`,
-`thresholdFor`, `costToReach`, `linkOf`, `snapshot`, `paused`, `BEARS`, `MNTD`, `DECIMALS`.
+`levelOf`, `cumulativeOf`, `lifetimeBurned`, `weightOf`, `weightFor`, `thresholdFor`,
+`costToReach`, `snapshot`, `paused`, `BEARS`, `MNTD`, `DECIMALS`.
 
 #### Scenario: Every read answers
 - **WHEN** every listed read is called for a bear that has been burned for
 - **THEN** each returns without reverting
 - **AND** `BEARS` and `MNTD` return the deployed addresses and `DECIMALS` the token's decimals
+
+## Retired Requirements
+
+- ACT-9 (the on-chain Status link) → ACT-12
+- ACT-11 (pause over burns and links) → ACT-15
