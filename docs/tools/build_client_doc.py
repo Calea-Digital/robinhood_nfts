@@ -576,7 +576,9 @@ def merge(spec_md: str, by_section: dict, register: dict | None, closed: dict | 
             if not parsed:
                 parts.append(blocks_xml([{"kind": "heading", "level": 3, "text": "Open for the call"}]))
                 parts.append(data_table_xml(header, open_rows))
-            parts.append(blocks_xml([{"kind": "heading", "level": 3, "text": "Settled"}]))
+            # Tied to its table even when the table is long: the table fills most of a page, so an
+            # untied heading is stranded alone on the page before it.
+            parts.append(para_xml(runs_xml("Settled"), style="Heading3", after=120, before=240, keep_next=True))
             parts.append(data_table_xml(header, settled_rows))
     if closed:
         parts.append(blocks_xml([
