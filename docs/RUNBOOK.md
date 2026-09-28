@@ -42,86 +42,37 @@ caller: the collection always has an owner, because every setting in this runboo
 call. Ownership moves only by `transferOwnership` (the offer) and `acceptOwnership` (from the new
 owner); `cancelOwnershipTransfer` withdraws an offer.
 
-## Whitelist export (WL-4)
+## Whitelist into Studio (WL-4, WL-5)
 
-**After the campaign closes, and after the last `WindowSet`.** The registry is the source; the
-Studio allowlist is its copy. Export the claimant rows, load the CSV into Studio's whitelist
-stage, then check the root Studio set against the registry:
+**The whitelist is off-chain** (WL-8). MINT's backend records the claims, and no whitelist
+contract is deployed. What reaches the chain is the allowlist root Studio sets for the whitelist
+stage, so the steps below make sure that root is exactly MINT's final list.
 
-```shell
-forge script script/WhitelistExport.s.sol --rpc-url $RPC --sig "export(address,string)" $REGISTRY exports/whitelist.csv
-forge script script/WhitelistExport.s.sol --rpc-url $RPC \
-  --sig "compare(address,address,address,(uint256,uint256,uint256,uint256,uint256,uint256,uint256,bool))" \
-  $REGISTRY $SEADROP $BEARS "(0,0,$START,$END,1,4444,$FEE_BPS,$RESTRICT)"
-```
+**1. Freeze the list at least 48 hours before the whitelist stage opens.** With the whitelist
+stage opening with the mint on 29 October, that means by 27 October, at the same time of day.
+After the freeze, MINT's backend takes no more claims.
 
-**The whitelist stage comes first (WL-4).** Each row's allocations become the allowlist entry's
-per-wallet limit, and SeaDrop counts every bear minted to the wallet in any stage against it: a
-claimant who minted earlier would lose whitelist mints. So in Studio the whitelist stage is the
-first stage in which any wallet but the team's can mint, and no other stage overlaps it; a later
-stage's per-wallet limit counts the whitelist mints too. If Studio's allowlist root also carries
-leaves that are not the registry's (team, partners), `compare` reports the difference — keep the
-whitelist stage's allowlist to the registry's rows.
+**2. Export the final CSV** from MINT's backend. The format is `wallet,allocations`, with one row
+per wallet and its total, merged across every source: wagering, collaborations and giveaways. A
+wallet that appears twice in Studio's allowlist can mint only under one of its rows.
 
-**The close stays at least 48 hours before the whitelist stage (WL-5).** The deploy checks it
-once; any later `setWindow` must keep it too, so the export, the Studio import and the published
-proofs have their time.
+**3. Load it into Studio's whitelist stage.** Each row's allocations become that wallet's mint
+limit in the stage.
 
-`compare` fails unless the root is the registry's. The owner can move the window with
-`setWindow`, so a `WindowSet` after the export means claims the allowlist does not carry: export
-and compare again. `setSigner` rotates the eligibility signer; `renounceOwnership` reverts, so
-the owner can always do both.
+**4. Check the root against the CSV.** Calea runs `script/WhitelistExport.s.sol`'s `compare` over
+the CSV file and the stage's parameters. It fails unless the root on SeaDrop is the root of the
+CSV's rows, and names the difference. The CSV mode is `tasks.md` 2.6 and is not built yet; until
+then, `compare` reads only a deployed registry. If the check fails, fix the CSV or the Studio
+upload and run it again, before the stage opens.
 
-## Whitelist import (WL-7)
+**5. Publish the proofs.** The getminted.io mint page builds each wallet's Merkle proof from the
+same CSV with the client library (`buildAllowList`).
 
-**When MINT deploys `WhitelistImport` instead of `WhitelistClaim`.** MINT deploys one of the two
-(CQ-18). With `WhitelistImport` there are no vouchers and no claims: MINT's admin writes the list
-from a CSV, and the list freezes for good once `closeAt` has passed.
-
-```shell
-forge script script/Deploy.s.sol --rpc-url $RPC --broadcast --verify --verifier sourcify --sig "runWhitelistImport(string)" script/config/4663.json
-```
-
-The script reads `admin`, `closeAt` and `whitelistStageAt` from the config. It refuses a close less
-than 48 hours before the whitelist stage.
-
-**Import from the CSV, in batches.** The file is `wallet,allocations`, one row per wallet: 1 or 2
-allocations each, at most 1,000 in all. MINT's admin page does the import with the client library
-(`whitelistImport.plan`, then `whitelistImport.execute`, from the admin's wallet). The library
-checks the file, compares it with the chain, and sends only the difference, in batches of 200.
-If a batch fails, the batches before it stay mined, and planning the same file again sends the
-rest. Without the page, the same call from the admin:
-
-```shell
-cast send $REGISTRY "addAllocations(address[],uint8[])" "[$W1,$W2]" "[2,1]" --rpc-url $RPC
-```
-
-One bad row reverts the whole batch: a zero wallet, a count of 0, a wallet above 2, or the list
-above 1,000.
-
-**Check the reads after every import.**
-
-```shell
-cast call $REGISTRY "spotsLeft()(uint256)" --rpc-url $RPC        # 1,000 − the file's total
-cast call $REGISTRY "claimsOf(address)(uint8)" $W1 --rpc-url $RPC # the row's count
-cast call $REGISTRY "frozen()(bool)" --rpc-url $RPC               # false until closeAt has passed
-```
-
-**Correct before the close.**
-- `removeAllocations(address[])` drops a wallet.
-- Adding again gives it more.
-- `setCloseAt(uint40)` moves the close. A later value extends the import, and the current time
-  freezes it from the next second.
-
-Uploading a corrected file on the admin page plans exactly these calls. Any `setCloseAt` must keep
-the close at least 48 hours before the whitelist stage.
-
-**After `closeAt` the list is final.** `addAllocations`, `removeAllocations` and `setCloseAt` revert
-`ListFrozen`. Nothing can change the list any more, not even the owner. Then run the export and
-`compare` exactly as in "Whitelist export (WL-4)", with `$REGISTRY` the `WhitelistImport`.
-`WhitelistExport.s.sol` refuses with `CampaignStillOpen` until the list is frozen, even when all
-1,000 allocations are written, because the list can still be corrected until the close.
-`renounceOwnership` reverts.
+**The whitelist stage comes first.** SeaDrop counts every bear minted to a wallet, in any stage,
+against its whitelist limit. A holder who mints earlier therefore loses whitelist mints. So in
+Studio the whitelist stage is the first stage in which any wallet can mint, apart from the team
+stage, and no other stage overlaps it. A later stage's per-wallet limit counts the whitelist
+mints too. The team's 222 bears are minted from the owner wallet, which is not on the whitelist.
 
 ## Transfer enforcement (OPS-6, COL-7)
 

@@ -28,13 +28,12 @@ Answers from each call are marked as such below.
 <!-- openspec:begin register -->
 | ID | Section | Question | Resolution / default | Needed by | Status |
 |---|---|---|---|---|---|
-| CQ-1 | CAL | Dates after the 29 Oct mint | Anchors stand; the whitelist registry is due 29 September; other §8 rows unconfirmed | 2026-10-29 | Follow-up |
+| CQ-1 | CAL | Dates after the 29 Oct mint | Anchors stand; whitelist frozen by 27 October; other §8 rows unconfirmed | 2026-10-29 | Follow-up |
 | CQ-2 | ACT | $MNTD burn route | Native; OpenZeppelin `ERC20Burnable`, 18 decimals, immutable; addresses to follow | 2026-10-20 | Follow-up |
-| CQ-12 | OPS | Addresses; Safe on 4663 | Admin `0x1530…6141` (EOA) for every contract, to confirm; signer and worker to follow | 2026-10-02 | Follow-up |
+| CQ-12 | OPS | Addresses; Safe on 4663 | Admin `0x1530…6141` (EOA) for every contract, to confirm; worker to follow | 2026-10-02 | Follow-up |
 | CQ-13 | DEL | Existing-contract review target | Not available; deferred until MINT names one | whenever MINT names a contract | Open |
-| CQ-14 | DEL | Monorepo and CI | Recommendation accepted; the whitelist registry first, 29 September; repository to be named | before the tranche 1 handover | Follow-up |
+| CQ-14 | DEL | Monorepo and CI | Recommendation accepted; repository to be named | before the tranche 1 handover | Follow-up |
 | CQ-17 | RAF | VRF subscription and network | Arbitrum One; MINT owns the subscription (assumed) | 2026-10-12 | Follow-up |
-| CQ-18 | WL | Whitelist claim recording | Vouchers (WL-3) or owner import (WL-7); MINT to pick | 2026-09-29 | Follow-up |
 | CQ-20 | RAF | Prize count, odds and excluded ids | the owner sets each cycle's prize count and prize list from MINT's admin page; **222** team ids are excluded, fixed for good; prizes are held on Robinhood Chain, Ethereum and possibly ApeChain in MINT's prize wallet. | 2026-10-05 | Follow-up |
 | CQ-22 | RAF | Prize delivery from the prize wallet | Open; Calea recommends that MINT pushes each win to the opener | 2026-10-12 | Open |
 | CQ-23 | OPS | Worker operator after handover | Open; assumed that Calea operates the worker | 2026-10-12 | Open |
@@ -51,6 +50,7 @@ Answers from each call are marked as such below.
 | CQ-16 | OPS | Compliance (freeze / clawback) | None | — | Answered |
 | CQ-19 | DEL | Frontend and integration | MINT builds the play page on getminted.io in TypeScript; Calea ships a tested typed client library | before the tranche 1 handover | Answered |
 | CQ-21 | ACT | Status links per account | Out of scope — Status links are off-chain; ACT-9 removed | — | Closed |
+| CQ-18 | WL | Whitelist claim recording | Off-chain register in MINT's backend (B); Studio's root checked against the CSV | — | Answered |
 <!-- openspec:end -->
 
 ## Questions
@@ -61,7 +61,7 @@ Answers from each call are marked as such below.
 - **Section:** CAL
 - **Needed by:** 2026-10-29 — before the mint
 - **Status:** Follow-up (call, 28 September 2026)
-- **Resolution:** the three anchors stand — TGE 20 October, mint 29 October, burns and level-up from 29 October; the whitelist registry is delivered and deployed on 29 September. Every other row of §8 is unconfirmed.
+- **Resolution:** the three anchors stand — TGE 20 October, mint 29 October, burns and level-up from 29 October. The whitelist is frozen by 27 October, 48 hours before the whitelist stage. Every other row of §8 is unconfirmed.
 
 **Question.** The SoW schedule chains off a 15 October mint. With the mint at 29 October, which
 dates hold and which move?
@@ -80,13 +80,11 @@ non-anchor rows stay marked with their basis and none of them is a commitment.
 they need the WhitelistClaim contract ASAP. Tomorrow if possible." The registry is delivered to
 MINT's repository and is expected to be deployed the same day, outside the audit (DEL-8, DEL-9).
 
-**Remaining.** The whitelist campaign's `openAt` and `closeAt` (or, for WL-7, the import's
-`closeAt`) and the whitelist stage's start, which the deploy script checks is at least 48 hours
-after the close; whether the registry goes to testnet 46630 before mainnet; the first mystery-box
-cycle's window, which the owner now sets (RAF-32); the first royalty closing block; the
-19 November handover. Burns open nine days after TGE, so the burn is rehearsed against real
-$MNTD on Robinhood Chain between 20 and 28 October, and the testnet $MNTD makes that rehearsal
-independent of TGE (CQ-2).
+**Remaining.** The whitelist campaign's window in MINT's backend. The whitelist stage's start,
+which fixes the freeze 48 hours earlier. The first mystery-box cycle's window, which the owner
+sets (RAF-32). The first royalty closing block. The 19 November handover. Burns open nine days
+after TGE, so the burn is rehearsed against real $MNTD on Robinhood Chain between 20 and
+28 October, and the testnet $MNTD makes that rehearsal independent of TGE (CQ-2).
 
 ### CQ-2 — $MNTD burn route
 - **Section:** ACT
@@ -154,7 +152,7 @@ address at TGE, each confirmed to carry this bytecode.
 - **Section:** OPS
 - **Needed by:** 2026-10-02 — before anything is deployed to mainnet
 - **Status:** Follow-up (call, 28 September 2026; admin supplied, signer and worker to follow)
-- **Resolution:** admin `0x153052B43c8fD4ec01f14D1Edd8660778daa6141`, an EOA, assumed to own every contract on every chain; the signer (WL-3 only) and the worker to follow.
+- **Resolution:** admin `0x153052B43c8fD4ec01f14D1Edd8660778daa6141`, an EOA, assumed to own every contract on every chain; the worker to follow. No eligibility signer is needed (CQ-18).
 
 **Question.** Four addresses, as OPS-1 records them: the **admin** (owner of every contract on
 every chain), the **worker** key (raffle lifecycle, seed relay, winners root), the **eligibility
@@ -186,9 +184,8 @@ transactions on 4663 and Ethereum; no Safe is involved. The accepted risk that t
 owner can add a minter (§2, HANDOVER) was mitigated by a Safe admin; with one EOA it rests on the
 key alone, and the runbook's reset of the minter list at handover is the remaining check.
 
-**Remaining.** Confirm `0x1530…6141` for every contract on every chain, or name the exceptions;
-the eligibility signer's address if WL-3 is deployed (CQ-18); the worker's address, which
-follows CQ-23.
+**Remaining.** Confirm `0x1530…6141` for every contract on every chain, or name the exceptions.
+The worker's address follows CQ-23. The whitelist is off-chain (CQ-18), so there is no signer.
 
 ### CQ-13 — Existing smart-contract review: which contract, source, line limit
 - **Section:** DEL
@@ -215,7 +212,7 @@ size in lines, so the line limit in Rayco's agreement can be set. Findings only,
 - **Section:** DEL
 - **Needed by:** before the tranche 1 handover
 - **Status:** Follow-up (call, 28 September 2026; repository to be named)
-- **Resolution:** Calea's recommendation accepted: `packages/contracts` as `@mint/contracts` beside `packages/contracts-client`, Foundry dependencies as git submodules, Calea owns CI. The first delivery, on 29 September, is the whitelist registry and its client module only.
+- **Resolution:** Calea's recommendation accepted: `packages/contracts` as `@mint/contracts` beside `packages/contracts-client`, Foundry dependencies as git submodules, Calea owns CI.
 
 **Question.** Confirm the package location; whether `lib/` dependencies are git submodules or
 vendored copies; and who owns the CI configuration.
@@ -232,7 +229,9 @@ and its client module.
 
 **Recorded as (28 September).** DEL-9.
 
-**Remaining.** The repository's URL and Calea's access to it.
+**Remaining.** The repository's URL and Calea's access to it. With the whitelist off-chain
+(CQ-18) nothing is due on 29 September. The client library's mint and allowlist-proof calls are
+needed before the whitelist stage.
 
 ### CQ-17 — VRF subscription
 - **Section:** RAF
@@ -294,89 +293,6 @@ change or reorder one.
 keeps a role after handover (OPS-5) and it becomes a priced item (DEL-10). A request's cost on
 Arbitrum is small — the network fee plus Chainlink's premium per word — and the subscription is
 funded for a cycle's worth of opens, at most 4,222.
-
-### CQ-18 — How whitelist claims are recorded
-- **Section:** WL
-- **Needed by:** 2026-09-29 — the registry is delivered and deployed that day
-- **Status:** Follow-up (call, 28 September 2026; MINT asked for an owner-imported list, Calea's counter-offer is pending)
-- **Resolution:** an on-chain registry on Robinhood Chain, in one of two variants MINT picks: `WhitelistClaim`, holders claim with signed vouchers (WL-3), or `WhitelistImport`, the owner imports the list from a CSV and it freezes at `closeAt` (WL-7). Both are built; the CSV loaded into OpenSea is exported from the one deployed.
-
-**Question.** MINT provides the Privy mirror login and an API for the signed-in account's
-wagering; Calea records the whitelist claims of those who meet the requirement. Where is the
-record kept, and who sends the claim?
-
-**Options.**
-- **(A) On-chain registry, holder pays — recommended.** MINT's backend checks the wager API and
-  signs a short-lived voucher; the holder submits it from the chosen NFT wallet. The contract
-  holds the 1,000-spot counter, refuses a claim once sold out, allows two allocations per wallet
-  and two per getminted.io account, and records every claim in order. The live counter is read
-  the chain; "sold out while mid-claim" is a failed transaction, nothing half-done; the whole
-  campaign is auditable by anyone afterwards. Holders need a little ETH on Robinhood Chain, which
-  they need for the mint anyway.
-- **(A′) On-chain registry, MINT pays.** The same contract; MINT's worker submits each voucher
-  and pays the gas, so holders need nothing on Robinhood Chain before the mint. Adds a small
-  relay service on MINT's side.
-- **(B) Off-chain register.** MINT's database with an atomic counter; Calea supplies the claim
-- **Default if deferred:** `WhitelistImport` (WL-7), as MINT asked.
-  API contract and the export to the Studio allowlist and deploys nothing. Fastest to build and
-  free of gas; claim order and sell-out rest on MINT's server, nothing is publicly checkable, and
-  the SeaDrop allowlist root is the only trace on-chain.
-
-**Answer (call, 21 September 2026).** Option (A), with the export named explicitly:
-"CodeCraft will provide a CSV file of wallet addresses for OpenSea, which can be populated
-directly from the on-chain registry export to maintain security."
-
-**Reading of the export direction.** Calea reads this as the registry being the source and the
-CSV its output — the direction WL-4 already specifies. It is the only reading in which "to
-maintain security" means anything: a CSV derived from a public registry is one anybody can
-recompute and check against the chain, whereas a registry filled from a CSV would merely mirror
-a private list and would prove nothing. Taken the other way it would also need an owner function
-that writes claims in bulk — a key able to create whitelist spots out of nothing, which is
-exactly the power §2's trust model says nobody has.
-
-**Recorded as (call).** WL-3 and WL-4 stand: claims are made by holders against signed vouchers,
-and the Studio allowlist is exported from `claimants(offset, limit)`. §10 D4 is closed.
-
-**Remaining.** Confirm the export direction, and say whether MINT ever needs to place an address
-on the whitelist without a wager voucher — for a partner or a correction. If it does, that is an
-owner function with its own event, and it should be named now rather than added later, because
-it changes what the registry guarantees.
-
-**Also to confirm.** "1,000 spots" means 1,000 allocations, so a holder at $100 takes two of
-them; the campaign's open and close dates (proposed 6 and 26 October; it must close at least
-48 hours before the whitelist mint stage opens); the account that holds the eligibility signer
-key; the other mint stages (team and treasury, public) and their order, so the whitelist stage's
-place in Studio is known — it must be the first stage in which any wallet but the team's can
-mint, with no stage overlapping it, because the allowlist's per-wallet limit counts a wallet's
-mints in every stage (WL-4); and that Season 1 wagering and the $50 back-credit are MINT's data,
-with Calea recording only the result.
-
-**Answer (call, 28 September 2026).** "Whitelist will entirely be provided by csv and will be
-entirely inputed by contract owner in bulk, as per their wish." Calea did not accept this at the
-call because it is wholly centralised, and put a counter-offer to MINT, whose answer is awaited.
-
-**The counter-offer.**
-- **(A) Vouchers, as built (WL-3).** The chain enforces the 1,000 cap, two per wallet, two per
-  account, the window and the order of claims. Nobody, the owner included, can add, remove or
-  reassign a claim outside a signed voucher. The signer decides who is eligible.
-- **(A′) Relayed vouchers.** The same, with MINT's backend submitting each voucher and paying the
-  gas, so holders do nothing on-chain before the mint.
-- **(A+) Vouchers plus an owner allocation**, within the same caps and with its own event, for
-  partners and corrections.
-- **(B) No registry.** MINT's CSV goes straight to Studio.
-
-A registry filled by the owner from a CSV proves no more than Studio's allowlist root does, so if
-MINT wants the whole list to be its own, the honest options are (B) or the frozen import below.
-
-**Recorded as (28 September).** WL-7: `WhitelistImport`, which MINT's admin fills from the CSV in
-batches within the 1,000 total and two per wallet. The admin can correct it until `closeAt`, and
-after that it is frozen for good and `claimsOf` is the eligibility read. It is built beside
-`WhitelistClaim`, and MINT deploys one of the two. Neither is audited (DEL-8).
-
-**Remaining.** Which variant MINT deploys on 29 September. For WL-3, the signer's address. For
-either, the window (CQ-1) and the whitelist stage's start. "1,000 spots" is 1,000 allocations.
-The whitelist stage is the first stage in which any wallet but the team's can mint, with no other
-stage overlapping it (WL-4).
 
 ### CQ-20 — Prize count, odds and the token ids out of play
 - **Section:** RAF
@@ -833,6 +749,90 @@ removed.
 **Recorded as (28 September).** ACT-9 is retired. `linkBear`, `unlinkBear`, `linkOf`,
 `BearLinked` and `BearUnlinked` leave `Activation` and the client library. MINT's Status reads
 `levelOf` for the bear the account names.
+
+### CQ-18 — How whitelist claims are recorded
+- **Section:** WL
+- **Needed by:** —
+- **Status:** Answered (MINT's reply, 28 September 2026)
+- **Resolution:** option **(B)** — an off-chain register in MINT's backend. No whitelist contract is deployed; the final CSV is loaded into Studio and Calea checks Studio's root against it.
+
+**Question.** MINT provides the Privy mirror login and an API for the signed-in account's
+wagering; Calea records the whitelist claims of those who meet the requirement. Where is the
+record kept, and who sends the claim?
+
+**Options.**
+- **(A) On-chain registry, holder pays — recommended.** MINT's backend checks the wager API and
+  signs a short-lived voucher; the holder submits it from the chosen NFT wallet. The contract
+  holds the 1,000-spot counter, refuses a claim once sold out, allows two allocations per wallet
+  and two per getminted.io account, and records every claim in order. The live counter is read
+  the chain; "sold out while mid-claim" is a failed transaction, nothing half-done; the whole
+  campaign is auditable by anyone afterwards. Holders need a little ETH on Robinhood Chain, which
+  they need for the mint anyway.
+- **(A′) On-chain registry, MINT pays.** The same contract; MINT's worker submits each voucher
+  and pays the gas, so holders need nothing on Robinhood Chain before the mint. Adds a small
+  relay service on MINT's side.
+- **(B) Off-chain register.** MINT's database with an atomic counter; Calea supplies the claim
+  API contract and the export to the Studio allowlist and deploys nothing. Fastest to build and
+  free of gas; claim order and sell-out rest on MINT's server, nothing is publicly checkable, and
+  the SeaDrop allowlist root is the only trace on-chain.
+
+**Answer (call, 21 September 2026).** Option (A), with the export named explicitly:
+"CodeCraft will provide a CSV file of wallet addresses for OpenSea, which can be populated
+directly from the on-chain registry export to maintain security."
+
+**Reading of the export direction.** Calea reads this as the registry being the source and the
+CSV its output — the direction WL-4 already specifies. It is the only reading in which "to
+maintain security" means anything: a CSV derived from a public registry is one anybody can
+recompute and check against the chain, whereas a registry filled from a CSV would merely mirror
+a private list and would prove nothing. Taken the other way it would also need an owner function
+that writes claims in bulk — a key able to create whitelist spots out of nothing, which is
+exactly the power §2's trust model says nobody has.
+
+**Recorded as (call).** WL-3 and WL-4 stand: claims are made by holders against signed vouchers,
+and the Studio allowlist is exported from `claimants(offset, limit)`. §10 D4 is closed.
+
+**Answer (call, 28 September 2026).** "Whitelist will entirely be provided by csv and will be
+entirely inputed by contract owner in bulk, as per their wish." Calea did not accept this at the
+call because it is wholly centralised, and put a counter-offer to MINT, whose answer is awaited.
+
+**The counter-offer.**
+- **(A) Vouchers, as built (WL-3).** The chain enforces the 1,000 cap, two per wallet, two per
+  account, the window and the order of claims. Nobody, the owner included, can add, remove or
+  reassign a claim outside a signed voucher. The signer decides who is eligible.
+- **(A′) Relayed vouchers.** The same, with MINT's backend submitting each voucher and paying the
+  gas, so holders do nothing on-chain before the mint.
+- **(A+) Vouchers plus an owner allocation**, within the same caps and with its own event, for
+  partners and corrections.
+- **(B) No registry.** MINT's CSV goes straight to Studio.
+
+A registry filled by the owner from a CSV proves no more than Studio's allowlist root does, so if
+MINT wants the whole list to be its own, the honest options are (B) or the frozen import below.
+
+**Recorded as (28 September).** WL-7: `WhitelistImport`, which MINT's admin fills from the CSV in
+batches within the 1,000 total and two per wallet. The admin can correct it until `closeAt`, and
+after that it is frozen for good and `claimsOf` is the eligibility read. It is built beside
+`WhitelistClaim`, and MINT deploys one of the two. Neither is audited (DEL-8).
+
+**Answer (MINT, 28 September 2026).** MINT proposed the simplest flow instead of either registry:
+the holder signs in through Privy or pastes a wallet, sees what has been wagered and what is left
+to unlock a spot, and claims; the claim is stored off-chain. "Most other WL things are being done
+through off chain wallet recording in a csv", and spots from collaborations and giveaways are
+kept in the same backend. "This way there is no security check to do for any contract or
+anything and we can get this pushed asap." MINT then accepted Calea's conditions:
+- a wallet signature, which costs no gas, for a pasted address;
+- one row per wallet with its total;
+- a counter that cannot hand out the last spot twice;
+- the list frozen at least 48 hours before the whitelist stage;
+- the whitelist stage first, with no stage overlapping it.
+
+The team bears are minted from the owner wallet and are not on the whitelist.
+
+**Recorded as (reply of 28 September).** WL-8, the off-chain register, and WL-1, WL-2, WL-4 and WL-5. WL-3, WL-6 and WL-7
+are retired. `WhitelistClaim` and `WhitelistImport` stay in Calea's repository, unused, as a
+fallback.
+
+**Also to confirm.** Whether spots from collaborations and giveaways count toward the 1,000, and
+whether they may take a wallet above two (WL-1).
 <!-- openspec:end -->
 
 ## Closed

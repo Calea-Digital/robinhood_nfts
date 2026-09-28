@@ -2,9 +2,9 @@
 # MintABear — Specification
 
 <!-- openspec:begin version -->
-**Version** 2.4 · **Date** 28 September 2026 · **Status** records the decisions of the
+**Version** 2.5 · **Date** 28 September 2026 · **Status** records the decisions of the
 MINT–Calea calls of 21 and 28 September 2026, the tranche-1 build and review of 22–25 September
-and the owner-imported whitelist variant of 28 September; sign-off follows the open items in §10
+and MINT's choice of an off-chain whitelist the same day; sign-off follows the open items in §10
 <!-- openspec:end -->
 
 Prepared by Calea for MINT. Sources: *MINTaBear development statement of work* (MINT, 14 September
@@ -26,21 +26,20 @@ confirmed; yellow callouts are decisions for the call.
 
 ## Where the work stands
 
-As of 28 September 2026. Tranche 1 is built and reviewed: the collection, the whitelist registry,
-the activation contract, and the TypeScript client library the play page is built on. MINT needs
-the whitelist registry on 29 September, outside the audit, so it comes in two variants, for
-MINT to pick one. Nothing is deployed yet. The mystery box is specified in its new shape, cycles
+As of 28 September 2026. Tranche 1 is built and reviewed: the collection, the activation
+contract, and the TypeScript client library the play page is built on. The whitelist is
+off-chain, in MINT's backend, and no contract is deployed for it. Calea checks the list MINT
+loads into Studio. Nothing is deployed yet. The mystery box is specified in its new shape, cycles
 the owner schedules, and is built once MINT supplies the excluded ids (CQ-20).
 
 | Item | Where it stands |
 |---|---|
 | `MintABear` (§3) | Built and reviewed. Deploys with the transfer validator set, `maxSupply` at 4,444, and ownership offered to MINT's admin in two steps |
-| `WhitelistClaim` (§4, WL-3) | Built and reviewed: holders claim with vouchers from MINT's signer. The claimant export to the Studio allowlist, and a check of Studio's root against the registry, are scripted. Outside the audit (DEL-8) |
-| `WhitelistImport` (§4, WL-7) | Built 28 September: MINT's admin imports the list from a CSV in batches, and it freezes at `closeAt`. The same export and check, and a client module for the admin page. Outside the audit |
+| Whitelist (§4) | Off-chain, in MINT's backend (WL-8). Calea checks that Studio's allowlist root is MINT's final CSV (WL-4). Two registry contracts built earlier, `WhitelistClaim` and `WhitelistImport`, stay in Calea's repository, unused |
 | `Activation` (§5) | Built and reviewed. Burns $MNTD itself; paused from deployment until the switch-on date. The Status link comes out (ACT-9 retired) |
-| Client library (DEL-6) | Built and reviewed. One TypeScript client for every tranche-1 call: mint, whitelist claim or eligibility, burn for a level, transfers and reads. Every error carries a stable code and a message ready to show a holder. Runnable examples cover each flow, and a reference for the voucher backend is included. The admin page's calls join it with the mystery box |
+| Client library (DEL-6) | Built and reviewed. One TypeScript client for every tranche-1 call: mint with allowlist proofs, burn for a level, transfers and reads. Every error carries a stable code and a message ready to show a holder. Runnable examples cover each flow, and a reference for the voucher backend is included. The admin page's calls join it with the mystery box |
 | Royalty split (DEL-6) | Built. The reference script reproduces the split at a closing block, dead-address exclusion included, and refuses inputs that miss a bear (ACT-10) |
-| Deployment, verification, enforcement (§7) | Scripts written and tested. The runbook covers the handover, the whitelist export and import, enforcement, royalties and `Activation` |
+| Deployment, verification, enforcement (§7) | Scripts written and tested. The runbook covers the handover, the whitelist check, enforcement, royalties and `Activation` |
 | Tests | 242 deterministic contract tests at full line and branch coverage, and 133 client-library tests run against a local chain with the contracts deployed. Fuzzing, invariants and fork tests are the internal auditor's (DEL-3) |
 | Review | Every tranche-1 requirement and the client library reviewed with Calea's reviewer; the defects found were fixed in the code, tests and documents before hand-off to the auditor |
 | Testnet rehearsal (OPS-4) | Next, once MINT's testnet $MNTD is on 46630 (CQ-2) |
@@ -49,8 +48,8 @@ the owner schedules, and is built once MINT supplies the excluded ids (CQ-20).
 **What the client library needs from MINT.** None of these changes a contract. Each is needed
 before the page it serves goes live.
 
-- **For WL-3 only:** the account id the voucher backend hashes, and a 32-byte server key for it
-  that never changes. An immutable user id (Privy's user id) is a better choice than an email.
+- **The final whitelist CSV**, one row per wallet with its total, frozen at least 48 hours before
+  the whitelist stage (WL-4, WL-5).
 - **OpenSea's fee recipient for the drop**, which every mint names. Also access to OpenSea's
   listings API, so the page can warn a holder whose bear is listed before a burn.
 - **An archive RPC endpoint for Robinhood Chain**, for the royalty split at each closing block
@@ -71,9 +70,10 @@ before the page it serves goes live.
   - Prizes are held in MINT's prize wallet on Robinhood Chain, Ethereum and possibly ApeChain,
     paid by transfer and recorded on `PrizeDraw` (RAF-33). No contract is deployed on a prize
     chain: the vaults and the on-chain nomination are retired.
-- **Whitelist.** A second registry, `WhitelistImport`, that MINT's admin fills from a CSV and that
-  freezes at `closeAt` (WL-7). MINT deploys one of the two. Neither is audited, at MINT's choice,
-  so the registry can be delivered on 29 September (DEL-8).
+- **Whitelist.** Off-chain, in MINT's backend (WL-8). There is no whitelist contract to deploy
+  or audit. The final CSV goes into Studio, and Calea checks Studio's root against it (WL-4).
+  The voucher registry is retired (WL-3), and so is the owner-imported one built as a variant on
+  28 September (WL-7).
 - **Activation.** The Status link is removed. MINT assigns Status links to holders' Privy
   accounts off-chain (ACT-9 retired, CQ-21).
 - **Addresses.**
@@ -82,8 +82,7 @@ before the page it serves goes live.
   - the prize wallet `0xf6c0…e3e3` (OPS-1).
 - **$MNTD.** Read from the reference token MINT pointed to: OpenZeppelin `ERC20Burnable`, 18
   decimals, fixed supply, no owner and no proxy (CQ-2).
-- **Repository.** Calea's recommendation is accepted, and the whitelist registry is the first
-  delivery (DEL-9).
+- **Repository.** Calea's recommendation is accepted (DEL-9).
 
 ## 1. Scope
 
@@ -91,10 +90,8 @@ before the page it serves goes live.
 
 - **MintABear** collection contract on Robinhood Chain (chain id 4663), SeaDrop-compatible,
   managed through OpenSea Studio by MINT, royalties enforced.
-- **Whitelist registry** on Robinhood Chain, in two variants for MINT to pick (`→ CQ-18`):
-  `WhitelistClaim` records first-come-first-served allocations against MINT-signed wagering
-  eligibility, and `WhitelistImport` holds the list MINT's admin imports and freezes it. Either
-  one exports the allowlist for Studio.
+- **Whitelist support**: the check that Studio's allowlist is MINT's final CSV, and the mint
+  proofs built from it (WL-4). The whitelist itself is MINT's, off-chain (WL-8).
 - **Activation** contract on Robinhood Chain: burns $MNTD for a bear and records it, level
   derivation (0–5), royalty-weight table.
 - **Mystery box**: `MysteryBox` on Robinhood Chain (ownership, cycles, the bear spent for the
@@ -132,7 +129,7 @@ infrastructure.
 | Lorenzo (MINT) | Shared Privy login; account, Status and wager APIs; names the contract for review (`→ CQ-13`) |
 | Vlad (MINT) | Privy connect on getminted.io and the wager API, with Lorenzo |
 | Guri (MINT) | Eligibility checker |
-| MINT | Admin (`0x1530…6141`): the whitelist import (WL-7), the excluded ids, each cycle's schedule and prize list, pauses. Prize wallet (`0xf6c0…e3e3`): holds and pays the prizes. Eligibility signer (WL-3 only): whitelist vouchers |
+| MINT | Admin (`0x1530…6141`): the excluded ids, each cycle's schedule and prize list, pauses. Prize wallet (`0xf6c0…e3e3`): holds and pays the prizes. Backend: the off-chain whitelist register (WL-8) |
 | Worker | Relays each open to the draw in order and records each payout. Assumed to be operated by Calea (`→ CQ-23`) |
 | Calea / Rayco | Contracts, tests, scripts, runbook, testnets, review, integration support; deploys and hands over; keeps no owner key, and no role but the worker's if CQ-23 gives it |
 | Calea internal auditor | Fuzzing and invariant harnesses, review report |
@@ -143,12 +140,12 @@ infrastructure.
 
 | Chain | Id | Hosts | Testnet |
 |---|---|---|---|
-| Robinhood Chain | 4663 | `MintABear`, `WhitelistClaim` or `WhitelistImport`, `Activation`, `MysteryBox`; prizes in MINT's wallet | 46630 |
+| Robinhood Chain | 4663 | `MintABear`, `Activation`, `MysteryBox`; prizes in MINT's wallet | 46630 |
 | Arbitrum One | 42161 | `PrizeDraw` (Chainlink VRF v2.5) | Arbitrum Sepolia 421614 |
 | Ethereum | 1 | prizes in MINT's wallet; no contract | Sepolia 11155111 |
 | ApeChain | 33139 | prizes in MINT's wallet if MINT confirms it; no contract (`→ CQ-20`) | Curtis 33111 |
 
-Robinhood Chain stores the bears and is the source of truth for ownership, levels, the whitelist
+Robinhood Chain stores the bears and is the source of truth for ownership, levels
 and which bears have been opened in a cycle. Randomness comes from Arbitrum One, which has
 Chainlink VRF v2.5; Robinhood Chain and ApeChain have none. Prizes stay in MINT's prize wallet
 `0xf6c0…e3e3` on the chain where each one sits, and are paid from there (RAF-33).
@@ -158,21 +155,18 @@ Chainlink VRF v2.5; Robinhood Chain and ApeChain have none. Prizes stay in MINT'
 | Contract | Chain | Purpose |
 |---|---|---|
 | `MintABear` | 4663 | ERC721SeaDrop collection, 4,444 supply, transfer counter, enforced royalties |
-| `WhitelistClaim` | 4663 | 1,000 first-come-first-served whitelist allocations against signed eligibility (WL-3) |
-| `WhitelistImport` | 4663 | the same 1,000 allocations, imported by MINT's admin and frozen at the close (WL-7) |
 | `Activation` | 4663 | $MNTD burned for a bear → level → weight |
 | `MysteryBox` | 4663 | Cycles, the excluded ids, the ownership check and the open register |
 | `PrizeDraw` | 42161 | One VRF word per open, the win rule, the recorded outcome, the payout record |
 
-MINT deploys one of the two whitelist registries.
+The whitelist has no contract: it is MINT's register, off-chain (WL-8).
 
 **Trust model.**
 - **The contracts enforce** ownership, supply, the transfer counter, level derivation, the weights
-  table, the whitelist caps and the freeze, one shot per bear per cycle, the excluded ids, and the
+  table, one shot per bear per cycle, the excluded ids, and the
   draw and its order.
 - **MINT holds the admin key**, one externally owned account for every contract (assumed, `→
-  CQ-12`). It schedules each cycle and publishes its prize list, and with WL-7 it writes the
-  whitelist.
+  CQ-12`). It schedules each cycle and publishes its prize list.
 - **MINT's prize wallet holds and pays the prizes.** Nothing on-chain forces a payout, and MINT can
   move any prize at any time. What the chain does guarantee is the record: every win is an
   `OutcomeRecorded` on Arbitrum, and every payout a `PrizePaid` naming the chain and the
@@ -181,16 +175,16 @@ MINT deploys one of the two whitelist registries.
   publicly checkable against `BoxOpened` and `OutcomeRecorded`. The draw refuses an open out of
   turn, so the worker cannot choose which open meets which state of the pool. It can delay one,
   and a delayed open is visible. The worker cannot alter weights or thresholds, raise a level
-  without a burn, open a box, change an outcome, or create a whitelist spot.
-- **With WL-3, the eligibility signer** decides who may claim a whitelist spot; the contract
-  decides how many and in what order.
+  without a burn, open a box, change an outcome, or put a wallet on the whitelist.
+- **The whitelist is MINT's word.** MINT's backend decides who is on it and keeps the count. The
+  chain holds only Studio's allowlist root, which Calea checks against MINT's final CSV.
 
-**On-chain.** Ownership and transfers; the transfer counter and its event; the whitelist and its
-spot count; recorded burns, cumulative totals, levels and weights; cycles, excluded ids and opens;
+**On-chain.** Ownership and transfers; the transfer counter and its event; the whitelist's allowlist
+root; recorded burns, cumulative totals, levels and weights; cycles, excluded ids and opens;
 words, outcomes and payout records.
 
 **Off-chain (MINT).**
-- Wager measurement and the Season 1 back-credit, and with WL-7 the eligible list itself.
+- Wager measurement and the Season 1 back-credit, and the whitelist register itself (WL-8).
 - The Privy login that ties a wallet to a getminted.io account, and the Status links kept against
   it.
 - The royalty pot and its split: when the pot reaches its ETH or its countdown ends, half the ETH
@@ -203,9 +197,9 @@ words, outcomes and payout records.
 What level 5 is *worth* is MINT's to define; the chain records that it was reached.
 
 **Flow.**
-1. **Whitelist.** Either holders claim spots with vouchers on `WhitelistClaim` after wagering on
-   getminted.io, or MINT's admin imports the eligible list into `WhitelistImport`. At close, MINT
-   loads the list into the Studio allowlist stage.
+1. **Whitelist.** Holders check their wagering on getminted.io and claim their spots, which MINT's
+   backend records. When the list is frozen, MINT loads the final CSV into the Studio allowlist
+   stage, and Calea checks the root.
 2. **Drop.** Iñigo runs the drop in Studio; holders mint via OpenSea or the getminted.io mirror.
 3. **Burn.** Holders burn $MNTD for a bear on `Activation`, which records the burn, and the bear's
    level and weight follow.
@@ -314,7 +308,7 @@ transfer-validator lift and restore (OPS-6) — and a pending ownership offer wo
 *Acceptance.* Given Calea has called `transferOwnership(admin)`; when the admin calls `acceptOwnership`; then the admin is the owner; and Calea holds no role, and `renounceOwnership` reverts for the admin as for anyone else.
 
 **COL-11 What Studio owns.** Mint stages, dates and pricing; allowlists and per-wallet limits,
-including the whitelist stage loaded from `WhitelistClaim` (WL-4); payout address; `maxSupply`
+including the whitelist stage loaded from MINT's final CSV (WL-4); payout address; `maxSupply`
 (COL-2); `baseURI` and provenance (COL-5); royalty info (COL-6); `multiConfigure`. A
 "guaranteed" stage is guaranteed by stage sequencing — the guaranteed window must close before
 the next window opens — not by the contract.
@@ -337,135 +331,72 @@ events; `TransferNonceAdvanced` (COL-4); `TransferValidatorUpdated` (COL-7).
 <!-- openspec:begin family WL -->
 MINT needs a first-come-first-served whitelist of 1,000 allocations that only wagering holders can claim, recorded where anyone can check it — so that the allowlist loaded into Studio is provably the list the campaign produced.
 
-**WL-1 Rules.** From MINT's brief, as the contract enforces them:
+**WL-1 Rules.** From MINT's brief, as MINT's backend applies them (WL-8):
 
 - **1,000 spots**, each the right to mint one bear in the whitelist stage. A spot is an
-  allocation: an account at $100 holds two of the 1,000 (`→ CQ-18` confirms this reading).
+  allocation: an account at $100 holds two of the 1,000.
 - **First come, first served** through getminted.io/mintabear. Reaching a threshold makes the
-  getminted.io account eligible for the allocation it unlocks; it reserves nothing. An allocation
-  belongs to a wallet only once its claim transaction has succeeded.
-- **$50 wagered unlocks allocation 1; $100 unlocks allocation 2.** Historical wagering (Season 1,
-  back-credited) counts up to $50, so allocation 2 always requires at least $50 of in-campaign
-  wagering. Who has wagered what is MINT's data (WL-2); each allocation is the account's, claimed
-  once, in order (WL-3).
-- **Live counter** "wagering spots left — X / 1,000", read from the contract. A claim that
-  arrives after the last spot fails whole; there is no partial state.
-- **The holder selects the NFT wallet** before claiming and may change it until the claim; the
-  claim puts the account's allocation in that wallet. One call to action per unlocked allocation:
-  a holder at $75 claims one now and the second later.
-- **Two per wallet, two per account.** A getminted.io account cannot spread more than two
-  over several wallets.
+  getminted.io account eligible for the spot it unlocks; it reserves nothing. A spot belongs to a
+  wallet once the backend has recorded its claim.
+- **$50 wagered unlocks spot 1; $100 unlocks spot 2.** Historical wagering (Season 1) counts up
+  to $50, so spot 2 always needs at least $50 of in-campaign wagering. A holder with $16,361 of
+  historical wagering is shown $50: one spot claimable, and $50 more to wager for the second.
+- **Live counter** "wagering spots left — X / 1,000", read from MINT's backend. A claim that
+  arrives after the last spot is refused whole.
+- **The holder selects the NFT wallet** before claiming.
+- **Two per wallet, two per account.** Whether spots from collaborations and giveaways count
+  toward the 1,000, and whether they may take a wallet above two, is `→ CQ-18`.
 
-*Acceptance.* Given a wallet holding one claimed allocation and an account holding one; when the wallet claims allocation 2 with a valid voucher; then the claim succeeds and both counts read 2; and a third claim for either reverts.
+**WL-2 Division of work.** **MINT's part:**
+- the Privy login on getminted.io;
+- the wager API, which returns historical wagering capped at $50 and in-campaign wagering;
+- the eligibility check and the UI;
+- the off-chain register with its counter, and the wallet signature for pasted addresses (WL-8);
+- the final CSV.
 
-**WL-2 Division of work.** MINT: the Privy mirror login on getminted.io; the wager API that
-returns, for the logged-in account, historical wagering capped at $50 and in-campaign wagering;
-the eligibility checker; the UI; and either the **eligibility signer**, a backend key that signs
-a voucher when the API confirms a threshold (WL-3), or the CSV of eligible wallets and its
-import through the admin page (WL-7) (`→ CQ-18`). Calea: the `WhitelistClaim` and
-`WhitelistImport` contracts, the voucher format, the export to the Studio allowlist, and the
-client calls (DEL-6).
+**Calea's part:**
+- the check that Studio's allowlist root is the CSV's (WL-4);
+- the mint proofs for the getminted.io mirror, built from the same CSV (DEL-6);
+- a review of the backend's claim rules, on request.
 
-**WL-3 Registry.** `WhitelistClaim` on Robinhood Chain, the voucher variant of the registry (`→ CQ-18`); WL-7 is
-the owner-imported variant, MINT deploys one of the two, and WL-6 is the off-chain alternative. A
-voucher is the EIP-712 message whose type is exactly
-`Claim(address wallet,uint8 allocationIndex,bytes32 account,uint256 deadline)`, signed by the
-eligibility signer, with a short `deadline` (minutes), `account` a keyed hash —
-HMAC-SHA256 under a key held server-side — over a canonical form of the getminted.io account id
-(an immutable user id, or an email case-folded and trimmed), so the chain carries no personal data
-and the indexed `account` of `WhitelistClaimed` cannot be matched to a guessed id, and
-`allocationIndex` the account's
-allocation number — 1 for the allocation $50 unlocks, 2 for the one $100 unlocks (WL-1).
-`claim(voucher,
-signature)` reverts unless: `msg.sender == wallet` (`NotClaimant`), the one condition D4 option
-(A′) removes; the signature is the signer's (`BadSigner`); `block.timestamp ≤ deadline`
-(`Expired`); the campaign window is open (`CampaignClosed`); `spotsLeft() > 0` (`SoldOut`);
-`claimsOf(wallet) < MAX_PER_WALLET` (`WalletLimit`); `accountClaims(account) < MAX_PER_ACCOUNT`
-(`AccountLimit`); and `allocationIndex == accountClaims(account) + 1` (`WrongAllocation`), so an
-account claims its allocations in order, each once, over whichever wallets it selects, and a
-voucher is spent by its claim. Effects: the wallet's
-and the account's counts increase, the spot counter increases, the wallet is appended to the
-claimant list, and `WhitelistClaimed(wallet, allocationIndex, account, spotNumber)` is emitted. By
-default the claim is sent by the wallet itself, which pays Robinhood Chain gas — it needs gas for
-the mint anyway; in the relayed variant MINT's worker submits the voucher and pays, which is the
-same contract without the `NotClaimant` condition (`→ CQ-18`). Reads: `TOTAL_SPOTS`,
-`MAX_PER_WALLET`, `MAX_PER_ACCOUNT`, `spotsLeft()`, `claimsOf(wallet)`, `accountClaims(account)`,
-`claimants(offset, limit) → (wallet, allocations)[]`, `openAt`, `closeAt`, `signer`. Owner (MINT
-admin): `setSigner`, `setWindow(openAt, closeAt)`, and ownership transfer — one-step
-`transferOwnership` or the two-step handover. `renounceOwnership` reverts for every caller, so the
-signer can always be rotated. Nobody can remove or reassign a claim. The eligibility signer
-is an externally owned key, since the registry recovers signatures with `ecrecover` alone and a
-contract's vouchers revert `BadSigner`. It issues `allocationIndex` as
-`accountClaims(account) + 1`, and only while `claimsOf(wallet) < MAX_PER_WALLET`. A key rotated
-out by `setSigner` is never rotated back in, since its unexpired vouchers would be valid again.
-DEL-6's backend reference pins these rules.
+**WL-4 Into the mint.** When the list is frozen (WL-5), MINT exports the final CSV — `wallet,allocations`, one row per
+wallet — and Iñigo loads it as the whitelist stage's allowlist in Studio. SeaDrop allowlist
+entries carry a per-wallet mint limit, so "one or two" is enforced by the mint itself.
 
-*Acceptance.* Given a voucher signed by the signer for wallet W, allocation 1, within its deadline and the campaign window; when W calls `claim`; then `spotsLeft` falls by one, `claimsOf(W)` reads 1 and `WhitelistClaimed` is emitted; and the same call from another wallet reverts with `NotClaimant`, and a voucher for the same account's allocation 1 for another wallet reverts with `WrongAllocation`.
+That limit counts every bear minted to the wallet in any stage. So:
+- the whitelist stage is the first stage in which any wallet can mint, apart from the team's
+  (COL-11);
+- no other stage overlaps it;
+- a later stage's per-wallet limit counts the whitelist mints too.
 
-**WL-4 Into the mint.** After the window closes or the spots sell out (WL-3), or once the imported list is frozen
-(WL-7), MINT exports the claimant list — one row per wallet with its allocation count — and loads it as the whitelist stage's
-allowlist in Studio. SeaDrop allowlist entries carry a per-wallet mint limit, so "one or two" is
-enforced by the mint itself. That limit counts every bear minted to the wallet in any stage, so
-the whitelist stage is the first in which any wallet but the team's can mint and no other stage
-overlaps it; a later stage's per-wallet limit counts the whitelist mints too. The getminted.io mirror builds its Merkle proofs from the same list
-(DEL-6). The registry is public, so a loaded list that differs from it is detectable by anyone.
+Calea's `compare` rebuilds the allowlist root from the CSV and the stage's parameters, and fails
+unless it is the root on SeaDrop. The getminted.io mirror builds its Merkle proofs from the same
+CSV (DEL-6).
 
-*Acceptance.* Given a closed campaign; when `claimants(offset, limit)` is read across the whole list; then every wallet appears once with its allocation count, and the Studio allowlist loaded from it carries the same rows.
+*Acceptance.* Given MINT's final CSV and the whitelist stage Studio has set; when `compare` runs over the CSV and the stage; then it passes only if the root on SeaDrop is the root of the CSV's rows, and fails naming the difference otherwise.
 
-**WL-5 Timing.** The registry is deployed before the campaign opens, with its signer for WL-3. The campaign, or
-for WL-7 the import, closes at least 48 hours before the whitelist stage opens, for the export, the Studio
-import and the publication of proofs. Dates `→ CQ-18`; calendar in §8.
+**WL-5 Timing.** MINT's backend accepts claims only within the campaign window, and the list is frozen at least
+48 hours before the whitelist stage opens. That leaves time for the Studio upload, the root check
+and a fix before minting. With the whitelist stage opening with the mint on 29 October, the list
+is frozen by 27 October, at the same time of day. The 48 hours is Calea's buffer, not a SeaDrop
+rule. Dates `→ CQ-1`; calendar in §8.
 
-*Acceptance.* Given `openAt` and `closeAt` set with the close at least 48 hours before the whitelist stage; when a claim arrives before `openAt` or after `closeAt`; then it reverts with `CampaignClosed`.
+**WL-8 Off-chain register.** The whitelist is kept off-chain, in MINT's backend (MINT, 28 September 2026, `→ CQ-18`). No
+contract is deployed for it.
 
-**WL-6 Alternative — off-chain register.** MINT's backend records claims in its database behind
-an atomic counter; Calea supplies the claim-API contract and the Studio export script and deploys
-nothing. Faster to build and free of gas for holders; the order of claims and the sell-out rest
-on MINT's server, nothing is publicly checkable, and the SeaDrop allowlist root is the only trace
-on-chain. `→ CQ-18`.
+**The flow.**
+1. A holder signs in on getminted.io through Privy, or pastes a wallet address.
+2. The eligibility check shows what the account has wagered and what is left to unlock a spot or
+   the next one.
+3. The holder claims the spots unlocked. A pasted address proves itself with a wallet signature,
+   which costs no gas; a wallet connected through Privy already has.
+4. The backend records the claim.
 
-**WL-7 Owner-imported registry.** `WhitelistImport` on Robinhood Chain is the variant of the registry for a whitelist MINT fills
-itself from a CSV (`→ CQ-18`). WL-3 is the alternative, and MINT deploys one of the two.
-Constructor: `WhitelistImport(owner, closeAt)`; the owner is MINT's admin. A zero owner is
-refused (`NewOwnerIsZeroAddress`), and so is a close in the past (`InvalidWindow`). Until `closeAt` the owner can write the list:
-- `addAllocations(address[] wallets, uint8[] counts)` gives each wallet `counts[i]` more
-  allocations. The call is refused whole, with no partial state, on any of these:
-  - after `closeAt` (`ListFrozen`);
-  - arrays of different lengths (`LengthMismatch`);
-  - a zero wallet (`ZeroWallet`);
-  - a zero count (`ZeroCount`);
-  - a wallet above `MAX_PER_WALLET` = 2 (`WalletLimit`);
-  - a total above `TOTAL_SPOTS` = 1,000 (`SoldOut`).
-- `removeAllocations(address[] wallets)` sets each wallet's allocations to zero and drops it from
-  the list. After `closeAt` it is refused (`ListFrozen`); for a wallet with no allocations it is
-  refused (`NotListed`).
-- `setCloseAt(closeAt)` moves the freeze, so the owner can extend the import or freeze early.
-  After `closeAt` it is refused (`ListFrozen`); a close in the past is refused (`InvalidWindow`).
-
-Once `block.timestamp > closeAt` the list is frozen for good. Nothing can then add, remove or
-reassign an allocation, and `claimsOf(wallet)` is the wallet's eligibility for the whitelist
-stage.
-
-Events:
-- `AllocationsAdded(wallet, count, total)` for each wallet, where `total` is the wallet's
-  allocations after the add, so an indexer can rebuild `claimsOf` from events alone;
-- `AllocationsRemoved(wallet, count)`;
-- `CloseSet(closeAt)`.
-
-Reads, with the names `WhitelistClaim` uses so the export and the Studio compare (WL-4) read
-either registry:
-- `TOTAL_SPOTS`, `MAX_PER_WALLET`;
-- `spotsLeft()`, `claimsOf(wallet)`;
-- `claimants(offset, limit) → (wallet, allocations)[]`, each listed wallet once;
-- `closeAt`, `frozen()`.
-
-The export (WL-4) refuses a list that is not yet frozen (`CampaignStillOpen`), even when all
-1,000 allocations are written, because it can still be corrected until `closeAt`.
-`renounceOwnership` reverts for every caller. There is no voucher, no signer and no per-account
-cap: who is eligible is MINT's alone to decide, and the chain records what the owner wrote and
-when.
-
-*Acceptance.* Given a `WhitelistImport` whose `closeAt` has not passed; when the owner adds allocations for wallets A (2) and B (1), and `closeAt` then passes; then `claimsOf(A)` reads 2, `claimsOf(B)` reads 1 and `spotsLeft` reads 997; and any later `addAllocations`, `removeAllocations` or `setCloseAt` reverts with `ListFrozen`.
+MINT's backend keeps the 1,000-spot counter so that two simultaneous claims cannot take the last
+spot. It also records whitelist spots from any other source, such as collaborations and
+giveaways, in the same register. The final list has **one row per wallet with its total**,
+merged across sources, and is the CSV loaded into Studio (WL-4). Nothing about the whitelist is
+public until Studio's allowlist root is set; the root is its only trace on-chain.
 <!-- openspec:end -->
 
 ## 5. Activation and burn route (ACT)
@@ -811,7 +742,7 @@ outcomes and its payouts, and warns contract-wallet holders before they open.
 <!-- openspec:end -->
 
 <!-- openspec:begin retired -->
-**Retired identifiers.** ACT-9 (the on-chain Status link) → ACT-12; ACT-11 (pause over burns and links) → ACT-15; DEL-4 (verified testnet addresses) → OPS-3 and OPS-4; DEL-5 (deployment scripts and runbook) → OPS-2 and OPS-5; RAF-1 (a single raffle chain) → RAF-32 and RAF-33; RAF-7 (passive ownership snapshot) → RAF-28; RAF-9 (draw over calldata entries) → RAF-30; RAF-10 (carry forward between rounds) → RAF-32; RAF-12 (round cancellation) → RAF-32; RAF-13 (per-round `minLevel` eligibility) → RAF-27; RAF-20 (rounds on the hub) → RAF-32; RAF-21 (entry into a round) → RAF-28; RAF-22 (one seed per round) → RAF-29; RAF-23 (the per-round draw) → RAF-30; RAF-2 (vault addresses) → RAF-33; RAF-3 (asset approval on the vaults) → RAF-27 and RAF-33; RAF-4 (deposit intake) → RAF-33; RAF-5 (vault inventory states) → RAF-30 and RAF-33; RAF-6 (committing prizes from the vaults) → RAF-27 and RAF-32; RAF-11 (claims from a vault) → RAF-33; RAF-15 (pause with vault claims) → RAF-34; RAF-24 (a prize vault per chain) → RAF-33; RAF-25 (recipient nomination) → RAF-33; RAF-26 (one game over the collection) → RAF-32; RAF-31 (closing the game) → RAF-32 and RAF-33.
+**Retired identifiers.** ACT-9 (the on-chain Status link) → ACT-12; ACT-11 (pause over burns and links) → ACT-15; DEL-4 (verified testnet addresses) → OPS-3 and OPS-4; DEL-5 (deployment scripts and runbook) → OPS-2 and OPS-5; RAF-1 (a single raffle chain) → RAF-32 and RAF-33; RAF-7 (passive ownership snapshot) → RAF-28; RAF-9 (draw over calldata entries) → RAF-30; RAF-10 (carry forward between rounds) → RAF-32; RAF-12 (round cancellation) → RAF-32; RAF-13 (per-round `minLevel` eligibility) → RAF-27; RAF-20 (rounds on the hub) → RAF-32; RAF-21 (entry into a round) → RAF-28; RAF-22 (one seed per round) → RAF-29; RAF-23 (the per-round draw) → RAF-30; RAF-2 (vault addresses) → RAF-33; RAF-3 (asset approval on the vaults) → RAF-27 and RAF-33; RAF-4 (deposit intake) → RAF-33; RAF-5 (vault inventory states) → RAF-30 and RAF-33; RAF-6 (committing prizes from the vaults) → RAF-27 and RAF-32; RAF-11 (claims from a vault) → RAF-33; RAF-15 (pause with vault claims) → RAF-34; RAF-24 (a prize vault per chain) → RAF-33; RAF-25 (recipient nomination) → RAF-33; RAF-26 (one game over the collection) → RAF-32; RAF-31 (closing the game) → RAF-32 and RAF-33; WL-3 (the voucher registry `WhitelistClaim`) → WL-8; WL-6 (the off-chain register as an alternative) → WL-8; WL-7 (the owner-imported registry `WhitelistImport`) → WL-8.
 <!-- openspec:end -->
 
 ## 7. Operations, roles and handover (OPS)
@@ -827,17 +758,15 @@ first sale (COL-6). `→ CQ-12`, `→ CQ-15`.
 |---|---|---|
 | Admin | owner of every contract on every chain | `0x153052B43c8fD4ec01f14D1Edd8660778daa6141`, an EOA (MINT, 28 September 2026; for every contract, still to confirm) |
 | Worker | `resolve` and `recordPayout` on `PrizeDraw` | EOA, funded on Arbitrum; operated by Calea (assumed, `→ CQ-23`) |
-| Eligibility signer | `WhitelistClaim.signer`, only if WL-3 is deployed | Backend key held by MINT; rotatable by the admin |
 | Royalty receiver | ERC-2981 receiver — the pot | `0xf7E70F5ef311232dBd1b0E4dFB1e3e8FBE7b0e63` (MINT, 28 September 2026) |
 | Prize wallet | every prize, on every prize chain (RAF-33) | `0xf6c02F0fDAC5c03EE9f1cc60A5D9875Efc4c83e3`, an EOA (MINT, 28 September 2026) |
 | VRF subscription | the Chainlink subscription `PrizeDraw` draws on | MINT (assumed, `→ CQ-17`) |
 
-*Acceptance.* When the mainnet deploy scripts run; then the admin, worker and signer addresses they read are the ones MINT recorded; and the royalty receiver is set in Studio before the first sale.
+*Acceptance.* When the mainnet deploy scripts run; then the admin and worker addresses they read are the ones MINT recorded; and the royalty receiver is set in Studio before the first sale.
 
 **OPS-2 Deployment order.** Every address a contract needs at birth is a constructor argument, so a contract is correct
 from its first block and is never deployed-but-unconfigured (MINT, CQ-12).
-`WhitelistClaim.setSigner` exists so the admin can rotate the signer; the first signer is a
-constructor argument, and it stays owner-only. The calls made after construction are settings
+The calls made after construction are settings
 and hand-overs, each in the order listed: `setMaxSupply`, `setTransferValidator`,
 `setPaused(true)` and ownership transfers. Each contract is deployed before the page that
 depends on it is published.
@@ -846,9 +775,6 @@ depends on it is published.
 - `MintABear(name, symbol, [SeaDrop])` → `setMaxSupply(4444)` → `setTransferValidator(V3)`
   (COL-7) → two-step ownership transfer → provenance, `baseURI` and royalties set by Iñigo
   through Studio, before the drop page is published (COL-5, COL-6, COL-10).
-- Before the campaign opens, one of the two whitelist registries, with MINT's admin as `owner`
-  (`→ CQ-18`): `WhitelistClaim(owner, signer, openAt, closeAt)` or
-  `WhitelistImport(owner, closeAt)`.
 - `Activation(bears, mntd, thresholds, weights)`, thresholds in whole $MNTD (ACT-2) →
   `setPaused(true)` until the switch-on date → ownership; requires $MNTD on 4663.
 - `MysteryBox(owner, bears)`.
@@ -866,8 +792,8 @@ Arbiscan (Etherscan's API) for Arbitrum One and Arbitrum Sepolia.
 **OPS-4 Rehearsal on testnets (46630, Arbitrum Sepolia, Sepolia).** The rehearsal covers these paths:
 - Studio attaches to and manages a self-deployed, validated `MintABear`.
 - Both mint paths: OpenSea and the getminted.io mirror.
-- The whitelist, for the registry MINT picks (CQ-18): from a voucher, or from the CSV import, to
-  the exported allowlist and a two-per-wallet allowlist mint.
+- The whitelist: a CSV from MINT's register loaded into Studio, `compare` passing against it, and
+  a two-per-wallet allowlist mint.
 - A burn through `Activation` against $MNTD on 46630, through to a recorded level.
 - Two mystery-box cycles:
   - exclusion;
@@ -891,7 +817,7 @@ The runbook is one document, produced via `forge script` tooling. It covers:
 - the deploy order (OPS-2);
 - the enforcement toggle (OPS-6);
 - `Activation`'s pause and unpause around the burn switch-on date (ACT-15);
-- the whitelist export or import (WL-4, WL-7);
+- loading MINT's whitelist CSV into Studio and checking it (WL-4);
 - the mystery-box cycle and worker sequence (RAF-18).
 
 *Acceptance.* When handover completes; then every contract's owner is MINT's admin, every source is verified and the runbook is delivered; and Calea holds no owner key, and no role other than the worker's where CQ-23 gives it one.
@@ -916,7 +842,7 @@ runs on Arbitrum One.
 ## 8. Calendar (CAL)
 
 MINT fixes four dates:
-- the whitelist registry, delivered and deployed on 29 September;
+- the whitelist list frozen by 27 October, 48 hours before the whitelist stage;
 - TGE on 20 October;
 - the mint on 29 October;
 - burns and level-up starting on 29 October.
@@ -934,11 +860,11 @@ owner and are not calendar rows (RAF-32).
 | Date (2026) | Outcome | Lead | Basis |
 |---|---|---|---|
 | 28 Sep | Call: the decisions in §10 | Iñigo; Calea | fixed |
-| 29 Sep | The whitelist registry MINT picks (WL-3 or WL-7) and its client module delivered to MINT's repository and deployed; outside the audit | Calea; MINT | MINT |
 | 29 Sep – 2 Oct | `MintABear` final, reviewed, deployed with the validator set; OpenSea page and URL live before promotion; team bear listed and sold; Studio attach proven on testnet | Calea; Iñigo | SoW |
 | when MINT deploys it | $MNTD test deployment on 46630 for the burn rehearsal | MINT (Lorenzo) | MINT |
 | 5 – 9 Oct | `MysteryBox`, `PrizeDraw`, the worker and the UI tested on 46630 and Arbitrum Sepolia, two cycles included; reports and runbooks; no open Critical/High | Calea; Javier; MINT | SoW |
-| to MINT's dates | Whitelist campaign or import open, and closed at least 48 hours before the whitelist stage; list exported, loaded into Studio, proofs published | Iñigo; Javier; Calea | to confirm |
+| to MINT's dates | Whitelist campaign open on getminted.io/mintabear, claims recorded in MINT's backend | Iñigo; Javier; Vlad; Lorenzo | to confirm |
+| by 27 Oct | Whitelist frozen; final CSV loaded into the Studio whitelist stage; Calea's root check passes; proofs published | Iñigo; Calea | derived |
 | 12 – 14 Oct | `MysteryBox` and `PrizeDraw` deployed and verified; roles and official addresses verified; the VRF subscription funded; a cycle rehearsed on the testnets | Calea; Iñigo; MINT | SoW |
 | 20 Oct | TGE: $MNTD live on Robinhood Chain; `Activation` deployed, verified against the real token, paused | MINT; Calea | MINT |
 | 20 – 28 Oct | Real burns rehearsed by MINT and Calea on mainnet, in windows the owner opens and closes again; `Activation` is paused outside them | Calea; MINT | derived |
@@ -958,8 +884,8 @@ Three things to note:
 - **The worker outlives support.** Cycles run after the 19 November handover and the end of
   technical support, and the worker keeps relaying opens and recording payouts after both
   (`→ CQ-23`).
-- **The whitelist registry deploys a month before the mint.** Its window has to be set at
-  deployment and close at least 48 hours before the whitelist stage (WL-5).
+- **The whitelist freeze is two days before the mint.** The list is final by 27 October so the
+  Studio upload and the root check fit before the whitelist stage (WL-5).
 
 ## 9. Deliverables and acceptance (DEL)
 
@@ -982,12 +908,10 @@ tranche.
 **DEL-6 Integration package.** Interfaces, events, roles and calldata examples for every contract. A **TypeScript** client
 library for getminted.io, typed against the ABIs, that covers every call the app makes:
 - **the play page:**
-  - mint: SeaDrop stages, allowlist proofs, `mintPublic`;
-  - the whitelist: voucher check and `claim` (WL-3), or the eligibility read (WL-7);
+  - mint: SeaDrop stages, allowlist proofs built from MINT's whitelist CSV (WL-4), `mintPublic`;
   - burn: `costToReach`, approve, `burn`;
   - the mystery box: `open`, outcomes, odds, shots left and payout records;
 - **MINT's admin page:**
-  - the CSV import into `WhitelistImport` (WL-7);
   - `excludeRange`;
   - `scheduleCycle` on both chains;
   - pauses;
@@ -1008,10 +932,8 @@ time until one is (`→ CQ-13`).
 *Acceptance.* Given MINT has named a contract within the line limit; when the review is delivered; then it lists findings only, with no remediation.
 
 **DEL-8 Audit tranches.** Tranche 1: `MintABear` and `Activation`. Tranche 2: `MysteryBox` and `PrizeDraw`, once CQ-20's
-remaining values are supplied. `WhitelistClaim` and `WhitelistImport` are outside the internal
-audit: MINT needs the registry on 29 September 2026 and chose to deploy it unaudited
-(call, 28 September 2026). Calea's own review of `WhitelistClaim` in tranche 1 stands, and
-`WhitelistImport` has the developer's tests and self-review only. Iñigo accepts after Calea and
+remaining values are supplied. The whitelist has no contract: it is MINT's off-chain register
+(WL-8), and `WhitelistClaim` and `WhitelistImport` are not deployed. Iñigo accepts after Calea and
 MINT sign off; anything not accepted stays disabled in the UI.
 
 **DEL-9 Repository.** The contracts go into MINT's repository as `packages/contracts` (`@mint/contracts`), beside
@@ -1021,8 +943,8 @@ submodules that CI checks out. CI runs `forge fmt --check`, `forge build --sizes
 `forge test`, and Calea owns that configuration (MINT accepted, 28 September 2026). MINT names
 the repository (`→ CQ-14`).
 
-The first delivery is the whitelist registry MINT picks (CQ-18), with its client module, on
-29 September 2026. The other contracts follow as their tranches are accepted.
+The contracts go in as their tranches are accepted. The client library's mint and allowlist-proof
+calls, and the root check (WL-4), are needed before the whitelist stage.
 
 *Acceptance.* When the contracts land in the monorepo; then `pnpm -r build|test|check` reach the Foundry package and CI runs the three forge gates.
 
@@ -1034,7 +956,8 @@ The first delivery is the whitelist registry MINT picks (CQ-18), with its client
 - technical support through 19 November with agreed response hours;
 - the existing-contract review;
 - beyond the SoW's single-chain vault and collection:
-  - the **whitelist registry** in two variants (WL-3, WL-7), delivered early and unaudited;
+  - **whitelist support**: the root check against MINT's CSV, the mint proofs and a review of the
+    claim rules (WL-4, WL-8);
   - the **cross-chain draw**: the Chainlink draw on Arbitrum, the relay of each open, and the
     payout record;
   - the admin-page calls in the client library.
@@ -1071,8 +994,8 @@ decision is deferred.
 | **Status links** | Off-chain, against Privy accounts; the on-chain link is removed (CQ-21) | ACT-12 |
 | **Royalty receiver** | `0xf7E7…0e63` (CQ-15) | COL-6, OPS-1 |
 | **$MNTD** | OpenZeppelin `ERC20Burnable`, 18 decimals, fixed supply, immutable, as the reference token (CQ-2) | ACT-7 |
-| **Repository** | Calea's recommendation accepted; the whitelist registry is the first delivery (CQ-14) | DEL-9 |
-| **Audit** | The whitelist registry is never audited, at MINT's choice (CQ-1, CQ-18) | DEL-8, DEL-12 |
+| **Repository** | Calea's recommendation accepted (CQ-14) | DEL-9 |
+| **Whitelist** | Off-chain, in MINT's backend; no contract, nothing to audit; the final CSV goes into Studio and Calea checks the root (CQ-18) | WL-8, WL-4 |
 
 Settled on 21 September and not reopened:
 - **D1:** $MNTD is native to Robinhood Chain.
@@ -1094,43 +1017,33 @@ Closed as superseded:
 
 ### Open after the call
 
-**O1 — Which whitelist registry (CQ-18).** MINT asked for a list its admin imports from a CSV.
-Calea's counter-offer is vouchers as built (WL-3), relayed vouchers, or vouchers plus an owner
-allocation. Both registries are built, so either can be delivered on 29 September. **Default:**
-`WhitelistImport` (WL-7), as MINT asked. For WL-3, name the eligibility signer.
+**O1 — Dates (CQ-1).** The whitelist campaign window and the whitelist stage's start, which
+fixes the freeze 48 hours earlier; the first royalty closing block; the 19 November handover.
 
-**O2 — Whitelist window and dates (CQ-1).** Both registries take their close at deployment:
-- `openAt` and `closeAt` for WL-3, or `closeAt` for WL-7;
-- the whitelist stage's start, at least 48 hours after the close;
-- whether 46630 goes first.
-
-Also the first royalty closing block and the 19 November handover.
-
-**O3 — The excluded ids (CQ-20).** The 222 team ids as ranges, and whether ApeChain holds prizes.
+**O2 — The excluded ids (CQ-20).** The 222 team ids as ranges, and whether ApeChain holds prizes.
 The first cycle cannot be scheduled without the ids.
 
-**O4 — How a prize is delivered (CQ-22).** Who sends a payout from the prize wallet: MINT by hand,
+**O3 — How a prize is delivered (CQ-22).** Who sends a payout from the prize wallet: MINT by hand,
 or automation holding the wallet's key. And whether MINT pushes each win or the winner requests it
 within 30 days. **Recommended:** MINT pushes each win to the opener, and the worker records it.
 
-**O5 — The VRF subscription's holder (CQ-17).** Assumed MINT. If Calea holds and funds it and
+**O4 — The VRF subscription's holder (CQ-17).** Assumed MINT. If Calea holds and funds it and
 invoices MINT, it becomes a priced item and a role Calea keeps (DEL-10, OPS-5).
 
-**O6 — Who operates the worker (CQ-23).** Assumed Calea, as a service priced in Rayco's agreement
+**O5 — Who operates the worker (CQ-23).** Assumed Calea, as a service priced in Rayco's agreement
 and replaceable by MINT's admin at any time. The worker's address follows from this.
 
-**O7 — The admin for every contract (CQ-12).** Assumed to be `0x1530…6141`, an externally owned
+**O6 — The admin for every contract (CQ-12).** Assumed to be `0x1530…6141`, an externally owned
 account, for every contract on every chain. Confirm it or name the exceptions. With one EOA, the
 risk that the collection's owner can add a minter rests on that key alone (§2).
 
-**O8 — The testnet $MNTD (CQ-2).** Its address on 46630 when MINT deploys it, and the mainnet
+**O7 — The testnet $MNTD (CQ-2).** Its address on 46630 when MINT deploys it, and the mainnet
 address at TGE, each carrying the reference token's bytecode. `Activation` fixes the address in
 its constructor.
 
-**O9 — The repository (CQ-14).** Its URL and Calea's access, before the delivery of
-29 September.
+**O8 — The repository (CQ-14).** Its URL and Calea's access.
 
-**O10 — Existing-contract review (CQ-13).** Which contract, its source and its size, when MINT
+**O9 — Existing-contract review (CQ-13).** Which contract, its source and its size, when MINT
 has one to name.
 
 ## 11. Sign-off
@@ -1141,6 +1054,6 @@ has one to name.
 | Calea | Bojan Jovin | | |
 | Rayco | | | |
 
-Version 2.4, 28 September 2026. The version signed carries the open items of §10 resolved;
+Version 2.5, 28 September 2026. The version signed carries the open items of §10 resolved;
 amendments are issued as new versions of this document; requirement identifiers are never
 reused.

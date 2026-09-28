@@ -1,9 +1,6 @@
-# Operations, roles and handover Specification
+# Spec Delta
 
-## Purpose
-MINT needs to receive contracts that are correct from their first block, verified on every chain, and handed over with every key, role and a runbook — so that operating them after 19 November needs nothing from Calea.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: OPS-1 — Addresses
 **Kind:** work-item
@@ -48,15 +45,6 @@ added as the subscription's consumer. No contract is deployed on a prize chain (
 - **THEN** each contract is created with its constructor arguments in the listed order and is never left deployed-but-unconfigured
 - **AND** no address is set after construction; every call after construction is a listed setting or ownership transfer, in the listed order
 
-### Requirement: OPS-3 — Verification
-**Kind:** work-item
-Sourcify for 4663 and 46630, because mainnet Blockscout's API sits behind a bot challenge.
-Arbiscan (Etherscan's API) for Arbitrum One and Arbitrum Sepolia.
-
-#### Scenario: Source is verified where the chain allows
-- **WHEN** a contract is deployed on 4663 or 46630
-- **THEN** its source is verified through Sourcify and readable there
-
 ### Requirement: OPS-4 — Rehearsal on testnets (46630, Arbitrum Sepolia, Sepolia)
 **Kind:** work-item
 The rehearsal covers these paths:
@@ -98,30 +86,3 @@ The runbook is one document, produced via `forge script` tooling. It covers:
 - **WHEN** handover completes
 - **THEN** every contract's owner is MINT's admin, every source is verified and the runbook is delivered
 - **AND** Calea holds no owner key, and no role other than the worker's where CQ-23 gives it one
-
-### Requirement: OPS-6 — Enforcement runbook
-**Kind:** work-item
-Enabled at deployment: `MintABear.setTransferValidator(0x721C002B…)`
-with the validator's zero-state policy. Optional, from the admin: `createList`,
-`addAccountsToWhitelist`, `addAccountsToAuthorizers`, `applyListToCollection`,
-`setTransferSecurityLevelOfCollection` (never level 5 or above). Disable:
-`setTransferValidator(address(0))`. Every step is an owner call and reversible.
-
-#### Scenario: Enforcement toggles by one call
-- **GIVEN** enforcement enabled
-- **WHEN** the admin calls `setTransferValidator(address(0))` and then sets V3 again
-- **THEN** each call emits `TransferValidatorUpdated` and the policy follows the current value
-
-### Requirement: OPS-7 — Chain constraints
-**Kind:** informative
-On Robinhood Chain `block.number` is the L1 height, so contracts and scripts key on timestamps.
-Sequencer-level compliance screening can block an individual holder's transactions, so nothing
-in the system requires a holder to act by a deadline for the system to stay correct: a box left
-unopened in a cycle is a shot not taken, and nothing else depends on it. Robinhood Chain applies
-an Arbitrum-style per-transaction gas limit, which is why no call in this system loops over the
-collection. Randomness is not available on Robinhood Chain or ApeChain, which is why the draw
-runs on Arbitrum One.
-
-#### Scenario: The design honours the chain
-- **WHEN** the contracts are reviewed against the chain's constraints
-- **THEN** no logic keys on `block.number`, no call loops over the collection, and no correctness depends on a holder acting by a deadline
