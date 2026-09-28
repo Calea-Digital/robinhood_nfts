@@ -2,8 +2,9 @@
 
 A 4,444-supply free-mint NFT collection on **Robinhood Chain (chain id 4663)**. Holders burn
 $MNTD to raise a bear's activation level (0–5), which multiplies the reward rate their
-off-chain MINT Status already pays. Activation and the Status link reset when a bear changes
-hands.
+off-chain MINT Status already pays. Activation resets when a bear changes hands. Holders also
+open a mystery box with their bears, one shot per bear per cycle, decided by Chainlink VRF on
+Arbitrum One; prizes are paid from MINT's wallet on each prize chain.
 
 **Start here: [`docs/HANDOVER.md`](docs/HANDOVER.md)** — current state,
 settled decisions, accepted risks, and the questions still open with the client. The
@@ -11,16 +12,19 @@ specification is in [`openspec/`](openspec/); the board (YouTrack `MNT`) follows
 
 ## Contracts
 
-The specification calls for six contracts, three in tranche 1. On `tranche-1` today:
+The specification (v2.5) calls for `MintABear` and `Activation` in tranche 1, and `MysteryBox`
+(Robinhood Chain) and `PrizeDraw` (Arbitrum One) in tranche 2. The whitelist is off-chain, in
+MINT's backend. On `tranche-1` today:
 
 | Contract | Base | Role |
 |---|---|---|
 | [`src/MintABear.sol`](src/MintABear.sol) | OpenSea `ERC721SeaDrop` | the collection. Transfer counter and reset event, burn refusal, `MAX_BEARS`, `exists`; ERC-721C with the validator set at deploy; stock SeaDrop metadata, royalties and two-step ownership, never renounced |
 | [`src/interfaces/IMintABear.sol`](src/interfaces/IMintABear.sol) | — | the reads `Activation` depends on: `ownerOf`, `transferNonce`, `exists` |
-| [`src/Activation.sol`](src/Activation.sol) | Solady `Ownable`, `ReentrancyGuard`, `SafeCastLib` | the level record: a holder burns $MNTD for a bear and the burn is recorded in the same transaction; levels and royalty weights, the MINT Status link, `snapshot` for the royalty split; refuses amounts past level 5 |
-| [`src/WhitelistClaim.sol`](src/WhitelistClaim.sol) | Solady `Ownable`, `EIP712`, `ECDSA` | the on-chain whitelist registry: 1,000 allocations claimed with a voucher from MINT's eligibility signer, two per wallet and per account, inside the campaign window; its claimant list is the Studio allowlist |
+| [`src/Activation.sol`](src/Activation.sol) | Solady `Ownable`, `ReentrancyGuard`, `SafeCastLib` | the level record: a holder burns $MNTD for a bear and the burn is recorded in the same transaction; levels and royalty weights, `snapshot` for the royalty split; refuses amounts past level 5 |
+| [`src/WhitelistClaim.sol`](src/WhitelistClaim.sol) | Solady `Ownable`, `EIP712`, `ECDSA` | not deployed, kept as a fallback: the voucher whitelist registry (retired WL-3). `src/WhitelistImport.sol`, the owner-imported variant (retired WL-7), likewise |
 
-`MysteryBox`, `PrizeDraw` and `PrizeVault` are tranche 2.
+`MysteryBox` and `PrizeDraw` are tranche 2; no contract goes on a prize chain. `Activation` still
+carries the Status link, which spec v2.5 removes (`openspec/changes/tranche-1/tasks.md` 3.15).
 
 The token never calls the activation contract. The dependency runs one way only, so no
 defect in `Activation` can block a transfer and none can silently skip a reset: every
@@ -37,7 +41,7 @@ contracts. They are configured through OpenSea Studio / SeaDrop.
 | [`script/Deploy.s.sol`](script/Deploy.s.sol) | deploys the three tranche-1 contracts in the specified order, refusing a collection address that is not `MintABear`, from `script/config/<chain>.json` (template [`example.json`](script/config/example.json)), verifying on Sourcify as it broadcasts |
 | [`script/verify.sh`](script/verify.sh) | re-verifies and checks on Sourcify every contract a deploy created |
 | [`script/Enforcement.s.sol`](script/Enforcement.s.sol) | lifts or restores royalty enforcement with one owner call; prints the Safe transaction for a Safe admin |
-| [`script/WhitelistExport.s.sol`](script/WhitelistExport.s.sol) | exports the claimant CSV for Studio and checks the allowlist root Studio set against the registry; both refuse while claims are still possible |
+| [`script/WhitelistExport.s.sol`](script/WhitelistExport.s.sol) | checks the allowlist root Studio set against the whitelist; the check over MINT's CSV is `tasks.md` 2.6, and today it reads a registry |
 
 Operating steps are in [`docs/RUNBOOK.md`](docs/RUNBOOK.md).
 

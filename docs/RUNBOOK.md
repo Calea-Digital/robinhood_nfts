@@ -127,7 +127,7 @@ encode them.
 
 **Set before the first sale.** Royalty info is a Studio setting, written to the collection by
 MINT's admin through `setRoyaltyInfo`: **500 basis points (5%)** to the royalty pot MINT names
-(CQ-15). The receiver is never the admin and never a vault — the contract cannot tell them apart,
+(CQ-15). The receiver is never the admin and never the prize wallet — the contract cannot tell them apart,
 so this rule is the operator's. It is set and checked before any sale, the team-bear sale that
 proves OpenSea's handling of the validated collection included: until it is set, `royaltyInfo`
 answers `(address(0), 0)` and the enforced royalty is zero.

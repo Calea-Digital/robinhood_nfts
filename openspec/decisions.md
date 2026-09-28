@@ -483,7 +483,6 @@ published; if OpenSea cannot fill orders, one owner call lifts enforcement until
 - **State:** resolved
 - **Status note:** call, 28 September 2026
 - **Section:** RAF
-- **Needed by:** before the vaults are deployed
 - **Resolution:** prizes are NFTs and tokens held in MINT's prize wallet `0xf6c02F0fDAC5c03EE9f1cc60A5D9875Efc4c83e3` on Robinhood Chain, Ethereum and possibly ApeChain, and paid from it to the winner on the prize's chain; no contract is deployed on a prize chain.
 - **Summary:** MINT's prize wallet; no vaults
 - **Blocks:** RAF-33
