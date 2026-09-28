@@ -130,8 +130,8 @@ on-chain. `→ CQ-18`.
 **Kind:** work-item
 `WhitelistImport` on Robinhood Chain is the variant of the registry for a whitelist MINT fills
 itself from a CSV (`→ CQ-18`). WL-3 is the alternative, and MINT deploys one of the two.
-Constructor: `WhitelistImport(owner, closeAt)`; the owner is MINT's admin and is not the zero
-address. Until `closeAt` the owner can write the list:
+Constructor: `WhitelistImport(owner, closeAt)`; the owner is MINT's admin. A zero owner is
+refused (`NewOwnerIsZeroAddress`), and so is a close in the past (`InvalidWindow`). Until `closeAt` the owner can write the list:
 - `addAllocations(address[] wallets, uint8[] counts)` gives each wallet `counts[i]` more
   allocations. The call is refused whole, with no partial state, on any of these:
   - after `closeAt` (`ListFrozen`);
@@ -151,7 +151,8 @@ reassign an allocation, and `claimsOf(wallet)` is the wallet's eligibility for t
 stage.
 
 Events:
-- `AllocationsAdded(wallet, count, total)` for each wallet;
+- `AllocationsAdded(wallet, count, total)` for each wallet, where `total` is the wallet's
+  allocations after the add, so an indexer can rebuild `claimsOf` from events alone;
 - `AllocationsRemoved(wallet, count)`;
 - `CloseSet(closeAt)`.
 
@@ -162,6 +163,8 @@ either registry:
 - `claimants(offset, limit) → (wallet, allocations)[]`, each listed wallet once;
 - `closeAt`, `frozen()`.
 
+The export (WL-4) refuses a list that is not yet frozen (`CampaignStillOpen`), even when all
+1,000 allocations are written, because it can still be corrected until `closeAt`.
 `renounceOwnership` reverts for every caller. There is no voucher, no signer and no per-account
 cap: who is eligible is MINT's alone to decide, and the chain records what the owner wrote and
 when.
