@@ -287,7 +287,7 @@ funded for a cycle's worth of opens, at most 4,222.
   after it, because a set that can change mid-game changes everybody's odds; and an excluded bear
   is excluded whoever holds it, so a team bear that is sold stays out.
 - **Whether every prize chain is known.** Each chain holding a prize needs its own vault deployed,
-- **Summary:** Prizes per cycle by the owner; 222 ids excluded for good (which, to follow); prize chains Robinhood, Ethereum, maybe ApeChain
+- **Summary:** Prizes per cycle by the owner; 222 ids excluded, which to follow
   verified and funded, so the list closes before tranche 2 deploys and cannot be added to
   afterwards without a new deployment.
 
@@ -485,7 +485,7 @@ published; if OpenSea cannot fill orders, one owner call lifts enforcement until
 - **Section:** RAF
 - **Needed by:** before the vaults are deployed
 - **Resolution:** prizes are NFTs and tokens held in MINT's prize wallet `0xf6c02F0fDAC5c03EE9f1cc60A5D9875Efc4c83e3` on Robinhood Chain, Ethereum and possibly ApeChain, and paid from it to the winner on the prize's chain; no contract is deployed on a prize chain.
-- **Summary:** MINT's prize wallet on Robinhood Chain, Ethereum and possibly ApeChain; no vaults
+- **Summary:** MINT's prize wallet; no vaults
 - **Blocks:** RAF-33
 
 **Question.** On which chain are the prize assets held, and where should the vault live?
@@ -523,7 +523,7 @@ wallet is an externally owned account, active on 4663 and Ethereum (read 28 Sept
 - **Status note:** call, 28 September 2026
 - **Section:** RAF
 - **Resolution:** **cycles**. The owner schedules each cycle's window and prizes; in a cycle each playable bear is one shot, decided instantly by its own Chainlink word, from a fixed pool without replacement; prizes not awarded stay with MINT and may roll into a later cycle; the only cap on a wallet's wins is one shot per bear per cycle.
-- **Summary:** Owner-scheduled cycles; one shot per bear per cycle; own VRF word; fixed pool, unawarded prizes roll forward
+- **Summary:** Cycles set by the owner; one shot per bear per cycle
 - **Blocks:** RAF-28, RAF-29, RAF-30, RAF-32
 
 **Question.** Every bear at a published block is a ticket and holders do nothing — or an
@@ -598,7 +598,7 @@ MINT.
 - **Status note:** superseded at the call, 28 September 2026
 - **Section:** RAF
 - **Resolution:** superseded: there is no vault to claim from; a win is paid from MINT's prize wallet, pushed or requested as CQ-22 decides, and a 30-day window applies only if it is requested.
-- **Summary:** Superseded by CQ-22 (prize delivery)
+- **Summary:** Superseded by CQ-22
 - **Blocks:** RAF-33
 - **Status label:** Closed
 
@@ -625,7 +625,7 @@ has to request a prize within 30 days is part of CQ-22.
 - **Status note:** superseded at the call, 28 September 2026
 - **Section:** RAF
 - **Resolution:** superseded: prizes are held in MINT's own wallet, so nothing on-chain locks or releases them; MINT's rule that nothing is withdrawn while a cycle is live is MINT's to keep.
-- **Summary:** Superseded — custody is MINT's wallet
+- **Summary:** Superseded; custody is MINT's wallet
 - **Status label:** Closed
 
 **Question.** May the admin withdraw *unreserved* inventory, or is everything that enters the
@@ -753,7 +753,7 @@ it also says where the wager API and the splitter wallet read and write.
 - **Resolution:** out of scope: MINT assigns Status links to holders' Privy accounts off-chain; the on-chain link (ACT-9) is removed.
 - **Blocks:** ACT-12
 - **Status label:** Closed
-- **Summary:** Out of scope — Status links are off-chain; ACT-9 removed
+- **Summary:** Out of scope; Status links off-chain
 
 **Question.** `Activation` lets each **wallet** nominate one bear to carry its Status boost
 (ACT-9), and a getminted.io account may use several wallets — the whitelist already counts two
@@ -786,7 +786,7 @@ removed.
 - **Status note:** MINT's reply, 28 September 2026
 - **Section:** WL
 - **Resolution:** option **(B)** — an off-chain register in MINT's backend. No whitelist contract is deployed; the final CSV is loaded into Studio and Calea checks Studio's root against it.
-- **Summary:** Off-chain register in MINT's backend (B); Studio's root checked against the CSV
+- **Summary:** Off-chain, in MINT's backend (B)
 - **Blocks:** WL-4, WL-8
 
 **Question.** MINT provides the Privy mirror login and an API for the signed-in account's

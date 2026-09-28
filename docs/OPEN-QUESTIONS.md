@@ -42,15 +42,15 @@ Answers from each call are marked as such below.
 | CQ-5 | ACT | Weight table | 1.00 / 1.10 / 1.25 / 1.45 / 1.70 / 2.00, six levels | — | Answered |
 | CQ-6 | COL | May holders burn bears? | No; supply stays 4,444 | — | Answered |
 | CQ-7 | COL | Enforce royalties on-chain | Yes, from deployment | — | Answered |
-| CQ-8 | RAF | Where the prize assets live | MINT's prize wallet on Robinhood Chain, Ethereum and possibly ApeChain; no vaults | before the vaults are deployed | Answered |
-| CQ-9 | RAF | Mystery box model | Owner-scheduled cycles; one shot per bear per cycle; own VRF word; fixed pool, unawarded prizes roll forward | — | Answered |
-| CQ-10 | RAF | Claim window | Superseded by CQ-22 (prize delivery) | — | Closed |
-| CQ-11 | RAF | Owner withdrawals | Superseded — custody is MINT's wallet | — | Closed |
+| CQ-8 | RAF | Where the prize assets live | MINT's prize wallet; no vaults | before the vaults are deployed | Answered |
+| CQ-9 | RAF | Mystery box model | Cycles set by the owner; one shot per bear per cycle | — | Answered |
+| CQ-10 | RAF | Claim window | Superseded by CQ-22 | — | Closed |
+| CQ-11 | RAF | Owner withdrawals | Superseded; custody is MINT's wallet | — | Closed |
 | CQ-15 | COL | Royalty rate and receiver | 5% to `0xf7E7…0e63` | — | Answered |
 | CQ-16 | OPS | Compliance (freeze / clawback) | None | — | Answered |
 | CQ-19 | DEL | Frontend and integration | MINT builds the play page on getminted.io in TypeScript; Calea ships a tested typed client library | before the tranche 1 handover | Answered |
-| CQ-21 | ACT | Status links per account | Out of scope — Status links are off-chain; ACT-9 removed | — | Closed |
-| CQ-18 | WL | Whitelist claim recording | Off-chain register in MINT's backend (B); Studio's root checked against the CSV | — | Answered |
+| CQ-21 | ACT | Status links per account | Out of scope; Status links off-chain | — | Closed |
+| CQ-18 | WL | Whitelist claim recording | Off-chain, in MINT's backend (B) | — | Answered |
 <!-- openspec:end -->
 
 ## Questions
@@ -310,7 +310,7 @@ funded for a cycle's worth of opens, at most 4,222.
   after it, because a set that can change mid-game changes everybody's odds; and an excluded bear
   is excluded whoever holds it, so a team bear that is sold stays out.
 - **Whether every prize chain is known.** Each chain holding a prize needs its own vault deployed,
-- **Summary:** Prizes per cycle by the owner; 222 ids excluded for good (which, to follow); prize chains Robinhood, Ethereum, maybe ApeChain
+- **Summary:** Prizes per cycle by the owner; 222 ids excluded, which to follow
   verified and funded, so the list closes before tranche 2 deploys and cannot be added to
   afterwards without a new deployment.
 
