@@ -2,7 +2,7 @@
 
 Scope note: the typed TypeScript client of DEL-6, tested with vitest against anvil. The contracts
 are deployed from the Forge build in `out/`: a real SeaDrop at an ordinary address, the V3
-stand-in, `MockMNTD` or the OpenZeppelin `MockOzMNTD`, `MintABear`, `WhitelistClaim` and
+stand-in, `MockMNTD` or the OpenZeppelin `MockOzMNTD`, `MintABear`, `WhitelistClaim`, `WhitelistImport` and
 `Activation`. The allowlist tree and the voucher typed data are pinned against answers computed
 outside viem: merkletreejs 0.2.32 and Foundry's `cast`. Deterministic tests only. That Studio
 builds its root the same way is rehearsal item 3, not a leaf here; the real V3's operator error
@@ -18,7 +18,7 @@ commented. Both run in CI.
 surface
 ├── DEL-6: every function the page, the voucher backend and the split call is in the generated ABI
 │   and is made by a library export
-├── every state-changing function of WhitelistClaim and Activation is the app's or owner-only
+├── every state-changing function of WhitelistClaim, WhitelistImport and Activation is a library call or owner-only
 ├── the README's error-code table is the one generated from src/errors.ts, naming every documented revert
 └── every facade method the README lists exists
 ```
@@ -58,6 +58,9 @@ MintABearError
                      └── a plan interrupted after approve: ACTIVATION_PAUSED with completed = [approve]; the retry is burn alone
 07 indexing, split   ├── typed BearActivated args; the indexer's level, link and owners
                      └── split.run in both modes: 750,000 / 250,000 of an eligible 400, dead address excluded
+08 whitelist import  ├── the admin page: CSV → plan (3 added, 4 allocations) → execute; a holder reads claimsOf 2
+                     ├── a corrected file: bob topped up, carol removed, alice unchanged; matches
+                     └── a bad row's message names its line; after closeAt the plan refuses LIST_FROZEN
 ```
 
 ## Allowlist tree (`allowlist.test.ts`)
@@ -110,6 +113,28 @@ on chain
 │   and revived by rotating the key back: rule 4); Expired; CampaignClosed; SoldOut; WalletLimit;
 │   AccountLimit; WrongAllocation (index ahead, and index repeated)
 └── a smart-wallet address claims for itself
+```
+
+## Owner-imported whitelist (`whitelistImport.test.ts`, WL-7)
+
+```
+parseAllocationCsv
+├── header optional, blank lines and spaces ignored, lower-case addresses checksummed; no header, same rows
+├── IMPORT_INVALID_ROW with line and reason: not an address, bad checksum, zero address, count 0 / 3 /
+│   not a number, one column, three columns
+├── IMPORT_DUPLICATE_WALLET for a wallet on two lines, whatever its case, naming both lines
+└── IMPORT_OVER_TOTAL above 1,000 (501 × 2); 500 × 2 passes
+on chain
+├── plan in batches of 2 → three addAllocations; execute; matches; state; claimsOf per row;
+│   AllocationsAdded decoded as the registry's with its arguments
+├── an interrupted import: planned again, only the missing rows are added
+├── a changed file: a lower count removed and re-added, a higher one topped up, an unlisted wallet
+│   kept (reported) or removed (removeUnlisted); the list then matches
+├── IMPORT_OVER_TOTAL counting the wallets kept; LIST_FROZEN after closeAt, and execute refuses it;
+│   a batch size of 0 is a RangeError
+├── the contract's refusals: WALLET_LIMIT, NOT_LISTED, INVALID_WINDOW, NOT_CONTRACT_OWNER, LIST_FROZEN
+├── a frozen import's claimants build the Studio allowlist as a claim registry's do
+└── every addAllocations revert, NotListed and InvalidWindow map to a code
 ```
 
 ## Burn, link, reads (`activation.test.ts`)

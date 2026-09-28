@@ -8,6 +8,7 @@ import {
   ContractRevertError,
   ERROR_CODES,
   explainError,
+  IMPORT_REVERTS,
   isMintABearError,
   LINK_REVERTS,
   messageFor,
@@ -29,7 +30,7 @@ describe("error model", () => {
        Given every revert the library documents for mint, claim, burn and link, plus the collection's and the token's
        When each is mapped
        Then each has a code other than UNKNOWN_REVERT, and that code has a non-empty message */
-    const documented = [...MINT_REVERTS, ...CLAIM_REVERTS, ...BURN_REVERTS, ...LINK_REVERTS, "OwnerQueryForNonexistentToken", "BurnDisabled", "ERC20InsufficientAllowance", "ERC20InsufficientBalance"];
+    const documented = [...MINT_REVERTS, ...CLAIM_REVERTS, ...IMPORT_REVERTS, ...BURN_REVERTS, ...LINK_REVERTS, "NotListed", "InvalidWindow", "OwnerQueryForNonexistentToken", "BurnDisabled", "ERC20InsufficientAllowance", "ERC20InsufficientBalance"];
     for (const name of documented) {
       const code = REVERT_CODES[name];
       expect(code, name).toBeDefined();

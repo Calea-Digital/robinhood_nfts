@@ -18,6 +18,7 @@ const target = join(pkg, "src", "abi");
 const CONTRACTS = [
   ["MintABear", "mintABearAbi", "mintABear.ts"],
   ["WhitelistClaim", "whitelistClaimAbi", "whitelistClaim.ts"],
+  ["WhitelistImport", "whitelistImportAbi", "whitelistImport.ts"],
   ["Activation", "activationAbi", "activation.ts"],
   ["SeaDrop", "seaDropAbi", "seaDrop.ts"],
 ];

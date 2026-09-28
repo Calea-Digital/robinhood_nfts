@@ -40,7 +40,7 @@ import {
   type Hex,
 } from "viem";
 
-import { activationAbi, mintABearAbi, seaDropAbi, whitelistClaimAbi } from "./abi/index.js";
+import { activationAbi, mintABearAbi, seaDropAbi, whitelistClaimAbi, whitelistImportAbi } from "./abi/index.js";
 
 /**
  * OpenZeppelin v5's ERC-20 errors. `Activation` calls $MNTD's `burnFrom` (OpenZeppelin
@@ -75,6 +75,7 @@ type ErrorsOf<T extends readonly unknown[]> = Extract<T[number], { type: "error"
 export type KnownErrorName =
   | ErrorsOf<typeof mintABearAbi>["name"]
   | ErrorsOf<typeof whitelistClaimAbi>["name"]
+  | ErrorsOf<typeof whitelistImportAbi>["name"]
   | ErrorsOf<typeof activationAbi>["name"]
   | ErrorsOf<typeof seaDropAbi>["name"]
   | ErrorsOf<typeof erc20ErrorsAbi>["name"];
@@ -90,7 +91,7 @@ function signature(error: AbiError): string {
  */
 export const allErrorsAbi: readonly AbiError[] = (() => {
   const seen = new Map<string, AbiError>();
-  for (const abi of [mintABearAbi, whitelistClaimAbi, activationAbi, seaDropAbi, erc20ErrorsAbi] as readonly Abi[]) {
+  for (const abi of [mintABearAbi, whitelistClaimAbi, whitelistImportAbi, activationAbi, seaDropAbi, erc20ErrorsAbi] as readonly Abi[]) {
     for (const item of abi) {
       if (item.type === "error" && !seen.has(signature(item))) seen.set(signature(item), item);
     }
@@ -134,6 +135,14 @@ export type ErrorCode =
   | "ACCOUNT_LIMIT"
   | "WRONG_ALLOCATION"
   | "NOT_YET_ELIGIBLE"
+  // Owner-imported whitelist (WhitelistImport, MINT's admin page)
+  | "LIST_FROZEN"
+  | "IMPORT_INVALID_ROW"
+  | "IMPORT_DUPLICATE_WALLET"
+  | "IMPORT_OVER_TOTAL"
+  | "IMPORT_LENGTH_MISMATCH"
+  | "NOT_LISTED"
+  | "INVALID_WINDOW"
   // Activation: burn and link
   | "ACTIVATION_PAUSED"
   | "ZERO_AMOUNT"
@@ -198,6 +207,14 @@ export const REVERT_CODES: Readonly<Record<string, ErrorCode>> = {
   WalletLimit: "WALLET_LIMIT",
   AccountLimit: "ACCOUNT_LIMIT",
   WrongAllocation: "WRONG_ALLOCATION",
+  // WhitelistImport (SoldOut and WalletLimit are shared with WhitelistClaim)
+  ListFrozen: "LIST_FROZEN",
+  LengthMismatch: "IMPORT_LENGTH_MISMATCH",
+  ZeroWallet: "IMPORT_INVALID_ROW",
+  ZeroCount: "IMPORT_INVALID_ROW",
+  NotListed: "NOT_LISTED",
+  // Both registries' owner calls
+  InvalidWindow: "INVALID_WINDOW",
   // Activation
   ContractPaused: "ACTIVATION_PAUSED",
   ZeroAmount: "ZERO_AMOUNT",
@@ -260,6 +277,14 @@ const MESSAGES: Record<ErrorCode, (d: Record<string, unknown>) => string> = {
   ACCOUNT_LIMIT: () => "This account has already claimed both of its whitelist spots.",
   WRONG_ALLOCATION: () => "This whitelist pass is out of date: the account's spots changed since it was issued. Request a new one.",
   NOT_YET_ELIGIBLE: () => "This account has not wagered enough yet for another whitelist spot.",
+  LIST_FROZEN: () => "The whitelist is final: its close has passed, and nothing can be added, removed or moved.",
+  IMPORT_INVALID_ROW: (d) =>
+    d.line !== undefined ? `Line ${d.line} of the whitelist file is invalid: ${d.reason}.` : "A row of the whitelist import names the zero address or gives a count of zero.",
+  IMPORT_DUPLICATE_WALLET: (d) => `The whitelist file names ${d.wallet} twice (lines ${d.firstLine} and ${d.line}). Give each wallet one line with its total.`,
+  IMPORT_OVER_TOTAL: (d) => `The whitelist would hold ${d.total} allocations; at most ${d.allowed ?? 1000} are allowed.`,
+  IMPORT_LENGTH_MISMATCH: () => "The import's wallets and counts differ in number.",
+  NOT_LISTED: () => "A wallet to remove holds no whitelist allocations.",
+  INVALID_WINDOW: () => "That date is not allowed: a close cannot be in the past, and a window must open before it closes.",
   ACTIVATION_PAUSED: () => "Burning and Status linking are not open yet.",
   ZERO_AMOUNT: () => "Choose an amount of $MNTD above zero.",
   NOT_BEAR_OWNER: () => "Only the bear's owner can do this, and this wallet does not own it.",

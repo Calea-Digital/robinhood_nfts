@@ -21,11 +21,11 @@
  */
 import { erc20Abi, parseEventLogs, type Abi, type Address, type Hash, type Log, type ParseEventLogsReturnType } from "viem";
 
-import { activationAbi, mintABearAbi, whitelistClaimAbi } from "./abi/index.js";
+import { activationAbi, mintABearAbi, whitelistClaimAbi, whitelistImportAbi } from "./abi/index.js";
 import type { MintABearAddresses } from "./addresses.js";
 import type { AnyPublicClient } from "./calls.js";
 
-/** The contracts whose events are read. `registry` and `mntd` are optional. */
+/** The contracts whose events are read. `registry` (either `WhitelistClaim` or `WhitelistImport`) and `mntd` are optional. */
 export type SystemAddresses = Pick<MintABearAddresses, "bears" | "activation"> & Partial<Pick<MintABearAddresses, "registry" | "mntd">>;
 
 /** Which contract emitted an event. */
@@ -52,12 +52,15 @@ export type SystemEvent =
   | Tagged<"bears", typeof mintABearAbi>
   | Tagged<"activation", typeof activationAbi>
   | Tagged<"registry", typeof whitelistClaimAbi>
+  | Tagged<"registry", typeof whitelistImportAbi>
   | Tagged<"mntd", typeof erc20Abi>;
 
 const ABIS: Record<EmitterName, Abi> = {
   bears: mintABearAbi,
   activation: activationAbi,
-  registry: whitelistClaimAbi,
+  // Either registry: `WhitelistClaim`'s events, then `WhitelistImport`'s (their shared ownership
+  // events decode the same either way).
+  registry: [...whitelistClaimAbi, ...whitelistImportAbi.filter((item) => item.type === "event")],
   mntd: erc20Abi,
 };
 

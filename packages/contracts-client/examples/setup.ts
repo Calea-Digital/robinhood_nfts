@@ -50,6 +50,10 @@ export async function localChain() {
     address: (who: Holder): Address => accounts[who].address,
     /** The deployment (on getminted.io: `getDeployment(robinhoodChain.id)`). */
     addresses,
+    /** The same deployment with the owner-imported registry (`WhitelistImport`, WL-7) as `registry`. */
+    importAddresses: { ...addresses, registry: f.importRegistry } as Required<MintABearAddresses>,
+    /** MINT's admin wallet, the owner of every contract here (on getminted.io: the admin page's connected wallet). */
+    adminWallet: owner,
     deployBlock,
     /** The fee recipient Studio allows (OpenSea's, on the real drop). */
     feeRecipient: accounts.feeRecipient.address,

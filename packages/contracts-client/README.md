@@ -53,6 +53,7 @@ the page would use it, with every step commented. They run in CI, so they stay c
 | [`05-link-and-transfer`](examples/05-link-and-transfer.test.ts) | the link prompt; linking; transfer warnings; a link voided by a sale; the self-transfer refusal |
 | [`06-errors`](examples/06-errors.test.ts) | the `catch` pattern; a declined wallet prompt; no ETH for gas; the contract's own error; a plan interrupted halfway |
 | [`07-indexing-and-split`](examples/07-indexing-and-split.test.ts) | typed events; the reference indexer; the royalty split |
+| [`08-whitelist-import`](examples/08-whitelist-import.test.ts) | MINT's admin page with the owner-imported registry: CSV → plan → send; a correction; the freeze |
 
 ## The client
 
@@ -75,6 +76,12 @@ they throw `NO_WALLET`.
 | | `claimants()` | every claimant with its allocations |
 | | `allowList(stage)` | the whitelist stage's allowlist: `root`, `entry(wallet)` |
 | | `claim({ voucher, signature })` | `{ spotNumber, allocationIndex, … }` |
+| `whitelistImport` | `state()` | `{ spotsLeft, closeAt, frozen, owner }` — owner-imported registry only (below) |
+| | `parseCsv(text)` | the checked rows, or throws `IMPORT_INVALID_ROW` / `IMPORT_DUPLICATE_WALLET` / `IMPORT_OVER_TOTAL` |
+| | `plan(rowsOrCsv, { batchSize?, removeUnlisted? })` | `{ ok: true, calls, add, remove, unlisted, unchanged, total }` or `{ ok: false, code, userMessage }` |
+| | `execute(plan)` | one result per batch sent |
+| | `add(rows)`, `remove(wallets)`, `setCloseAt(closeAt)` | the write's result (owner only) |
+| | `matches(rows)` | whether the list on chain is exactly `rows` |
 | `bears` | `get(tokenId)` | `{ exists: false }`, or owner, level, burns, weight, `costToMax` |
 | | `level`, `costToReach`, `thresholds`, `weights`, `paused`, `snapshot` | the reads |
 | | `planBurn({ tokenId, targetLevel })` | `{ ok: true, amount, calls, warnings }` or `{ ok: false, code, userMessage }` |
@@ -159,6 +166,13 @@ In a `catch`, `explainError(error)` gives `{ code, userMessage, details }` for a
 | `ACCOUNT_LIMIT` | `AccountLimit` | This account has already claimed both of its whitelist spots. |
 | `WRONG_ALLOCATION` | `WrongAllocation` | This whitelist pass is out of date: the account's spots changed since it was issued. Request a new one. |
 | `NOT_YET_ELIGIBLE` | — | This account has not wagered enough yet for another whitelist spot. |
+| `LIST_FROZEN` | `ListFrozen` | The whitelist is final: its close has passed, and nothing can be added, removed or moved. |
+| `IMPORT_INVALID_ROW` | `ZeroWallet`, `ZeroCount` | A row of the whitelist import names the zero address or gives a count of zero. |
+| `IMPORT_DUPLICATE_WALLET` | — | The whitelist file names undefined twice (lines undefined and undefined). Give each wallet one line with its total. |
+| `IMPORT_OVER_TOTAL` | — | The whitelist would hold undefined allocations; at most 1000 are allowed. |
+| `IMPORT_LENGTH_MISMATCH` | `LengthMismatch` | The import's wallets and counts differ in number. |
+| `NOT_LISTED` | `NotListed` | A wallet to remove holds no whitelist allocations. |
+| `INVALID_WINDOW` | `InvalidWindow` | That date is not allowed: a close cannot be in the past, and a window must open before it closes. |
 | `ACTIVATION_PAUSED` | `ContractPaused` | Burning and Status linking are not open yet. |
 | `ZERO_AMOUNT` | `ZeroAmount` | Choose an amount of $MNTD above zero. |
 | `NOT_BEAR_OWNER` | `NotBearOwner` | Only the bear's owner can do this, and this wallet does not own it. |
@@ -210,6 +224,39 @@ tests pin them. [`examples/03-whitelist`](examples/03-whitelist.test.ts) shows i
    `setSigner`: its unexpired vouchers would work again. `signVoucher` does not read the chain, so
    compare the key's address with `campaign().signer` at start-up.
 5. **`deadline` is short.** It defaults to 10 minutes; the contract sets no cap.
+
+## The owner-imported whitelist (`WhitelistImport`, WL-7)
+
+MINT deploys one of two registries: `WhitelistClaim` (holders claim with vouchers, above) or
+`WhitelistImport`, which MINT's admin fills from a CSV on its admin page. Point
+`addresses.registry` at whichever is deployed. The reads the mint needs — `whitelist.claimsOf`,
+`whitelist.claimants`, `whitelist.allowList`, `mint.remainingWhitelistMints` — work on both;
+`whitelist.campaign`, `isOpen`, `accountClaims` and `claim` are `WhitelistClaim`'s only, and
+`whitelistImport.*` is `WhitelistImport`'s only.
+
+1. **The file** is `wallet,allocations` per line, with an optional header: each wallet once, 1 or
+   2 allocations, at most 1,000 in all. `whitelistImport.parseCsv` refuses anything else with the
+   line and the reason.
+2. **The plan makes the chain equal the file.** `whitelistImport.plan(csv)` reads the list on
+   chain and returns only the calls that close the difference, in batches of 200: removals
+   first, then additions. A wallet already right is left alone. Wallets on chain that the file
+   leaves out are reported in `unlisted` and kept, unless `{ removeUnlisted: true }`.
+3. **Send it from the owner** with `whitelistImport.execute(plan)`. A batch that fails leaves the
+   batches before it mined (`completed`); planning the same file again plans only the rest.
+4. **`closeAt` freezes the list for good.** Until then the owner can add, remove and move the
+   close (`setCloseAt`; the current time freezes it from the next second). After it every write
+   reverts `ListFrozen` and `plan` refuses `LIST_FROZEN`. Check with `whitelistImport.matches(rows)`
+   before the close, then export to Studio as for `WhitelistClaim`.
+
+```ts
+const admin = createMintABearClient({ publicClient, walletClient: adminWallet, addresses });
+const plan = await admin.whitelistImport.plan(await file.text());
+if (!plan.ok) return showError(plan.userMessage);
+showSummary(plan.add.length, plan.remove.length, plan.unlisted.length);
+await admin.whitelistImport.execute(plan);
+```
+
+[`examples/08-whitelist-import`](examples/08-whitelist-import.test.ts) runs it end to end.
 
 ## Events and indexing
 
