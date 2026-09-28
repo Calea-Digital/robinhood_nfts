@@ -26,7 +26,7 @@ becomes a Task with Spec Ref `NONE` when picked.
 - [x] 2.3 WL-4 — `claimants(offset, limit)` export equals the Studio allowlist
 - [x] 2.4 WL-5 — window gates claims; close ≥ 48 h before the stage
 - [x] 2.5 WL-7 — `WhitelistImport`: the owner-imported variant, frozen at `closeAt`; deploy entry point, export over either registry, client module
-- [ ] 2.6 WL-4 — `compare` over MINT's final CSV file instead of a registry (the whitelist is off-chain, WL-8); tests, tree; the runbook's step 4
+- [ ] 2.6 WL-4 — (Defect MNT-141) `compare` over MINT's final CSV file instead of a registry (the whitelist is off-chain, WL-8); tests, tree; the runbook's step 4
 
 ## 3. Activation
 
@@ -44,7 +44,7 @@ becomes a Task with Spec Ref `NONE` when picked.
 - [x] 3.12 ACT-12 — roles
 - [x] 3.13 ACT-13 — events
 - [x] 3.14 ACT-14 — reads
-- [ ] 3.15 ACT-12 — remove the Status link (ACT-9 retired in spec v2.4): `linkBear`, `unlinkBear`, `linkOf`, `BearLinked`, `BearUnlinked`, the interface pin, tests, trees, client link module; ACT-11 references become ACT-15
+- [ ] 3.15 ACT-12 — (Defect MNT-142) remove the Status link (ACT-9 retired in spec v2.4): `linkBear`, `unlinkBear`, `linkOf`, `BearLinked`, `BearUnlinked`, the interface pin, tests, trees, client link module; ACT-11 references become ACT-15
 - [ ] 3.16 ACT-15 — the pause restated without links (ACT-11 retired): tests and tree cite ACT-15
 
 ## 4. Scripts, runbook material, rehearsal
@@ -63,4 +63,4 @@ becomes a Task with Spec Ref `NONE` when picked.
 ## 6. Integration
 
 - [x] 6.1 DEL-6 — typed TypeScript client library (`packages/contracts-client`) and the reference royalty-split script
-- [ ] 6.2 DEL-6 — the whitelist from MINT's CSV (WL-8): `whitelist.allowList` and `mint.remainingWhitelistMints` without a registry; the registry modules marked undeployed
+- [ ] 6.2 DEL-6 — (Defect MNT-143) the whitelist from MINT's CSV (WL-8): `whitelist.allowList` and `mint.remainingWhitelistMints` without a registry; the registry modules marked undeployed
