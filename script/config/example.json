@@ -1,5 +1,5 @@
 {
-  "_comment": "Template for script/config/<chainid>.json. Every value marked TBD waits on MINT: admin and signer (CQ-12, OPS-1), campaign dates (CQ-1; proposed 6-26 October, stage on 29 October), $MNTD address (CQ-2; Activation reads its decimals). Addresses here are placeholders and must be replaced before any broadcast.",
+  "_comment": "Template for script/config/<chainid>.json. Every value marked TBD waits on MINT: admin and signer (CQ-12, OPS-1), campaign dates (CQ-1; proposed 6-26 October, stage on 29 October), $MNTD address (CQ-2; Activation reads its decimals). runWhitelistImport (WL-7) reads only admin, closeAt and whitelistStageAt. Addresses here are placeholders and must be replaced before any broadcast.",
   "name": "MintABear",
   "symbol": "BEAR",
   "admin": "0x00000000000000000000000000000000000a0001",

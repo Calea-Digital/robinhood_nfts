@@ -14,6 +14,7 @@ verify.sh <chainId>
 ├── with a contract name it does not know: exits 2
 ├── --dry-run: prints, for every created contract in broadcast order, the forge verify-contract
 │   call and the Sourcify read — WhitelistClaim, MintABear, Activation (OPS-3)
+│   └── from a runWhitelistImport broadcast: WhitelistImport, with its own source path (WL-7)
 └── --check (and verify, after submitting)
     ├── every contract reads exact_match or match: exits 0 (OPS-3)
     ├── one contract reads anything else: exits 1, naming it MISSING (OPS-3)

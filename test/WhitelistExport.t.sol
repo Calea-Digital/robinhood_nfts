@@ -10,6 +10,7 @@ import {WhitelistClaim} from "../src/WhitelistClaim.sol";
 import {AllowListTree} from "../script/lib/AllowListTree.sol";
 import {WhitelistExport} from "../script/WhitelistExport.s.sol";
 import {WhitelistClaimBase} from "./WhitelistClaim.t.sol";
+import {WhitelistImportBase} from "./WhitelistImport.t.sol";
 import {MockClaimantRegistry} from "./mocks/MockClaimantRegistry.sol";
 
 /// @dev Puts the library's internal functions behind an external call, so their reverts can be expected.
@@ -275,6 +276,105 @@ contract WhitelistExportTest is WhitelistClaimBase {
         _setRoot(loaded);
         vm.expectRevert(abi.encodeWithSelector(WhitelistExport.RootMismatch.selector, expected, loaded));
         exporter.compare(address(wl), address(seaDrop), address(bears), _stage());
+    }
+}
+
+/// @dev The export and compare over the owner-imported registry (WL-7), read through the same
+///      interface as `WhitelistClaim`.
+contract WhitelistExportImportTest is WhitelistImportBase {
+    WhitelistExport internal exporter;
+    SeaDrop internal seaDrop;
+    MintABear internal bears;
+
+    string internal constant CSV = "exports/test-whitelist-import.csv";
+
+    function setUp() public override {
+        super.setUp();
+        exporter = new WhitelistExport();
+        seaDrop = new SeaDrop();
+        address[] memory allowed = new address[](1);
+        allowed[0] = address(seaDrop);
+        bears = new MintABear("MintABear", "BEAR", allowed);
+        bears.setMaxSupply(4444);
+    }
+
+    function _stage() internal pure returns (MintParams memory) {
+        return MintParams({
+            mintPrice: 0,
+            maxTotalMintableByWallet: 0,
+            startTime: uint256(CLOSE_AT) + 2 days,
+            endTime: uint256(CLOSE_AT) + 3 days,
+            dropStageIndex: 1,
+            maxTokenSupplyForStage: 4444,
+            feeBps: 0,
+            restrictFeeRecipients: false
+        });
+    }
+
+    function test_export_refusesAnImportUntilItFreezes_evenSoldOut() public {
+        /* Scenario:
+           Given a WhitelistImport filled to 1,000 allocations, with closeAt not passed
+           When export or compare runs, then again one second after closeAt
+           Then each reverts with CampaignStillOpen while a correction is still possible, and after
+             the close the rows are read */
+        address[] memory w = new address[](500);
+        uint8[] memory c = new uint8[](500);
+        for (uint256 i; i < 500; ++i) {
+            (w[i], c[i]) = (_wallet(i), 2);
+        }
+        vm.prank(admin);
+        wl.addAllocations(w, c);
+        assertEq(wl.spotsLeft(), 0);
+
+        vm.warp(CLOSE_AT);
+        vm.expectRevert(abi.encodeWithSelector(WhitelistExport.CampaignStillOpen.selector, CLOSE_AT, 0));
+        exporter.export(address(wl), CSV);
+        vm.expectRevert(abi.encodeWithSelector(WhitelistExport.CampaignStillOpen.selector, CLOSE_AT, 0));
+        exporter.compare(address(wl), address(seaDrop), address(bears), _stage());
+
+        vm.warp(uint256(CLOSE_AT) + 1);
+        assertEq(exporter.checkedRows(WhitelistClaim(address(wl))).length, 500);
+    }
+
+    function test_exportAndCompare_overAFrozenImport() public {
+        /* Scenario:
+           Given a frozen WhitelistImport of alice (2) and bob (1), and the root of its rows set on SeaDrop
+           When export and compare run
+           Then the CSV carries both rows, compare passes, and each proof mints exactly its allocations */
+        (address[] memory w, uint8[] memory c) = _two(alice, 2, bob, 1);
+        vm.prank(admin);
+        wl.addAllocations(w, c);
+        vm.warp(uint256(CLOSE_AT) + 1);
+
+        WhitelistClaim.Claimant[] memory rows = exporter.export(address(wl), CSV);
+        assertEq(
+            vm.readFile(CSV),
+            string.concat("wallet,allocations\n", vm.toString(alice), ",2\n", vm.toString(bob), ",1\n")
+        );
+        vm.removeFile(CSV);
+
+        bytes32[] memory leaves = exporter.leaves(rows, _stage());
+        bytes32 root = AllowListTree.root(leaves);
+        bears.updateAllowList(
+            address(seaDrop), AllowListData({merkleRoot: root, publicKeyURIs: new string[](0), allowListURI: ""})
+        );
+        assertEq(exporter.compare(address(wl), address(seaDrop), address(bears), _stage()), root);
+
+        vm.warp(uint256(CLOSE_AT) + 2 days);
+        for (uint256 i; i < rows.length; ++i) {
+            MintParams memory params = _stage();
+            params.maxTotalMintableByWallet = rows[i].allocations;
+            vm.prank(rows[i].wallet);
+            seaDrop.mintAllowList(
+                address(bears),
+                makeAddr("feeRecipient"),
+                address(0),
+                rows[i].allocations,
+                params,
+                AllowListTree.proof(leaves, leaves[i])
+            );
+            assertEq(bears.balanceOf(rows[i].wallet), rows[i].allocations);
+        }
     }
 }
 

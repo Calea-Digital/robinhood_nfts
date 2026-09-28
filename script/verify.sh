@@ -32,13 +32,14 @@ source_of() {
   case "$1" in
     MintABear) echo "src/MintABear.sol:MintABear" ;;
     WhitelistClaim) echo "src/WhitelistClaim.sol:WhitelistClaim" ;;
+    WhitelistImport) echo "src/WhitelistImport.sol:WhitelistImport" ;;
     Activation) echo "src/Activation.sol:Activation" ;;
     *) echo "" ;;
   esac
 }
 
 FILES=()
-for entry in runWhitelist runCollection runActivation; do
+for entry in runWhitelist runWhitelistImport runCollection runActivation; do
   f="$DIR/Deploy.s.sol/$CHAIN/$entry-latest.json"
   [ -f "$f" ] && FILES+=("$f")
 done

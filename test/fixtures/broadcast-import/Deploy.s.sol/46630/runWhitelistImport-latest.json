@@ -1,0 +1,15 @@
+{
+  "transactions": [
+    {
+      "transactionType": "CREATE",
+      "contractName": "WhitelistImport",
+      "contractAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+      "function": null,
+      "arguments": [
+        "0x00000000000000000000000000000000000a0001",
+        "1792972799"
+      ]
+    }
+  ],
+  "chain": 46630
+}
