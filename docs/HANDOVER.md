@@ -148,6 +148,15 @@ Submodule pins: `forge-std` `bf647bd` (v1.16.2), `seadrop` `757590f`, `solady` `
    confirm: Calea recommends a private team stage in Studio. It also needs CQ-22 and CQ-23 before
    `PrizeDraw` is deployed.
 
+**Board clean-up for the human** (the 20 problems `board.sh`'s read-back reports, all in
+human-owned fields):
+- **Cancel the Tasks for retired requirements:** the 13 RAF and ACT ones (MNT-34, 36, 40, 45–50,
+  52–54, 56), plus MNT-22 (WL-3) and MNT-134 (WL-7). MNT-134 needs Canceled or Done. Each carries
+  a comment naming its replacement.
+- **Four Done items now point at requirements that are no longer work items,** because WL-1 and
+  WL-5 became informative: MNT-20, MNT-24, MNT-109 and MNT-110.
+- **CQ-1 is flagged** as still open while everything it blocks is Done.
+
 What each open item blocks:
 
 | Open item | Blocks |
