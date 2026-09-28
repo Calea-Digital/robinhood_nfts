@@ -132,6 +132,7 @@ on chain
 │   kept (reported) or removed (removeUnlisted); the list then matches
 ├── IMPORT_OVER_TOTAL counting the wallets kept; LIST_FROZEN after closeAt, and execute refuses it;
 │   a batch size of 0 is a RangeError
+├── rows passed directly: a wallet twice, a count of 3, the zero address refused before any read
 ├── the contract's refusals: WALLET_LIMIT, NOT_LISTED, INVALID_WINDOW, NOT_CONTRACT_OWNER, LIST_FROZEN
 ├── a frozen import's claimants build the Studio allowlist as a claim registry's do
 └── every addAllocations revert, NotListed and InvalidWindow map to a code

@@ -194,6 +194,8 @@ export interface PlanImportOptions {
  * @returns The plan, or a refusal: `LIST_FROZEN` once `closeAt` has passed, `IMPORT_OVER_TOTAL` when
  *   the file plus the wallets kept would exceed 1,000.
  * @throws {RangeError} For a batch size below 1.
+ * @throws {ClientRefusal} `IMPORT_INVALID_ROW` or `IMPORT_DUPLICATE_WALLET` for rows that break the
+ *   file's rules (rows from `parseAllocationCsv` never do).
  *
  * @example
  * ```ts
@@ -210,6 +212,7 @@ export async function planImport(
 ): Promise<ImportPlan | Refusal<"LIST_FROZEN" | "IMPORT_OVER_TOTAL">> {
   const batchSize = options.batchSize ?? DEFAULT_IMPORT_BATCH;
   if (!Number.isInteger(batchSize) || batchSize < 1) throw new RangeError("batchSize must be a positive integer");
+  checkRows(rows);
 
   const state = await readImportState(client, registry);
   if (state.frozen) return refusal("LIST_FROZEN", { closeAt: state.closeAt });
@@ -245,6 +248,27 @@ export async function planImport(
   for (let i = 0; i < remove.length; i += batchSize) calls.push(removeAllocationsCall(registry, remove.slice(i, i + batchSize)));
   for (let i = 0; i < add.length; i += batchSize) calls.push(addAllocationsCall(registry, add.slice(i, i + batchSize)));
   return { ok: true, calls, add, remove, unlisted, unchanged, total };
+}
+
+/**
+ * The file's rules, for rows that did not come through {@link parseAllocationCsv}: `line` is the
+ * row's position, from 1.
+ */
+function checkRows(rows: readonly AllocationRow[]): void {
+  const seen = new Map<string, number>();
+  rows.forEach((row, i) => {
+    const line = i + 1;
+    if (!isAddress(row.wallet, { strict: false }) || /^0x0{40}$/i.test(row.wallet)) {
+      throw new ClientRefusal("IMPORT_INVALID_ROW", { line, reason: `"${row.wallet}" is not a wallet that can hold an allocation` });
+    }
+    if (row.allocations !== 1 && row.allocations !== 2) {
+      throw new ClientRefusal("IMPORT_INVALID_ROW", { line, reason: `allocations must be 1 or 2, found "${row.allocations}"` });
+    }
+    const key = row.wallet.toLowerCase();
+    const first = seen.get(key);
+    if (first !== undefined) throw new ClientRefusal("IMPORT_DUPLICATE_WALLET", { wallet: getAddress(row.wallet), line, firstLine: first });
+    seen.set(key, line);
+  });
 }
 
 /**

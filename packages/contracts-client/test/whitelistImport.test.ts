@@ -229,6 +229,20 @@ describe("on chain", () => {
     await expect(planImport(f.publicClient, f.importRegistry, rows5, { batchSize: 0 })).rejects.toThrow(RangeError);
   });
 
+  it("refuses rows passed directly that break the file's rules, before reading the chain", async () => {
+    /* Scenario:
+       Given rows built in code rather than parsed: a wallet twice, a count of 3, the zero address
+       When each is planned
+       Then each is refused with IMPORT_DUPLICATE_WALLET or IMPORT_INVALID_ROW naming the row */
+    const mintabear = admin();
+    await expect(mintabear.whitelistImport.plan([rows5[0]!, { wallet: rows5[0]!.wallet, allocations: 1 }])).rejects.toMatchObject({
+      code: "IMPORT_DUPLICATE_WALLET",
+      details: { line: 2, firstLine: 1 },
+    });
+    await expect(mintabear.whitelistImport.plan([{ wallet: walletOf(1), allocations: 3 }])).rejects.toMatchObject({ code: "IMPORT_INVALID_ROW", details: { line: 1 } });
+    await expect(mintabear.whitelistImport.plan([{ wallet: "0x0000000000000000000000000000000000000000", allocations: 1 }])).rejects.toMatchObject({ code: "IMPORT_INVALID_ROW" });
+  });
+
   it("maps the contract's refusals to codes", async () => {
     /* Scenario:
        Given the list with a wallet at 2
