@@ -4,8 +4,8 @@ Written 2026-09-15, current as of 2026-09-28. Read this first when resuming.
 
 ## Where things stand
 
-**The specification lives in `openspec/`** (v2.4: the MINT–Calea calls of 21 and
-28 September 2026, and the tranche-1 review of 23–24 September):
+**The specification lives in `openspec/`** (v2.5: the MINT–Calea calls of 21 and
+28 September 2026 and MINT's reply on the whitelist, and the tranche-1 review of 23–24 September):
 - `openspec/specs/<family>/spec.md` carries every requirement with its Kind and its Scenario.
 - `openspec/decisions.md` is the `CQ-n` register that belongs to MINT.
 - `docs/SPECIFICATION.md` and `docs/OPEN-QUESTIONS.md` are the prose views MINT reads. The
@@ -15,12 +15,14 @@ Written 2026-09-15, current as of 2026-09-28. Read this first when resuming.
 MINT has one combined document in `docs/client/`, generated from those two files by
 `docs/tools/build_client_doc.py`. Never edit the `.pages` by hand. The output name carries the
 version line in full, suffix included, so each draft is its own file.
-- **The current one** is `MintABear-Specification-v2.4.pages` (built 28 September 2026). It opens
+- **The current one** is `MintABear-Specification-v2.5.pages` (built 28 September 2026). It opens
   with the open questions, each with what it holds up and when it is needed, then where the work
-  stands, what the client library needs from MINT and the changes since v2.3.
-- **`MintABear-Operational-v2.4.pages`** is its extract for a call: everything before §1 Scope,
+  stands, what the client library needs from MINT and the changes since v2.3. `MintABear-Whitelist-Options.pages` is the brief on the two registry
+  options MINT answered with the off-chain register; its source is
+  `docs/tools/build_whitelist_options.py`.
+- **`MintABear-Operational-v2.5.pages`** is its extract for a call: everything before §1 Scope,
   built with `build_client_doc.py --operational`.
-- **`v1.0` to `v2.3`** stay beside them as the records MINT answered, decided against and last
+- **`v1.0` to `v2.4`** stay beside them as the records MINT answered, decided against and last
   received.
 
 **The board (YouTrack MNT) follows `openspec/`** through `docs/tools/board.sh`. The work loop that
@@ -42,11 +44,15 @@ Both calls are folded in.
 - **Addresses:** the admin `0x1530…6141` and the royalty receiver `0xf7E7…0e63`.
 - **$MNTD's interface** is known from the reference token.
 - **The repository recommendation** is accepted.
-- **The whitelist registry** is wanted on 29 September, never audited.
+- **The whitelist** is off-chain, in MINT's backend: no contract (MINT's reply, same day).
 
-MINT asked for a whitelist its admin imports from a CSV. Calea put a counter-offer, and both
-variants are built, WL-3 `WhitelistClaim` and WL-7 `WhitelistImport`. §10 lists ten open items,
-O1–O10, each with Calea's recommendation, which is also the default built if it is deferred.
+MINT first asked for a whitelist its admin imports from a CSV. Calea built that as a variant,
+WL-7 `WhitelistImport`, beside the voucher registry WL-3 `WhitelistClaim`, and sent a brief on
+both (`docs/client/MintABear-Whitelist-Options.pages`). MINT answered with an off-chain register,
+which Calea accepted with five conditions (WL-8, CQ-18 resolved): a free signature for pasted
+wallets, one merged row per wallet, a counter that cannot over-claim, a freeze 48 hours before the
+whitelist stage, and the whitelist stage first. Both contracts stay in the repository, unused.
+Spec v2.5 records it. §10 lists nine open items, O1–O9, each with Calea's recommendation, which is also the default built if it is deferred.
 Two decisions are new: CQ-22 (who sends a payout, push or request) and CQ-23 (who operates the
 worker).
 
@@ -63,7 +69,7 @@ RAF-32 (cycles), RAF-27 to RAF-30, RAF-8, RAF-33 (custody and the payout record)
 (pause) carry it. RAF-2 to 6, 11, 15 and 24 to 26 and 31 are retired.
 
 **Tranche 1's code** is on `main` up to `8fc37ac` (merged, never pushed). `tranche-1` carries
-WL-7 and spec v2.4 on top. **The paired review of every tranche-1 Task is complete**
+WL-7 and specs v2.4 and v2.5 on top. **The paired review of every tranche-1 Task is complete**
 (`reports/tranche-1-review-log.md`):
 - COL-1…13, WL-1, 3, 4, 5, ACT-1…14, OPS-2, 3, 6 and the non-spec MNT-92…94, 96…98 are Done;
 - with them, the Defects the review raised (MNT-99…112, 115…118, 120…130);
@@ -74,7 +80,7 @@ An integrity check of spec, prose, client document, code and board ran first (th
 "Tranche-end pass"); `reports/tranche-1-review.md` summarises it all.
 
 **WL-7** (MNT-134, merge `451554c`, In Review) was built on 28 September by the developer, with
-tests and self-review (`reports/wl-7-diff-review.md`). It is outside the audit (DEL-8). With it:
+tests and self-review (`reports/wl-7-diff-review.md`). It is not deployed: the whitelist went off-chain the same day (WL-8). With it:
 242 contract tests and 133 client tests; 200 rows cost 14.0M gas to add.
 
 Still ahead:
@@ -86,7 +92,7 @@ comment and logged time. The human merges `tranche-1` into `main`.
 
 | | |
 |---|---|
-| Contracts | `MintABear`, `WhitelistClaim` and `WhitelistImport` (MINT deploys one), `Activation`; tranche 2 is `MysteryBox` (4663) and `PrizeDraw` (Arbitrum One) |
+| Contracts | `MintABear`, `Activation`; tranche 2 is `MysteryBox` (4663) and `PrizeDraw` (Arbitrum One). `WhitelistClaim` and `WhitelistImport` are built but not deployed (the whitelist is off-chain) |
 | Scripts | `Deploy.s.sol` (OPS-2), `verify.sh` (OPS-3), `Enforcement.s.sol` (OPS-6), `WhitelistExport.s.sol` (WL-4); `docs/RUNBOOK.md`: ownership handover, whitelist export and import, transfer enforcement, royalties, Activation |
 | Tests | 242 contract tests and 133 client tests, all passing; 100% line, branch and function coverage (gate ≥90 / ≥80); every tranche-1 work-item Scenario has a test except the operational OPS-1, OPS-3 (live), OPS-4, OPS-5 |
 | CI gates | `fmt --check`, `build --sizes` (no warnings), `test`, spec lint, generated prose, `verify.sh` dry run and verdict test — all green |
@@ -102,6 +108,8 @@ Requirements amended since v2.1, each through an archived OpenSpec change:
   - spec v2.2: `Activation` burns $MNTD itself (ACT-1…14, OPS-1, 2, 4, DEL-8).
 - **28 September:**
   - WL-7 (the owner-imported registry);
+  - spec v2.5, MINT's reply: the whitelist off-chain (WL-8 added; WL-3, WL-6, WL-7 retired;
+    WL-1, 2, 4, 5, COL-11, OPS-1, 2, 4, 5, DEL-6, 8, 9, 10 modified);
   - spec v2.4, the call of that day: RAF-32 to RAF-34 added, RAF-2…6, 11, 15, 24…26, 31 retired,
     RAF-8, 14, 16…19, 27…30 modified; ACT-9 and ACT-11 retired, ACT-15 added, ACT-5, 12, 13, 14
     modified; WL-2…5, COL-3, 6, 8, OPS-1…5, 7 and DEL-6, 8, 9, 10, 12 modified.
@@ -110,12 +118,12 @@ Submodule pins: `forge-std` `bf647bd` (v1.16.2), `seadrop` `757590f`, `solady` `
 (v0.1.26). The chain's contract size limit is ~96 KB; every contract clears even Ethereum's
 24,576.
 
-## Next session — the whitelist delivery, then ACT-9 and the rehearsal
+## Next session — the whitelist check, ACT-9, then the rehearsal
 
-1. **29 September: deliver the whitelist registry MINT picks** (CQ-18, O1). Deliver it with its
-   client module into the repository MINT names (CQ-14, O9). Deploy it with MINT's window (CQ-1,
-   O2) and, for WL-3, the signer (CQ-12). The deploy entry points are
-   `Deploy.s.sol runWhitelist` / `runWhitelistImport`; whether 46630 goes first is MINT's call.
+1. **The whitelist root check over a CSV** (`tasks.md` 2.6, WL-4). `WhitelistExport.s.sol`'s
+   `compare` reads a registry today; it has to read MINT's final CSV file. Add tests and the
+   tree. It is needed before the whitelist stage: the freeze is 27 October and the stage opens
+   29 October.
 2. **ACT-9 out of the code** (Task under ACT-12): remove `linkBear`, `unlinkBear`, `linkOf`,
    `BearLinked`, `BearUnlinked`, the ACT-12 interface pin's entries, the tests, trees and the
    client's link module. Rename the ACT-11 references to ACT-15.
@@ -128,29 +136,30 @@ Submodule pins: `forge-std` `bf647bd` (v1.16.2), `seadrop` `757590f`, `solady` `
    - the `Deploy.s.sol` entry points, with Sourcify verification (closing MNT-95);
    - Studio attached, and `acceptOwnership` completed;
    - `Activation` read back, and the admin proving control (runbook, "Activation");
-   - the whitelist taken to an allowlist mint through `WhitelistExport.s.sol`'s export and
-     compare;
+   - a CSV loaded into Studio's whitelist stage, `compare` passing against it, and an allowlist
+     mint;
    - a burn through `Activation`;
    - enforcement toggled once.
 4. **The internal auditor** takes `MintABear` and `Activation` after the rehearsal. The trees'
-   INV-N and Fork-N obligations are theirs. The whitelist registries are outside the audit.
-5. **Tranche 2 waits on the 222 excluded ids** (CQ-20, O3). It also needs CQ-22 and CQ-23 before
+   INV-N and Fork-N obligations are theirs. The whitelist has no contract.
+5. **Tranche 2 waits on the 222 excluded ids** (CQ-20, O2). MINT mints the team bears from the
+   owner wallet; if that is the first mint, they are ids 1–222. How the owner mints is still to
+   confirm: Calea recommends a private team stage in Studio. It also needs CQ-22 and CQ-23 before
    `PrizeDraw` is deployed.
 
 What each open item blocks:
 
 | Open item | Blocks |
 |---|---|
-| O1 which whitelist registry (CQ-18) | Tomorrow's delivery and deployment; for WL-3 the signer |
-| O2 whitelist window and dates (CQ-1) | The registry's constructor (`closeAt`, and `openAt` for WL-3); the deploy script's 48-hour check against the stage |
-| O3 the 222 excluded ids (CQ-20) | The first cycle; `PrizeDraw`'s `PLAYABLE` |
-| O4 prize delivery (CQ-22) | How payouts are sent and whether a request window exists; `recordPayout` is built either way |
-| O5 VRF subscription holder (CQ-17) | `PrizeDraw`'s deployment (subscription id); DEL-10 if Calea holds it |
-| O6 worker operator (CQ-23) | The worker's address; OPS-5's handover; DEL-10 |
-| O7 admin for every contract (CQ-12) | Mainnet configs; the accepted risk on the minter list |
-| O8 testnet and mainnet $MNTD addresses (CQ-2) | `Activation`'s deployment and the rehearsal |
-| O9 repository URL (CQ-14) | Tomorrow's delivery |
-| O10 existing-contract review (CQ-13) | DEL-7, when MINT names a contract |
+| O1 dates (CQ-1) | The whitelist freeze (48 h before the stage); scheduling |
+| O2 the 222 excluded ids (CQ-20) | The first cycle; `PrizeDraw`'s `PLAYABLE` |
+| O3 prize delivery (CQ-22) | How payouts are sent and whether a request window exists; `recordPayout` is built either way |
+| O4 VRF subscription holder (CQ-17) | `PrizeDraw`'s deployment (subscription id); DEL-10 if Calea holds it |
+| O5 worker operator (CQ-23) | The worker's address; OPS-5's handover; DEL-10 |
+| O6 admin for every contract (CQ-12) | Mainnet configs; the accepted risk on the minter list |
+| O7 testnet and mainnet $MNTD addresses (CQ-2) | `Activation`'s deployment and the rehearsal |
+| O8 repository URL (CQ-14) | Delivery into MINT's repository |
+| O9 existing-contract review (CQ-13) | DEL-7, when MINT names a contract |
 
 ## Sources and precedence
 
@@ -167,7 +176,7 @@ client replies cite them.
 ## Calendar
 
 MINT's fixed dates:
-- the whitelist registry, delivered and deployed on 29 September;
+- the whitelist frozen by 27 October, 48 hours before the whitelist stage;
 - TGE on 20 October ($MNTD live on Robinhood Chain);
 - the mint on 29 October;
 - burns and level-up from 29 October.
@@ -179,12 +188,12 @@ Two decouplings hold whatever moves:
 - the collection deploys and mints without the mystery box or `Activation`;
 - `Activation` stays paused until its burn has been exercised against real $MNTD.
 
-The whitelist registry's window is fixed at deployment and closes at least 48 hours before the
-whitelist stage.
+The whitelist is frozen at least 48 hours before the whitelist stage, so the Studio upload and the
+root check fit.
 
 ## What is left
 
-### Tranche 1 — `MintABear`, `WhitelistClaim`, `Activation`, then the internal auditor
+### Tranche 1 — `MintABear`, `Activation`, then the internal auditor
 
 The code is written and reviewed (above). What remains before the internal auditor takes it:
 
@@ -219,34 +228,27 @@ dead-address exclusion (`bin/split.ts`). Its `README.md` is the portal team's re
 start through the `createMintABearClient` facade, the error codes with the message each shows a
 holder, the voucher backend's rules, events and indexing, and the split. `examples/` holds one
 runnable file per flow (mint, whitelist, burn, link and transfer, errors, indexing and split).
-It moves unchanged into the repository MINT names (CQ-14, accepted 28 September). The whitelist
-registry's module goes first, on 29 September. The mystery box's calls and MINT's admin-page calls
-(the CSV import, exclusions, cycle scheduling, pauses) join it in tranche 2. Calea's part of the UI is the call
+It moves unchanged into the repository MINT names (CQ-14, accepted 28 September). The mystery
+box's calls and MINT's admin-page calls (exclusions, cycle scheduling, pauses) join it in
+tranche 2. Its whitelist claim and import modules are not delivered. Calea's part of the UI is the call
 surface, review of contract-touching pull requests, and clarifications; the rest is MINT's.
 
 ## For the portal team
 
-The call surface after tranche 1 is WL-3 or WL-7, ACT-14 and COL-12 in the spec; after tranche 2,
+The call surface after tranche 1 is WL-4 (mint proofs from the CSV), ACT-14 and COL-12 in the spec; after tranche 2,
 RAF-17. Four constraints:
 
 0. **The client library is Calea's deliverable and it is TypeScript** (DEL-6, D9). It is typed
    against the ABIs, covers every call the app makes, and carries its own tests and the revert
    reasons a caller has to handle. MINT builds the page on getminted.io against it. It lives in
    `packages/contracts-client`, and its `README.md` is the reference for everything below.
-1. **The whitelist is voucher-then-transaction (WL-3), or a read (WL-7).**
-   - **WL-3:** the backend signs a short-lived voucher after the wager API confirms a threshold,
-     and the wallet submits it. The voucher's `allocationIndex` is the account's allocation
-     number — 1 once $50 is wagered, 2 once $100 is — whichever wallet the holder selects. The
-     EIP-712 type is exactly
-     `Claim(address wallet,uint8 allocationIndex,bytes32 account,uint256 deadline)`.
-   - **WL-7:** the admin page imports the CSV in batches, and holders read `claimsOf(wallet)`.
-   - Either way, `spotsLeft()` is the live counter.
+1. **The whitelist is MINT's backend** (WL-8). The mint page builds each wallet's allowlist proof
+   from MINT's final CSV with `buildAllowList`; nothing on-chain is read for eligibility.
 2. **Activation is approve, then one click.** Approve `Activation` on $MNTD, then call
    `burn(tokenId, amount)` with `amount` from `costToReach(tokenId, targetLevel)`. Anything above
    the level-5 remainder is refused, so nothing is destroyed for nothing. Status links are MINT's,
    kept against the Privy account; `levelOf` is what Status reads.
-3. **Reads are free; poll them.** `levelOf`, `weightOf`, `costToReach`, `snapshot`, `spotsLeft`,
-   `claimsOf`; after tranche 2, `shotsLeft`, `odds` and `outcomeOf`.
+3. **Reads are free; poll them.** `levelOf`, `weightOf`, `costToReach`, `snapshot`; after tranche 2, `shotsLeft`, `odds` and `outcomeOf`.
 4. **There is a reset event.** `TransferNonceAdvanced` fires on every non-mint transfer, in the
    same transaction as `Transfer`. Index it as the reset.
 
@@ -300,27 +302,17 @@ RAF-17. Four constraints:
   is that key alone and the runbook's handover, which resets the list to canonical SeaDrop
   straight after acceptance.
 - **One EOA owns every contract** (assumed, CQ-12). A compromise of `0x1530…6141` controls the
-  collection's settings, the whitelist import until its freeze, the pause of `Activation`, and
+  collection's settings, the pause of `Activation`, and
   the mystery box's exclusions and cycles. It cannot move a holder's bear, record a level
   without a burn, or change an outcome.
-- **The whitelist registries are not audited** (MINT, 28 September). `WhitelistClaim` had Calea's
-  paired review in tranche 1; `WhitelistImport` has the developer's tests and self-review only
-  (`reports/wl-7-diff-review.md`: one Low fixed, three informational).
-- **With WL-7 the owner writes the whitelist.** The list is MINT's alone until `closeAt`, visible
-  on-chain with every write, and frozen after it. The chain proves what was written, not who was
-  eligible.
-- **Slither "locked ether"** on `Activation`, `WhitelistClaim` and `WhitelistImport`: Solady marks ownership
+- **The whitelist is MINT's word** (WL-8). The register, its counter and its rules are in MINT's
+  backend, and nothing public shows how the list was made. The one check is that Studio's root is
+  exactly MINT's final CSV (WL-4). MINT's decision, 28 September.
+- **Slither "locked ether"** on `Activation` (and on the undeployed `WhitelistClaim` and `WhitelistImport`): Solady marks ownership
   functions `payable`, and anyone can call `requestOwnershipHandover` and
   `cancelOwnershipHandover`, so anyone could lock their own ETH by attaching value; neither
   contract withdraws it. The loss is only ever the sender's own. Accepted, and said in each
   contract's NatSpec.
-- **With WL-3 the eligibility signer decides who may claim.** The signer, and the owner through
-  `setSigner`, can sign vouchers for wallets they control with fresh account hashes, up to all
-  1,000 allocations: the register proves a voucher, not the wagering behind it. Accepted; every
-  claim and every `SignerSet` is on-chain.
-- **`setWindow` can reopen a closed campaign** (WL-3). Claims made after the export would be in the
-  registry and not in Studio's allowlist. Accepted; the runbook runs the export and `compare`
-  after the last `WindowSet`, and `compare` fails on any difference.
 - **`Activation` calls $MNTD, which is outside this codebase.** The record is written before
   `burnFrom`, and `burn` is `nonReentrant`: a token that calls back cannot burn again, and any
   revert undoes the record. The reference token is OpenZeppelin 5.5 `ERC20Burnable`, which reverts
@@ -400,7 +392,7 @@ these.
 
 1. Does OpenSea Studio attach to and manage a contract we deployed ourselves, validator set? (testnet)
 2. Does OpenSea emit SignedZone-restricted orders for a Limit-Break-validated collection on 4663? (mainnet: one team bear listed and sold before the drop page is published)
-3. A whitelist claim end to end: voucher → `claim` → export → Studio allowlist stage → allowlist mint. It passes when `WhitelistExport.s.sol compare` passes against the root Studio set, a two-allocation wallet mints two, and a one-allocation wallet is refused its second — which shows Studio builds its tree like `script/lib/AllowListTree.sol` and keeps each wallet's own limit. (testnet)
+3. The whitelist end to end: a CSV → Studio allowlist stage → allowlist mint. It passes when `WhitelistExport.s.sol compare` over the CSV passes against the root Studio set, a two-allocation wallet mints two, and a one-allocation wallet is refused its second — which shows Studio builds its tree like `script/lib/AllowListTree.sol` and keeps each wallet's own limit. (testnet)
 4. A burn through `Activation` against $MNTD on 46630 through to a recorded level; then against the real token on mainnet between 20 and 28 October. The pause has no exemption, so that rehearsal runs in a window the owner opens and closes again; holders' access opens on 29 October (ACT-11, §8).
 5. Two mystery-box cycles on the testnets (46630 and Arbitrum Sepolia): exclusion, scheduling on both chains, boxes opened, relays in order, words and outcomes — one open that wins and one that does not, a relay offered out of turn and refused — a win paid from a test prize wallet and recorded with `recordPayout`, and a bear opened again in the second cycle.
 6. Moot while MINT's admin is an EOA: does Safe's web interface support chain 4663?
@@ -409,13 +401,13 @@ these.
 
 Twenty-three are in `docs/OPEN-QUESTIONS.md`, each with the section it affects, when it is
 needed, the answer where one exists, and the default otherwise:
-- **resolved or closed (13):** CQ-3, 4, 5, 6, 7, 8, 9, 10, 11, 15, 16, 19, 21;
-- **in follow-up (7):** CQ-1, 2, 12, 14, 17, 18, 20;
+- **resolved or closed (14):** CQ-3, 4, 5, 6, 7, 8, 9, 10, 11, 15, 16, 18, 19, 21;
+- **in follow-up (6):** CQ-1, 2, 12, 14, 17, 20;
 - **open (3):** CQ-13, 22, 23.
 
-They map onto O1–O10 in §10. Tranche 1's code is written. The whitelist registry deploys on
-29 September to MINT's values; the rehearsal waits on the testnet $MNTD; tranche 2 waits on the
-excluded ids.
+They map onto O1–O9 in §10. Tranche 1's code is written and nothing is due on 29 September. The
+whitelist root check over a CSV is needed by 27 October; the rehearsal waits on the testnet
+$MNTD; tranche 2 waits on the excluded ids.
 
 ## Related documents
 
@@ -423,7 +415,7 @@ excluded ids.
 - `docs/SPECIFICATION.md`, `docs/OPEN-QUESTIONS.md` (generated views), `docs/client/`, `docs/tools/build_client_doc.py`, `docs/tools/board.sh`.
 - `test/<Suite>.tree.md` — one branching tree per test suite, leaves citing requirement IDs, with
   the auditor's INV-N and Fork-N obligations numbered once across all trees.
-- `docs/RUNBOOK.md` — operating steps: the ownership handover (COL-10), the whitelist export (WL-4), transfer enforcement (OPS-6), royalties (COL-6) and `Activation` — the read-back, the control check, the pause around rehearsals and switch-on, and the mint batch size (OPS-2, ACT-11).
+- `docs/RUNBOOK.md` — operating steps: the ownership handover (COL-10), the whitelist into Studio (WL-4), transfer enforcement (OPS-6), royalties (COL-6) and `Activation` — the read-back, the control check, the pause around rehearsals and switch-on, and the mint batch size (OPS-2, ACT-11).
 - `test/SeaDropIntegration.t.sol` and its tree — the boundary with OpenSea Studio.
 - `docs/MintABear-Questionnaire-v2.0.docx` — the client questionnaire the original build answered.
 - `~/.claude/plans/i-am-starting-a-tidy-sloth.md` — the original decision log, item by item.

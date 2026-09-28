@@ -150,7 +150,7 @@ transfer-validator lift and restore (OPS-6) — and a pending ownership offer wo
 ### Requirement: COL-11 — What Studio owns
 **Kind:** informative
 Mint stages, dates and pricing; allowlists and per-wallet limits,
-including the whitelist stage loaded from `WhitelistClaim` (WL-4); payout address; `maxSupply`
+including the whitelist stage loaded from MINT's final CSV (WL-4); payout address; `maxSupply`
 (COL-2); `baseURI` and provenance (COL-5); royalty info (COL-6); `multiConfigure`. A
 "guaranteed" stage is guaranteed by stage sequencing — the guaranteed window must close before
 the next window opens — not by the contract.

@@ -1,9 +1,31 @@
-# Whitelist claim Specification
+# Spec Delta
 
-## Purpose
-MINT needs a first-come-first-served whitelist of 1,000 allocations that only wagering holders can claim, recorded where anyone can check it — so that the allowlist loaded into Studio is provably the list the campaign produced.
+## ADDED Requirements
 
-## Requirements
+### Requirement: WL-8 — Off-chain register
+**Kind:** informative
+The whitelist is kept off-chain, in MINT's backend (MINT, 28 September 2026, `→ CQ-18`). No
+contract is deployed for it.
+
+**The flow.**
+1. A holder signs in on getminted.io through Privy, or pastes a wallet address.
+2. The eligibility check shows what the account has wagered and what is left to unlock a spot or
+   the next one.
+3. The holder claims the spots unlocked. A pasted address proves itself with a wallet signature,
+   which costs no gas; a wallet connected through Privy already has.
+4. The backend records the claim.
+
+MINT's backend keeps the 1,000-spot counter so that two simultaneous claims cannot take the last
+spot. It also records whitelist spots from any other source, such as collaborations and
+giveaways, in the same register. The final list has **one row per wallet with its total**,
+merged across sources, and is the CSV loaded into Studio (WL-4). Nothing about the whitelist is
+public until Studio's allowlist root is set; the root is its only trace on-chain.
+
+#### Scenario: The register is MINT's
+- **WHEN** the whitelist flow is traced from eligibility to the final CSV
+- **THEN** every step runs in MINT's backend and no Calea contract is involved
+
+## MODIFIED Requirements
 
 ### Requirement: WL-1 — Rules
 **Kind:** informative
@@ -81,31 +103,16 @@ rule. Dates `→ CQ-1`; calendar in §8.
 - **WHEN** a claim arrives outside the window
 - **THEN** MINT's backend refuses it, and the list is final before the Studio upload
 
-### Requirement: WL-8 — Off-chain register
-**Kind:** informative
-The whitelist is kept off-chain, in MINT's backend (MINT, 28 September 2026, `→ CQ-18`). No
-contract is deployed for it.
+## REMOVED Requirements
 
-**The flow.**
-1. A holder signs in on getminted.io through Privy, or pastes a wallet address.
-2. The eligibility check shows what the account has wagered and what is left to unlock a spot or
-   the next one.
-3. The holder claims the spots unlocked. A pasted address proves itself with a wallet signature,
-   which costs no gas; a wallet connected through Privy already has.
-4. The backend records the claim.
+### Requirement: WL-3 — Registry
+**Reason:** MINT chose the off-chain register (28 September 2026); `WhitelistClaim` is not deployed and stays in the repository unused.
+**Migration:** See WL-8.
 
-MINT's backend keeps the 1,000-spot counter so that two simultaneous claims cannot take the last
-spot. It also records whitelist spots from any other source, such as collaborations and
-giveaways, in the same register. The final list has **one row per wallet with its total**,
-merged across sources, and is the CSV loaded into Studio (WL-4). Nothing about the whitelist is
-public until Studio's allowlist root is set; the root is its only trace on-chain.
+### Requirement: WL-6 — Alternative — off-chain register
+**Reason:** Adopted; the chosen design is restated as WL-8.
+**Migration:** See WL-8.
 
-#### Scenario: The register is MINT's
-- **WHEN** the whitelist flow is traced from eligibility to the final CSV
-- **THEN** every step runs in MINT's backend and no Calea contract is involved
-
-## Retired Requirements
-
-- WL-3 (the voucher registry `WhitelistClaim`) → WL-8
-- WL-6 (the off-chain register as an alternative) → WL-8
-- WL-7 (the owner-imported registry `WhitelistImport`) → WL-8
+### Requirement: WL-7 — Owner-imported registry
+**Reason:** MINT chose the off-chain register (28 September 2026); `WhitelistImport` is not deployed and stays in the repository unused.
+**Migration:** See WL-8.

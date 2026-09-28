@@ -1,13 +1,13 @@
 schema: calea-house
 
 engagement: client
-spec_version: "2.4"
+spec_version: "2.5"
 
 context: |
   Tech stack: Foundry / Solidity 0.8.17 (pinned by SeaDrop's exact pragma; evm london), OpenSea ERC721SeaDrop, Solady.
   Domain: MintABear — a 4,444-supply NFT collection on Robinhood Chain (chain id 4663) with $MNTD burn-to-level
   activation and an instant, Chainlink-VRF-decided mystery box in owner-scheduled cycles, prizes paid from MINT's
-  wallet on each prize chain. Contracts: MintABear, WhitelistClaim or WhitelistImport, Activation, MysteryBox (4663),
+  wallet on each prize chain. Contracts: MintABear, Activation, MysteryBox (4663),
   PrizeDraw (Arbitrum One).
   Client engagement: yes — MINT (getminted.io); Calea / Rayco builds. Keep in sync with `engagement:` above.
   Conventions: deterministic unit tests only (fuzz and invariant harnesses are the internal auditor's), a BTT tree
