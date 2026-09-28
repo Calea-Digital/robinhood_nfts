@@ -120,12 +120,12 @@ Submodule pins: `forge-std` `bf647bd` (v1.16.2), `seadrop` `757590f`, `solady` `
 
 ## Next session — the whitelist check, ACT-9, then the rehearsal
 
-1. **The whitelist root check over a CSV** (`tasks.md` 2.6, WL-4). `WhitelistExport.s.sol`'s
+1. **The whitelist root check over a CSV** (`tasks.md` 2.6, WL-4, Defect MNT-141). `WhitelistExport.s.sol`'s
    `compare` reads a registry today; it has to read MINT's final CSV file. Add tests and the
    tree. It is needed before the whitelist stage: the freeze is 27 October and the stage opens
-   29 October. With it, `tasks.md` 6.2: the client library's `whitelist.allowList` and
+   29 October. With it, `tasks.md` 6.2 (Defect MNT-143): the client library's `whitelist.allowList` and
    `mint.remainingWhitelistMints` from MINT's CSV rather than a registry.
-2. **ACT-9 out of the code** (Task under ACT-12): remove `linkBear`, `unlinkBear`, `linkOf`,
+2. **ACT-9 out of the code** (`tasks.md` 3.15, Defect MNT-142; then 3.16, ACT-15, MNT-135): remove `linkBear`, `unlinkBear`, `linkOf`,
    `BearLinked`, `BearUnlinked`, the ACT-12 interface pin's entries, the tests, trees and the
    client's link module. Rename the ACT-11 references to ACT-15.
 3. **The OPS-4 rehearsal on 46630** (human-led; `tasks.md` 4.4). It needs:
