@@ -7,6 +7,7 @@ import {ISeaDrop} from "seadrop/interfaces/ISeaDrop.sol";
 import {MintParams} from "seadrop/lib/SeaDropStructs.sol";
 
 import {WhitelistClaim} from "../src/WhitelistClaim.sol";
+import {WhitelistImport} from "../src/WhitelistImport.sol";
 import {AllowListTree} from "./lib/AllowListTree.sol";
 
 /**
@@ -29,6 +30,10 @@ import {AllowListTree} from "./lib/AllowListTree.sol";
  *               $REGISTRY 0x00005EA00Ac477B1030CE78506496e8C2dE24bf5 $COLLECTION \
  *               "(0,0,$START,$END,1,4444,$FEE_BPS,$RESTRICT)"
  *
+ *         The registry is whichever one MINT deployed: `WhitelistClaim` (WL-3) or
+ *         `WhitelistImport` (WL-7). Their reads share names and types, so both are read through
+ *         `WhitelistClaim`'s interface; only the point after which the list is final differs.
+ *
  *         `maxTotalMintableByWallet` in the stage tuple is ignored: each row's leaf takes the
  *         wallet's allocation count as its limit.
  */
@@ -48,7 +53,8 @@ contract WhitelistExport is Script {
     /// @notice The root on SeaDrop is not the root of the registry's rows.
     error RootMismatch(bytes32 expected, bytes32 onChain);
 
-    /// @notice The campaign can still take claims: the window has not closed and spots are left.
+    /// @notice The list can still change: for `WhitelistClaim`, the window has not closed and spots
+    ///         are left; for `WhitelistImport`, `closeAt` has not passed.
     error CampaignStillOpen(uint40 closeAt, uint256 spotsLeft);
 
     /**
@@ -117,12 +123,12 @@ contract WhitelistExport is Script {
     }
 
     /// @notice The whole claimant list, checked against the registry's own counts. Refused while
-    ///         the campaign can still take claims (WL-4: after the window closes or the spots sell
-    ///         out), since a later claim would be missing from the list.
+    ///         the list can still change, since a later write would be missing from it: a
+    ///         `WhitelistClaim` is final once its window closes or its spots sell out (WL-4), a
+    ///         `WhitelistImport` only once `closeAt` has passed, because a full import can still be
+    ///         corrected (WL-7).
     function checkedRows(WhitelistClaim registry) public view returns (WhitelistClaim.Claimant[] memory rows) {
-        uint40 closeAt = registry.closeAt();
-        uint256 left = registry.spotsLeft();
-        if (block.timestamp <= closeAt && left > 0) revert CampaignStillOpen(closeAt, left);
+        _requireFinal(registry);
 
         rows = new WhitelistClaim.Claimant[](0);
         for (uint256 offset;; offset += PAGE) {
@@ -154,5 +160,17 @@ contract WhitelistExport is Script {
         }
         uint256 claimed = registry.TOTAL_SPOTS() - registry.spotsLeft();
         if (total != claimed) revert TotalMismatch(total, claimed);
+    }
+
+    /// @dev `frozen()` exists on `WhitelistImport` only; a registry that does not answer it is read
+    ///      as a `WhitelistClaim`.
+    function _requireFinal(WhitelistClaim registry) private view {
+        uint40 closeAt = registry.closeAt();
+        uint256 left = registry.spotsLeft();
+        try WhitelistImport(address(registry)).frozen() returns (bool isFrozen) {
+            if (!isFrozen) revert CampaignStillOpen(closeAt, left);
+        } catch {
+            if (block.timestamp <= closeAt && left > 0) revert CampaignStillOpen(closeAt, left);
+        }
     }
 }

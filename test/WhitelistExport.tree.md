@@ -38,6 +38,9 @@ compare
 checkedRows
 ├── while the window is open and spots are left: CampaignStillOpen(closeAt, spotsLeft), for
 │   export and compare alike; one second after closeAt, or once sold out, the rows are read
+├── over a WhitelistImport (WL-7), which answers frozen(): CampaignStillOpen until closeAt has
+│   passed, even when sold out, since the import can still be corrected; after it, the rows are
+│   read, the CSV is written and compare passes with every proof minting its allocations
 ├── a wallet listed twice: DuplicateWallet
 ├── a row whose count differs from claimsOf: AllocationMismatch
 └── rows totalling other than TOTAL_SPOTS - spotsLeft: TotalMismatch

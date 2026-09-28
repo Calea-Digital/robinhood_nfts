@@ -36,6 +36,10 @@ expect "broadcasts that created nothing: exit 2" 2 "no contract created" -- \
 expect "no broadcast for the chain: exit 2" 2 "no Deploy.s.sol broadcast for chain 1" -- \
   bash script/verify.sh 1 --check --broadcast-dir "$BROADCAST"
 
+expect "the owner-imported registry (WL-7) is verified from its own entry point" 0 \
+  "forge verify-contract --verifier sourcify --chain 46630 0x5fbdb2315678afecb367f032d93f642f64180aa3 src/WhitelistImport.sol:WhitelistImport" -- \
+  bash script/verify.sh 46630 --dry-run --broadcast-dir test/fixtures/broadcast-import
+
 expect "a contract it does not know: exit 2" 2 "unknown contract in broadcast: Stranger" -- \
   bash script/verify.sh 46630 --check --broadcast-dir test/fixtures/broadcast-unknown
 

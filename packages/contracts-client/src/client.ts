@@ -71,6 +71,18 @@ import { rowsFromEvents, rowsFromSnapshot } from "./split/inputs.js";
 import { planTransfer, type TransferPlan } from "./transfer.js";
 import { formatMntd, parseMntd, readMntdDecimals } from "./units.js";
 import { campaignOpen, claimCall, readAccountClaims, readCampaign, readClaimants, readClaimsOf, type Voucher } from "./whitelist.js";
+import {
+  addAllocationsCall,
+  importMatchesChain,
+  parseAllocationCsv,
+  planImport,
+  readImportState,
+  removeAllocationsCall,
+  setCloseAtCall,
+  type AllocationRow,
+  type ImportPlan,
+  type PlanImportOptions,
+} from "./whitelistImport.js";
 
 /** Options of {@link createMintABearClient}. */
 export interface MintABearClientOptions {
@@ -291,6 +303,41 @@ export function createMintABearClient(options: MintABearClientOptions) {
         }
         return { ...result, spotNumber: claimed.args.spotNumber, allocationIndex: claimed.args.allocationIndex };
       },
+    },
+
+    /**
+     * The owner-imported whitelist (WL-7), for MINT's admin page, when `addresses.registry` is a
+     * `WhitelistImport`. Writes are the owner's: the connected wallet must be MINT's admin.
+     * `whitelist.claimsOf`, `whitelist.claimants` and `whitelist.allowList` read this registry too.
+     */
+    whitelistImport: {
+      /** Spots left of 1,000, the close, whether the list is frozen, and the owner. */
+      state: () => readImportState(publicClient, addresses.registry),
+      /** Parses and checks the CSV; throws `IMPORT_INVALID_ROW`, `IMPORT_DUPLICATE_WALLET` or `IMPORT_OVER_TOTAL`. */
+      parseCsv: parseAllocationCsv,
+      /**
+       * The calls that make the list on chain equal to `rows` (or to the CSV `text`).
+       * @returns `{ ok: true, calls, add, remove, unlisted, unchanged, total }`, or `{ ok: false, code, userMessage }`.
+       */
+      plan: (rows: readonly AllocationRow[] | string, planOptions?: PlanImportOptions) =>
+        planImport(publicClient, addresses.registry, typeof rows === "string" ? parseAllocationCsv(rows) : rows, planOptions),
+      /**
+       * Sends a plan from {@link whitelistImport.plan}, one call after another.
+       * @throws {ClientRefusal} With the plan's code when the plan was a refusal.
+       * @throws {MintABearError} What the chain refused; `completed` lists the batches already mined — plan again to send the rest.
+       */
+      execute: async (plan: ImportPlan | Awaited<ReturnType<typeof planImport>>): Promise<WriteResult[]> => {
+        if (!plan.ok) throw new ClientRefusal(plan.code, { ...plan.details });
+        return executePlan(publicClient, wallet(), plan.calls, executeOptions);
+      },
+      /** Adds allocations to wallets directly (each gets `allocations` more). */
+      add: (rows: readonly AllocationRow[]) => send(addAllocationsCall(addresses.registry, rows)),
+      /** Removes wallets from the list. */
+      remove: (wallets: readonly Address[]) => send(removeAllocationsCall(addresses.registry, wallets)),
+      /** Moves the close: later to extend, the current time to freeze from the next second. */
+      setCloseAt: (closeAt: bigint) => send(setCloseAtCall(addresses.registry, closeAt)),
+      /** Whether the list on chain is exactly `rows`. */
+      matches: (rows: readonly AllocationRow[]) => importMatchesChain(publicClient, addresses.registry, rows),
     },
 
     bears,

@@ -6,6 +6,7 @@ import {VmSafe} from "forge-std/Vm.sol";
 
 import {MintABear} from "../src/MintABear.sol";
 import {WhitelistClaim} from "../src/WhitelistClaim.sol";
+import {WhitelistImport} from "../src/WhitelistImport.sol";
 import {Activation} from "../src/Activation.sol";
 import {Deploy} from "../script/Deploy.s.sol";
 import {MockMNTD} from "./mocks/MockMNTD.sol";
@@ -156,6 +157,33 @@ contract DeployTest is Test {
         deployer.deployWhitelist(cfg);
     }
 
+    function test_deployWhitelistImport_ownerAndCloseOnly() public {
+        /* Scenario:
+           Given the config, with no signer
+           When the owner-imported registry is deployed
+           Then WhitelistImport(admin, closeAt) is created with no later call, the admin owns it, and
+             a close under 48 hours before the stage or a zero admin is refused */
+        Deploy.Config memory cfg = _config();
+        cfg.signer = address(0);
+
+        vm.startStateDiffRecording();
+        WhitelistImport registry = deployer.deployWhitelistImport(cfg);
+        bytes4[] memory calls = _writes(vm.stopAndReturnStateDiff());
+        assertEq(calls.length, 1, "WhitelistImport: construction only");
+        assertEq(calls[0], bytes4(0));
+        assertEq(registry.owner(), admin);
+        assertEq(registry.closeAt(), cfg.closeAt);
+
+        cfg.whitelistStageAt = uint256(cfg.closeAt) + 48 hours - 1;
+        vm.expectRevert(abi.encodeWithSelector(Deploy.CloseTooLate.selector, cfg.closeAt, cfg.whitelistStageAt));
+        deployer.deployWhitelistImport(cfg);
+
+        cfg = _config();
+        cfg.admin = address(0);
+        vm.expectRevert(abi.encodeWithSelector(Deploy.MissingAddress.selector, "admin"));
+        deployer.deployWhitelistImport(cfg);
+    }
+
     function test_deploy_refusesMissingAddresses() public {
         /* Scenario:
            Given a config with the admin, the signer or $MNTD left zero, or no collection address
@@ -279,12 +307,16 @@ contract DeployTest is Test {
     function test_runEntryPoints_broadcastEachDeployment() public {
         /* Scenario:
            Given the template config, with a $MNTD stand-in at its address
-           When runWhitelist, runCollection and runActivation are called in turn
+           When runWhitelist, runWhitelistImport, runCollection and runActivation are called in turn
            Then each deploys its contracts configured as listed */
         vm.etch(0x00000000000000000000000000000000000A0003, address(mntd).code);
 
         WhitelistClaim registry = deployer.runWhitelist(EXAMPLE);
         assertEq(registry.owner(), 0x00000000000000000000000000000000000a0001);
+
+        WhitelistImport imported = deployer.runWhitelistImport(EXAMPLE);
+        assertEq(imported.owner(), 0x00000000000000000000000000000000000a0001);
+        assertEq(imported.closeAt(), 1_792_972_799);
 
         MintABear bears = deployer.runCollection(EXAMPLE);
         assertEq(bears.maxSupply(), 4444);

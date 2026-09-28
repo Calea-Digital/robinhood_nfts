@@ -8,7 +8,7 @@ import * as client from "../src/index.js";
 import * as backend from "../src/backend.js";
 import { renderReadme } from "../scripts/error-table.js";
 
-const { activationAbi, mintABearAbi, seaDropAbi, whitelistClaimAbi } = client;
+const { activationAbi, mintABearAbi, seaDropAbi, whitelistClaimAbi, whitelistImportAbi } = client;
 
 /**
  * Every contract function the play page (or MINT's backend and split) calls, with the library
@@ -46,6 +46,21 @@ const SURFACE = {
       signer: "readCampaign",
       claimsOf: "readClaimsOf",
       accountClaims: "readAccountClaims",
+      claimants: "readClaimants",
+    },
+  },
+  // The owner-imported variant (WL-7): its writes are the owner's, made from MINT's admin page.
+  WhitelistImport: {
+    abi: whitelistImportAbi,
+    calls: {
+      addAllocations: "addAllocationsCall",
+      removeAllocations: "removeAllocationsCall",
+      setCloseAt: "setCloseAtCall",
+      spotsLeft: "readImportState",
+      closeAt: "readImportState",
+      frozen: "readImportState",
+      owner: "readImportState",
+      claimsOf: "readClaimsOf",
       claimants: "readClaimants",
     },
   },
@@ -106,16 +121,16 @@ describe("call surface", () => {
     expect(typeof backend.planVoucher).toBe("function");
   });
 
-  it("places every state-changing function of WhitelistClaim and Activation as the app's or the owner's", () => {
+  it("places every state-changing function of WhitelistClaim, WhitelistImport and Activation as the app's or the owner's", () => {
     /* Scenario:
-       Given the generated ABIs of WhitelistClaim and Activation
+       Given the generated ABIs of WhitelistClaim, WhitelistImport and Activation
        When their state-changing functions are listed
-       Then each is either an app call the library makes or an owner-only function — a function added to either contract fails here */
-    for (const abi of [whitelistClaimAbi, activationAbi] as Abi[]) {
+       Then each is either a call the library makes or an owner-only function — a function added to any of them fails here */
+    for (const abi of [whitelistClaimAbi, whitelistImportAbi, activationAbi] as Abi[]) {
       const writes = abi
         .filter((i) => i.type === "function" && i.stateMutability !== "view" && i.stateMutability !== "pure")
         .map((i) => (i as { name: string }).name);
-      const app = new Set([...Object.keys(SURFACE.WhitelistClaim.calls), ...Object.keys(SURFACE.Activation.calls)]);
+      const app = new Set([...Object.keys(SURFACE.WhitelistClaim.calls), ...Object.keys(SURFACE.WhitelistImport.calls), ...Object.keys(SURFACE.Activation.calls)]);
       for (const name of writes) expect(app.has(name) || OWNER_ONLY.includes(name), name).toBe(true);
     }
   });
@@ -127,7 +142,7 @@ describe("call surface", () => {
        Then the README's table is exactly it, and it names every documented revert */
     const readme = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "README.md"), "utf8");
     expect(renderReadme(readme)).toBe(readme);
-    for (const name of [...client.MINT_REVERTS, ...client.CLAIM_REVERTS, ...client.BURN_REVERTS, "OwnerQueryForNonexistentToken", "BurnDisabled"]) {
+    for (const name of [...client.MINT_REVERTS, ...client.CLAIM_REVERTS, ...client.IMPORT_REVERTS, ...client.BURN_REVERTS, "NotListed", "OwnerQueryForNonexistentToken", "BurnDisabled"]) {
       expect(readme.includes(`\`${name}\``), name).toBe(true);
     }
   });
@@ -144,6 +159,7 @@ describe("call surface", () => {
     const methods: Record<string, readonly string[]> = {
       mint: ["publicStage", "public", "allowList", "allowListMatchesChain", "stats", "remainingWhitelistMints"],
       whitelist: ["campaign", "isOpen", "claimsOf", "accountClaims", "claimants", "allowList", "claim"],
+      whitelistImport: ["state", "parseCsv", "plan", "execute", "add", "remove", "setCloseAt", "matches"],
       bears: ["get", "level", "costToReach", "thresholds", "weights", "paused", "snapshot", "planBurn", "executeBurn", "burnTo", "link", "unlink", "linkOf", "linkStatus", "linkPrompt", "planTransfer", "executeTransfer"],
       events: ["read", "decode", "index"],
       split: ["rows", "compute", "run"],

@@ -59,6 +59,8 @@ export interface Fixture {
   mntd: Address;
   validator: Address;
   registry: Address;
+  /** The owner-imported registry (WL-7), owned by the deployer, open until `closeAt`. */
+  importRegistry: Address;
   activation: Address;
   openAt: bigint;
   closeAt: bigint;
@@ -69,7 +71,8 @@ export interface Fixture {
  * (at an ordinary address, passed to the library as configuration), the collection with that
  * SeaDrop as its only minter and `maxSupply` 4,444, the V3 stand-in as its transfer validator, an
  * 18-decimal $MNTD stand-in (`MockMNTD`, or with `mntd: "oz"` the OpenZeppelin `ERC20Burnable` one that
- * emits `Transfer` and reverts with strings), the whitelist registry with a window open now for seven days, and
+ * emits `Transfer` and reverts with strings), the whitelist registry with a window open now for seven days, the
+ * owner-imported registry (`WhitelistImport`) open for the same seven days, and
  * `Activation` unpaused with the specified thresholds and weights.
  */
 export async function deployFixture(rpcUrl: string, options: { mntd?: "mock" | "oz" } = {}): Promise<Fixture> {
@@ -106,8 +109,9 @@ export async function deployFixture(rpcUrl: string, options: { mntd?: "mock" | "
   const closeAt = now + 7n * 86_400n;
   const registry = await deploy("WhitelistClaim", [accounts.deployer.address, accounts.signer.address, openAt, closeAt]);
   const activation = await deploy("Activation", [bears, mntd, THRESHOLDS_WHOLE, WEIGHTS]);
+  const importRegistry = await deploy("WhitelistImport", [accounts.deployer.address, closeAt]);
 
-  return { publicClient, testClient, wallet, seaDrop, bears, mntd, validator, registry, activation, openAt, closeAt };
+  return { publicClient, testClient, wallet, seaDrop, bears, mntd, validator, registry, importRegistry, activation, openAt, closeAt };
 }
 
 /** The $MNTD stand-in's ABI (test/mocks/MockMNTD.sol): `mint` for funding test holders. */

@@ -18,7 +18,7 @@ export interface MintABearAddresses {
   bears: Address;
   /** The level record and burn route, `Activation`. */
   activation: Address;
-  /** The whitelist registry, `WhitelistClaim`. */
+  /** The whitelist registry MINT deployed: `WhitelistClaim` (vouchers, WL-3) or `WhitelistImport` (owner-imported, WL-7). */
   registry: Address;
   /** The $MNTD token. */
   mntd: Address;

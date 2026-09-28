@@ -72,6 +72,57 @@ proofs have their time.
 and compare again. `setSigner` rotates the eligibility signer; `renounceOwnership` reverts, so
 the owner can always do both.
 
+## Whitelist import (WL-7)
+
+**When MINT deploys `WhitelistImport` instead of `WhitelistClaim`.** MINT deploys one of the two
+(CQ-18). With `WhitelistImport` there are no vouchers and no claims: MINT's admin writes the list
+from a CSV, and the list freezes for good once `closeAt` has passed.
+
+```shell
+forge script script/Deploy.s.sol --rpc-url $RPC --broadcast --verify --verifier sourcify --sig "runWhitelistImport(string)" script/config/4663.json
+```
+
+The script reads `admin`, `closeAt` and `whitelistStageAt` from the config. It refuses a close less
+than 48 hours before the whitelist stage.
+
+**Import from the CSV, in batches.** The file is `wallet,allocations`, one row per wallet: 1 or 2
+allocations each, at most 1,000 in all. MINT's admin page does the import with the client library
+(`whitelistImport.plan`, then `whitelistImport.execute`, from the admin's wallet). The library
+checks the file, compares it with the chain, and sends only the difference, in batches of 200.
+If a batch fails, the batches before it stay mined, and planning the same file again sends the
+rest. Without the page, the same call from the admin:
+
+```shell
+cast send $REGISTRY "addAllocations(address[],uint8[])" "[$W1,$W2]" "[2,1]" --rpc-url $RPC
+```
+
+One bad row reverts the whole batch: a zero wallet, a count of 0, a wallet above 2, or the list
+above 1,000.
+
+**Check the reads after every import.**
+
+```shell
+cast call $REGISTRY "spotsLeft()(uint256)" --rpc-url $RPC        # 1,000 − the file's total
+cast call $REGISTRY "claimsOf(address)(uint8)" $W1 --rpc-url $RPC # the row's count
+cast call $REGISTRY "frozen()(bool)" --rpc-url $RPC               # false until closeAt has passed
+```
+
+**Correct before the close.**
+- `removeAllocations(address[])` drops a wallet.
+- Adding again gives it more.
+- `setCloseAt(uint40)` moves the close. A later value extends the import, and the current time
+  freezes it from the next second.
+
+Uploading a corrected file on the admin page plans exactly these calls. Any `setCloseAt` must keep
+the close at least 48 hours before the whitelist stage.
+
+**After `closeAt` the list is final.** `addAllocations`, `removeAllocations` and `setCloseAt` revert
+`ListFrozen`. Nothing can change the list any more, not even the owner. Then run the export and
+`compare` exactly as in "Whitelist export (WL-4)", with `$REGISTRY` the `WhitelistImport`.
+`WhitelistExport.s.sol` refuses with `CampaignStillOpen` until the list is frozen, even when all
+1,000 allocations are written, because the list can still be corrected until the close.
+`renounceOwnership` reverts.
+
 ## Transfer enforcement (OPS-6, COL-7)
 
 **The deployed state.** `MintABear` is an ERC-721C collection. The deploy sets its transfer

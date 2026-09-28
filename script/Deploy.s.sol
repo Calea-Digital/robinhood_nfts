@@ -6,6 +6,7 @@ import {SafeCastLib} from "solady/utils/SafeCastLib.sol";
 
 import {MintABear} from "../src/MintABear.sol";
 import {WhitelistClaim} from "../src/WhitelistClaim.sol";
+import {WhitelistImport} from "../src/WhitelistImport.sol";
 import {Activation} from "../src/Activation.sol";
 
 /**
@@ -16,8 +17,12 @@ import {Activation} from "../src/Activation.sol";
  *         different times:
  *
  *             forge script script/Deploy.s.sol --rpc-url $RPC --broadcast --verify --verifier sourcify --sig "runWhitelist(string)"  script/config/<chain>.json
+ *             forge script script/Deploy.s.sol --rpc-url $RPC --broadcast --verify --verifier sourcify --sig "runWhitelistImport(string)"  script/config/<chain>.json
  *             forge script script/Deploy.s.sol --rpc-url $RPC --broadcast --verify --verifier sourcify --sig "runCollection(string)" script/config/<chain>.json
  *             forge script script/Deploy.s.sol --rpc-url $RPC --broadcast --verify --verifier sourcify --sig "runActivation(string,address)" script/config/<chain>.json $BEARS
+ *
+ *         `runWhitelist` and `runWhitelistImport` are alternatives: MINT deploys one of the two
+ *         registries (CQ-18), the voucher variant (WL-3) or the owner-imported one (WL-7).
  *
  *         `--verify --verifier sourcify` verifies each created contract as it is broadcast (OPS-3);
  *         `script/verify.sh <chainId>` retries and checks afterwards.
@@ -76,6 +81,14 @@ contract Deploy is Script {
         console2.log("WhitelistClaim", address(registry));
     }
 
+    function runWhitelistImport(string memory path) external returns (WhitelistImport registry) {
+        Config memory cfg = loadConfig(path);
+        vm.startBroadcast();
+        registry = deployWhitelistImport(cfg);
+        vm.stopBroadcast();
+        console2.log("WhitelistImport", address(registry));
+    }
+
     function runCollection(string memory path) external returns (MintABear bears) {
         Config memory cfg = loadConfig(path);
         vm.startBroadcast();
@@ -99,10 +112,19 @@ contract Deploy is Script {
     function deployWhitelist(Config memory cfg) public returns (WhitelistClaim registry) {
         _require(cfg.admin, "admin");
         _require(cfg.signer, "signer");
-        if (uint256(cfg.closeAt) + CLOSE_TO_STAGE > cfg.whitelistStageAt) {
-            revert CloseTooLate(cfg.closeAt, cfg.whitelistStageAt);
-        }
+        _requireCloseBeforeStage(cfg);
         registry = new WhitelistClaim(cfg.admin, cfg.signer, cfg.openAt, cfg.closeAt);
+    }
+
+    /**
+     * @notice `WhitelistImport(owner, closeAt)` with MINT's admin as owner (WL-7), the alternative
+     *         to `deployWhitelist`. The config's `signer` and `openAt` are not read. Refuses a
+     *         close less than 48 hours before the whitelist stage, as for `WhitelistClaim`.
+     */
+    function deployWhitelistImport(Config memory cfg) public returns (WhitelistImport registry) {
+        _require(cfg.admin, "admin");
+        _requireCloseBeforeStage(cfg);
+        registry = new WhitelistImport(cfg.admin, cfg.closeAt);
     }
 
     /**
@@ -163,6 +185,12 @@ contract Deploy is Script {
         }
         for (uint256 i; i < 6; ++i) {
             cfg.weights[i] = SafeCastLib.toUint16(w[i]);
+        }
+    }
+
+    function _requireCloseBeforeStage(Config memory cfg) private pure {
+        if (uint256(cfg.closeAt) + CLOSE_TO_STAGE > cfg.whitelistStageAt) {
+            revert CloseTooLate(cfg.closeAt, cfg.whitelistStageAt);
         }
     }
 

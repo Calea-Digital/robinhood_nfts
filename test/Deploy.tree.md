@@ -13,6 +13,15 @@ deployWhitelist
 └── otherwise: WhitelistClaim(admin, signer, openAt, closeAt) — construction only, no later call (OPS-2)
 ```
 
+## deployWhitelistImport (WL-7, the alternative to deployWhitelist)
+
+```
+deployWhitelistImport
+├── when the admin is zero: it reverts with MissingAddress; the signer is not read
+├── when closeAt + 48 hours > whitelistStageAt: it reverts with CloseTooLate
+└── otherwise: WhitelistImport(admin, closeAt) — construction only, no later call
+```
+
 ## deployCollection
 
 ```
@@ -47,7 +56,7 @@ deployActivation
 ```
 loadConfig: every field of script/config/example.json reads as written
 loadConfig: thresholdsWhole other than 5 entries, or weights other than 6: ConfigLength naming the field
-runWhitelist / runCollection / runActivation: each broadcasts its deployment from the config
+runWhitelist / runWhitelistImport / runCollection / runActivation: each broadcasts its deployment from the config
 ```
 
 ## Rehearsal obligations (OPS-4, not unit leaves)
