@@ -25,6 +25,7 @@ becomes a Task with Spec Ref `NONE` when picked.
 - [x] 2.2 WL-1 — two per wallet, two per account, allocations in order
 - [x] 2.3 WL-4 — `claimants(offset, limit)` export equals the Studio allowlist
 - [x] 2.4 WL-5 — window gates claims; close ≥ 48 h before the stage
+- [ ] 2.5 WL-7 — `WhitelistImport`: the owner-imported variant, frozen at `closeAt`; deploy entry point, export over either registry, client module
 
 ## 3. Activation
 
