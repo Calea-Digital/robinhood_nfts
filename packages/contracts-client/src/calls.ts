@@ -144,8 +144,8 @@ export async function simulate(publicClient: AnyPublicClient, account: Address |
  *
  * @example
  * ```ts
- * const { events } = await execute(publicClient, wallet, linkCall(addresses, 7n));
- * // events[0].eventName === "BearLinked"
+ * const { events } = await execute(publicClient, wallet, burnCall(addresses, 7n, amount));
+ * // events[0].eventName === "BearActivated"
  * ```
  */
 export async function execute<A extends Abi>(

@@ -7,11 +7,9 @@ import {
   ClientRefusal,
   ContractRevertError,
   execute,
-  linkCall,
   mintABearAbi,
   planTransfer,
   readLevel,
-  readLink,
   readOwner,
   readTransferNonce,
   transferCall,
@@ -40,13 +38,12 @@ describe("transfers", () => {
     );
   }
 
-  /** alice's bear 1 at level 2 (3,333 $MNTD burned), linked from her wallet. */
-  async function activateAndLink() {
+  /** alice's bear 1 at level 2 (3,333 $MNTD burned). */
+  async function activate() {
     const amount = 3_333n * UNIT;
     await fundMntd(f, accounts.alice.address, 3_333n);
     await send("alice", approveBurnCall(a, amount));
     await send("alice", burnCall(a, 1n, amount));
-    await send("alice", linkCall(a, 1n));
   }
 
   beforeAll(async () => {
@@ -76,17 +73,16 @@ describe("transfers", () => {
     expect(await f.publicClient.getBlockNumber()).toBe(block);
   });
 
-  it("shows why: a self-transfer sent anyway resets the level and voids the link", async () => {
+  it("shows why: a self-transfer sent anyway resets the level", async () => {
     /* Scenario:
-       Given bear 1 at level 2 and linked from alice's wallet
+       Given alice's bear 1 at level 2
        When the raw transferFrom(alice, alice, 1) is sent past the guard
-       Then the bear stays alice's but its counter advances, its level reads 0 and alice's link reads none */
-    await activateAndLink();
+       Then the bear stays alice's but its counter advances and its level reads 0 */
+    await activate();
     await send("alice", transferCall(a, { from: accounts.alice.address, to: accounts.alice.address, tokenId: 1n }));
     expect(await readOwner(f.publicClient, a, 1n)).toBe(accounts.alice.address);
     expect(await readTransferNonce(f.publicClient, a, 1n)).toBe(1n);
     expect(await readLevel(f.publicClient, a, 1n)).toBe(0);
-    expect(await readLink(f.publicClient, a, accounts.alice.address)).toEqual({ tokenId: 0n, level: 0 });
   });
 
   it("refuses the zero address in the client, and the collection refuses it with BurnDisabled", async () => {
@@ -102,22 +98,23 @@ describe("transfers", () => {
     }
   });
 
-  it("warns that a transfer resets an activated bear and voids its link, and it does", async () => {
+  it("warns that a transfer resets an activated bear, and it does", async () => {
     /* Scenario:
-       Given bear 1 at level 2 and linked from alice's wallet
+       Given alice's bear 1 at level 2
        When alice plans a transfer to bob and sends the planned call
-       Then the plan warns RESETS_LEVEL (level 2, 3,333 $MNTD) and VOIDS_LINK, and after it bob's bear reads level 0 */
-    await activateAndLink();
+       Then the plan warns RESETS_LEVEL (level 2, 3,333 $MNTD) alone, and after it bob's bear reads level 0 */
+    await activate();
     const plan = await planTransfer(f.publicClient, a, { from: accounts.alice.address, to: accounts.bob.address, tokenId: 1n, safe: true });
-    expect(plan.warnings).toMatchObject([{ code: "RESETS_LEVEL", level: 2, cumulative: 3_333n * UNIT }, { code: "VOIDS_LINK" }]);
+    expect(plan.warnings).toMatchObject([{ code: "RESETS_LEVEL", level: 2, cumulative: 3_333n * UNIT }]);
+    expect(plan.warnings).toHaveLength(1);
     await send("alice", plan.call);
     expect(await readOwner(f.publicClient, a, 1n)).toBe(accounts.bob.address);
     expect(await readLevel(f.publicClient, a, 1n)).toBe(0);
   });
 
-  it("gives no warning for a bear never activated and not linked", async () => {
+  it("gives no warning for a bear never activated", async () => {
     /* Scenario:
-       Given bear 2, level 0, never burned for, not linked
+       Given bear 2, level 0, never burned for
        When alice plans a transfer to bob
        Then the plan carries no warnings */
     const plan = await planTransfer(f.publicClient, a, { from: accounts.alice.address, to: accounts.bob.address, tokenId: 2n });
@@ -129,7 +126,7 @@ describe("transfers", () => {
        Given bear 1 at level 2, alice's approval for bob, and bob a whitelisted operator on the validator
        When bob transfers alice's bear to carol
        Then the plan warns RESETS_LEVEL and the bear reads level 0 for carol */
-    await activateAndLink();
+    await activate();
     await send("alice", { address: f.bears, abi: mintABearAbi, functionName: "setApprovalForAll", args: [accounts.bob.address, true] });
     await send("deployer", { address: f.validator, abi: validatorAbi, functionName: "setWhitelisted", args: [accounts.bob.address, true] });
     const plan = await planTransfer(f.publicClient, a, { from: accounts.alice.address, to: accounts.carol.address, tokenId: 1n });

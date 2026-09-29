@@ -23,7 +23,7 @@ import { createPublicClient, createWalletClient, custom, http } from "viem";
 import { foundry } from "viem/chains";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
-import { ContractRevertError, createMintABearClient, explainError, isMintABearError, MintABearError, type MintABearClient } from "@mintabear/contracts-client";
+import { burnCall, ContractRevertError, createMintABearClient, execute, explainError, isMintABearError, MintABearError, type MintABearClient } from "@mintabear/contracts-client";
 
 import { localChain, type LocalChain } from "./setup.js";
 
@@ -41,7 +41,7 @@ afterAll(() => chain.stop());
 it("tells a declined wallet prompt apart from a failure", async () => {
   /* Scenario:
      Given a wallet whose holder closes the signing prompt (the provider answers EIP-1193 code 4001, as Privy does)
-     When the page links a bear through it
+     When the page mints through it
      Then the error's code is USER_REJECTED, so the page can stay quiet */
   const node = createPublicClient({ chain: foundry, transport: http(chain.rpcUrl) });
   const declining = createWalletClient({
@@ -57,7 +57,7 @@ it("tells a declined wallet prompt apart from a failure", async () => {
   const mintabear = createMintABearClient({ publicClient: chain.publicClient, walletClient: declining, addresses: chain.addresses });
 
   try {
-    await mintabear.bears.link(1n);
+    await mintabear.mint.public({ quantity: 1n, feeRecipient: chain.feeRecipient });
     expect.unreachable();
   } catch (error) {
     expect(explainError(error)).toMatchObject({ code: "USER_REJECTED", userMessage: "The request was cancelled in the wallet." });
@@ -83,11 +83,10 @@ it("explains a wallet with no ETH for the network fee", async () => {
 it("gives developers the contract's own error beside the message", async () => {
   /* Scenario:
      Given bear 1, which bob does not own
-     When bob links it
-     Then the error is a ContractRevertError: code NOT_BEAR_OWNER for the page, revert.errorName "NotBearOwner" and functionName "linkBear" for the logs */
-  const bob = createMintABearClient({ publicClient: chain.publicClient, walletClient: chain.wallet("bob"), addresses: chain.addresses });
+     When bob sends a burn for it, skipping the plan that would have refused it
+     Then the error is a ContractRevertError: code NOT_BEAR_OWNER for the page, revert.errorName "NotBearOwner" and functionName "burn" for the logs */
   try {
-    await bob.bears.link(1n);
+    await execute(chain.publicClient, chain.wallet("bob"), burnCall(chain.addresses, 1n, 1n));
     expect.unreachable();
   } catch (error) {
     // Narrow with instanceof (or isMintABearError) to reach the typed fields.
@@ -96,8 +95,8 @@ it("gives developers the contract's own error beside the message", async () => {
     expect(error.code).toBe("NOT_BEAR_OWNER");
     expect(error.userMessage).toBe("Only the bear's owner can do this, and this wallet does not own it.");
     expect(error.revert.errorName).toBe("NotBearOwner");
-    expect(error.functionName).toBe("linkBear");
-    expect(error.message).toBe("linkBear reverted with NotBearOwner: [NOT_BEAR_OWNER] Only the bear's owner can do this, and this wallet does not own it.");
+    expect(error.functionName).toBe("burn");
+    expect(error.message).toBe("burn reverted with NotBearOwner: [NOT_BEAR_OWNER] Only the bear's owner can do this, and this wallet does not own it.");
   }
 });
 
@@ -116,7 +115,7 @@ it("reports how far a plan got when a later step fails", async () => {
     expect.unreachable();
   } catch (error) {
     expect(isMintABearError(error, "ACTIVATION_PAUSED")).toBe(true);
-    expect((error as MintABearError).userMessage).toBe("Burning and Status linking are not open yet.");
+    expect((error as MintABearError).userMessage).toBe("Burning is not open yet.");
     expect((error as MintABearError).completed?.map((r) => r.receipt.status)).toEqual(["success"]); // the approve
   }
 

@@ -100,7 +100,6 @@ tests and self-review (`reports/wl-7-diff-review.md`). It is not deployed: the w
 
 Still ahead:
 - **OPS-4**, the rehearsal, with Subtask MNT-95 (Sourcify on 46630).
-- **ACT-9's removal** from the code: a Task under ACT-12 (spec v2.4).
 
 Each Task carries a claim comment, a summary with its commits and gates, a `Reviewed — Done`
 comment and logged time. The human merges `tranche-1` into `main`.
@@ -109,7 +108,7 @@ comment and logged time. The human merges `tranche-1` into `main`.
 |---|---|
 | Contracts | `MintABear`, `Activation`; tranche 2 is `MysteryBox` (4663) and `PrizeDraw` (Arbitrum One). `WhitelistClaim` and `WhitelistImport` are built but not deployed (the whitelist is off-chain) |
 | Scripts | `Deploy.s.sol` (OPS-2), `verify.sh` (OPS-3), `Enforcement.s.sol` (OPS-6), `WhitelistExport.s.sol` (WL-4); `docs/RUNBOOK.md`: ownership handover, whitelist export and import, transfer enforcement, royalties, Activation |
-| Tests | 242 contract tests and 133 client tests, all passing; 100% line, branch and function coverage (gate ≥90 / ≥80); every tranche-1 work-item Scenario has a test except the operational OPS-1, OPS-3 (live), OPS-4, OPS-5 |
+| Tests | 229 contract tests and 125 client tests, all passing; 100% line, branch and function coverage (gate ≥90 / ≥80); every tranche-1 work-item Scenario has a test except the operational OPS-1, OPS-3 (live), OPS-4, OPS-5 |
 | CI gates | `fmt --check`, `build --sizes` (no warnings), `test`, spec lint, generated prose, `verify.sh` dry run and verdict test — all green |
 | Slither | no High or Critical; 3 accepted Mediums, all `locked-ether` (below) |
 
@@ -284,7 +283,7 @@ over the tranche-1 ABIs (viem 2, tested against anvil), and the reference royalt
 dead-address exclusion (`bin/split.ts`). Its `README.md` is the portal team's reference: a quick
 start through the `createMintABearClient` facade, the error codes with the message each shows a
 holder, the voucher backend's rules, events and indexing, and the split. `examples/` holds one
-runnable file per flow (mint, whitelist, burn, link and transfer, errors, indexing and split).
+runnable file per flow (mint, whitelist, burn, transfer, errors, indexing and split).
 It moves unchanged into MINT's repository, `github.com/mintdotio/NFT` (CQ-14). The mystery
 box's calls and MINT's admin-page calls (exclusions, cycle scheduling, pauses) join it in
 tranche 2. Its whitelist claim and import modules are not delivered. Calea's part of the UI is the call

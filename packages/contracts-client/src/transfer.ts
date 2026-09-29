@@ -1,8 +1,7 @@
 /**
  * Transfers, guarded.
  *
- * Every transfer resets the bear — its level, its cumulative burn, and any Status link to it —
- * a self-transfer and an approved operator's transfer included (COL-3, ACT-5). {@link planTransfer}
+ * Every transfer resets the bear — its level and its cumulative burn — a self-transfer and an approved operator's transfer included (COL-3, ACT-5). {@link planTransfer}
  * refuses the two transfers that are always mistakes and warns about the ones that cost something.
  *
  * @module
@@ -10,7 +9,7 @@
 import { zeroAddress, type Address } from "viem";
 
 import { mintABearAbi } from "./abi/index.js";
-import { readCumulative, readLevel, readLink, type ActivationAddresses } from "./activation.js";
+import { readCumulative, readLevel, type ActivationAddresses } from "./activation.js";
 import type { MintABearAddresses } from "./addresses.js";
 import type { AnyPublicClient, Call } from "./calls.js";
 import { ClientRefusal } from "./errors.js";
@@ -18,9 +17,7 @@ import { ClientRefusal } from "./errors.js";
 /** Something the sender should confirm before a transfer. */
 export type TransferWarning =
   /** The bear is activated: the transfer resets its level to 0 and its cumulative burn with it, whoever receives it. */
-  | { code: "RESETS_LEVEL"; level: number; cumulative: bigint; message: string }
-  /** The owner's wallet links this bear: the transfer voids the link and the owner's Status boost. */
-  | { code: "VOIDS_LINK"; message: string };
+  | { code: "RESETS_LEVEL"; level: number; cumulative: bigint; message: string };
 
 /** Arguments of {@link planTransfer} and {@link transferCall}. */
 export interface TransferArgs {
@@ -59,8 +56,7 @@ export interface TransferPlan {
  * @param client - Any viem public client on the chain.
  * @param addresses - Where `Activation` and the collection are.
  * @param args - From, to, the bear.
- * @returns The call and its warnings: `RESETS_LEVEL` for a bear with $MNTD burned into it,
- *   `VOIDS_LINK` for the bear the owner's wallet links.
+ * @returns The call and its warnings: `RESETS_LEVEL` for a bear with $MNTD burned into it.
  * @throws {ClientRefusal} `SELF_TRANSFER` when `from == to` (it moves nothing but resets the bear);
  *   `BURN_DISABLED` for the zero address (the collection refuses it too).
  *
@@ -74,11 +70,7 @@ export interface TransferPlan {
 export async function planTransfer(client: AnyPublicClient, addresses: Omit<ActivationAddresses, "mntd">, args: TransferArgs): Promise<TransferPlan> {
   if (args.from.toLowerCase() === args.to.toLowerCase()) throw new ClientRefusal("SELF_TRANSFER", { tokenId: args.tokenId });
   if (args.to.toLowerCase() === zeroAddress) throw new ClientRefusal("BURN_DISABLED", { tokenId: args.tokenId });
-  const [level, cumulative, link] = await Promise.all([
-    readLevel(client, addresses, args.tokenId),
-    readCumulative(client, addresses, args.tokenId),
-    readLink(client, addresses, args.from),
-  ]);
+  const [level, cumulative] = await Promise.all([readLevel(client, addresses, args.tokenId), readCumulative(client, addresses, args.tokenId)]);
   const warnings: TransferWarning[] = [];
   if (cumulative > 0n) {
     warnings.push({
@@ -87,9 +79,6 @@ export async function planTransfer(client: AnyPublicClient, addresses: Omit<Acti
       cumulative,
       message: `Bear #${args.tokenId} is at level ${level}. Transferring it resets it to level 0 for the recipient, and the $MNTD burned into it is not refunded.`,
     });
-  }
-  if (link.tokenId === args.tokenId) {
-    warnings.push({ code: "VOIDS_LINK", message: `Bear #${args.tokenId} carries your Status boost. Transferring it removes the boost until you link another bear.` });
   }
   return { call: transferCall(addresses, args), warnings };
 }

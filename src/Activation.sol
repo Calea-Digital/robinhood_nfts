@@ -15,8 +15,8 @@ interface IBurnableMNTD {
 
 /**
  * @title  Activation
- * @notice The record of $MNTD burned into each bear: its level, its royalty weight and its
- *         owner's Status link. A transfer resets all three.
+ * @notice The record of $MNTD burned into each bear: its level and its royalty weight. A transfer
+ *         resets both.
  * @dev    One token, one collection. $MNTD — native to Robinhood Chain — is fixed in the
  *         constructor, and the only thing done with it is burning the caller's own balance in
  *         `burn`. Recording and burning are two steps of one transaction, the record first: a
@@ -84,11 +84,7 @@ contract Activation is Ownable, ReentrancyGuard {
     /// @notice Every amount ever burned for a bear, across all owners. Never reset.
     mapping(uint256 => uint256) public lifetimeBurned;
 
-    /// @dev Wallet's nominated bear, and the transfer count it was nominated at.
-    mapping(address => uint256) private _linkedBear;
-    mapping(address => uint64) private _linkedAtNonce;
-
-    /// @notice When true, `burn` and `linkBear` are suspended. Never affects a transfer.
+    /// @notice When true, `burn` is suspended. Never affects a read or a transfer.
     bool public paused;
 
     /// @notice $MNTD was burned for a bear. `cumulative` is the bear's total for its current owner.
@@ -100,11 +96,9 @@ contract Activation is Ownable, ReentrancyGuard {
         uint256 amount,
         uint256 cumulative
     );
-    event BearLinked(address indexed wallet, uint256 indexed tokenId);
-    event BearUnlinked(address indexed wallet, uint256 indexed tokenId);
     event PausedSet(bool paused);
 
-    /// @notice `burn` and `linkBear` are suspended.
+    /// @notice `burn` is suspended.
     error ContractPaused();
 
     /// @notice A burn must be of a positive amount.
@@ -133,11 +127,6 @@ contract Activation is Ownable, ReentrancyGuard {
 
     /// @notice Ownership can be handed over, never renounced.
     error RenounceDisabled();
-
-    modifier whenNotPaused() {
-        _requireNotPaused();
-        _;
-    }
 
     function _requireNotPaused() internal view {
         if (paused) revert ContractPaused();
@@ -217,34 +206,6 @@ contract Activation is Ownable, ReentrancyGuard {
         MNTD.burnFrom(msg.sender, amount);
     }
 
-    /**
-     * @notice Nominates a bear to carry this wallet's Status multiplier. One per wallet; a new
-     *         nomination replaces the previous one.
-     * @dev    Owner of the bear only (`NotBearOwner`; an id never minted reverts in the
-     *         collection's `ownerOf` with `OwnerQueryForNonexistentToken`). The nomination is void
-     *         once the bear moves, so a previous owner cannot keep the boost after selling.
-     */
-    function linkBear(uint256 tokenId) external whenNotPaused {
-        if (BEARS.ownerOf(tokenId) != msg.sender) revert NotBearOwner();
-        _linkedBear[msg.sender] = tokenId;
-        _linkedAtNonce[msg.sender] = BEARS.transferNonce(tokenId);
-        emit BearLinked(msg.sender, tokenId);
-    }
-
-    /**
-     * @notice Removes this wallet's nomination without moving the bear.
-     * @dev    Works while paused. A wallet with no nomination is left alone rather than
-     *         reverting, so the portal can call this unconditionally, and no event is emitted:
-     *         an indexer never sees an unlink that did not follow a link.
-     */
-    function unlinkBear() external {
-        uint256 tokenId = _linkedBear[msg.sender];
-        if (tokenId == 0) return;
-        delete _linkedBear[msg.sender];
-        delete _linkedAtNonce[msg.sender];
-        emit BearUnlinked(msg.sender, tokenId);
-    }
-
     /// @notice The $MNTD burned for a bear under its current owner. Zero after a transfer.
     function cumulativeOf(uint256 tokenId) public view returns (uint128) {
         Record memory record = _records[tokenId];
@@ -259,18 +220,6 @@ contract Activation is Ownable, ReentrancyGuard {
     /// @notice A bear's current royalty weight, basis 100: the weight of its level.
     function weightOf(uint256 tokenId) external view returns (uint16) {
         return weightFor(levelOf(tokenId));
-    }
-
-    /**
-     * @notice The bear carrying a wallet's Status multiplier.
-     * @return tokenId The nominated bear, or zero if there is none or it has moved since.
-     * @return level   That bear's level, or zero.
-     */
-    function linkOf(address wallet) external view returns (uint256 tokenId, uint8 level) {
-        tokenId = _linkedBear[wallet];
-        if (tokenId == 0) return (0, 0);
-        if (_linkedAtNonce[wallet] != BEARS.transferNonce(tokenId)) return (0, 0);
-        return (tokenId, levelOf(tokenId));
     }
 
     /**
@@ -326,7 +275,7 @@ contract Activation is Ownable, ReentrancyGuard {
         revert InvalidLevel();
     }
 
-    /// @notice Suspends or resumes `burn` and `linkBear`. Transfers are never affected.
+    /// @notice Suspends or resumes `burn`. Reads and transfers are never affected.
     function setPaused(bool paused_) external onlyOwner {
         paused = paused_;
         emit PausedSet(paused_);

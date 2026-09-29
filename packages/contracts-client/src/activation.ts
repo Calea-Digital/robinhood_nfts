@@ -1,13 +1,13 @@
 /**
- * Activation: burning $MNTD for a bear's level, the Status link, and every read about a bear.
+ * Activation: burning $MNTD for a bear's level, and every read about a bear.
  *
  * A burn is **approve, then one call**: approve `Activation` on $MNTD, then `burn(tokenId, amount)`
  * from the bear's owner, with the amount from `costToReach(tokenId, targetLevel)`. {@link planBurn}
  * works that out and checks it; `executePlan` sends it. Anything above the level-5 remainder is
  * refused (`OVERSHOOT`), so nothing is destroyed for nothing.
  *
- * Every transfer resets a bear: its level, its cumulative burn and any Status link to it read zero
- * for the new holder (and after a self-transfer too).
+ * Every transfer resets a bear: its level and its cumulative burn read zero for the new holder (and
+ * after a self-transfer too).
  *
  * @module
  */
@@ -33,9 +33,6 @@ type WithBears = Pick<MintABearAddresses, "bears">;
  * never happens in normal use.
  */
 export const BURN_REVERTS = ["ContractPaused", "ZeroAmount", "NotBearOwner", "AlreadyAtMaxLevel", "Overshoot"] as const;
-
-/** `linkBear`'s contract errors; an unminted id reverts `OwnerQueryForNonexistentToken` too. */
-export const LINK_REVERTS = ["ContractPaused", "NotBearOwner"] as const;
 
 // ---------------------------------------------------------------------------------------------
 // Reads (ACT-14, COL-12) — free; poll them
@@ -117,7 +114,7 @@ export const readCostToReach = (client: AnyPublicClient, addresses: WithActivati
   client.readContract({ ...act(addresses), functionName: "costToReach", args: [tokenId, targetLevel] });
 
 /**
- * Whether burning and linking are suspended (they are until the switch-on date).
+ * Whether burning is suspended (it is until the switch-on date).
  * @param client - Any viem public client on the chain.
  * @param addresses - Where `Activation` is.
  */
@@ -152,26 +149,6 @@ export const readExists = (client: AnyPublicClient, addresses: WithBears, tokenI
  */
 export const readOwner = (client: AnyPublicClient, addresses: WithBears, tokenId: bigint): Promise<Address> =>
   client.readContract({ ...col(addresses), functionName: "ownerOf", args: [tokenId] });
-
-/** A wallet's Status link. */
-export interface Link {
-  /** The linked bear, or 0 when the wallet has no link or the bear has moved since. */
-  tokenId: bigint;
-  /** That bear's level, or 0. */
-  level: number;
-}
-
-/**
- * The bear carrying `wallet`'s Status boost. How several wallets' links combine for one
- * getminted.io account is MINT's Status service's rule (CQ-21); this reads each wallet on its own.
- * @param client - Any viem public client on the chain.
- * @param addresses - Where `Activation` is.
- * @param wallet - The wallet.
- */
-export async function readLink(client: AnyPublicClient, addresses: WithActivation, wallet: Address): Promise<Link> {
-  const [tokenId, level] = await client.readContract({ ...act(addresses), functionName: "linkOf", args: [wallet] });
-  return { tokenId, level };
-}
 
 /**
  * `snapshot(ids)`: owner, level and weight per id, as the royalty split reads them.
@@ -262,9 +239,7 @@ export type BurnRefusalCode =
 /** Something the holder should see, and confirm, before a burn. */
 export type BurnWarning =
   /** The bear has open marketplace listings: one filled after the burn costs the seller the $MNTD and gives the buyer level 0. Offer to cancel them. */
-  | { code: "OPEN_LISTINGS"; count: number; message: string }
-  /** The burner's wallet does not link this bear: its Status gains nothing until `linkBear` (a level-5 bear included). */
-  | { code: "NOT_LINKED"; currentLink: bigint; message: string };
+  | { code: "OPEN_LISTINGS"; count: number; message: string };
 
 /** Arguments of {@link planBurn}. */
 export interface PlanBurnArgs {
@@ -321,7 +296,7 @@ export async function planBurn(client: AnyPublicClient, addresses: ActivationAdd
     throw new ClientRefusal("INVALID_ARGUMENT", { reason: `The target level must be a whole number from 1 to ${MAX_LEVEL}, not ${args.targetLevel}.` });
   }
   if (!(await readExists(client, addresses, args.tokenId))) return refusal("TOKEN_DOES_NOT_EXIST", { tokenId: args.tokenId });
-  const [paused, owner, currentLevel, amount, costToMax, balance, allowance, link] = await Promise.all([
+  const [paused, owner, currentLevel, amount, costToMax, balance, allowance] = await Promise.all([
     readPaused(client, addresses),
     readOwner(client, addresses, args.tokenId),
     readLevel(client, addresses, args.tokenId),
@@ -329,7 +304,6 @@ export async function planBurn(client: AnyPublicClient, addresses: ActivationAdd
     readCostToReach(client, addresses, args.tokenId, MAX_LEVEL),
     client.readContract({ address: addresses.mntd, abi: erc20Abi, functionName: "balanceOf", args: [args.owner] }),
     client.readContract({ address: addresses.mntd, abi: erc20Abi, functionName: "allowance", args: [args.owner, addresses.activation] }),
-    readLink(client, addresses, args.owner),
   ]);
   if (paused) return refusal("ACTIVATION_PAUSED");
   if (owner.toLowerCase() !== args.owner.toLowerCase()) return refusal("NOT_BEAR_OWNER", { tokenId: args.tokenId, owner });
@@ -346,86 +320,8 @@ export async function planBurn(client: AnyPublicClient, addresses: ActivationAdd
       message: `This bear has ${listings} open marketplace listing${listings === 1 ? "" : "s"}. If one fills after this burn, the buyer gets the bear at level 0 and the $MNTD is lost. Cancel the listings first.`,
     });
   }
-  if (link.tokenId !== args.tokenId) {
-    warnings.push({
-      code: "NOT_LINKED",
-      currentLink: link.tokenId,
-      message:
-        link.tokenId === 0n
-          ? "Your Status boost needs a linked bear. Link this bear after the burn to use its level."
-          : `Your Status boost uses bear #${link.tokenId}. Link this bear after the burn to use its level instead.`,
-    });
-  }
-
   const calls: Call[] = [];
   if (allowance < amount) calls.push(approveBurnCall(addresses, amount));
   calls.push(burnCall(addresses, args.tokenId, amount));
   return { ok: true, tokenId: args.tokenId, currentLevel, targetLevel: args.targetLevel, amount, calls, warnings };
-}
-
-// ---------------------------------------------------------------------------------------------
-// Status link (ACT-9)
-// ---------------------------------------------------------------------------------------------
-
-/**
- * The `linkBear(tokenId)` call: the sender's wallet nominates a bear it owns to carry its Status
- * boost. It replaces any earlier link.
- * @param addresses - Where `Activation` is.
- * @param tokenId - A bear the sender owns.
- */
-export function linkCall(addresses: WithActivation, tokenId: bigint) {
-  return { ...act(addresses), functionName: "linkBear", args: [tokenId] } as const satisfies Call;
-}
-
-/**
- * The `unlinkBear()` call: removes the sender's link. Safe to call without one; allowed while paused.
- * @param addresses - Where `Activation` is.
- */
-export function unlinkCall(addresses: WithActivation) {
-  return { ...act(addresses), functionName: "unlinkBear", args: [] } as const satisfies Call;
-}
-
-/** A wallet's link, told apart from one voided by a sale. */
-export type LinkStatus =
-  | { state: "none" }
-  | { state: "active"; tokenId: bigint; level: number }
-  /** The wallet's last link was to a bear that has changed hands since; it carries no boost. */
-  | { state: "voided"; tokenId: bigint };
-
-/**
- * The state of a wallet's link. `voided` needs the link history, read from `BearLinked` /
- * `BearUnlinked` logs in one `eth_getLogs` from `fromBlock`; on an RPC that caps log ranges, serve it
- * from an indexer instead.
- * @param client - Any viem public client on the chain.
- * @param addresses - Where `Activation` is.
- * @param wallet - The wallet.
- * @param fromBlock - `Activation`'s deployment block.
- */
-export async function readLinkStatus(client: AnyPublicClient, addresses: WithActivation, wallet: Address, fromBlock: bigint): Promise<LinkStatus> {
-  const link = await readLink(client, addresses, wallet);
-  if (link.tokenId !== 0n) return { state: "active", tokenId: link.tokenId, level: link.level };
-  const [linked, unlinked] = await Promise.all([
-    client.getContractEvents({ ...act(addresses), eventName: "BearLinked", args: { wallet }, fromBlock }),
-    client.getContractEvents({ ...act(addresses), eventName: "BearUnlinked", args: { wallet }, fromBlock }),
-  ]);
-  const last = [...linked, ...unlinked]
-    .sort((x, y) => (x.blockNumber === y.blockNumber ? x.logIndex - y.logIndex : x.blockNumber < y.blockNumber ? -1 : 1))
-    .at(-1);
-  if (last?.eventName === "BearLinked" && last.args.tokenId !== undefined) return { state: "voided", tokenId: last.args.tokenId };
-  return { state: "none" };
-}
-
-/**
- * Whether to prompt `wallet` to link `tokenId` — after it buys a bear and after its first burn. A
- * wallet has no Status boost until it links, level 5 included.
- * @param client - Any viem public client on the chain.
- * @param addresses - Where `Activation` is.
- * @param wallet - The holder's wallet.
- * @param tokenId - The bear just bought or burned for.
- * @returns `prompt: true` when the wallet's active link is not this bear, with the current link so
- *   the page can word it ("link your bear" or "switch from bear #N").
- */
-export async function linkPrompt(client: AnyPublicClient, addresses: WithActivation, wallet: Address, tokenId: bigint) {
-  const link = await readLink(client, addresses, wallet);
-  return { prompt: link.tokenId !== tokenId, currentLink: link.tokenId, currentLevel: link.level };
 }

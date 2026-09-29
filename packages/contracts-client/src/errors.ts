@@ -143,7 +143,7 @@ export type ErrorCode =
   | "IMPORT_LENGTH_MISMATCH"
   | "NOT_LISTED"
   | "INVALID_WINDOW"
-  // Activation: burn and link
+  // Activation: burn
   | "ACTIVATION_PAUSED"
   | "ZERO_AMOUNT"
   | "NOT_BEAR_OWNER"
@@ -267,7 +267,7 @@ const MESSAGES: Record<ErrorCode, (d: Record<string, unknown>) => string> = {
   BURN_DISABLED: () => "Bears cannot be burned or sent to the zero address.",
   RECEIVER_NOT_ERC721: () => "The receiving contract cannot accept NFTs.",
   SELF_TRANSFER: () =>
-    "Sending a bear to the wallet that already holds it moves nothing, but it resets the bear's level and its Status link.",
+    "Sending a bear to the wallet that already holds it moves nothing, but it resets the bear's level.",
   CLAIM_WRONG_WALLET: () => "This whitelist pass was issued for a different wallet. Connect the wallet you chose when claiming.",
   VOUCHER_INVALID: () => "This whitelist pass is not valid. Request a new one.",
   VOUCHER_EXPIRED: () => "This whitelist pass has expired. Request a new one.",
@@ -285,7 +285,7 @@ const MESSAGES: Record<ErrorCode, (d: Record<string, unknown>) => string> = {
   IMPORT_LENGTH_MISMATCH: () => "The import's wallets and counts differ in number.",
   NOT_LISTED: () => "A wallet to remove holds no whitelist allocations.",
   INVALID_WINDOW: () => "That date is not allowed: a close cannot be in the past, and a window must open before it closes.",
-  ACTIVATION_PAUSED: () => "Burning and Status linking are not open yet.",
+  ACTIVATION_PAUSED: () => "Burning is not open yet.",
   ZERO_AMOUNT: () => "Choose an amount of $MNTD above zero.",
   NOT_BEAR_OWNER: () => "Only the bear's owner can do this, and this wallet does not own it.",
   ALREADY_MAX_LEVEL: () => "This bear is already at level 5.",

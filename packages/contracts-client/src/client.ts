@@ -36,19 +36,14 @@ import type { Abi, Address, Hex, Log, TransactionReceipt } from "viem";
 import { seaDropAbi, whitelistClaimAbi } from "./abi/index.js";
 
 import {
-  linkCall,
-  linkPrompt,
   planBurn,
   readBear,
   readCostToReach,
   readLevel,
-  readLink,
-  readLinkStatus,
   readPaused,
   readSnapshot,
   readThreshold,
   readWeightFor,
-  unlinkCall,
   type BurnPlan,
   type PlanBurnArgs,
 } from "./activation.js";
@@ -96,7 +91,7 @@ export interface MintABearClientOptions {
   feeRecipient?: Address;
   /** Counts a bear's open marketplace listings, for the pre-burn warning (MINT's OpenSea API call). */
   countOpenListings?: (tokenId: bigint) => Promise<number>;
-  /** The block the contracts were deployed at: where event reads (`bears.linkStatus`, `events.*`, `split.*`) start. Default 0. */
+  /** The block the contracts were deployed at: where event reads (`events.*`, `split.*`) start. Default 0. */
   deployBlock?: bigint;
   /** Errors of contracts outside this library (the $MNTD token's) to decode as well. */
   extraErrors?: Abi;
@@ -174,7 +169,7 @@ export function createMintABearClient(options: MintABearClientOptions) {
     thresholds: () => Promise.all(Array.from({ length: MAX_LEVEL + 1 }, (_, level) => readThreshold(publicClient, addresses, level))),
     /** The royalty weight of each level 0–5, basis 100. */
     weights: () => Promise.all(Array.from({ length: MAX_LEVEL + 1 }, (_, level) => readWeightFor(publicClient, addresses, level))),
-    /** Whether burning and linking are suspended. */
+    /** Whether burning is suspended. */
     paused: () => readPaused(publicClient, addresses),
     /** Owner, level and weight per id (`Activation.snapshot`). */
     snapshot: (ids: readonly bigint[], blockNumber?: bigint) => readSnapshot(publicClient, addresses, ids, blockNumber),
@@ -215,17 +210,6 @@ export function createMintABearClient(options: MintABearClientOptions) {
      * @throws {ClientRefusal} With the refusal's code (`ALREADY_MAX_LEVEL`, `NOT_BEAR_OWNER`, …).
      */
     burnTo: async (args: { tokenId: bigint; targetLevel: number }): Promise<BurnResult> => bears.executeBurn(await bears.planBurn(args)),
-
-    /** Links `tokenId` to the connected wallet's Status boost; replaces any earlier link. */
-    link: (tokenId: bigint) => send(linkCall(addresses, tokenId)),
-    /** Removes the connected wallet's link; a no-op without one. */
-    unlink: () => send(unlinkCall(addresses)),
-    /** The bear carrying the wallet's boost, and its level; `tokenId` 0 for none. */
-    linkOf: (wallet?: Address) => readLink(publicClient, addresses, self(wallet)),
-    /** `none`, `active`, or `voided` (the linked bear was sold). */
-    linkStatus: (wallet?: Address) => readLinkStatus(publicClient, addresses, self(wallet), deployBlock),
-    /** Whether to prompt the wallet to link `tokenId` (after a purchase or a first burn). */
-    linkPrompt: (tokenId: bigint, wallet?: Address) => linkPrompt(publicClient, addresses, self(wallet), tokenId),
 
     /**
      * Checks a transfer from the connected wallet (or `from`). Show `plan.warnings`, then pass the

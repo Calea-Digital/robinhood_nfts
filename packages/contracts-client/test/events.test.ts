@@ -7,13 +7,11 @@ import {
   ContractRevertError,
   decodeSystemLogs,
   execute,
-  linkCall,
   readLevel,
-  readLink,
+  readOwner,
   readSystemEvents,
   ReferenceIndexer,
   transferCall,
-  unlinkCall,
   type Call,
   type SystemAddresses,
 } from "../src/index.js";
@@ -116,51 +114,24 @@ describe("events and indexing", () => {
     expect(noBalance.code).toBe("INSUFFICIENT_MNTD_BALANCE");
   });
 
-  it("replaces a link with BearLinked alone, and a BearUnlinked for a voided link changes nothing", async () => {
-    /* Scenario:
-       Given alice linking bear 1, which she then sells to bob, who links it
-       When alice unlinks her voided link, and bob relinks to bear 4
-       Then alice's unlink emits BearUnlinked(alice, 1) and leaves bob's link to 1 standing; bob's relink emits BearLinked only */
-    await send("alice", linkCall(a, 1n));
-    await send("alice", transferCall(a, { from: accounts.alice.address, to: accounts.bob.address, tokenId: 1n }));
-    await send("bob", linkCall(a, 1n));
-    const unlink = await send("alice", unlinkCall(a));
-    expect(names(unlink)).toEqual(["activation.BearUnlinked"]);
-    const indexer = new ReferenceIndexer().applyAll(await readSystemEvents(f.publicClient, sys, deployBlock));
-    expect(indexer.linkOf(accounts.bob.address)).toEqual({ tokenId: 1n, level: 0 });
-    expect(indexer.linkOf(accounts.alice.address)).toEqual({ tokenId: 0n, level: 0 });
-    const relink = await send("bob", linkCall(a, 4n));
-    expect(names(relink)).toEqual(["activation.BearLinked"]);
-  });
-
   it("indexes to exactly what the contracts answer", async () => {
     /* Scenario:
-       Given a sequence of burns, links, sales, a self-transfer, a voided unlink, relinks and a buy-back
+       Given a sequence of burns, sales, a self-transfer and a buy-back
        When the reference indexer replays every event from Activation's deployment
-       Then for every bear its level, and for every wallet its link, equal levelOf and linkOf on chain */
+       Then for every bear its level and owner equal levelOf and ownerOf on chain */
     await burn("alice", 1n, 8_333n); // bear 1 → level 3
-    await send("alice", linkCall(a, 1n));
     await burn("bob", 4n, 1_666n); // bear 4 → level 1
-    await send("bob", linkCall(a, 4n));
-    await send("alice", transferCall(a, { from: accounts.alice.address, to: accounts.bob.address, tokenId: 1n })); // sale: resets 1, voids alice's link
-    await send("alice", unlinkCall(a)); // BearUnlinked for a void link
-    await send("bob", linkCall(a, 1n)); // replaces bob's link to 4
+    await send("alice", transferCall(a, { from: accounts.alice.address, to: accounts.bob.address, tokenId: 1n })); // sale: resets 1
     await burn("bob", 1n, 3_333n); // bear 1 → level 2 under bob
-    await send("alice", linkCall(a, 2n));
-    await send("alice", linkCall(a, 3n)); // replaces
     await burn("alice", 3n, 41_666n); // bear 3 → level 5
     await send("bob", transferCall(a, { from: accounts.bob.address, to: accounts.bob.address, tokenId: 4n })); // self-transfer resets 4
-    await send("bob", transferCall(a, { from: accounts.bob.address, to: accounts.alice.address, tokenId: 1n })); // buy-back: bob's link voided
-    await send("carol", unlinkCall(a)); // carol never linked: no event
+    await send("bob", transferCall(a, { from: accounts.bob.address, to: accounts.alice.address, tokenId: 1n })); // buy-back resets 1
 
     const indexer = new ReferenceIndexer().applyAll(await readSystemEvents(f.publicClient, sys, deployBlock));
-    for (const id of [1n, 2n, 3n, 4n]) expect(indexer.levelOf(id), `level of ${id}`).toBe(await readLevel(f.publicClient, a, id));
-    for (const who of ["alice", "bob", "carol"] as const) {
-      const wallet = accounts[who].address;
-      expect(indexer.linkOf(wallet), `link of ${who}`).toEqual(await readLink(f.publicClient, a, wallet));
+    for (const id of [1n, 2n, 3n, 4n]) {
+      expect(indexer.levelOf(id), `level of ${id}`).toBe(await readLevel(f.publicClient, a, id));
+      expect(indexer.owners.get(id), `owner of ${id}`).toBe(await readOwner(f.publicClient, a, id));
     }
-    expect(indexer.linkOf(accounts.alice.address)).toEqual({ tokenId: 3n, level: 5 });
-    expect(indexer.linkOf(accounts.bob.address)).toEqual({ tokenId: 0n, level: 0 });
-    expect(indexer.owners.get(1n)).toBe(accounts.alice.address);
+    expect([1n, 2n, 3n, 4n].map((id) => indexer.levelOf(id))).toEqual([0, 0, 5, 0]);
   });
 });
