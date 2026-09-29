@@ -1,9 +1,6 @@
-# Deliverables and acceptance Specification
+# Spec Delta
 
-## Purpose
-Each deliverable and the standard it is accepted against, written down, so both parties can tell when the work is done and what remains.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: DEL-1 — Source
 **Kind:** acceptance-standard
@@ -142,8 +139,8 @@ concerns goes to mainnet, for every contract in an audit tranche (DEL-8).
 - **WHEN** mainnet deployment of an audited contract is scheduled
 - **THEN** every Critical and High finding from the review report reads fixed
 
-## Retired Requirements
+## REMOVED Requirements
 
-- DEL-4 (verified testnet addresses) → OPS-3, OPS-4
-- DEL-5 (deployment scripts and runbook) → OPS-2, OPS-5
-- DEL-7 (the existing-contract review) → withdrawn, CQ-13
+### Requirement: DEL-7 — Existing-contract review
+**Reason:** Withdrawn by Calea (29 September 2026, CQ-13): no existing MINT contract is reviewed; Calea's review work is the internal audit of its own contracts (DEL-3, DEL-8).
+**Migration:** None.

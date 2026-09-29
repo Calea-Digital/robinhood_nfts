@@ -26,7 +26,7 @@ becomes a Task with Spec Ref `NONE` when picked.
 - [x] 2.3 WL-4 — `claimants(offset, limit)` export equals the Studio allowlist
 - [x] 2.4 WL-5 — window gates claims; close ≥ 48 h before the stage
 - [x] 2.5 WL-7 — `WhitelistImport`: the owner-imported variant, frozen at `closeAt`; deploy entry point, export over either registry, client module
-- [ ] 2.6 WL-4 — (Defect MNT-141) `compare` over MINT's final CSV file instead of a registry (the whitelist is off-chain, WL-8); tests, tree; the runbook's step 4
+- [ ] 2.6 WL-4 — (Defect MNT-141) `compare` over MINT's final CSV file instead of a registry (the whitelist is off-chain, WL-8); tests, tree; the runbook's step 4; `compare` also fails when the CSV's allocations total more than 4,222 (CQ-24)
 
 ## 3. Activation
 

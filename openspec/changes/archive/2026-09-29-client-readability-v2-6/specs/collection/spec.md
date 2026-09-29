@@ -1,9 +1,11 @@
-# Collection contract — MintABear Specification
+# Spec Delta
 
-## Purpose
-A 4,444-bear collection on Robinhood Chain that MINT runs from OpenSea Studio. It collects royalties on every marketplace sale, and every transfer resets a bear's level, so the rest of the system relies only on ownership and the transfer count.
+## RENAMED Requirements
 
-## Requirements
+- FROM: `### Requirement: COL-7 — Creator token and enforced royalties`
+- TO: `### Requirement: COL-7 — Enforced royalties`
+
+## MODIFIED Requirements
 
 ### Requirement: COL-1 — Base
 **Kind:** work-item

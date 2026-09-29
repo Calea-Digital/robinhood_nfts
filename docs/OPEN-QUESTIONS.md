@@ -31,8 +31,6 @@ Answers from each call are marked as such below.
 | CQ-1 | CAL | Dates after the 29 Oct mint | Anchors stand; whitelist frozen by 27 October; other §8 rows unconfirmed | 2026-10-29 | Follow-up |
 | CQ-2 | ACT | $MNTD burn route | Native; OpenZeppelin `ERC20Burnable`, 18 decimals, immutable; addresses to follow | 2026-10-20 | Follow-up |
 | CQ-12 | OPS | Addresses; Safe on 4663 | Admin `0x1530…6141` (EOA) for every contract, to confirm; worker to follow | 2026-10-02 | Follow-up |
-| CQ-13 | DEL | Existing-contract review target | Not available; deferred until MINT names one | whenever MINT names a contract | Open |
-| CQ-14 | DEL | Monorepo and CI | Recommendation accepted; repository to be named | before the tranche 1 handover | Follow-up |
 | CQ-17 | RAF | VRF subscription and network | Arbitrum One; MINT owns the subscription (assumed) | 2026-10-12 | Follow-up |
 | CQ-20 | RAF | Prize count, odds and excluded ids | the owner sets each cycle's prize count and prize list from MINT's admin page; **222** team ids are excluded, fixed for good; prizes are held on Robinhood Chain, Ethereum and possibly ApeChain in MINT's prize wallet. | 2026-10-05 | Follow-up |
 | CQ-22 | RAF | Prize delivery from the prize wallet | Open; Calea recommends that MINT pushes each win to the opener | 2026-10-12 | Open |
@@ -46,11 +44,14 @@ Answers from each call are marked as such below.
 | CQ-9 | RAF | Mystery box model | Cycles set by the owner; one shot per bear per cycle | — | Answered |
 | CQ-10 | RAF | Claim window | Superseded by CQ-22 | — | Closed |
 | CQ-11 | RAF | Owner withdrawals | Superseded; custody is MINT's wallet | — | Closed |
+| CQ-13 | DEL | Existing-contract review target | Withdrawn — no existing-contract review; tranche 1's internal audit 30 Sep – 1 Oct | — | Closed |
+| CQ-14 | DEL | Monorepo and CI | `github.com/mintdotio/NFT`, with Calea's recommended layout | — | Answered |
 | CQ-15 | COL | Royalty rate and receiver | 5% to `0xf7E7…0e63` | — | Answered |
 | CQ-16 | OPS | Compliance (freeze / clawback) | None | — | Answered |
 | CQ-19 | DEL | Frontend and integration | MINT builds the play page on getminted.io in TypeScript; Calea ships a tested typed client library | before the tranche 1 handover | Answered |
 | CQ-21 | ACT | Status links per account | Out of scope; Status links off-chain | — | Closed |
 | CQ-18 | WL | Whitelist claim recording | Off-chain, in MINT's backend (B) | — | Answered |
+| CQ-24 | WL | Whitelist spots over supply | 1,000 wagering spots guaranteed; other channels capped at 3,222 | — | Answered |
 <!-- openspec:end -->
 
 ## Questions
@@ -186,52 +187,6 @@ key alone, and the runbook's reset of the minter list at handover is the remaini
 
 **Remaining.** Confirm `0x1530…6141` for every contract on every chain, or name the exceptions.
 The worker's address follows CQ-23. The whitelist is off-chain (CQ-18), so there is no signer.
-
-### CQ-13 — Existing smart-contract review: which contract, source, line limit
-- **Section:** DEL
-- **Needed by:** whenever MINT names a contract
-- **Status:** Open (call, 21 September 2026)
-- **Resolution:** none; no contract is available to review yet.
-
-**Question.** Which existing smart contract should Calea review, where is its source, and what is
-the agreed line limit?
-
-**Answer (MINT).** "Needs to be discussed with Lorenzo so he can say; I guess it's the main
-staking contract."
-
-**Answer (call, 21 September 2026).** "Not available at the moment."
-
-**Recorded as (call).** DEL-7 stands as a deliverable but is unscheduled: it is drawn on when
-MINT names a contract, and books none of the auditor's time until then.
-
-**Remaining.** The contract's name, its source (repository path or a verified address), and its
-size in lines, so the line limit in Rayco's agreement can be set. Findings only, no remediation
-(DEL-7).
-
-### CQ-14 — Monorepo placement and CI
-- **Section:** DEL
-- **Needed by:** before the tranche 1 handover
-- **Status:** Follow-up (call, 28 September 2026; repository to be named)
-- **Resolution:** Calea's recommendation accepted: `packages/contracts` as `@mint/contracts` beside `packages/contracts-client`, Foundry dependencies as git submodules, Calea owns CI.
-
-**Question.** Confirm the package location; whether `lib/` dependencies are git submodules or
-vendored copies; and who owns the CI configuration.
-
-**Answer (MINT).** "Let's discuss this in the call Monday."
-
-**Answer (call, 21 September 2026).** Not reached. CQ-19 settled who builds what, but not where
-the code lives, so the repository question stands on its own now rather than riding on CQ-19.
-
-**Answer (call, 28 September 2026).** "They do accept our recommendation, however we will need to
-update plan in order to facilitate the early delivery of WhitelistClaim contract." In the
-follow-up: MINT will provide the repository; the first delivery is only the whitelist registry
-and its client module.
-
-**Recorded as (28 September).** DEL-9.
-
-**Remaining.** The repository's URL and Calea's access to it. With the whitelist off-chain
-(CQ-18) nothing is due on 29 September. The client library's mint and allowlist-proof calls are
-needed before the whitelist stage.
 
 ### CQ-17 — VRF subscription
 - **Section:** RAF
@@ -632,6 +587,54 @@ wallet (CQ-8, RAF-33) there is no vault to refuse a withdrawal. The published pr
 cycle (RAF-27) is MINT's commitment, and every win and every payout is on the record, but only
 MINT's own practice keeps a committed prize in the wallet until it is won.
 
+### CQ-13 — Existing smart-contract review: which contract, source, line limit
+- **Section:** DEL
+- **Needed by:** —
+- **Status:** Closed (withdrawn by Calea, 29 September 2026)
+- **Resolution:** withdrawn: no existing MINT contract is reviewed, and DEL-7 is retired. Calea's review work is the internal audit of its own contracts (DEL-3, DEL-8); tranche 1's runs 30 September – 1 October 2026.
+
+**Question.** Which existing smart contract should Calea review, where is its source, and what is
+the agreed line limit?
+
+**Answer (MINT).** "Needs to be discussed with Lorenzo so he can say; I guess it's the main
+staking contract."
+
+**Answer (call, 21 September 2026).** "Not available at the moment."
+
+**Recorded as (call).** DEL-7 stands as a deliverable but is unscheduled: it is drawn on when
+MINT names a contract, and books none of the auditor's time until then.
+
+**Answer (Calea, 29 September 2026).** Withdrawn. No contract of MINT's is reviewed; Calea's
+review work is the internal audit of the contracts it builds, and tranche 1's (`MintABear`,
+`Activation`) runs on 30 September and 1 October.
+
+**Recorded as (29 September).** DEL-7 is retired; DEL-10 no longer lists the review.
+
+### CQ-14 — Monorepo placement and CI
+- **Section:** DEL
+- **Needed by:** —
+- **Status:** Answered (MINT, 29 September 2026; repository named)
+- **Resolution:** the repository is `https://github.com/mintdotio/NFT`, with Calea's recommendation: `packages/contracts` as `@mint/contracts` beside `packages/contracts-client`, Foundry dependencies as git submodules, Calea owns CI.
+
+**Question.** Confirm the package location; whether `lib/` dependencies are git submodules or
+vendored copies; and who owns the CI configuration.
+
+**Answer (MINT).** "Let's discuss this in the call Monday."
+
+**Answer (call, 21 September 2026).** Not reached. CQ-19 settled who builds what, but not where
+the code lives, so the repository question stands on its own now rather than riding on CQ-19.
+
+**Answer (call, 28 September 2026).** "They do accept our recommendation, however we will need to
+update plan in order to facilitate the early delivery of WhitelistClaim contract." In the
+follow-up: MINT will provide the repository; the first delivery is only the whitelist registry
+and its client module.
+
+**Recorded as (28 September).** DEL-9.
+
+**Answer (MINT, 29 September 2026).** The repository is `https://github.com/mintdotio/NFT`. Calea has access.
+
+**Recorded as (29 September).** DEL-9 and DEL-11 name it.
+
 ### CQ-15 — Royalty rate and receiver
 - **Section:** COL
 - **Needed by:** —
@@ -831,8 +834,34 @@ The team bears are minted from the owner wallet and are not on the whitelist.
 are retired. `WhitelistClaim` and `WhitelistImport` stay in Calea's repository, unused, as a
 fallback.
 
-**Also to confirm.** Whether spots from collaborations and giveaways count toward the 1,000, and
-whether they may take a wallet above two (WL-1).
+**Answer (MINT, 29 September 2026), on spots from other channels.** "This site should work as a
+whitelist checker as well. [...] If we want to add all the wallets from cross-community collabs
+that we're doing (there is 1000 WL, we have 3000 in giveaways, etc.) So if someone [...] is
+checking a wallet that has not wagered but has an NFT from cross-community collabs (1 for
+example), he should be able to see it, but he can earn 2 more out of 1000 reserved for wagered
+whitelist mechanism. In short it can be a general-purpose checker on top of the wagering
+mechanism, 2 for wagering max, and the rest through other mechanisms (channels)."
+
+**Recorded as (29 September).** WL-1 and WL-8: the 1,000 spots and the two-per-wallet limit are
+the wagering channel's; spots from other channels do not count toward the 1,000 and come on top;
+getminted.io shows a wallet every spot it holds, and the final list carries each wallet's total.
+
+### CQ-24 — Whitelist spots over supply
+- **Section:** WL
+- **Needed by:** —
+- **Status:** Answered (MINT, 29 September 2026)
+- **Resolution:** the 1,000 wagering spots are guaranteed; every other channel together is capped at 3,222 spots, so the final list holds at most 4,222 spots and, with the 222 team bears, every spot has a bear.
+
+**Question.** MINT's channels add up to about 5,000 whitelist spots (1,000 wagering, 1,000 from
+collaborations, 3,000 from giveaways) against 4,222 bears outside the team's 222. Is a spot the
+right to mint while bears last, or is a bear reserved for it?
+
+**Answer (MINT, 29 September 2026).** "Guarantee 1000 wagering spots and 3222 rest (capped)."
+
+**Recorded as (29 September).** WL-1, WL-4 and WL-8: the final list holds at most 4,222 spots,
+1,000 of them wagering; the team's 222 are minted first; the whitelist stage's supply is the
+collection's 4,444, so every row can be minted while the stage runs; `compare` fails on a list
+that totals more than 4,222.
 <!-- openspec:end -->
 
 ## Closed
@@ -845,6 +874,5 @@ whether they may take a wallet above two (WL-1).
 | Artwork progression by level | Artwork is immutable; no on-chain progression | Meeting 15 Sep |
 | Fuzzing deliverable | Written by Calea's internal auditor, not the developer | Calea, 15 Sep |
 | ERC-6551 | Out of the initial release; separate scope later | Meeting 15 Sep, SoW |
-| Daily pool vs stake-based Status | MINT-side product question; nothing on-chain depends on it | Handover |
-| CQ-3 token-agnostic `credit` | Design stands; settled by the CQ-2 answer | MINT reply, Sep 2026 |
+| Daily pool vs stake-based Status | MINT's product question; nothing on-chain depends on it | Handover |
 | Royalty pot mechanics | ETH cap or countdown; half the ETH buys $MNTD; a splitter wallet credits getminted.io accounts; MINT-side | MINT reply, Sep 2026 |

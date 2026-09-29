@@ -1,7 +1,7 @@
 schema: calea-house
 
 engagement: client
-spec_version: "2.5"
+spec_version: "2.6"
 
 context: |
   Tech stack: Foundry / Solidity 0.8.17 (pinned by SeaDrop's exact pragma; evm london), OpenSea ERC721SeaDrop, Solady.

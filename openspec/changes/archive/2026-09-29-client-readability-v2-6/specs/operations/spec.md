@@ -1,9 +1,6 @@
-# Operations, roles and handover Specification
+# Spec Delta
 
-## Purpose
-MINT receives contracts that are correct from their first block, verified on every chain, and handed over with every key, role and a runbook. Running them after 19 November needs nothing from Calea.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: OPS-1 — Addresses
 **Kind:** work-item
