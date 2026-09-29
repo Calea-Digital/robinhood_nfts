@@ -41,7 +41,7 @@ it("creates a read-only client before the holder connects", async () => {
 
   // 5. A write without a wallet throws a MintABearError you can show as it is.
   try {
-    await mintabear.bears.link(1n);
+    await mintabear.bears.burnTo({ tokenId: 1n, targetLevel: 1 });
     expect.unreachable();
   } catch (error) {
     expect(isMintABearError(error, "NO_WALLET")).toBe(true);
@@ -65,7 +65,6 @@ it("creates the full client once the holder connects", async () => {
 
   // Reads that take a wallet default to the connected one.
   expect(await mintabear.whitelist.claimsOf()).toBe(0);
-  expect(await mintabear.bears.linkOf()).toEqual({ tokenId: 0n, level: 0 });
 
   // $MNTD's decimals come from the chain; format and parse with them.
   expect(await mintabear.units.decimals()).toBe(18);

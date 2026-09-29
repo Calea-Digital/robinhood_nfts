@@ -32,15 +32,12 @@ contract ActivationOneTokenTest is BaseTest {
         vm.startPrank(alice);
         mntd.approve(fresh, type(uint256).max);
         act.burn(1, 3_333 * UNIT);
-        act.linkBear(1);
-        act.unlinkBear();
         vm.stopPrank();
         uint256[] memory ids = new uint256[](3);
         (ids[0], ids[1], ids[2]) = (1, 2, 4445);
         act.snapshot(ids);
         act.weightOf(1);
         act.costToReach(1, 5);
-        act.linkOf(alice);
         act.lifetimeBurned(1);
         VmSafe.AccountAccess[] memory accesses = vm.stopAndReturnStateDiff();
 
@@ -269,17 +266,14 @@ contract ActivationBurnTest is BaseTest {
         activation.burn(2, 41_667 * UNIT);
     }
 
-    function test_burnOrLink_forAnUnmintedId_revertsInTheCollection() public {
+    function test_burn_forAnUnmintedId_revertsInTheCollection() public {
         /* Scenario:
            Given an id that was never minted
-           When anyone burns for it or links it
+           When anyone burns for it
            Then the collection's ownerOf reverts with OwnerQueryForNonexistentToken, before
              NotBearOwner, and nothing is recorded or burned */
         vm.expectRevert(IERC721A.OwnerQueryForNonexistentToken.selector);
         _burnAsFor(alice, 4445, UNIT);
-        vm.prank(alice);
-        vm.expectRevert(IERC721A.OwnerQueryForNonexistentToken.selector);
-        activation.linkBear(4445);
         assertEq(activation.lifetimeBurned(4445), 0);
         assertEq(mntd.balanceOf(alice), 50_000 * UNIT);
     }
@@ -498,16 +492,12 @@ contract ActivationResetTest is BaseTest {
 
     function test_transfer_resetsEverything_withNoCallIntoActivation() public {
         /* Scenario: ACT-5 — A transfer resets everything
-           Given a bear at level 2 with a Status link
+           Given a bear at level 2
            When it is transferred to another wallet
-           Then levelOf and cumulativeOf read zero, weightOf reads weightFor(0) and linkOf reads
-             (0, 0), with no call into Activation */
+           Then levelOf and cumulativeOf read zero and weightOf reads weightFor(0), with no call into
+             Activation */
         _burnFor(1, 3_333);
-        vm.prank(alice);
-        activation.linkBear(1);
         assertEq(activation.levelOf(1), 2);
-        (uint256 linked,) = activation.linkOf(alice);
-        assertEq(linked, 1);
 
         vm.startStateDiffRecording();
         vm.prank(alice);
@@ -520,9 +510,6 @@ contract ActivationResetTest is BaseTest {
         assertEq(activation.levelOf(1), 0);
         assertEq(activation.cumulativeOf(1), 0);
         assertEq(activation.weightOf(1), activation.weightFor(0));
-        (uint256 tokenId, uint8 level) = activation.linkOf(alice);
-        assertEq(tokenId, 0);
-        assertEq(level, 0);
     }
 
     function test_transfer_resetsCumulativeLevelAndWeight() public {
@@ -575,205 +562,6 @@ contract ActivationResetTest is BaseTest {
         vm.prank(bob);
         bears.transferFrom(bob, alice, 1);
         assertEq(activation.levelOf(1), 0);
-    }
-}
-
-/// @dev The Status link.
-contract ActivationLinkTest is BaseTest {
-    event BearLinked(address indexed wallet, uint256 indexed tokenId);
-    event BearUnlinked(address indexed wallet, uint256 indexed tokenId);
-
-    function setUp() public override {
-        super.setUp();
-        _mint(alice, 2);
-    }
-
-    function test_linkBear_oneNominationPerWallet() public {
-        /* Scenario: ACT-9 — One nomination per wallet
-           Given a wallet owning a bear at level 2
-           When it calls linkBear(tokenId)
-           Then linkOf(wallet) reads (tokenId, 2)
-           And after the bear moves it reads (0, 0) */
-        _burnFor(1, 3_333);
-        vm.prank(alice);
-        activation.linkBear(1);
-        (uint256 tokenId, uint8 level) = activation.linkOf(alice);
-        assertEq(tokenId, 1);
-        assertEq(level, 2);
-
-        vm.prank(alice);
-        bears.transferFrom(alice, bob, 1);
-        (tokenId, level) = activation.linkOf(alice);
-        assertEq(tokenId, 0);
-        assertEq(level, 0);
-    }
-
-    function test_linkBear_byANewOwner_ofATradedBear() public {
-        /* Scenario:
-           Given a bear alice has sold to bob, so its counter has moved
-           When bob burns it to level 2 and links it
-           Then linkOf(bob) reads (tokenId, 2), recorded at the counter's current value
-           And once bob sells it back, linkOf(bob) reads (0, 0) */
-        vm.prank(alice);
-        bears.transferFrom(alice, bob, 1);
-        assertEq(bears.transferNonce(1), 1);
-
-        _burnFor(1, 3_333);
-        vm.prank(bob);
-        activation.linkBear(1);
-        (uint256 tokenId, uint8 level) = activation.linkOf(bob);
-        assertEq(tokenId, 1, "the new owner's link stands");
-        assertEq(level, 2);
-
-        vm.prank(bob);
-        bears.transferFrom(bob, alice, 1);
-        (tokenId, level) = activation.linkOf(bob);
-        assertEq(tokenId, 0);
-        assertEq(level, 0);
-    }
-
-    function test_linkOf_levelFollowsLaterBurns() public {
-        /* Scenario:
-           Given a linked bear at level 1
-           When its owner burns up to level 4
-           Then linkOf reads the new level without a new nomination */
-        _burnFor(1, 1_666);
-        vm.prank(alice);
-        activation.linkBear(1);
-        _burnFor(1, 15_000);
-        (uint256 tokenId, uint8 level) = activation.linkOf(alice);
-        assertEq(tokenId, 1);
-        assertEq(level, 4);
-    }
-
-    function test_walletWithSeveralBears_carriesOneLink() public {
-        /* Scenario:
-           Given a wallet holding two activated bears, one linked
-           When linkOf is read
-           Then it names the one linked bear; the other adds royalty weight (ACT-10) but no Status */
-        _burnFor(1, 1_666);
-        _burnFor(2, 41_666);
-        vm.prank(alice);
-        activation.linkBear(1);
-        (uint256 tokenId, uint8 level) = activation.linkOf(alice);
-        assertEq(tokenId, 1);
-        assertEq(level, 1);
-        assertEq(activation.weightOf(2), 200);
-    }
-
-    function test_linkBear_recordsTheNomination() public {
-        /* Scenario:
-           Given a bear owner at level 1
-           When they nominate it
-           Then BearLinked is emitted and the link reports that bear and its level */
-        _burnFor(1, 1_666);
-        vm.expectEmit(true, true, true, true, address(activation));
-        emit BearLinked(alice, 1);
-        vm.prank(alice);
-        activation.linkBear(1);
-        (uint256 tokenId, uint8 level) = activation.linkOf(alice);
-        assertEq(tokenId, 1);
-        assertEq(level, 1);
-    }
-
-    function test_linkBear_byNonOwner_reverts() public {
-        /* Scenario:
-           Given a bear owned by alice
-           When bob tries to nominate it
-           Then it reverts with NotBearOwner */
-        vm.prank(bob);
-        vm.expectRevert(Activation.NotBearOwner.selector);
-        activation.linkBear(1);
-    }
-
-    function test_linkBear_whenPaused_reverts() public {
-        /* Scenario:
-           Given the owner has paused
-           When a holder nominates a bear
-           Then it reverts with ContractPaused */
-        activation.setPaused(true);
-        vm.prank(alice);
-        vm.expectRevert(Activation.ContractPaused.selector);
-        activation.linkBear(1);
-    }
-
-    function test_linkBear_replacesThePreviousNomination() public {
-        /* Scenario:
-           Given a wallet that has nominated one bear
-           When it nominates another
-           Then only the newer nomination stands */
-        vm.startPrank(alice);
-        activation.linkBear(1);
-        activation.linkBear(2);
-        vm.stopPrank();
-        (uint256 tokenId,) = activation.linkOf(alice);
-        assertEq(tokenId, 2);
-    }
-
-    function test_transfer_voidsThePreviousOwnersLink() public {
-        /* Scenario:
-           Given alice has nominated her bear
-           When she sells it
-           Then her link reads (0, 0) */
-        _burnFor(1, 1_666);
-        vm.startPrank(alice);
-        activation.linkBear(1);
-        bears.transferFrom(alice, bob, 1);
-        vm.stopPrank();
-        (uint256 tokenId, uint8 level) = activation.linkOf(alice);
-        assertEq(tokenId, 0);
-        assertEq(level, 0);
-    }
-
-    function test_unlinkBear_clearsTheNomination() public {
-        /* Scenario:
-           Given a nominated bear
-           When the owner unlinks
-           Then BearUnlinked is emitted, the link reads empty and the bear has not moved */
-        vm.startPrank(alice);
-        activation.linkBear(1);
-        vm.expectEmit(true, true, true, true, address(activation));
-        emit BearUnlinked(alice, 1);
-        activation.unlinkBear();
-        vm.stopPrank();
-        (uint256 tokenId,) = activation.linkOf(alice);
-        assertEq(tokenId, 0);
-        assertEq(bears.ownerOf(1), alice);
-    }
-
-    function test_unlinkBear_withNoNomination_isHarmlessAndSilent() public {
-        /* Scenario:
-           Given a wallet with no nomination
-           When it unlinks anyway
-           Then nothing reverts and no event is emitted */
-        vm.recordLogs();
-        vm.prank(bob);
-        activation.unlinkBear();
-        assertEq(vm.getRecordedLogs().length, 0);
-    }
-
-    function test_unlinkBear_whilePaused_succeeds() public {
-        /* Scenario:
-           Given a nominated bear and a pause
-           When the owner unlinks
-           Then it succeeds: the pause closes links, not unlinks */
-        vm.prank(alice);
-        activation.linkBear(1);
-        activation.setPaused(true);
-        vm.prank(alice);
-        activation.unlinkBear();
-        (uint256 tokenId,) = activation.linkOf(alice);
-        assertEq(tokenId, 0);
-    }
-
-    function test_linkOf_withNoNomination_readsEmpty() public view {
-        /* Scenario:
-           Given a wallet that never nominated a bear
-           When its link is read
-           Then it reads (0, 0) */
-        (uint256 tokenId, uint8 level) = activation.linkOf(bob);
-        assertEq(tokenId, 0);
-        assertEq(level, 0);
     }
 }
 
@@ -1145,47 +933,35 @@ contract ActivationOvershootTest is BaseTest {
     }
 }
 
-/// @dev ACT-11. The pause closes burns and links and nothing else; it admits no exemption.
+/// @dev ACT-15. The pause closes burns and nothing else; it admits no exemption.
 contract ActivationPauseTest is BaseTest {
     function setUp() public override {
         super.setUp();
         _mint(alice, 2);
     }
 
-    function test_pause_closesBurnsAndLinksOnly() public {
-        /* Scenario: ACT-11 — Pause closes burns and links only
+    function test_pause_closesBurnsOnly() public {
+        /* Scenario: ACT-15 — Pause closes burns only
            Given the owner has paused
-           When a holder calls burn or linkBear
-           Then both revert with ContractPaused
-           And reads, unlinkBear and every transfer still succeed */
+           When a holder calls burn
+           Then it reverts with ContractPaused
+           And reads and every transfer still succeed */
         _burnFor(1, 3_333);
-        vm.prank(alice);
-        activation.linkBear(1);
         _fund(alice, 1_000);
         activation.setPaused(true);
 
         vm.prank(alice);
         vm.expectRevert(Activation.ContractPaused.selector);
         activation.burn(1, UNIT);
-        vm.prank(alice);
-        vm.expectRevert(Activation.ContractPaused.selector);
-        activation.linkBear(2);
         assertEq(mntd.balanceOf(alice), 1_000 * UNIT, "no $MNTD burned while paused");
 
         assertEq(activation.levelOf(1), 2);
         assertEq(activation.cumulativeOf(1), 3_333 * UNIT);
         assertEq(activation.weightOf(1), 125);
         assertEq(activation.costToReach(1, 3), 5_000 * UNIT);
-        (uint256 linked,) = activation.linkOf(alice);
-        assertEq(linked, 1);
         uint256[] memory ids = new uint256[](1);
         ids[0] = 1;
         assertEq(activation.snapshot(ids)[0].level, 2);
-
-        vm.prank(alice);
-        activation.unlinkBear();
-        (linked,) = activation.linkOf(alice);
-        assertEq(linked, 0);
 
         vm.prank(alice);
         bears.transferFrom(alice, bob, 2);
@@ -1195,16 +971,14 @@ contract ActivationPauseTest is BaseTest {
     function test_pause_admitsNoExemption() public {
         /* Scenario:
            Given the owner has paused
-           When the owner, holding a bear and $MNTD, tries to burn or link
-           Then both revert with ContractPaused: no address is exempt */
+           When the owner, holding a bear and $MNTD, tries to burn
+           Then it reverts with ContractPaused: no address is exempt */
         activation.transferOwnership(alice);
         _fund(alice, 1_000);
         vm.startPrank(alice);
         activation.setPaused(true);
         vm.expectRevert(Activation.ContractPaused.selector);
         activation.burn(1, UNIT);
-        vm.expectRevert(Activation.ContractPaused.selector);
-        activation.linkBear(1);
         vm.stopPrank();
     }
 
@@ -1232,7 +1006,7 @@ contract ActivationPauseTest is BaseTest {
     }
 }
 
-/// @dev ACT-12. The owner sets the pause and can hand ownership on; a bear's owner burns and links;
+/// @dev ACT-12. The owner sets the pause and can hand ownership on; a bear's owner burns;
 ///      nothing else is administrable. The complete external interface is read from the compiled
 ///      artifact and pinned here, so a function added later — a setter, a freeze, a clawback, a
 ///      second way to record a level — fails this suite until the specification says so.
@@ -1254,7 +1028,7 @@ contract ActivationRolesTest is BaseTest {
         vm.expectRevert(Activation.RenounceDisabled.selector);
         activation.renounceOwnership();
 
-        string[24] memory expected = [
+        string[21] memory expected = [
             // reads
             "BEARS()",
             "DECIMALS()",
@@ -1263,7 +1037,6 @@ contract ActivationRolesTest is BaseTest {
             "cumulativeOf(uint256)",
             "levelOf(uint256)",
             "lifetimeBurned(uint256)",
-            "linkOf(address)",
             "paused()",
             "snapshot(uint256[])",
             "thresholdFor(uint8)",
@@ -1271,10 +1044,8 @@ contract ActivationRolesTest is BaseTest {
             "weightOf(uint256)",
             "owner()",
             "ownershipHandoverExpiresAt(address)",
-            // a bear's owner: the burn and the link
+            // a bear's owner: the burn
             "burn(uint256,uint128)",
-            "linkBear(uint256)",
-            "unlinkBear()",
             // the owner: pause and ownership (Solady); renounce reverts
             "setPaused(bool)",
             "transferOwnership(address)",
@@ -1298,14 +1069,12 @@ contract ActivationRolesTest is BaseTest {
 
     function test_ownerFunctions_leaveTheTokenThresholdsWeightsAndRecordsAlone() public {
         /* Scenario:
-           Given a bear burned to level 2 and linked
+           Given a bear burned to level 2
            When the owner runs every owner function — setPaused on and off, a handover and a
              transfer of ownership
-           Then the token, thresholds, weights, the bear's cumulative, level, lifetime and link read
-             as before */
+           Then the token, thresholds, weights, the bear's cumulative, level and lifetime read as
+             before */
         _burnFor(1, 3_333);
-        vm.prank(alice);
-        activation.linkBear(1);
 
         activation.setPaused(true);
         activation.setPaused(false);
@@ -1328,9 +1097,6 @@ contract ActivationRolesTest is BaseTest {
         assertEq(activation.cumulativeOf(1), 3_333 * UNIT);
         assertEq(activation.levelOf(1), 2);
         assertEq(activation.lifetimeBurned(1), 3_333 * UNIT);
-        (uint256 tokenId, uint8 level) = activation.linkOf(alice);
-        assertEq(tokenId, 1);
-        assertEq(level, 2);
     }
 
     function _contains(string[] memory list, string memory item) internal pure returns (bool) {
@@ -1353,9 +1119,8 @@ contract ActivationEventsTest is BaseTest {
 
     function test_events_carryTheDocumentedArguments() public {
         /* Scenario: ACT-13 — Events carry the documented arguments
-           When a burn, a link, an unlink and a pause happen
-           Then BearActivated, BearLinked, BearUnlinked and PausedSet are emitted with the documented
-             arguments */
+           When a burn and a pause happen
+           Then BearActivated and PausedSet are emitted with the documented arguments */
         vm.recordLogs();
         vm.prank(alice);
         activation.burn(1, 3_333 * UNIT);
@@ -1380,20 +1145,6 @@ contract ActivationEventsTest is BaseTest {
         assertEq(newLevel, 3);
         assertEq(amount, 5_000 * UNIT);
         assertEq(cumulative, 8_333 * UNIT);
-
-        vm.prank(alice);
-        activation.linkBear(1);
-        log = _only(vm.getRecordedLogs());
-        assertEq(log.topics[0], keccak256("BearLinked(address,uint256)"));
-        assertEq(address(uint160(uint256(log.topics[1]))), alice, "wallet");
-        assertEq(uint256(log.topics[2]), 1, "tokenId");
-
-        vm.prank(alice);
-        activation.unlinkBear();
-        log = _only(vm.getRecordedLogs());
-        assertEq(log.topics[0], keccak256("BearUnlinked(address,uint256)"));
-        assertEq(address(uint160(uint256(log.topics[1]))), alice, "wallet");
-        assertEq(uint256(log.topics[2]), 1, "tokenId");
 
         activation.setPaused(true);
         log = _only(vm.getRecordedLogs());
@@ -1422,8 +1173,6 @@ contract ActivationReadsTest is BaseTest {
            Then each returns without reverting
            And BEARS and MNTD return the deployed addresses and DECIMALS the token's decimals */
         _burnFor(1, 3_333);
-        vm.prank(alice);
-        activation.linkBear(1);
 
         assertEq(activation.levelOf(1), 2);
         assertEq(activation.cumulativeOf(1), 3_333 * UNIT);
@@ -1432,9 +1181,6 @@ contract ActivationReadsTest is BaseTest {
         assertEq(activation.weightFor(2), 125);
         assertEq(activation.thresholdFor(3), 8_333 * UNIT);
         assertEq(activation.costToReach(1, 3), 5_000 * UNIT);
-        (uint256 tokenId, uint8 level) = activation.linkOf(alice);
-        assertEq(tokenId, 1);
-        assertEq(level, 2);
         uint256[] memory ids = new uint256[](1);
         ids[0] = 1;
         Activation.BearState[] memory rows = activation.snapshot(ids);

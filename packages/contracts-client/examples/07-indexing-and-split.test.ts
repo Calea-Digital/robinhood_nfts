@@ -3,7 +3,7 @@
  *
  * `events.read` returns the system's events decoded by the contract that emitted them, and typed:
  * checking `emitter` and `eventName` narrows `args`. `events.index` feeds them to the reference
- * indexer, whose `levelOf` and `linkOf` answer as the contracts do.
+ * indexer, whose `levelOf` answers as the contract does.
  *
  * `split.run` reads every owned bear's owner and weight at a closing block (from an archive node)
  * and shares the funding: each wallet by the sum of its bears' weights, the dead address excluded,
@@ -30,7 +30,6 @@ beforeAll(async () => {
   await bob.mint.public({ quantity: 2n }); // bears 3, 4
   await chain.faucet("alice", 50_000n);
   await alice.bears.burnTo({ tokenId: 1n, targetLevel: 5 }); // weight 200
-  await alice.bears.link(1n);
   await bob.bears.executeTransfer(await bob.bears.planTransfer({ to: DEAD_ADDRESS, tokenId: 4n })); // excluded from the split
   closingBlock = await chain.publicClient.getBlockNumber();
 });
@@ -38,9 +37,9 @@ afterAll(() => chain.stop());
 
 it("reads typed events and indexes them", async () => {
   /* Scenario:
-     Given mints, a level-5 burn, a link and a transfer to the dead address
+     Given mints, a level-5 burn and a transfer to the dead address
      When the page reads the events and indexes them
-     Then BearActivated's args are typed, and the indexer answers bear 1 at level 5 linked from alice */
+     Then BearActivated's args are typed, and the indexer answers bear 1 at level 5 and bear 4 at the dead address */
   const events = await alice.events.read();
   const activation = events.find((e) => e.emitter === "activation" && e.eventName === "BearActivated");
   if (activation?.emitter === "activation" && activation.eventName === "BearActivated") {
@@ -52,7 +51,6 @@ it("reads typed events and indexes them", async () => {
 
   const indexer = await alice.events.index();
   expect(indexer.levelOf(1n)).toBe(5);
-  expect(indexer.linkOf(chain.address("alice"))).toEqual({ tokenId: 1n, level: 5 });
   expect(indexer.owners.get(4n)).toBe(DEAD_ADDRESS);
 });
 

@@ -1,8 +1,7 @@
 # @mintabear/contracts-client
 
 The TypeScript client for the MintABear contracts on Robinhood Chain. It covers every call the
-getminted.io play page makes (mint, whitelist claim, burn for a level, Status link, transfers,
-reads), the voucher backend's rules, event indexing, and the reference royalty split. Every write
+getminted.io play page makes (mint, whitelist claim, burn for a level, transfers, reads), the voucher backend's rules, event indexing, and the reference royalty split. Every write
 returns what it did; every error has a code and a message you can show a holder.
 
 The mystery box is tranche 2 and is not here yet.
@@ -11,8 +10,7 @@ The mystery box is tranche 2 and is not here yet.
 registry is deployed. The `whitelist` claim calls, the voucher backend and `whitelistImport` below
 describe those undeployed registries and are not delivered. The mint's allowlist proofs come from
 MINT's final CSV (`buildAllowList(parseAllocationCsv(csv), stage)`). `mint.remainingWhitelistMints`
-and `whitelist.allowList` still read a registry until `tasks.md` 6.2 gives them a CSV path. The
-Status link calls go with `tasks.md` 3.15.
+and `whitelist.allowList` still read a registry until `tasks.md` 6.2 gives them a CSV path.
 
 ## Quick start
 
@@ -57,7 +55,7 @@ the page would use it, with every step commented. They run in CI, so they stay c
 | [`02-public-mint`](examples/02-public-mint.test.ts) | minting in the public stage; the ids minted; a refusal's message |
 | [`03-whitelist`](examples/03-whitelist.test.ts) | the backend's voucher endpoint; `claim`; the account's allocation number; an expired voucher; the whitelist-stage mint |
 | [`04-burn`](examples/04-burn.test.ts) | plan → warnings → send; refusals; a script's one-call burn; batching for a smart wallet |
-| [`05-link-and-transfer`](examples/05-link-and-transfer.test.ts) | the link prompt; linking; transfer warnings; a link voided by a sale; the self-transfer refusal |
+| [`05-transfer`](examples/05-transfer.test.ts) | the transfer warning; the reset; the self-transfer refusal |
 | [`06-errors`](examples/06-errors.test.ts) | the `catch` pattern; a declined wallet prompt; no ETH for gas; the contract's own error; a plan interrupted halfway |
 | [`07-indexing-and-split`](examples/07-indexing-and-split.test.ts) | typed events; the reference indexer; the royalty split |
 | [`08-whitelist-import`](examples/08-whitelist-import.test.ts) | MINT's admin page with the owner-imported registry: CSV → plan → send; a correction; the freeze |
@@ -94,8 +92,6 @@ they throw `NO_WALLET`.
 | | `planBurn({ tokenId, targetLevel })` | `{ ok: true, amount, calls, warnings }` or `{ ok: false, code, userMessage }` |
 | | `executeBurn(plan)` | `{ results, activated: { previousLevel, newLevel, amount, cumulative } }` |
 | | `burnTo({ tokenId, targetLevel })` | plan and send in one call (scripts; no warnings shown) |
-| | `link(tokenId)`, `unlink()` | the write's result |
-| | `linkOf(wallet?)`, `linkStatus(wallet?)`, `linkPrompt(tokenId, wallet?)` | the link, `none` / `active` / `voided`, whether to prompt |
 | | `planTransfer({ to, tokenId })`, `executeTransfer(plan)` | `{ call, warnings }`; the write's result |
 | `events` | `read(fromBlock?, toBlock?)`, `decode(logs)`, `index(toBlock?)` | typed events; a `ReferenceIndexer` |
 | `split` | `rows({ closingBlock, mode? })`, `compute(rows, funding)`, `run({ closingBlock, funding, carriedIn?, mode? })` | the royalty split |
@@ -134,7 +130,7 @@ Everything the library throws is a `MintABearError`:
 | `userMessage` | plain English for the holder; safe to show as is |
 | `details` | the facts, by name: a revert's arguments (`{ total, allowed }`), a refusal's numbers |
 | `cause` | the underlying error (viem's, the wallet's) |
-| `message` | a technical line for logs: `linkBear reverted with NotBearOwner: [NOT_BEAR_OWNER] …` |
+| `message` | a technical line for logs: `burn reverted with NotBearOwner: [NOT_BEAR_OWNER] …` |
 
 - `ContractRevertError` means a contract refused. It adds `functionName` and `revert.errorName`,
   the contract's own error name.
@@ -163,7 +159,7 @@ In a `catch`, `explainError(error)` gives `{ code, userMessage, details }` for a
 | `NOT_TOKEN_OWNER_OR_APPROVED` | `TransferCallerNotOwnerNorApproved`, `TransferFromIncorrectOwner`, `ApprovalCallerNotOwnerNorApproved` | This wallet does not own that bear and is not approved to move it. |
 | `BURN_DISABLED` | `BurnDisabled`, `TransferToZeroAddress` | Bears cannot be burned or sent to the zero address. |
 | `RECEIVER_NOT_ERC721` | `TransferToNonERC721ReceiverImplementer` | The receiving contract cannot accept NFTs. |
-| `SELF_TRANSFER` | — | Sending a bear to the wallet that already holds it moves nothing, but it resets the bear's level and its Status link. |
+| `SELF_TRANSFER` | — | Sending a bear to the wallet that already holds it moves nothing, but it resets the bear's level. |
 | `CLAIM_WRONG_WALLET` | `NotClaimant` | This whitelist pass was issued for a different wallet. Connect the wallet you chose when claiming. |
 | `VOUCHER_INVALID` | `BadSigner` | This whitelist pass is not valid. Request a new one. |
 | `VOUCHER_EXPIRED` | `Expired` | This whitelist pass has expired. Request a new one. |
@@ -180,7 +176,7 @@ In a `catch`, `explainError(error)` gives `{ code, userMessage, details }` for a
 | `IMPORT_LENGTH_MISMATCH` | `LengthMismatch` | The import's wallets and counts differ in number. |
 | `NOT_LISTED` | `NotListed` | A wallet to remove holds no whitelist allocations. |
 | `INVALID_WINDOW` | `InvalidWindow` | That date is not allowed: a close cannot be in the past, and a window must open before it closes. |
-| `ACTIVATION_PAUSED` | `ContractPaused` | Burning and Status linking are not open yet. |
+| `ACTIVATION_PAUSED` | `ContractPaused` | Burning is not open yet. |
 | `ZERO_AMOUNT` | `ZeroAmount` | Choose an amount of $MNTD above zero. |
 | `NOT_BEAR_OWNER` | `NotBearOwner` | Only the bear's owner can do this, and this wallet does not own it. |
 | `ALREADY_MAX_LEVEL` | `AlreadyAtMaxLevel` | This bear is already at level 5. |
@@ -272,12 +268,10 @@ await admin.whitelistImport.execute(plan);
   amount)`, whose topic is the collection's ERC-721 `Transfer`.
 - **Typed events.** Check `emitter` and `eventName`, and `args` is typed.
 - **`TransferNonceAdvanced(tokenId, nonce)` is the reset.** It fires on every transfer, never on
-  mint, and precedes `Transfer` in the same transaction. The indexer voids the bear's level and
-  every link to it there.
-- **A new `BearLinked` replaces the wallet's link** without a `BearUnlinked`. A later
-  `BearUnlinked` for a voided link changes nothing.
+  mint, and precedes `Transfer` in the same transaction. The indexer voids the bear's level
+  there.
 - **`ReferenceIndexer` is the reference.** A test replays a long sequence of events and checks
-  that its `levelOf` and `linkOf` equal the contracts'.
+  that its `levelOf` and owners equal the contracts'.
 
 ## Royalty split (reference)
 

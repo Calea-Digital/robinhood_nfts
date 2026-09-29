@@ -8,15 +8,11 @@ import {
   burnCall,
   ContractRevertError,
   execute,
-  linkCall,
-  linkPrompt,
   planBurn,
   readBear,
   readCostToReach,
   readExists,
   readLevel,
-  readLink,
-  readLinkStatus,
   readPaused,
   readSnapshot,
   readThreshold,
@@ -24,7 +20,6 @@ import {
   readWeightFor,
   toTransaction,
   transferCall,
-  unlinkCall,
   type ActivationAddresses,
   type Call,
 } from "../src/index.js";
@@ -44,11 +39,10 @@ import {
 
 type Who = "alice" | "bob" | "carol" | "deployer";
 
-describe("activation: burn, link and reads", () => {
+describe("activation: burn and reads", () => {
   let anvil: Anvil;
   let f: Fixture;
   let a: ActivationAddresses;
-  let deployBlock: bigint;
   let snapshot: Hex;
 
   const T = (level: 1 | 2 | 3 | 4 | 5) => THRESHOLDS_WHOLE[level - 1]! * UNIT;
@@ -79,7 +73,6 @@ describe("activation: burn, link and reads", () => {
     anvil = await startAnvil();
     f = await deployFixture(anvil.rpcUrl);
     a = { activation: f.activation, bears: f.bears, mntd: f.mntd };
-    deployBlock = await f.publicClient.getBlockNumber();
     await openFreeMint(f);
     await mintBears(f, accounts.alice, 3n); // bears 1–3
     await mintBears(f, accounts.bob, 1n); // bear 4
@@ -152,11 +145,11 @@ describe("activation: burn, link and reads", () => {
       expect(await readLevel(f.publicClient, a, 1n)).toBe(1);
     });
 
-    it("warns about open listings and a missing link before a burn", async () => {
+    it("warns about open listings before a burn", async () => {
       /* Scenario:
-         Given bear 1 with two open listings and alice's wallet linking no bear
-         When she plans a burn
-         Then the plan warns OPEN_LISTINGS with the count and NOT_LINKED */
+         Given bear 1 with two open listings
+         When alice plans a burn
+         Then the plan warns OPEN_LISTINGS with the count, and nothing else */
       await fundMntd(f, accounts.alice.address, 2_000n);
       const plan = await planBurn(f.publicClient, a, {
         tokenId: 1n,
@@ -164,7 +157,8 @@ describe("activation: burn, link and reads", () => {
         targetLevel: 1,
         countOpenListings: async () => 2,
       });
-      expect(plan).toMatchObject({ ok: true, warnings: [{ code: "OPEN_LISTINGS", count: 2 }, { code: "NOT_LINKED", currentLink: 0n }] });
+      expect(plan).toMatchObject({ ok: true, warnings: [{ code: "OPEN_LISTINGS", count: 2 }] });
+      expect(plan.ok && plan.warnings).toHaveLength(1);
     });
 
     it("refuses in the plan what burn would refuse", async () => {
@@ -231,13 +225,12 @@ describe("activation: burn, link and reads", () => {
       expect(await readLevel(f.publicClient, a, 1n)).toBe(5);
     });
 
-    it("reverts OwnerQueryForNonexistentToken for an id never minted, from burn and linkBear", async () => {
+    it("reverts OwnerQueryForNonexistentToken for an id never minted", async () => {
       /* Scenario:
          Given id 100, never minted
-         When alice burns for it and links it
-         Then both revert with the collection's OwnerQueryForNonexistentToken, not NotBearOwner */
+         When alice burns for it
+         Then it reverts with the collection's OwnerQueryForNonexistentToken, not NotBearOwner */
       await expectRevert(send("alice", burnCall(a, 100n, 1n)), "OwnerQueryForNonexistentToken");
-      await expectRevert(send("alice", linkCall(a, 100n)), "OwnerQueryForNonexistentToken");
     });
 
     it("passes the token's own reverts through for a short allowance or balance, and records nothing", async () => {
@@ -267,82 +260,6 @@ describe("activation: burn, link and reads", () => {
       await execute(f.publicClient, wallet, burnCall(a, 1n, T(1)));
       await f.testClient.stopImpersonatingAccount({ address: smart });
       expect(await readLevel(f.publicClient, a, 1n)).toBe(1);
-    });
-  });
-
-  describe("link", () => {
-    it("links a bear, reads its level through the link, and replaces the link without BearUnlinked", async () => {
-      /* Scenario:
-         Given alice owns bears 1 (level 2) and 2
-         When she links 1, then links 2
-         Then linkOf reads (1, 2) and then (2, 0), and the second link emits BearLinked only */
-      await burnAs("alice", 1n, T(2));
-      await send("alice", linkCall(a, 1n));
-      expect(await readLink(f.publicClient, a, accounts.alice.address)).toEqual({ tokenId: 1n, level: 2 });
-      const receipt = await send("alice", linkCall(a, 2n));
-      expect(parseEventLogs({ abi: activationAbi, logs: receipt.logs }).map((e) => e.eventName)).toEqual(["BearLinked"]);
-      expect(await readLink(f.publicClient, a, accounts.alice.address)).toEqual({ tokenId: 2n, level: 0 });
-    });
-
-    it("unlinks, even while paused, and unlinking with no link is a silent no-op", async () => {
-      /* Scenario:
-         Given alice linking bear 1 and Activation paused
-         When she unlinks, then unlinks again
-         Then the first emits BearUnlinked and clears the link, the second emits nothing and does not revert */
-      await send("alice", linkCall(a, 1n));
-      await setPaused(true);
-      const first = await send("alice", unlinkCall(a));
-      expect(parseEventLogs({ abi: activationAbi, logs: first.logs }).map((e) => e.eventName)).toEqual(["BearUnlinked"]);
-      expect(await readLink(f.publicClient, a, accounts.alice.address)).toEqual({ tokenId: 0n, level: 0 });
-      const second = await send("alice", unlinkCall(a));
-      expect(second.logs).toEqual([]);
-    });
-
-    it("refuses linkBear while paused and for another wallet's bear", async () => {
-      /* Scenario:
-         Given bob's bear 4
-         When alice links it, and links her own while paused
-         Then the reverts are NotBearOwner and ContractPaused */
-      await expectRevert(send("alice", linkCall(a, 4n)), "NotBearOwner");
-      await setPaused(true);
-      await expectRevert(send("alice", linkCall(a, 1n)), "ContractPaused");
-    });
-
-    it("shows a link voided by a sale, and prompts the buyer to link", async () => {
-      /* Scenario:
-         Given alice linking bear 1 at level 3
-         When she sells it to bob
-         Then alice's link reads voided for bear 1, the bear reads level 0, and bob is prompted to link it */
-      await burnAs("alice", 1n, T(3));
-      await send("alice", linkCall(a, 1n));
-      expect(await readLinkStatus(f.publicClient, a, accounts.alice.address, deployBlock)).toEqual({ state: "active", tokenId: 1n, level: 3 });
-      await send("alice", transferCall(a, { from: accounts.alice.address, to: accounts.bob.address, tokenId: 1n }));
-      expect(await readLinkStatus(f.publicClient, a, accounts.alice.address, deployBlock)).toEqual({ state: "voided", tokenId: 1n });
-      expect(await readLevel(f.publicClient, a, 1n)).toBe(0);
-      expect(await linkPrompt(f.publicClient, a, accounts.bob.address, 1n)).toEqual({ prompt: true, currentLink: 0n, currentLevel: 0 });
-      await send("bob", linkCall(a, 1n));
-      expect(await linkPrompt(f.publicClient, a, accounts.bob.address, 1n)).toMatchObject({ prompt: false });
-    });
-
-    it("reads none for a wallet that never linked or unlinked", async () => {
-      /* Scenario:
-         Given carol, who never linked, and alice, who linked and unlinked
-         When their link status is read
-         Then both read none */
-      expect(await readLinkStatus(f.publicClient, a, accounts.carol.address, deployBlock)).toEqual({ state: "none" });
-      await send("alice", linkCall(a, 1n));
-      await send("alice", unlinkCall(a));
-      expect(await readLinkStatus(f.publicClient, a, accounts.alice.address, deployBlock)).toEqual({ state: "none" });
-    });
-
-    it("prompts after a first burn when the wallet links another bear or none", async () => {
-      /* Scenario:
-         Given alice linking bear 2 and just having burned for bear 1
-         When the link prompt is read for bear 1
-         Then it prompts, with bear 2 as the current link */
-      await send("alice", linkCall(a, 2n));
-      await burnAs("alice", 1n, T(1));
-      expect(await linkPrompt(f.publicClient, a, accounts.alice.address, 1n)).toEqual({ prompt: true, currentLink: 2n, currentLevel: 0 });
     });
   });
 });

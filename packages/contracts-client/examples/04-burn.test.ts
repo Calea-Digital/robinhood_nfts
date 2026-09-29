@@ -5,7 +5,7 @@
  *
  * 1. `bears.planBurn({ tokenId, targetLevel })` works out the exact $MNTD and checks everything the
  *    contract will check. A "no" comes back as `{ ok: false, code, userMessage }` — not thrown.
- * 2. Show `plan.amount` and `plan.warnings` (open listings, missing Status link) and ask to confirm.
+ * 2. Show `plan.amount` and `plan.warnings` (open listings) and ask to confirm.
  * 3. `bears.executeBurn(plan)` sends `approve` (if needed) then `burn`, and returns the new level.
  */
 import { afterAll, beforeAll, expect, it } from "vitest";
@@ -34,7 +34,7 @@ afterAll(() => chain.stop());
 
 it("plans a burn, shows its warnings, and sends it", async () => {
   /* Scenario:
-     Given alice's bear 1 at level 0, with one open listing and no Status link
+     Given alice's bear 1 at level 0, with one open listing
      When she plans a burn to level 2, confirms the warnings, and sends it
      Then the plan asks for 3,333 $MNTD in approve-then-burn, and the bear reaches level 2 */
 
@@ -45,7 +45,7 @@ it("plans a burn, shows its warnings, and sends it", async () => {
   expect(plan.calls.map((c) => c.functionName)).toEqual(["approve", "burn"]); // two wallet prompts
 
   // 2. Show the warnings; each has a code for your own wording and a message ready to show.
-  expect(plan.warnings.map((w) => w.code)).toEqual(["OPEN_LISTINGS", "NOT_LINKED"]);
+  expect(plan.warnings.map((w) => w.code)).toEqual(["OPEN_LISTINGS"]);
   expect(plan.warnings[0]!.message).toBe(
     "This bear has 1 open marketplace listing. If one fills after this burn, the buyer gets the bear at level 0 and the $MNTD is lost. Cancel the listings first.",
   );

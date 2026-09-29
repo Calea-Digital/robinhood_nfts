@@ -9,10 +9,8 @@
  *   bear sent to the zero address. {@link decodeSystemLogs} decodes each log only with the ABI of the
  *   contract that emitted it.
  * - **`TransferNonceAdvanced(tokenId, nonce)` is the reset.** It fires on every transfer, never on
- *   mint, and precedes the collection's `Transfer` in the same transaction. Void the bear's level and
- *   every wallet's link to it there.
- * - **A new `BearLinked(wallet, tokenId)` replaces the wallet's link** without a `BearUnlinked` for
- *   the old bear; a later `BearUnlinked` for a link already voided changes nothing.
+ *   mint, and precedes the collection's `Transfer` in the same transaction. Void the bear's level
+ *   there.
  * - `BearActivated(tokenId, burner, previousLevel, newLevel, amount, cumulative)` carries no `ref`.
  *
  * {@link ReferenceIndexer} is these rules in code; its tests check it against the contracts.
@@ -107,16 +105,12 @@ export async function readSystemEvents(client: AnyPublicClient, addresses: Syste
 
 /**
  * A reference indexer: the state an off-chain service keeps from the events, equal to what the
- * contracts answer. Feed it events in chain order; read `levelOf` and `linkOf`.
- *
- * How several wallets' links combine for one account is MINT's Status service's rule (CQ-21); the
- * indexer keeps one link per wallet.
+ * contracts answer. Feed it events in chain order; read `levelOf`.
  *
  * @example
  * ```ts
  * const indexer = new ReferenceIndexer().applyAll(await readSystemEvents(client, addresses, deployBlock));
  * indexer.levelOf(7n);            // as Activation.levelOf answers
- * indexer.linkOf(wallet);         // as Activation.linkOf answers
  * ```
  */
 export class ReferenceIndexer {
@@ -124,29 +118,17 @@ export class ReferenceIndexer {
   readonly owners = new Map<bigint, Address>();
   /** Each activated bear's level and cumulative burn under its current owner. */
   readonly levels = new Map<bigint, { level: number; cumulative: bigint }>();
-  /** Each wallet's linked bear. */
-  readonly links = new Map<Address, bigint>();
 
   /** Applies one event. */
   apply(event: SystemEvent): void {
     if (event.emitter === "bears") {
       if (event.eventName === "TransferNonceAdvanced") {
-        const { tokenId } = event.args;
-        this.levels.delete(tokenId);
-        for (const [wallet, linked] of this.links) if (linked === tokenId) this.links.delete(wallet);
+        this.levels.delete(event.args.tokenId);
       } else if (event.eventName === "Transfer") {
         this.owners.set(event.args.tokenId, event.args.to);
       }
-    } else if (event.emitter === "activation") {
-      if (event.eventName === "BearActivated") {
-        this.levels.set(event.args.tokenId, { level: event.args.newLevel, cumulative: event.args.cumulative });
-      } else if (event.eventName === "BearLinked") {
-        this.links.set(event.args.wallet, event.args.tokenId);
-      } else if (event.eventName === "BearUnlinked") {
-        // Its tokenId is always the wallet's last BearLinked bear, which this map holds or a reset
-        // has already removed; for a voided link the delete finds nothing.
-        this.links.delete(event.args.wallet);
-      }
+    } else if (event.emitter === "activation" && event.eventName === "BearActivated") {
+      this.levels.set(event.args.tokenId, { level: event.args.newLevel, cumulative: event.args.cumulative });
     }
   }
 
@@ -159,11 +141,5 @@ export class ReferenceIndexer {
   /** The bear's level, as `levelOf` answers it. */
   levelOf(tokenId: bigint): number {
     return this.levels.get(tokenId)?.level ?? 0;
-  }
-
-  /** The wallet's link, as `linkOf` answers it: the bear and its level, or zeroes. */
-  linkOf(wallet: Address): { tokenId: bigint; level: number } {
-    const tokenId = this.links.get(wallet);
-    return tokenId === undefined ? { tokenId: 0n, level: 0 } : { tokenId, level: this.levelOf(tokenId) };
   }
 }

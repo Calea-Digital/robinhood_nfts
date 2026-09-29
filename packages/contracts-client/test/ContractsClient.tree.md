@@ -27,7 +27,7 @@ surface
 
 ```
 MintABearError
-├── every documented revert (mint, claim, burn, link, the collection's, the token's) maps to a code with a message
+├── every documented revert (mint, claim, burn, the collection's, the token's) maps to a code with a message
 ├── every code has a message
 ├── a revert decodes with its arguments by name; NotActive and the wallet limit fill their messages in
 ├── a declined prompt is USER_REJECTED; a MintABearError passes through; anything else is UNKNOWN_ERROR with its cause
@@ -45,18 +45,17 @@ MintABearError
                      ├── the account's second allocation claimed from another wallet is number 2
                      ├── an expired voucher: VOUCHER_EXPIRED
                      └── after the close: allowlist from the claimants, loaded by Studio; entry → mint; no entry, not listed
-04 burn              ├── plan (3,333 $MNTD, approve + burn) → warnings (listing, link) → executeBurn → level 2
+04 burn              ├── plan (3,333 $MNTD, approve + burn) → warnings (listing) → executeBurn → level 2
                      ├── TARGET_REACHED and NOT_BEAR_OWNER returned by the plan, with messages
                      ├── burnTo in one call; ALREADY_MAX_LEVEL thrown after level 5
                      └── the plan as one smart-wallet batch (toTransaction)
-05 link and transfer ├── link prompt after a burn; link; linkStatus active
-                     ├── transfer warnings (RESETS_LEVEL, VOIDS_LINK) → transfer → buyer at level 0, seller's link voided, buyer prompted
+05 transfer         ├── transfer warning (RESETS_LEVEL) → transfer → buyer at level 0
                      └── SELF_TRANSFER refused with a message
 06 errors            ├── a provider answering 4001: USER_REJECTED
                      ├── a wallet with no ETH: INSUFFICIENT_GAS_FUNDS
                      ├── ContractRevertError: code, userMessage, revert.errorName, functionName, message
                      └── a plan interrupted after approve: ACTIVATION_PAUSED with completed = [approve]; the retry is burn alone
-07 indexing, split   ├── typed BearActivated args; the indexer's level, link and owners
+07 indexing, split   ├── typed BearActivated args; the indexer's level and owners
                      └── split.run in both modes: 750,000 / 250,000 of an eligible 400, dead address excluded
 08 whitelist import  ├── the admin page: CSV → plan (3 added, 4 allocations) → execute; a holder reads claimsOf 2
                      ├── a corrected file: bob topped up, carol removed, alice unchanged; matches
@@ -138,7 +137,7 @@ on chain
 └── every addAllocations revert, NotListed and InvalidWindow map to a code
 ```
 
-## Burn, link, reads (`activation.test.ts`)
+## Burn, reads (`activation.test.ts`)
 
 ```
 reads
@@ -147,23 +146,16 @@ reads
 burn
 ├── planBurn: exactly costToReach, approve then burn; BearActivated 0 → 2; readBear follows
 ├── planBurn with the allowance covering it: burn alone; sent as a raw transaction
-├── warnings: OPEN_LISTINGS with the count, NOT_LINKED
+├── warnings: OPEN_LISTINGS with the count, and nothing else
 ├── a target level outside 1..5: RangeError
 ├── planBurn refuses NonexistentToken, NotBearOwner, InsufficientBalance, AlreadyAtMaxLevel,
 │   TargetReached, ContractPaused
 ├── ContractPaused before ZeroAmount before NotBearOwner
 ├── NotBearOwner before AlreadyAtMaxLevel
 ├── Overshoot one base unit above the level-5 remainder; exactly the remainder reaches level 5
-├── unminted id: OwnerQueryForNonexistentToken from burn and linkBear
+├── unminted id: OwnerQueryForNonexistentToken from burn
 ├── the token's own InsufficientAllowance and InsufficientBalance; level stays 0
 └── a smart-wallet owner burns
-link
-├── linkOf reads the bear and its level; a relink emits BearLinked only
-├── unlinkBear clears the link, works while paused, and without a link emits nothing
-├── NotBearOwner for another's bear; ContractPaused while paused
-├── a sale voids the seller's link (readLinkStatus voided); the buyer is prompted and links
-├── never linked, or linked and unlinked: none
-└── after a first burn, prompted when the wallet links another bear
 ```
 
 ## Transfers (`transfer.test.ts`)
@@ -171,10 +163,10 @@ link
 ```
 planTransfer
 ├── from == to: ClientRefusal SELF_TRANSFER, nothing sent
-├── sent anyway, a self-transfer advances the counter, resets the level, voids the link
+├── sent anyway, a self-transfer advances the counter and resets the level
 ├── the zero address: ClientRefusal ZERO_ADDRESS; raw transferFrom and safeTransferFrom: BurnDisabled
-├── an activated, linked bear: RESETS_LEVEL and VOIDS_LINK, and the buyer's bear reads level 0
-├── a bear never activated nor linked: no warnings
+├── an activated bear: RESETS_LEVEL alone, and the buyer's bear reads level 0
+├── a bear never activated: no warnings
 ├── an approved, whitelisted operator's transfer resets too
 └── an operator the validator does not allow: the validator's own error
 ```
@@ -186,8 +178,7 @@ decodeSystemLogs / ReferenceIndexer
 ├── a transfer: TransferNonceAdvanced(id, 1) then Transfer in one transaction; a mint: Transfer only
 ├── a burn: $MNTD's Approval and Transfer(holder, 0x0) decoded as $MNTD's, never as a bear
 ├── an OpenZeppelin v4 token's reverts decode as Error with its strings
-├── a relink emits BearLinked only; a voided link's BearUnlinked leaves the buyer's link standing
-└── replayed over a long sequence, the indexer's levelOf and linkOf equal the contracts'
+└── replayed over burns, sales, a self-transfer and a buy-back, the indexer's levelOf and owners equal the contracts'
 ```
 
 ## Royalty split (`split.test.ts`)
