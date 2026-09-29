@@ -136,29 +136,17 @@ Submodule pins: `forge-std` `bf647bd` (v1.16.2), `seadrop` `757590f`, `solady` `
 (v0.1.26). The chain's contract size limit is ~96 KB; every contract clears even Ethereum's
 24,576.
 
-## Next session — ACT-9 out before the audit, then the whitelist CSV, then tranche 2
+## Next session — the whitelist CSV, then tranche 2
 
 In this order (agreed 29 September 2026):
 
-1. **ACT-9 out of the code, today** (`tasks.md` 3.15, Defect MNT-142; then 3.16, ACT-15, MNT-135).
-   It changes `Activation`'s bytecode, so it lands **before tranche 1's internal audit on 30
-   September and 1 October**. Remove:
-   - `linkBear`, `unlinkBear`, `linkOf`, `BearLinked`, `BearUnlinked`, and the link wording in the
-     pause NatSpec (`src/Activation.sol` ~91, 107, 329): the pause covers `burn` only;
-   - their entries in the ACT-12 interface pin;
-   - their tests and tree leaves.
-
-   Rewrite the ACT-5 test (it transfers a linked bear and asserts `linkOf`) and the ACT-13 test
-   (it expects `BearLinked`/`BearUnlinked`) to the spec's current Scenarios, and re-cite the
-   ACT-11 tests and leaves as ACT-15. In `packages/contracts-client`: drop the link module and its
-   example, run `npm run gen:abi` and commit `src/abi/`. This clears four of the ten
-   `check_scenario_quotes.py` failures (ACT-5, ACT-9, ACT-11, ACT-13).
-
-   How to pick it up: 3.15 is the Defect MNT-142 (Spec Ref ACT-12), and `/mnt:next` only searches
-   `Work Kind: Feature`, so claim MNT-142 by hand with `/mnt:next`'s claim protocol (comment first,
-   In Progress, `MNT Claude`, branch `mnt/act-12`) and finish it with `/mnt:done`. Then
-   `/mnt:next ACT-15` claims 3.16 (MNT-135, Open). `/mnt:next` with no argument would pick 2.6
-   first, which is on hold.
+1. **ACT-9 is out of the code** (`tasks.md` 3.15, Defect MNT-142; 3.16, ACT-15, MNT-135; both In
+   Review; merged into `tranche-1` at `fe5a927`). `Activation` has no Status link, and
+   the pause covers `burn` only. The ACT-12 pin lists 21 functions. The client library has no
+   link module. The ACT-5, ACT-13 and ACT-15 tests quote their Scenarios, and
+   `check_scenario_quotes.py` reports 6 failures, all cleared by item 2 (2.6 and 6.2). The
+   self-review is `reports/act-12-link-removal-diff-review.md`. This is the bytecode the internal
+   audit takes.
 2. **The whitelist root check over a CSV** (`tasks.md` 2.6, WL-4, Defect MNT-141). **On hold
    until MINT replies** on the whitelist flow; do not start it unprompted.
    - `WhitelistExport.s.sol`'s `compare` reads a registry today; it has to read MINT's final CSV
