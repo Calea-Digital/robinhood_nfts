@@ -45,7 +45,7 @@ becomes a Task with Spec Ref `NONE` when picked.
 - [x] 3.13 ACT-13 — events
 - [x] 3.14 ACT-14 — reads
 - [x] 3.15 ACT-12 — (Defect MNT-142) remove the Status link (ACT-9 retired in spec v2.4): `linkBear`, `unlinkBear`, `linkOf`, `BearLinked`, `BearUnlinked`, the interface pin, tests, trees, client link module; ACT-11 references become ACT-15
-- [ ] 3.16 ACT-15 — the pause restated without links (ACT-11 retired): tests and tree cite ACT-15
+- [x] 3.16 ACT-15 — the pause restated without links (ACT-11 retired): tests and tree cite ACT-15
 
 ## 4. Scripts, runbook material, rehearsal
 
