@@ -54,15 +54,20 @@ After the freeze, MINT's backend takes no more claims.
 
 **2. Export the final CSV** from MINT's backend. The format is `wallet,allocations`, with one row
 per wallet and its total, merged across every source: wagering, collaborations and giveaways. A
-wallet that appears twice in Studio's allowlist can mint only under one of its rows.
+wallet that appears twice in Studio's allowlist can mint only under one of its rows. The
+allocations total at most 4,222: the 1,000 wagering spots, which are guaranteed, and at most
+3,222 from every other channel together (CQ-24). Each row's address is the wallet that will call
+the mint, which for a smart wallet is the smart account itself.
 
 **3. Load it into Studio's whitelist stage.** Each row's allocations become that wallet's mint
-limit in the stage.
+limit in the stage. The stage's supply (`maxTokenSupplyForStage`) is 4,444, the collection's
+total with the team's 222 minted first, so the stage can fill every row.
 
 **4. Check the root against the CSV.** Calea runs `script/WhitelistExport.s.sol`'s `compare` over
 the CSV file and the stage's parameters. It fails unless the root on SeaDrop is the root of the
-CSV's rows, and names the difference. The CSV mode is `tasks.md` 2.6 and is not built yet; until
-then, `compare` reads only a deployed registry. If the check fails, fix the CSV or the Studio
+CSV's rows, and names the difference; it also fails when the CSV totals more than 4,222. The CSV
+mode is `tasks.md` 2.6 and is not built yet; until then, `compare` reads only a deployed
+registry. If the check fails, fix the CSV or the Studio
 upload and run it again, before the stage opens.
 
 **5. Publish the proofs.** The getminted.io mint page builds each wallet's Merkle proof from the
