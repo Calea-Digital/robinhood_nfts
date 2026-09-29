@@ -154,6 +154,12 @@ In this order (agreed 29 September 2026):
    ACT-11 tests and leaves as ACT-15. In `packages/contracts-client`: drop the link module and its
    example, run `npm run gen:abi` and commit `src/abi/`. This clears four of the ten
    `check_scenario_quotes.py` failures (ACT-5, ACT-9, ACT-11, ACT-13).
+
+   How to pick it up: 3.15 is the Defect MNT-142 (Spec Ref ACT-12), and `/mnt:next` only searches
+   `Work Kind: Feature`, so claim MNT-142 by hand with `/mnt:next`'s claim protocol (comment first,
+   In Progress, `MNT Claude`, branch `mnt/act-12`) and finish it with `/mnt:done`. Then
+   `/mnt:next ACT-15` claims 3.16 (MNT-135, Open). `/mnt:next` with no argument would pick 2.6
+   first, which is on hold.
 2. **The whitelist root check over a CSV** (`tasks.md` 2.6, WL-4, Defect MNT-141). **On hold
    until MINT replies** on the whitelist flow; do not start it unprompted.
    - `WhitelistExport.s.sol`'s `compare` reads a registry today; it has to read MINT's final CSV
