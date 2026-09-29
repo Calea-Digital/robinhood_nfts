@@ -137,35 +137,61 @@ Submodule pins: `forge-std` `bf647bd` (v1.16.2), `seadrop` `757590f`, `solady` `
 (v0.1.26). The chain's contract size limit is ~96 KB; every contract clears even Ethereum's
 24,576.
 
-## Next session — the whitelist check, ACT-9, then the rehearsal
+## Next session — ACT-9 out before the audit, then the whitelist CSV, then tranche 2
 
-1. **The whitelist root check over a CSV** (`tasks.md` 2.6, WL-4, Defect MNT-141). `WhitelistExport.s.sol`'s
-   `compare` reads a registry today; it has to read MINT's final CSV file. Add tests and the
-   tree. It is needed before the whitelist stage: the freeze is 27 October and the stage opens
-   29 October. With it, `tasks.md` 6.2 (Defect MNT-143): the client library's `whitelist.allowList` and
-   `mint.remainingWhitelistMints` from MINT's CSV rather than a registry.
-2. **ACT-9 out of the code** (`tasks.md` 3.15, Defect MNT-142; then 3.16, ACT-15, MNT-135): remove `linkBear`, `unlinkBear`, `linkOf`,
-   `BearLinked`, `BearUnlinked`, the ACT-12 interface pin's entries, the tests, trees and the
-   client's link module. Rename the ACT-11 references to ACT-15.
+In this order (agreed 29 September 2026):
+
+1. **ACT-9 out of the code, today** (`tasks.md` 3.15, Defect MNT-142; then 3.16, ACT-15, MNT-135).
+   It changes `Activation`'s bytecode, so it lands **before tranche 1's internal audit on 30
+   September and 1 October**. Remove:
+   - `linkBear`, `unlinkBear`, `linkOf`, `BearLinked`, `BearUnlinked`, and the link wording in the
+     pause NatSpec (`src/Activation.sol` ~91, 107, 329): the pause covers `burn` only;
+   - their entries in the ACT-12 interface pin;
+   - their tests and tree leaves.
+
+   Rewrite the ACT-5 test (it transfers a linked bear and asserts `linkOf`) and the ACT-13 test
+   (it expects `BearLinked`/`BearUnlinked`) to the spec's current Scenarios, and re-cite the
+   ACT-11 tests and leaves as ACT-15. In `packages/contracts-client`: drop the link module and its
+   example, run `npm run gen:abi` and commit `src/abi/`. This clears four of the ten
+   `check_scenario_quotes.py` failures (ACT-5, ACT-9, ACT-11, ACT-13).
+2. **The whitelist root check over a CSV** (`tasks.md` 2.6, WL-4, Defect MNT-141). **On hold
+   until MINT replies** on the whitelist flow; do not start it unprompted.
+   - `WhitelistExport.s.sol`'s `compare` reads a registry today; it has to read MINT's final CSV
+     (`wallet,allocations`) and also fail when the allocations total more than 4,222 (CQ-24).
+   - Tests, tree, and the runbook's step 4.
+   - Folded in: retag the Scenario blocks in `test/WhitelistClaim.t.sol` and
+     `test/WhitelistImport.t.sol` that cite WL-1, WL-3, WL-4, WL-5 and WL-7 as bare `Scenario:`
+     blocks, since those contracts are an undeployed fallback and no longer satisfy the spec.
+     That clears five more quote failures.
+
+   Needed by the freeze on 27 October. With it comes `tasks.md` 6.2 (Defect MNT-143): the client
+   library's `whitelist.allowList` and `mint.remainingWhitelistMints` from MINT's CSV rather than
+   a registry, with the registry modules marked undeployed. That clears the last quote failure
+   (DEL-6).
 3. **The OPS-4 rehearsal on 46630** (human-led; `tasks.md` 4.4). It needs:
-   - from MINT: the testnet $MNTD's address (CQ-2) and the campaign dates (CQ-1), written into
-     `script/config/46630.json` from `script/config/example.json`;
+   - from MINT: the testnet $MNTD's address (O6, CQ-2) and the campaign dates (O7, CQ-1), written
+     into `script/config/46630.json` from `script/config/example.json`;
    - from the operator: a funded deployer key and OpenSea Studio access.
 
-   It then runs, in order:
+   The collection and whitelist parts can run before the testnet $MNTD exists. It runs, in order:
    - the `Deploy.s.sol` entry points, with Sourcify verification (closing MNT-95);
    - Studio attached, and `acceptOwnership` completed;
    - `Activation` read back, and the admin proving control (runbook, "Activation");
-   - a CSV loaded into Studio's whitelist stage, `compare` passing against it, and an allowlist
-     mint;
+   - a CSV loaded into Studio's whitelist stage, `compare` passing against it, a two-spot wallet
+     minting two and a one-spot wallet refused its second;
    - a burn through `Activation`;
    - enforcement toggled once.
 4. **The internal auditor** takes `MintABear` and `Activation` on 30 September and 1 October,
-   ahead of the rehearsal. The trees' INV-N and Fork-N obligations are theirs. The whitelist has no contract.
-5. **Tranche 2 waits on the 222 excluded ids** (CQ-20, O2). MINT mints the team bears from the
-   owner wallet; if that is the first mint, they are ids 1–222. How the owner mints is still to
-   confirm: Calea recommends a private team stage in Studio. It also needs CQ-22 and CQ-23 before
-   `PrizeDraw` is deployed.
+   after item 1 and ahead of the rehearsal. The trees' INV-N and Fork-N obligations are theirs.
+   The whitelist has no contract.
+5. **Tranche 2 waits on the 222 excluded ids** (O2, CQ-20, due 5 October).
+   - Scope: `MysteryBox` (RAF-32, 27, 28, 34), `PrizeDraw` (RAF-8, 29, 30, 33), both (RAF-14,
+     16–19), and the admin-page and worker calls in the client library.
+   - The spec is final. The code is built for the defaults of O3 (payout), O4 (VRF subscription)
+     and O5 (worker); those three are needed before `PrizeDraw` is deployed (12 October), not
+     before it is written.
+   - MINT mints the team bears from the owner wallet: if that is the first mint, they are ids
+     1–222. Calea recommends a private team stage in Studio.
 
 **Board clean-up for the human** (the 5 problems `board.sh`'s read-back reports, all in
 human-owned fields; the Tasks for retired requirements are Canceled, and the validator counts a
