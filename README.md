@@ -12,7 +12,7 @@ specification is in [`openspec/`](openspec/); the board (YouTrack `MNT`) follows
 
 ## Contracts
 
-The specification (v2.5) calls for `MintABear` and `Activation` in tranche 1, and `MysteryBox`
+The specification (v2.6) calls for `MintABear` and `Activation` in tranche 1, and `MysteryBox`
 (Robinhood Chain) and `PrizeDraw` (Arbitrum One) in tranche 2. The whitelist is off-chain, in
 MINT's backend. On `tranche-1` today:
 
@@ -24,7 +24,7 @@ MINT's backend. On `tranche-1` today:
 | [`src/WhitelistClaim.sol`](src/WhitelistClaim.sol) | Solady `Ownable`, `EIP712`, `ECDSA` | not deployed, kept as a fallback: the voucher whitelist registry (retired WL-3). `src/WhitelistImport.sol`, the owner-imported variant (retired WL-7), likewise |
 
 `MysteryBox` and `PrizeDraw` are tranche 2; no contract goes on a prize chain. `Activation` still
-carries the Status link, which spec v2.5 removes (`openspec/changes/tranche-1/tasks.md` 3.15).
+carries the Status link, which the specification retired (ACT-9) and `openspec/changes/tranche-1/tasks.md` 3.15 removes.
 
 The token never calls the activation contract. The dependency runs one way only, so no
 defect in `Activation` can block a transfer and none can silently skip a reset: every

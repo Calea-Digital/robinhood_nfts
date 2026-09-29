@@ -146,4 +146,4 @@ concerns goes to mainnet, for every contract in an audit tranche (DEL-8).
 
 - DEL-4 (verified testnet addresses) → OPS-3, OPS-4
 - DEL-5 (deployment scripts and runbook) → OPS-2, OPS-5
-- DEL-7 (the existing-contract review) → withdrawn, CQ-13
+- DEL-7 (the existing-contract review, withdrawn with CQ-13) → DEL-3

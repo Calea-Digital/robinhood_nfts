@@ -7,7 +7,7 @@ returns what it did; every error has a code and a message you can show a holder.
 
 The mystery box is tranche 2 and is not here yet.
 
-**Spec v2.5.** The whitelist is off-chain, in MINT's backend (WL-8), and neither whitelist
+**Spec v2.6.** The whitelist is off-chain, in MINT's backend (WL-8), and neither whitelist
 registry is deployed. The `whitelist` claim calls, the voucher backend and `whitelistImport` below
 describe those undeployed registries and are not delivered. The mint's allowlist proofs come from
 MINT's final CSV (`buildAllowList(parseAllocationCsv(csv), stage)`). `mint.remainingWhitelistMints`
@@ -302,9 +302,9 @@ npx tsx bin/split.ts --rpc $ARCHIVE_RPC --bears $BEARS --activation $ACTIVATION 
 
 ## Development
 
-- **Location:** the package lives in `packages/contracts-client` of the contracts repository until
-  CQ-14 settles which repository holds it. It moves unchanged; only `scripts/gen-abis.mjs` reads
-  the Forge build at `../../out`.
+- **Location:** the package lives in `packages/contracts-client` of the contracts repository and
+  moves unchanged into MINT's repository, `github.com/mintdotio/NFT` (CQ-14), beside
+  `packages/contracts`; only `scripts/gen-abis.mjs` reads the Forge build at `../../out`.
 - **Toolchain:** TypeScript (strict, ESM), with viem 2 as the only peer dependency. The ABIs in
   `src/abi/` are generated from the Forge build: `forge build` at the repository root, then
   `npm run gen:abi`. CI runs `npm run check:abi`.

@@ -1,11 +1,12 @@
 # MintABear — handover
 
-Written 2026-09-15, current as of 2026-09-28. Read this first when resuming.
+Written 2026-09-15, current as of 2026-09-29. Read this first when resuming.
 
 ## Where things stand
 
-**The specification lives in `openspec/`** (v2.5: the MINT–Calea calls of 21 and
-28 September 2026 and MINT's reply on the whitelist, and the tranche-1 review of 23–24 September):
+**The specification lives in `openspec/`** (v2.6: the MINT–Calea calls of 21 and
+28 September 2026, MINT's replies of 28 and 29 September, the tranche-1 review of 23–24 September,
+and the readability pass of 29 September):
 - `openspec/specs/<family>/spec.md` carries every requirement with its Kind and its Scenario.
 - `openspec/decisions.md` is the `CQ-n` register that belongs to MINT.
 - `docs/SPECIFICATION.md` and `docs/OPEN-QUESTIONS.md` are the prose views MINT reads. The
@@ -15,14 +16,17 @@ Written 2026-09-15, current as of 2026-09-28. Read this first when resuming.
 MINT has one combined document in `docs/client/`, generated from those two files by
 `docs/tools/build_client_doc.py`. Never edit the `.pages` by hand. The output name carries the
 version line in full, suffix included, so each draft is its own file.
-- **The current one** is `MintABear-Specification-v2.5.pages` (built 28 September 2026). It opens
-  with the open questions, each with what it holds up and when it is needed, then where the work
-  stands, what the client library needs from MINT and the changes since v2.3. `MintABear-Whitelist-Options.pages` is the brief on the two registry
+- **The current one** is `MintABear-Specification-v2.6.pages` (built 29 September 2026, 25 pages,
+  down from v2.5's 48). It is written for MINT's decision-makers: §10 first, with what is settled
+  and the open items O1–O7 soonest first, then where the work stands and the changes since v2.5.
+  Each requirement is a plain statement; its `*Technical note.*` stays in `openspec/` and on the
+  board. Settled questions get no callout, an open one gets one yellow line pointing to §10, and
+  the retired requirements are an appendix. `MintABear-Whitelist-Options.pages` is the brief on the two registry
   options MINT answered with the off-chain register; its source is
   `docs/tools/build_whitelist_options.py`.
-- **`MintABear-Operational-v2.5.pages`** is its extract for a call: everything before §1 Scope,
+- **`MintABear-Operational-v2.6.pages`** is its extract for a call: everything before §1 Scope,
   built with `build_client_doc.py --operational`.
-- **`v1.0` to `v2.4`** stay beside them as the records MINT answered, decided against and last
+- **`v1.0` to `v2.5`** stay beside them as the records MINT answered, decided against and last
   received.
 
 **The board (YouTrack MNT) follows `openspec/`** through `docs/tools/board.sh`. The work loop that
@@ -52,7 +56,18 @@ both (`docs/client/MintABear-Whitelist-Options.pages`). MINT answered with an of
 which Calea accepted with five conditions (WL-8, CQ-18 resolved): a free signature for pasted
 wallets, one merged row per wallet, a counter that cannot over-claim, a freeze 48 hours before the
 whitelist stage, and the whitelist stage first. Both contracts stay in the repository, unused.
-Spec v2.5 records it. §10 lists nine open items, O1–O9, each with Calea's recommendation, which is also the default built if it is deferred.
+Spec v2.5 records it. In v2.6, §10 lists seven open items, O1–O7, soonest first, each with what it holds up and Calea's fallback; `build_client_doc.py` refuses to build when they disagree with the register.
+
+**29 September** (spec v2.6):
+- **CQ-14 resolved:** the repository is `https://github.com/mintdotio/NFT`, and Calea has access.
+- **CQ-13 withdrawn, DEL-7 retired:** no existing MINT contract is reviewed. Tranche 1's internal
+  audit runs on 30 September and 1 October.
+- **CQ-18, other channels:** getminted.io is a general whitelist checker. Spots from
+  collaborations and giveaways come on top of the 1,000 wagering spots, which keep two per wallet
+  and two per account.
+- **CQ-24 resolved:** the 1,000 wagering spots are guaranteed, and the other channels are capped
+  at 3,222. The CSV totals at most 4,222, and with the team's 222 minted first every row has a
+  bear. `compare` is to refuse a CSV over 4,222 (`tasks.md` 2.6).
 Two decisions are new: CQ-22 (who sends a payout, push or request) and CQ-23 (who operates the
 worker).
 
@@ -69,7 +84,7 @@ RAF-32 (cycles), RAF-27 to RAF-30, RAF-8, RAF-33 (custody and the payout record)
 (pause) carry it. RAF-2 to 6, 11, 15 and 24 to 26 and 31 are retired.
 
 **Tranche 1's code** is on `main` up to `8fc37ac` (merged, never pushed). `tranche-1` carries
-WL-7 and specs v2.4 and v2.5 on top. **The paired review of every tranche-1 Task is complete**
+WL-7 and specs v2.4, v2.5 and v2.6 on top. **The paired review of every tranche-1 Task is complete**
 (`reports/tranche-1-review-log.md`):
 - COL-1…13, WL-1, 3, 4, 5, ACT-1…14, OPS-2, 3, 6 and the non-spec MNT-92…94, 96…98 are Done;
 - with them, the Defects the review raised (MNT-99…112, 115…118, 120…130);
@@ -113,6 +128,10 @@ Requirements amended since v2.1, each through an archived OpenSpec change:
   - spec v2.4, the call of that day: RAF-32 to RAF-34 added, RAF-2…6, 11, 15, 24…26, 31 retired,
     RAF-8, 14, 16…19, 27…30 modified; ACT-9 and ACT-11 retired, ACT-15 added, ACT-5, 12, 13, 14
     modified; WL-2…5, COL-3, 6, 8, OPS-1…5, 7 and DEL-6, 8, 9, 10, 12 modified.
+- **29 September:** spec v2.6, the readability pass and MINT's replies of that day: every active
+  requirement restated as a plain statement plus a `*Technical note.*` (Scenarios unchanged),
+  COL-7 renamed "Enforced royalties", DEL-7 retired, and the new Purpose line of every family
+  (`openspec/changes/archive/2026-09-29-client-readability-v2-6/`).
 
 Submodule pins: `forge-std` `bf647bd` (v1.16.2), `seadrop` `757590f`, `solady` `acd959a`
 (v0.1.26). The chain's contract size limit is ~96 KB; every contract clears even Ethereum's
@@ -141,17 +160,18 @@ Submodule pins: `forge-std` `bf647bd` (v1.16.2), `seadrop` `757590f`, `solady` `
      mint;
    - a burn through `Activation`;
    - enforcement toggled once.
-4. **The internal auditor** takes `MintABear` and `Activation` after the rehearsal. The trees'
-   INV-N and Fork-N obligations are theirs. The whitelist has no contract.
+4. **The internal auditor** takes `MintABear` and `Activation` on 30 September and 1 October,
+   ahead of the rehearsal. The trees' INV-N and Fork-N obligations are theirs. The whitelist has no contract.
 5. **Tranche 2 waits on the 222 excluded ids** (CQ-20, O2). MINT mints the team bears from the
    owner wallet; if that is the first mint, they are ids 1–222. How the owner mints is still to
    confirm: Calea recommends a private team stage in Studio. It also needs CQ-22 and CQ-23 before
    `PrizeDraw` is deployed.
 
-**Board clean-up for the human** (the 20 problems `board.sh`'s read-back reports, all in
+**Board clean-up for the human** (the 21 problems `board.sh`'s read-back reports, all in
 human-owned fields):
 - **Cancel the Tasks for retired requirements:** the 13 RAF and ACT ones (MNT-34, 36, 40, 45–50,
-  52–54, 56), plus MNT-22 (WL-3) and MNT-134 (WL-7). MNT-134 needs Canceled or Done. Each carries
+  52–54, 56), plus MNT-22 (WL-3), MNT-134 (WL-7) and MNT-70 (DEL-7, retired in v2.6). MNT-134 needs
+  Canceled or Done. Each carries
   a comment naming its replacement.
 - **Four Done items now point at requirements that are no longer work items,** because WL-1 and
   WL-5 became informative: MNT-20, MNT-24, MNT-109 and MNT-110.
@@ -161,15 +181,13 @@ What each open item blocks:
 
 | Open item | Blocks |
 |---|---|
-| O1 dates (CQ-1) | The whitelist freeze (48 h before the stage); scheduling |
-| O2 the 222 excluded ids (CQ-20) | The first cycle; `PrizeDraw`'s `PLAYABLE` |
-| O3 prize delivery (CQ-22) | How payouts are sent and whether a request window exists; `recordPayout` is built either way |
-| O4 VRF subscription holder (CQ-17) | `PrizeDraw`'s deployment (subscription id); DEL-10 if Calea holds it |
-| O5 worker operator (CQ-23) | The worker's address; OPS-5's handover; DEL-10 |
-| O6 admin for every contract (CQ-12) | Mainnet configs; the accepted risk on the minter list |
-| O7 testnet and mainnet $MNTD addresses (CQ-2) | `Activation`'s deployment and the rehearsal |
-| O8 repository URL (CQ-14) | Delivery into MINT's repository |
-| O9 existing-contract review (CQ-13) | DEL-7, when MINT names a contract |
+| O1 admin for every contract (CQ-12), by 2 Oct | Mainnet configs; the accepted risk on the minter list |
+| O2 the 222 excluded ids (CQ-20), by 5 Oct | The first cycle; `PrizeDraw`'s `PLAYABLE` |
+| O3 prize delivery (CQ-22), by 12 Oct | How payouts are sent and whether a request window exists; `recordPayout` is built either way |
+| O4 VRF subscription holder (CQ-17), by 12 Oct | `PrizeDraw`'s deployment (subscription id); DEL-10 if Calea holds it |
+| O5 worker operator (CQ-23), by 12 Oct | The worker's address; OPS-5's handover; DEL-10 |
+| O6 testnet and mainnet $MNTD addresses (CQ-2), mainnet by 20 Oct | `Activation`'s deployment and the rehearsal |
+| O7 dates (CQ-1), by 29 Oct | The whitelist freeze (48 h before the stage); scheduling |
 
 ## Sources and precedence
 
@@ -238,7 +256,7 @@ dead-address exclusion (`bin/split.ts`). Its `README.md` is the portal team's re
 start through the `createMintABearClient` facade, the error codes with the message each shows a
 holder, the voucher backend's rules, events and indexing, and the split. `examples/` holds one
 runnable file per flow (mint, whitelist, burn, link and transfer, errors, indexing and split).
-It moves unchanged into the repository MINT names (CQ-14, accepted 28 September). The mystery
+It moves unchanged into MINT's repository, `github.com/mintdotio/NFT` (CQ-14). The mystery
 box's calls and MINT's admin-page calls (exclusions, cycle scheduling, pauses) join it in
 tranche 2. Its whitelist claim and import modules are not delivered. Calea's part of the UI is the call
 surface, review of contract-touching pull requests, and clarifications; the rest is MINT's.
@@ -409,15 +427,15 @@ these.
 
 ## Open questions with the client
 
-Twenty-three are in `docs/OPEN-QUESTIONS.md`, each with the section it affects, when it is
+Twenty-four are in `docs/OPEN-QUESTIONS.md`, each with the section it affects, when it is
 needed, the answer where one exists, and the default otherwise:
-- **resolved or closed (14):** CQ-3, 4, 5, 6, 7, 8, 9, 10, 11, 15, 16, 18, 19, 21;
-- **in follow-up (6):** CQ-1, 2, 12, 14, 17, 20;
-- **open (3):** CQ-13, 22, 23.
+- **resolved or closed (17):** CQ-3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 16, 18, 19, 21, 24;
+- **in follow-up (5):** CQ-1, 2, 12, 17, 20;
+- **open (2):** CQ-22, 23.
 
-They map onto O1–O9 in §10. Tranche 1's code is written and nothing is due on 29 September. The
-whitelist root check over a CSV is needed by 27 October; the rehearsal waits on the testnet
-$MNTD; tranche 2 waits on the excluded ids.
+They map onto O1–O7 in §10. Tranche 1's code is written. The whitelist root check over a CSV is
+needed by 27 October; the rehearsal waits on the testnet $MNTD; tranche 2 waits on the excluded
+ids.
 
 ## Related documents
 
