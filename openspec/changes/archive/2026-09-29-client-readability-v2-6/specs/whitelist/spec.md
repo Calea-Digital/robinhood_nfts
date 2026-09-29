@@ -1,9 +1,6 @@
-# Whitelist claim Specification
+# Spec Delta
 
-## Purpose
-MINT runs a 1,000-spot whitelist for its wagering holders in its own backend. Calea's part is to make sure the list Studio mints from is exactly MINT's final list.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: WL-1 — Rules
 **Kind:** informative
@@ -114,9 +111,3 @@ Studio's list is set, and after that Studio's list is its only trace on-chain.
 #### Scenario: The register is MINT's
 - **WHEN** the whitelist flow is traced from eligibility to the final CSV
 - **THEN** every step runs in MINT's backend and no Calea contract is involved
-
-## Retired Requirements
-
-- WL-3 (the voucher registry `WhitelistClaim`) → WL-8
-- WL-6 (the off-chain register as an alternative) → WL-8
-- WL-7 (the owner-imported registry `WhitelistImport`) → WL-8

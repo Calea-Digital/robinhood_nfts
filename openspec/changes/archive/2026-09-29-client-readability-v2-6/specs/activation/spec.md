@@ -1,9 +1,6 @@
-# Activation and burn route Specification
+# Spec Delta
 
-## Purpose
-Holders burn $MNTD to raise a bear's level, and with it the bear's share of the royalties. No key can fake a level, and every transfer resets it, so a level always proves a burn by the current owner.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: ACT-1 — One token, one collection
 **Kind:** work-item
@@ -220,8 +217,3 @@ and thresholds; the cost to reach a level; the snapshot; and whether burning is 
 - **WHEN** every listed read is called for a bear that has been burned for
 - **THEN** each returns without reverting
 - **AND** `BEARS` and `MNTD` return the deployed addresses and `DECIMALS` the token's decimals
-
-## Retired Requirements
-
-- ACT-9 (the on-chain Status link) → ACT-12
-- ACT-11 (pause over burns and links) → ACT-15

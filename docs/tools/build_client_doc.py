@@ -2,12 +2,14 @@
 """Build the client-facing MintABear specification.
 
 Merges docs/SPECIFICATION.md and docs/OPEN-QUESTIONS.md into one document: each question
-is appended, as a shaded callout, to the specification section it belongs to (matched on
-the tag in parentheses at the end of the `## ` heading, e.g. `(ACT)`). A question whose
-Status is Answered or Closed renders as a green "Confirmed" callout; any other status as a
-yellow "Decision for MINT" callout. The specification section whose heading contains
-"Decisions" is hoisted to directly after the front matter, so the agenda opens the
-document. The register table is appended as an appendix in three parts — open, settled, then
+still open is marked, by one yellow line naming its open item in §10, under the specification
+section it belongs to (matched on the tag in parentheses at the end of the `## ` heading, e.g.
+`(ACT)`); §10 sets it out.
+A settled question gets no callout: its answer is already written into the requirements, and the
+appendix lists it in one line. A requirement's `*Technical note.*` paragraph is left out: it is
+there for the build, the board and the auditor, not for MINT's reader. The specification
+section whose heading contains "Decisions" is hoisted to directly after the front matter, so the
+agenda opens the document. The register table is appended as an appendix in three parts — open, settled, then
 the questions settled outside the register; the sign-off block stays last. The output name
 carries the version read from the specification's `**Version**` line, suffix included, so a
 draft and the version signed after it are separate files. The merged document is written as .docx
@@ -15,9 +17,9 @@ draft and the version signed after it are separate files. The merged document is
 AppleScript. Tables carry no fixed row heights, so Pages sizes rows to their content.
 
 `--operational` writes the extract for a call with MINT instead: the front matter's title and
-version line under a short introduction, then the decisions section with its table of what is
-needed from MINT, then "Where the work stands" — everything before §1 Scope — and nothing after
-(no callouts, no appendix, no sign-off). It is named `MintABear-Operational-v<version>`, beside the
+version line under a short introduction, then the decisions section with its open items, then
+"Where the work stands" — everything before §1 Scope — and nothing after (no callouts, no
+appendix, no sign-off). It is named `MintABear-Operational-v<version>`, beside the
 full document of the same version, which it points to.
 
 Usage (from the repository root):
@@ -26,6 +28,10 @@ Usage (from the repository root):
     python3 docs/tools/build_client_doc.py --docx           # also keeps docs/client/*.docx
     python3 docs/tools/build_client_doc.py --docx-only      # stops at .docx (no Pages)
     python3 docs/tools/build_client_doc.py --operational    # the call extract instead
+    python3 docs/tools/build_client_doc.py --check          # only checks §10's open items
+
+Every build first checks §10's open items against the register (`open_items_problems`) and
+writes nothing if they disagree.
 
 Markdown subset understood: ATX headings, paragraphs, `-` and `1.` lists, pipe tables,
 `>` blockquotes, `---` rules, and inline **bold**, *emphasis*, `code`, [links]().
@@ -321,6 +327,12 @@ def blocks_xml(blocks: list[dict], in_callout: bool = False, shade: tuple[str, s
     return "".join(out)
 
 
+def open_line_xml(n: str, title: str, cq: str) -> str:
+    """An open question under its section: one shaded line pointing to its item in §10."""
+    return (para_xml(runs_xml(f"**Open — O{n} {title}** ({cq}): set out in §10, Decisions.", size=22),
+                     before=120, after=120, shade=("FFF8DC", "C9A227")))
+
+
 def callout_xml(title: str, body_blocks: list[dict], settled: bool = False) -> str:
     """A question as shaded paragraphs with a coloured bar: green once settled, yellow while open.
 
@@ -389,8 +401,14 @@ def parse_questions(md: str) -> tuple[dict[str, list[tuple[str, list[dict], bool
 
 
 OPEN_STATES = {"open", "follow-up"}
-NEEDS_WIDTHS = [1000, 1500, 2300, 1100, 2126, 1000]  # twips; sums to TEXT_W — IDs never wrap
-SECTION_NAMES = {"SYS": "§2 System overview", "CAL": "§8 Calendar"}
+TECH_NOTE = "*Technical note.*"
+RETIRED = "**Retired identifiers.**"
+RETIRED_ITEM = re.compile(r"(?P<id>[A-Z]{2,3}-\d+) \((?P<what>[^)]*(?:\([^)]*\)[^)]*)*)\) → (?P<by>[^;.]+)")
+
+
+def retired_rows(text: str) -> list[list[str]]:
+    """The rows of the retired-requirements appendix, from the rendered `**Retired identifiers.**` line."""
+    return [[m.group("id"), m.group("what"), m.group("by").strip()] for m in RETIRED_ITEM.finditer(text)]
 REQ_LEAD = re.compile(r"^\*\*(?P<id>[A-Z]{2,3}-\d+) ")
 MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
@@ -431,30 +449,6 @@ def question_links(parsed) -> tuple[list, dict[str, list], dict[str, list[str]]]
     return open_q, waits, holds
 
 
-def needs_blocks(parsed, operational: bool = False) -> list[dict]:
-    """The agenda's opening table: every question still open, soonest first."""
-    open_q, _, holds = question_links(parsed)
-    rows = []
-    for d in sorted(open_q, key=lambda d: short_date(d.needed_by)[0]):
-        held = holds[d.id]
-        names = ", ".join(f"{r} {parsed.requirement_by_id(r).name}" for r in held) \
-            or SECTION_NAMES.get(d.section or "", d.section or "—")
-        rows.append([f"**{d.id}**", d.statement, names, short_date(d.needed_by)[1],
-                     d.default_if_deferred or d.summary or d.resolution or "—", d.label])
-    return [
-        {"kind": "heading", "level": 3, "text": "What we need from MINT, soonest first"},
-        {"kind": "para", "text": "Every question still open, with the requirements it holds up and the date "
-                                 "it is needed by. The last column but one is what Calea builds if it is "
-                                 "not answered in time. " + (
-                                     "Each question is set out in full in the specification, under the "
-                                     "section it affects." if operational else
-                                     "Each question is set out in full under the section "
-                                     "it affects, and each requirement it holds up says so.")},
-        {"kind": "table", "header": ["ID", "Question", "Holds up", "Needed by", "If not answered", "Status"],
-         "rows": rows, "widths": NEEDS_WIDTHS},
-    ]
-
-
 def with_waits(blocks: list[dict], waits: dict[str, list]) -> list[dict]:
     """After each requirement's acceptance line, the open questions that requirement waits on."""
     out: list[dict] = []
@@ -474,6 +468,44 @@ def with_waits(blocks: list[dict], waits: dict[str, list]) -> list[dict]:
             out.append({"kind": "para", "text": f"**Waits on** {items}."})
             current = None
     return out
+
+
+OPEN_ITEM = re.compile(r"^\*\*O(?P<n>\d+) — (?P<title>.+) \((?P<cq>CQ-\d+)\)\*\* · (?P<when>.+)$", re.M)
+LONG_MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September",
+               "October", "November", "December"]
+
+
+def open_items_problems(spec_md: str, parsed) -> list[str]:
+    """What is wrong with §10's open items against the register.
+
+    Every question still open has exactly one item, numbered O1, O2, … in the order of its
+    `Needed by`, and an item whose question is needed by a date names that date."""
+    open_q = {d.id: d for d in question_links(parsed)[0]}
+    items = list(OPEN_ITEM.finditer(spec_md))
+    problems = []
+    for want, m in enumerate(items, 1):
+        if int(m.group("n")) != want:
+            problems.append(f"O{m.group('n')} is item {want}: number the items O1, O2, … in order")
+    named = [m.group("cq") for m in items]
+    for cq in sorted(set(named)):
+        if named.count(cq) > 1:
+            problems.append(f"{cq} has {named.count(cq)} items")
+    for cq in sorted(set(open_q) - set(named)):
+        problems.append(f"{cq} is open in the register but has no item")
+    for cq in sorted(set(named) - set(open_q)):
+        problems.append(f"{cq} has an item but is not open in the register")
+    keys = [short_date(open_q[m.group("cq")].needed_by)[0] for m in items if m.group("cq") in open_q]
+    if keys != sorted(keys):
+        problems.append("the items are not in the order of their questions' Needed by")
+    for m in items:
+        d = open_q.get(m.group("cq"))
+        iso = re.match(r"^(\d{4})-(\d{2})-(\d{2})\b", (d.needed_by or "").strip()) if d else None
+        if iso:
+            shown = f"{int(iso.group(3))} {LONG_MONTHS[int(iso.group(2)) - 1]}"
+            if not re.search(rf"\b{shown}\b", m.group("when")):
+                problems.append(f"O{m.group('n')} ({m.group('cq')}) says '{m.group('when')}'; "
+                                f"the register needs it by {d.needed_by}")
+    return problems
 
 
 def operational_front(front_md: str, version: str) -> str:
@@ -496,6 +528,15 @@ def merge(spec_md: str, by_section: dict, register: dict | None, closed: dict | 
 
     With `operational`, only the front matter, the decisions section and the sections before §1."""
     waits = question_links(parsed)[1] if parsed else {}
+    items = {m.group("cq"): (m.group("n"), m.group("title")) for m in OPEN_ITEM.finditer(spec_md)}
+
+    def question_xml(title: str, qblocks: list[dict], settled: bool) -> str:
+        if settled:
+            return ""
+        cq = re.search(r"CQ-\d+", title)
+        if cq and cq.group(0) in items:
+            return open_line_xml(*items[cq.group(0)], cq.group(0))
+        return callout_xml(title, qblocks, settled)
     lines = spec_md.splitlines()
     chunks: list[tuple[str | None, list[str]]] = []
     current: tuple[str | None, list[str]] = (None, [])
@@ -521,6 +562,7 @@ def merge(spec_md: str, by_section: dict, register: dict | None, closed: dict | 
         chunks = [front] + agenda + rest
 
     used: set[str] = set()
+    retired: list[list[str]] = []
     parts: list[str] = []
     signoff: str | None = None
     for heading, body in chunks:
@@ -531,25 +573,31 @@ def merge(spec_md: str, by_section: dict, register: dict | None, closed: dict | 
         if "Sign-off" in heading:
             signoff = blocks_xml(parse_blocks(heading + "\n" + body_md))
             continue
-        section_blocks = with_waits(parse_blocks(heading + "\n" + body_md), waits)
-        if parsed and "Decisions" in heading:
-            section_blocks[1:1] = needs_blocks(parsed, operational)
+        section_blocks = []
+        for blk in parse_blocks(heading + "\n" + body_md):
+            if blk["kind"] == "para" and blk["text"].startswith(TECH_NOTE):
+                continue
+            if blk["kind"] == "para" and blk["text"].startswith(RETIRED):
+                retired.extend(retired_rows(blk["text"]))
+                continue
+            section_blocks.append(blk)
+        section_blocks = with_waits(section_blocks, waits)
         part = blocks_xml(section_blocks)
         tag_match = SECTION_TAG.match(heading)
         if tag_match and not operational:
             tag = tag_match.group("tag")
             for title, qblocks, settled in by_section.get(tag, []):
-                part += callout_xml(title, qblocks, settled)
+                part += question_xml(title, qblocks, settled)
             used.add(tag)
         parts.append(part)
 
     if operational:
         return "".join(parts)
 
-    leftovers = [q for tag, qs in by_section.items() if tag not in used for q in qs]
+    leftovers = [q for tag, qs in by_section.items() if tag not in used for q in qs if not q[2]]
     if leftovers:
         parts.append(blocks_xml([{"kind": "heading", "level": 2, "text": "Other questions for MINT"}]))
-        parts.extend(callout_xml(t, b, s) for t, b, s in leftovers)
+        parts.extend(question_xml(t, b, s) for t, b, s in leftovers)
 
     # The appendix starts on a fresh page: its first table is longer than the
     # space left under the last callout, and Pages moves a table whole, which
@@ -557,9 +605,8 @@ def merge(spec_md: str, by_section: dict, register: dict | None, closed: dict | 
     parts.append('<w:p><w:r><w:br w:type="page"/></w:r></w:p>')
     parts.append(blocks_xml([
         {"kind": "heading", "level": 2, "text": "Appendix — Register of questions"},
-        {"kind": "para", "text": ("One line per settled question. The open ones are the table that "
-                                  "opens the agenda (§10), with what each holds up and when it is needed. "
-                                  "Every question also appears in full under the section it affects.")
+        {"kind": "para", "text": ("One line per settled question. The open ones are §10's open items, "
+                                  "with what each holds up and when it is needed.")
                                  if parsed else
                                  "One line per question. Open items first, for deciding in one place; "
                                  "then the settled ones. Each question also appears in full under the "
@@ -579,7 +626,9 @@ def merge(spec_md: str, by_section: dict, register: dict | None, closed: dict | 
             # Tied to its table even when the table is long: the table fills most of a page, so an
             # untied heading is stranded alone on the page before it.
             parts.append(para_xml(runs_xml("Settled"), style="Heading3", after=120, before=240, keep_next=True))
-            parts.append(data_table_xml(header, settled_rows))
+            # A settled question is needed by nothing any more, so its "Needed by" column is dropped.
+            keep = [c for c, h in enumerate(header) if h.strip().lower() != "needed by"]
+            parts.append(data_table_xml([header[c] for c in keep], [[r[c] for c in keep] for r in settled_rows]))
     if closed:
         parts.append(blocks_xml([
             {"kind": "heading", "level": 3, "text": "Settled outside the register"},
@@ -588,6 +637,13 @@ def merge(spec_md: str, by_section: dict, register: dict | None, closed: dict | 
                                      "are not re-opened."},
         ]))
         parts.append(data_table_xml(closed["header"], closed["rows"]))
+    if retired:
+        parts.append(blocks_xml([
+            {"kind": "heading", "level": 2, "text": "Appendix — Retired requirements"},
+            {"kind": "para", "text": "Requirements retired in earlier versions, each with what replaced it. "
+                                     "An identifier is never reused."},
+        ]))
+        parts.append(data_table_xml(["Retired", "What it was", "Replaced by"], retired))
     if signoff:
         parts.append(signoff)
     return "".join(parts)
@@ -675,6 +731,13 @@ def main(argv: list[str]) -> int:
     by_section, register, closed = parse_questions(QUESTIONS.read_text(encoding="utf-8"))
     openspec = ROOT / "openspec"
     parsed = parse_openspec(openspec / "specs", openspec / "decisions.md", openspec / "config.yaml", ROOT)
+    problems = open_items_problems(spec_md, parsed)
+    if problems:
+        print("§10's open items disagree with openspec/decisions.md:", *problems, sep="\n  ", file=sys.stderr)
+        return 1
+    if "--check" in argv:
+        print("§10's open items match the register")
+        return 0
     body = merge(spec_md, by_section, register, closed, parsed, operational)
 
     version = VERSION.search(spec_md)

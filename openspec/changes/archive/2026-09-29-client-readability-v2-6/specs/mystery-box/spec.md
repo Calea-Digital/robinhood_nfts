@@ -1,9 +1,6 @@
-# Mystery box raffle Specification
+# Spec Delta
 
-## Purpose
-A holder opens a mystery box with a bear they own and learns the outcome on the spot. The box runs in cycles MINT schedules: in each cycle every playable bear gets one shot, and the next cycle gives every bear a new one, whoever holds it. `MysteryBox` on Robinhood Chain runs the cycles and records openings. `PrizeDraw` on Arbitrum One decides each opening and records wins and payouts.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: RAF-32 — Cycles
 **Kind:** work-item
@@ -243,48 +240,3 @@ outcomes and its payouts, and warns contract-wallet holders before they open.
 #### Scenario: The sequence runs end to end
 - **WHEN** the sequence runs on the testnets through two cycles, from exclusion to the payout records
 - **THEN** each step succeeds in the listed order, a relay offered out of turn is refused, and a bear opened in cycle 1 opens again in cycle 2
-
-### Requirement: RAF-19 — Acceptance cases
-**Kind:** work-item
-Each of these has a test:
-- an excluded id cannot be opened, before or after it is sold;
-- exclusions cannot change once the first cycle is scheduled;
-- a box cannot be opened outside its cycle's window;
-- a bear cannot be opened twice in one cycle, by its holder or its buyer, and can be opened in
-  the next;
-- a cycle cannot be scheduled while one is open, and a scheduled cycle's terms cannot change
-  once it has started;
-- a relay out of order is refused;
-- a cycle in which every playable bear is opened awards exactly its prize count, and the pool
-  neither empties early nor is left over;
-- a cycle that ends early awards no more than its prize count;
-- a win is recorded as paid once, and a loss cannot be;
-- a holder who sells a bear after opening it keeps its outcome.
-
-#### Scenario: Every case has a test
-- **WHEN** the tranche-2 test suite runs
-- **THEN** every listed case has a passing deterministic test
-
-## Retired Requirements
-
-- RAF-1 (a single raffle chain) → RAF-32, RAF-33
-- RAF-7 (passive ownership snapshot) → RAF-28
-- RAF-9 (draw over calldata entries) → RAF-30
-- RAF-10 (carry forward between rounds) → RAF-32
-- RAF-12 (round cancellation) → RAF-32
-- RAF-13 (per-round `minLevel` eligibility) → RAF-27
-- RAF-20 (rounds on the hub) → RAF-32
-- RAF-21 (entry into a round) → RAF-28
-- RAF-22 (one seed per round) → RAF-29
-- RAF-23 (the per-round draw) → RAF-30
-- RAF-2 (vault addresses) → RAF-33
-- RAF-3 (asset approval on the vaults) → RAF-27, RAF-33
-- RAF-4 (deposit intake) → RAF-33
-- RAF-5 (vault inventory states) → RAF-30, RAF-33
-- RAF-6 (committing prizes from the vaults) → RAF-27, RAF-32
-- RAF-11 (claims from a vault) → RAF-33
-- RAF-15 (pause with vault claims) → RAF-34
-- RAF-24 (a prize vault per chain) → RAF-33
-- RAF-25 (recipient nomination) → RAF-33
-- RAF-26 (one game over the collection) → RAF-32
-- RAF-31 (closing the game) → RAF-32, RAF-33
