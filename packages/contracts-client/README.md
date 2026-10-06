@@ -232,8 +232,9 @@ tests pin them. [`examples/03-whitelist`](examples/03-whitelist.test.ts) shows i
 
 ## The owner-imported whitelist (`WhitelistImport`, WL-7)
 
-MINT deploys one of two registries: `WhitelistClaim` (holders claim with vouchers, above) or
-`WhitelistImport`, which MINT's admin fills from a CSV on its admin page. Point
+Not deployed: the whitelist is off-chain (WL-8), and both registries are kept as a fallback. If it
+returns on-chain, MINT deploys one of the two: `WhitelistClaim` (holders claim with vouchers,
+above) or `WhitelistImport`, which MINT's admin fills from a CSV on its admin page. Point
 `addresses.registry` at whichever is deployed. The reads the mint needs — `whitelist.claimsOf`,
 `whitelist.claimants`, `whitelist.allowList`, `mint.remainingWhitelistMints` — work on both;
 `whitelist.campaign`, `isOpen`, `accountClaims` and `claim` are `WhitelistClaim`'s only, and
