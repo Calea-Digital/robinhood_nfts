@@ -24,6 +24,10 @@ jobs:
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
+        with:
+          # Pinned: `stable` moved to 1.8.5, under which every client-library test transaction
+          # waits a full viem polling cycle and the suite times out (MNT-153).
+          version: v1.8.3
 
       - name: Show Forge version
         run: forge --version
@@ -77,6 +81,10 @@ jobs:
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
+        with:
+          # Pinned: `stable` moved to 1.8.5, under which every client-library test transaction
+          # waits a full viem polling cycle and the suite times out (MNT-153).
+          version: v1.8.3
 
       - name: Run Forge build
         working-directory: .
