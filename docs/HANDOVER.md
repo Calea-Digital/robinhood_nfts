@@ -1,6 +1,6 @@
 # MintABear — handover
 
-Written 2026-09-15, current as of 2026-09-29. Read this first when resuming.
+Written 2026-09-15, current as of 2026-10-06. Read this first when resuming.
 
 ## Where things stand
 
@@ -136,6 +136,15 @@ Submodule pins: `forge-std` `bf647bd` (v1.16.2), `seadrop` `757590f`, `solady` `
 (v0.1.26). The chain's contract size limit is ~96 KB; every contract clears even Ethereum's
 24,576.
 
+**The external security review of 6 October** (`audit/Mint-Security-Audit-Report.md` on the
+`audit/security-review` branch: no Critical, High or Medium; three Low, three Informational) is
+answered in `audit/Audit-Response.md`. Every finding is fixed on `tranche-1`, one Defect each,
+MNT-147 to MNT-152, all In Review. The one contract change is L-01 (spec change
+`act-two-step-ownership`): `Activation` is constructed owned by MINT's admin and paused, and
+ownership moves only by Solady's two-step handover. Its constructor is therefore
+`Activation(owner, bears, mntd, thresholdsWhole, weights)`, and this is the bytecode the internal
+audit takes.
+
 ## Next session — the whitelist CSV, then tranche 2
 
 In this order (agreed 29 September 2026):
@@ -145,8 +154,8 @@ In this order (agreed 29 September 2026):
    the pause covers `burn` only. The ACT-12 pin lists 21 functions. The client library has no
    link module. The ACT-5, ACT-13 and ACT-15 tests quote their Scenarios, and
    `check_scenario_quotes.py` reports 6 failures, all cleared by item 2 (2.6 and 6.2). The
-   self-review is `reports/act-12-link-removal-diff-review.md`. This is the bytecode the internal
-   audit takes.
+   self-review is `reports/act-12-link-removal-diff-review.md`. The security review's L-01 has
+   since changed `Activation`'s constructor and ownership (above).
 2. **The whitelist root check over a CSV** (`tasks.md` 2.6, WL-4, Defect MNT-141). **On hold
    until MINT replies** on the whitelist flow; do not start it unprompted.
    - `WhitelistExport.s.sol`'s `compare` reads a registry today; it has to read MINT's final CSV
