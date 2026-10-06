@@ -78,7 +78,9 @@ export interface Fixture {
 export async function deployFixture(rpcUrl: string, options: { mntd?: "mock" | "oz" } = {}): Promise<Fixture> {
   const transport = http(rpcUrl);
   // cacheTime 0: viem otherwise caches the block number for 4 s, and tests read it between blocks.
-  const publicClient = createPublicClient({ chain: foundry, transport, cacheTime: 0 });
+  // pollingInterval 100 ms: a receipt anvil has not served on the first look is re-asked in 0.1 s
+  // rather than viem's default 4 s; on CI runners each transaction otherwise waits a full cycle.
+  const publicClient = createPublicClient({ chain: foundry, transport, cacheTime: 0, pollingInterval: 100 });
   const testClient = createTestClient({ chain: foundry, mode: "anvil", transport });
   const wallet = (account: HDAccount): Wallet => createWalletClient({ chain: foundry, transport, account });
   const deployer = wallet(accounts.deployer);
