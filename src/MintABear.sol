@@ -5,100 +5,60 @@ import {ERC721SeaDrop} from "seadrop/ERC721SeaDrop.sol";
 
 /**
  * @title  MintABear
- * @notice A 4,444-supply collection on Robinhood Chain, operated from OpenSea Studio.
- * @dev    Extends OpenSea's ERC721SeaDrop, which already implements ICreatorToken, so this is
- *         an ERC-721C contract: the transfer validator is set at deployment to Limit Break's
- *         validator V3 with its zero-state policy, so a holder's own transfers always pass and
- *         a sale a marketplace operates settles only through OpenSea or a Payment Processor
- *         venue (a sale arranged outside a marketplace pays no creator earnings); one owner call
- *         lifts or restores enforcement. The SeaDrop mint path, `getMintStats`, metadata and
- *         royalty interfaces are untouched, per OpenSea's integration guidance: `tokenURI(id)`
- *         is the stock `baseURI` followed by `id`, with `baseURI`, provenance and royalties set
- *         through Studio.
- *
- *         Four behaviours are added on top:
- *
- *         1. A per-bear transfer counter. Activation stores a level alongside the counter
- *            value it was set at; when the counter moves, that level is void. The reset is
- *            therefore a consequence of the transfer rather than an action that has to
- *            succeed, so it can neither be skipped nor block the transfer itself.
- *
- *         2. A refusal to destroy a bear. The inherited `ERC721SeaDrop.burn` cannot be
- *            overridden, so it is neutralised in the transfer hook; a transfer to the zero
- *            address is refused with the same error in `transferFrom`. Supply is 4,444 for
- *            good.
- *
- *         3. A hard supply ceiling of `MAX_BEARS`. The inherited `maxSupply` is an owner
- *            setting that can be raised at will; this one is a constant checked on the mint
- *            path, so 4,444 is a guarantee rather than a configuration choice.
- *
- *         4. A refusal to renounce ownership. The collection always has an owner, because
- *            Studio's configuration, `baseURI`, royalties and the transfer-validator lift and
- *            restore are owner settings, and the inherited `renounceOwnership` would leave a
- *            pending ownership offer standing.
- *
- *         The collection carries no token-bound accounts. ERC-6551 can be added later without
- *         any change here, because the canonical registry derives an account address from
- *         `(chainId, tokenContract, tokenId)` for any ERC-721.
+ * @notice A 4,444-supply ERC-721 collection minted through SeaDrop.
+ * @dev    Extends `ERC721SeaDrop`, which implements ICreatorToken (ERC-721C). Adds to it:
+ *         - `transferNonce`, a per-token counter advanced on every non-mint transfer, with
+ *           `TransferNonceAdvanced` emitted alongside `Transfer`;
+ *         - `MAX_BEARS`, a constant supply ceiling checked on every mint;
+ *         - refusal of `burn` and of any transfer to the zero address (`BurnDisabled`);
+ *         - refusal of `renounceOwnership` (`RenounceDisabled`).
  */
 contract MintABear is ERC721SeaDrop {
-    /// @notice The collection's permanent supply ceiling.
-    /// @dev    `maxSupply` on the SeaDrop base is an owner setting: it starts at zero, and the
-    ///         owner (or OpenSea Studio, through `multiConfigure`) can raise it at any time.
-    ///         This cannot be changed by anyone, so the stated 4,444 is a property of the
-    ///         code rather than of how the contract happens to be configured.
+    /// @notice Maximum number of tokens that can ever be minted. Checked on every mint,
+    ///         independently of the owner-set `maxSupply`.
     uint256 public constant MAX_BEARS = 4444;
 
-    /// @notice How many times each bear has changed hands. Never incremented on mint.
+    /// @notice Number of non-mint transfers of each token.
     mapping(uint256 => uint64) public transferNonce;
 
-    /// @notice Emitted for every non-mint transfer, in the same transaction as `Transfer`. It is
-    ///         the activation-reset event: anything `Activation` recorded at the previous counter
-    ///         value is void once it fires, whether or not a level existed.
+    /// @notice Emitted with every non-mint `Transfer`, carrying the token's new `transferNonce`.
     event TransferNonceAdvanced(uint256 indexed tokenId, uint64 nonce);
 
-    /// @notice No bear can be destroyed: `burn` and any transfer to the zero address are
-    ///         refused with this error, by anyone, the bear's owner included.
+    /// @notice `burn` and transfers to the zero address are refused for every caller.
     error BurnDisabled();
 
     /// @notice The mint would take the collection past `MAX_BEARS`.
     error ExceedsMaxBears();
 
-    /// @notice Ownership can be handed over, never renounced.
+    /// @notice `renounceOwnership` is refused for every caller.
     error RenounceDisabled();
 
     /**
-     * @param name_           Collection name. Permanent.
-     * @param symbol_         Collection symbol. Permanent.
-     * @param allowedSeaDrop_ SeaDrop contracts permitted to mint. Canonical SeaDrop on
-     *                        Robinhood Chain is 0x00005EA00Ac477B1030CE78506496e8C2dE24bf5.
+     * @param name_           Collection name.
+     * @param symbol_         Collection symbol.
+     * @param allowedSeaDrop_ SeaDrop contracts permitted to mint.
      */
     constructor(string memory name_, string memory symbol_, address[] memory allowedSeaDrop_)
         ERC721SeaDrop(name_, symbol_, allowedSeaDrop_)
     {}
 
-    /// @notice Whether a bear with this id has been minted. No bear is ever destroyed, so once
-    ///         true it stays true; ownership is `ownerOf`'s business.
+    /// @notice Whether `tokenId` has been minted. Tokens cannot be burned, so this never
+    ///         returns to false. Never reverts.
     function exists(uint256 tokenId) external view returns (bool) {
         return _exists(tokenId);
     }
 
     /**
-     * @notice Refused for every caller, the owner included: the collection always has an owner.
-     * @dev    The inherited `TwoStepOwnable.renounceOwnership` would freeze every owner setting for
-     *         good and, because it does not clear `potentialOwner`, leave a pending offer through
-     *         which a renounced collection could be claimed again. Ownership moves only by
-     *         `transferOwnership` and `acceptOwnership`.
+     * @notice Always reverts with `RenounceDisabled`. Ownership moves only by `transferOwnership`
+     *         and `acceptOwnership`.
      */
     function renounceOwnership() public virtual override {
         revert RenounceDisabled();
     }
 
     /**
-     * @notice Transfers a bear. A transfer to the zero address is refused with `BurnDisabled`.
-     * @dev    The same error the hook gives `burn`, so every way of destroying a bear answers
-     *         alike; ERC721A would otherwise refuse it first with its own
-     *         `TransferToZeroAddress`. `safeTransferFrom` routes through here.
+     * @notice Transfers `tokenId` from `from` to `to`. Reverts with `BurnDisabled` when `to` is
+     *         the zero address. `safeTransferFrom` routes through this function.
      */
     function transferFrom(address from, address to, uint256 tokenId) public virtual override {
         if (to == address(0)) revert BurnDisabled();
@@ -106,13 +66,9 @@ contract MintABear is ERC721SeaDrop {
     }
 
     /**
-     * @dev Bounds supply on mint; advances the transfer counter and emits the reset event on
-     *      every move.
-     *
-     *      Also the only place a burn can be stopped. `ERC721SeaDrop` exposes a public
-     *      `burn`, and declares it neither `virtual` nor internal, so it cannot be
-     *      overridden — but every burn routes through this hook with `to` set to the zero
-     *      address, which no transfer reaches.
+     * @dev Refuses a transfer to the zero address (this is what refuses `burn`, which is not
+     *      virtual). On mint, refuses ids past `MAX_BEARS`; otherwise advances `transferNonce`
+     *      and emits `TransferNonceAdvanced` for each token moved.
      */
     function _beforeTokenTransfers(address from, address to, uint256 startTokenId, uint256 quantity)
         internal
@@ -122,7 +78,7 @@ contract MintABear is ERC721SeaDrop {
         if (to == address(0)) revert BurnDisabled();
 
         if (from == address(0)) {
-            // Checked arithmetic deliberately: this is the one place supply is bounded.
+            // Checked arithmetic: this bounds supply.
             if (startTokenId + quantity - 1 > MAX_BEARS) revert ExceedsMaxBears();
         } else {
             unchecked {
