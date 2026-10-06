@@ -5,13 +5,7 @@ import {Ownable} from "solady/auth/Ownable.sol";
 import {ReentrancyGuard} from "solady/utils/ReentrancyGuard.sol";
 import {SafeCastLib} from "solady/utils/SafeCastLib.sol";
 import {IMintABear} from "./interfaces/IMintABear.sol";
-
-/// @dev The two functions of $MNTD `Activation` calls: `decimals` once, in the constructor, and
-///      OpenZeppelin `ERC20Burnable.burnFrom` in `burn`.
-interface IBurnableMNTD {
-    function decimals() external view returns (uint8);
-    function burnFrom(address account, uint256 amount) external;
-}
+import {IBurnableMNTD} from "./interfaces/IBurnableMNTD.sol";
 
 /**
  * @title  Activation
