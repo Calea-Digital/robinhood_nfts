@@ -71,7 +71,8 @@ buildAllowList / allowListRoot / allowListProof
 ├── equal merkletreejs for 1, 2, 3, 7, 8, 9, 64, 100 and 1,000 rows
 ├── the root is independent of row order
 ├── a row's leaf commits to its allocations as the per-wallet limit
-└── one leaf is its own root with an empty proof; no leaves: EmptyTree; absent leaf: LeafNotFound
+├── one leaf is its own root with an empty proof; no leaves: EmptyTree; absent leaf: LeafNotFound
+└── a wallet in two rows, in any case: DUPLICATE_WALLET (audit L-02)
 ```
 
 ## Mint (`mint.test.ts`)

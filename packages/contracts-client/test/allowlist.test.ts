@@ -150,4 +150,18 @@ describe("allowlist tree", () => {
     expect(() => allowListProof(list.leaves, VECTOR_ROOT)).toThrow(expect.objectContaining({ code: "NOT_ON_ALLOWLIST" }));
     expect(list.entry("0x9999999999999999999999999999999999999999")).toBeUndefined();
   });
+
+  it("refuses a wallet listed twice, whatever the case of its address", () => {
+    /* Scenario:
+       Given the vector rows plus a second row for the first wallet, once as written and once in another case
+       When the allowlist is built
+       Then it throws DUPLICATE_WALLET naming that wallet, so no root holds two leaves for one wallet */
+    const wallet = VECTOR_ROWS[0].wallet;
+    const again = [...VECTOR_ROWS, { wallet, allocations: 1 }];
+    expect(() => buildAllowList(again, STAGE)).toThrow(expect.objectContaining({ code: "DUPLICATE_WALLET", details: { wallet } }));
+    const otherCase = (wallet.toLowerCase() === wallet ? wallet.toUpperCase().replace("0X", "0x") : wallet.toLowerCase()) as typeof wallet;
+    expect(() => buildAllowList([...VECTOR_ROWS, { wallet: otherCase, allocations: 1 }], STAGE)).toThrow(
+      expect.objectContaining({ code: "DUPLICATE_WALLET" }),
+    );
+  });
 });
