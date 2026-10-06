@@ -97,10 +97,8 @@ contract DeployTest is Test {
         vm.startStateDiffRecording();
         Activation activation = deployer.deployActivation(cfg, address(bears));
         calls = _writes(vm.stopAndReturnStateDiff());
-        assertEq(calls.length, 3, "Activation: construction and two calls, no address set");
+        assertEq(calls.length, 1, "Activation: construction only, owned and paused from it");
         assertEq(calls[0], bytes4(0));
-        assertEq(calls[1], activation.setPaused.selector);
-        assertEq(calls[2], activation.transferOwnership.selector);
         assertEq(address(activation.BEARS()), address(bears));
         assertEq(address(activation.MNTD()), address(mntd));
         assertEq(activation.thresholdFor(1), 1_666 * 1e18);

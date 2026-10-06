@@ -20,7 +20,7 @@ import {
 import { foundry } from "viem/chains";
 import { mnemonicToAccount, type HDAccount } from "viem/accounts";
 
-import { mintABearAbi, seaDropAbi } from "../../src/abi/index.js";
+import { activationAbi, mintABearAbi, seaDropAbi } from "../../src/abi/index.js";
 
 const repo = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
 
@@ -73,7 +73,7 @@ export interface Fixture {
  * 18-decimal $MNTD stand-in (`MockMNTD`, or with `mntd: "oz"` the OpenZeppelin `ERC20Burnable` one that
  * emits `Transfer` and reverts with strings), the whitelist registry with a window open now for seven days, the
  * owner-imported registry (`WhitelistImport`) open for the same seven days, and
- * `Activation` unpaused with the specified thresholds and weights.
+ * `Activation` owned by the deployer, unpaused, with the specified thresholds and weights.
  */
 export async function deployFixture(rpcUrl: string, options: { mntd?: "mock" | "oz" } = {}): Promise<Fixture> {
   const transport = http(rpcUrl);
@@ -108,7 +108,9 @@ export async function deployFixture(rpcUrl: string, options: { mntd?: "mock" | "
   const openAt = now;
   const closeAt = now + 7n * 86_400n;
   const registry = await deploy("WhitelistClaim", [accounts.deployer.address, accounts.signer.address, openAt, closeAt]);
-  const activation = await deploy("Activation", [bears, mntd, THRESHOLDS_WHOLE, WEIGHTS]);
+  const activation = await deploy("Activation", [accounts.deployer.address, bears, mntd, THRESHOLDS_WHOLE, WEIGHTS]);
+  // Activation is constructed paused; the suites start from the switch-on state.
+  await send(activation, activationAbi, "setPaused", [false]);
   const importRegistry = await deploy("WhitelistImport", [accounts.deployer.address, closeAt]);
 
   return { publicClient, testClient, wallet, seaDrop, bears, mntd, validator, registry, importRegistry, activation, openAt, closeAt };

@@ -167,9 +167,23 @@ for k in 0 1 2 3 4 5; do cast call $ACTIVATION "weightFor(uint8)(uint16)" $k --r
 # expect 100 / 110 / 125 / 145 / 170 / 200
 ```
 
-**Prove control once.** Ownership moves to the admin in one step at deployment, so the admin
+**Prove control once.** `Activation` is constructed owned by the admin and paused, so the admin
 sends `setPaused(true)` straight away: it changes nothing (the contract is already paused) and its
-`PausedSet(true)` shows the admin holds the key. Only then is the address given to the portal.
+`PausedSet(true)` shows the admin holds the key. If `owner()` is not the admin, deploy a new
+`Activation`: nothing has been burned yet. Only then is the address given to the portal.
+
+**Rotating the owner.** `transferOwnership` reverts with `TwoStepHandoverOnly`; ownership moves
+only to an address that has asked for it, so a mistyped address can never take it:
+
+1. The new owner sends `requestOwnershipHandover()` to `Activation`. The request expires after 48
+   hours; `ownershipHandoverExpiresAt(newOwner)` reads its deadline.
+2. Within that window the current owner sends `completeOwnershipHandover(newOwner)`. It reverts
+   with `NoHandoverRequest` if the request is missing or expired; ask the new owner to request
+   again.
+3. Read back `owner()` and have the new owner send `setPaused` with the current value of
+   `paused()`, as above.
+
+The new owner can withdraw a request with `cancelOwnershipHandover()`.
 
 **Rehearsal windows and switch-on.** `Activation` stays paused until the switch-on date; no
 address is exempt. For each rehearsal against real $MNTD the admin sends `setPaused(false)`, the

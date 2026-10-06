@@ -28,11 +28,12 @@ import {Activation} from "../src/Activation.sol";
  *         `script/verify.sh <chainId>` retries and checks afterwards.
  *
  *         No address is set after construction; every call after it is a listed setting
- *         (`setMaxSupply`, `setTransferValidator`, `setPaused(true)`) or an ownership transfer. `MintABear`'s transfer is two-step: MINT's admin completes it with
+ *         (`setMaxSupply`, `setTransferValidator`) or an ownership transfer. `MintABear`'s transfer is two-step: MINT's admin completes it with
  *         `acceptOwnership`, then Iñigo sets provenance, `baseURI` and royalties in Studio.
  *         Values still open with MINT — the admin and signer (CQ-12), the campaign dates (CQ-1),
  *         $MNTD's address (CQ-2) — come from the config file; nothing here assumes them. `Activation`
- *         reads $MNTD's `decimals` itself and scales the whole-token thresholds.
+ *         is constructed owned by MINT's admin and paused, with no call after it, and reads
+ *         $MNTD's `decimals` itself to scale the whole-token thresholds.
  */
 contract Deploy is Script {
     /// @notice Canonical SeaDrop on Robinhood Chain (verified 2026-09-10).
@@ -142,9 +143,9 @@ contract Deploy is Script {
     }
 
     /**
-     * @notice `Activation(bears, mntd, thresholdsWhole, weights)` → `setPaused(true)` until the
-     *         switch-on date → ownership to MINT's admin. `Activation` reads $MNTD's `decimals`
-     *         and scales the thresholds itself. Every value is immutable, so the collection is
+     * @notice `Activation(admin, bears, mntd, thresholdsWhole, weights)`, owned by MINT's admin and
+     *         paused until the switch-on date from construction; nothing is called after it.
+     *         `Activation` reads $MNTD's `decimals` and scales the thresholds itself. Every value is immutable, so the collection is
      *         checked first and the scaled values are printed for the runbook's read-back.
      */
     function deployActivation(Config memory cfg, address bears) public returns (Activation activation) {
@@ -152,9 +153,7 @@ contract Deploy is Script {
         _require(cfg.mntd, "mntd");
         _require(bears, "bears");
         _requireCollection(bears);
-        activation = new Activation(bears, cfg.mntd, cfg.thresholdsWhole, cfg.weights);
-        activation.setPaused(true);
-        activation.transferOwnership(cfg.admin);
+        activation = new Activation(cfg.admin, bears, cfg.mntd, cfg.thresholdsWhole, cfg.weights);
 
         console2.log("Activation DECIMALS", activation.DECIMALS());
         for (uint8 k = 1; k <= 5; ++k) {

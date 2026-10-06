@@ -44,9 +44,8 @@ deployActivation
 ├── when the collection is a wallet, another contract, or answers MAX_BEARS with anything but
 │   4,444: it reverts with NotTheCollection before anything is created
 ├── otherwise, in this order (OPS-2), with no address set after construction:
-│   ├── Activation(bears, mntd, thresholdsWhole, weights)
-│   ├── setPaused(true) — until the switch-on date
-│   └── transferOwnership(admin)
+│   └── Activation(admin, bears, mntd, thresholdsWhole, weights) — owned by the admin and
+│       paused until the switch-on date from construction; nothing is called after it
 ├── with a 6-decimal $MNTD, Activation reads the decimals itself and scales the thresholds by 10^6
 └── it prints DECIMALS, thresholdFor(1..5) and weightFor(0..5) for the runbook's read-back
 ```
