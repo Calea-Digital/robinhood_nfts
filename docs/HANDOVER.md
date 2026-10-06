@@ -139,11 +139,18 @@ Submodule pins: `forge-std` `bf647bd` (v1.16.2), `seadrop` `757590f`, `solady` `
 **The external security review of 6 October** (`audit/Mint-Security-Audit-Report.md` on the
 `audit/security-review` branch: no Critical, High or Medium; three Low, three Informational) is
 answered in `audit/Audit-Response.md`. Every finding is fixed on `tranche-1`, one Defect each,
-MNT-147 to MNT-152, all In Review. The one contract change is L-01 (spec change
+MNT-147 to MNT-152, all Done on the reviewer's word (2026-10-06). The one contract change is L-01 (spec change
 `act-two-step-ownership`): `Activation` is constructed owned by MINT's admin and paused, and
 ownership moves only by Solady's two-step handover. Its constructor is therefore
 `Activation(owner, bears, mntd, thresholdsWhole, weights)`, and this is the bytecode the internal
 audit takes.
+Agreed at the review, still to act on:
+- `spec_version` stays 2.6 until the next client document; the ACT-12, ACT-15 and OPS-2 changes
+  ride with it.
+- After the whitelist stage (29 October), decide whether to remove `WhitelistClaim` and
+  `WhitelistImport`, as one `NONE` Task, if MINT's off-chain register has worked.
+- When the contracts move to `mintdotio/NFT` (CQ-14), CLAUDE.md points to `docs/DESIGN.md` rather
+  than restating it.
 
 ## Next session — the whitelist CSV, then tranche 2
 
