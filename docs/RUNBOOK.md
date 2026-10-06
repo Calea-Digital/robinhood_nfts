@@ -46,7 +46,10 @@ owner); `cancelOwnershipTransfer` withdraws an offer.
 
 **The whitelist is off-chain** (WL-8). MINT's backend records the claims, and no whitelist
 contract is deployed. What reaches the chain is the allowlist root Studio sets for the whitelist
-stage, so the steps below make sure that root is exactly MINT's final list.
+stage, so the steps below make sure that root is exactly MINT's final list. `WhitelistClaim` and
+`WhitelistImport`, with `Deploy.s.sol`'s `runWhitelist` and `runWhitelistImport`, stay in the
+repository as an undeployed fallback in case the whitelist returns on-chain; nothing in this
+runbook deploys or reads them except `compare`, until its CSV mode is built (step 4).
 
 **1. Freeze the list at least 48 hours before the whitelist stage opens.** With the whitelist
 stage opening with the mint on 29 October, that means by 27 October, at the same time of day.
@@ -54,7 +57,8 @@ After the freeze, MINT's backend takes no more claims.
 
 **2. Export the final CSV** from MINT's backend. The format is `wallet,allocations`, with one row
 per wallet and its total, merged across every source: wagering, collaborations and giveaways. A
-wallet that appears twice in Studio's allowlist can mint only under one of its rows. The
+wallet listed twice gets a leaf for each row and can mint under whichever allows more, so the
+client's `buildAllowList` refuses such a file (`DUPLICATE_WALLET`), and so will `compare`. The
 allocations total at most 4,222: the 1,000 wagering spots, which are guaranteed, and at most
 3,222 from every other channel together (CQ-24). Each row's address is the wallet that will call
 the mint, which for a smart wallet is the smart account itself.
@@ -167,9 +171,23 @@ for k in 0 1 2 3 4 5; do cast call $ACTIVATION "weightFor(uint8)(uint16)" $k --r
 # expect 100 / 110 / 125 / 145 / 170 / 200
 ```
 
-**Prove control once.** Ownership moves to the admin in one step at deployment, so the admin
+**Prove control once.** `Activation` is constructed owned by the admin and paused, so the admin
 sends `setPaused(true)` straight away: it changes nothing (the contract is already paused) and its
-`PausedSet(true)` shows the admin holds the key. Only then is the address given to the portal.
+`PausedSet(true)` shows the admin holds the key. If `owner()` is not the admin, deploy a new
+`Activation`: nothing has been burned yet. Only then is the address given to the portal.
+
+**Rotating the owner.** `transferOwnership` reverts with `TwoStepHandoverOnly`; ownership moves
+only to an address that has asked for it, so a mistyped address can never take it:
+
+1. The new owner sends `requestOwnershipHandover()` to `Activation`. The request expires after 48
+   hours; `ownershipHandoverExpiresAt(newOwner)` reads its deadline.
+2. Within that window the current owner sends `completeOwnershipHandover(newOwner)`. It reverts
+   with `NoHandoverRequest` if the request is missing or expired; ask the new owner to request
+   again.
+3. Read back `owner()` and have the new owner send `setPaused` with the current value of
+   `paused()`, as above.
+
+The new owner can withdraw a request with `cancelOwnershipHandover()`.
 
 **Rehearsal windows and switch-on.** `Activation` stays paused until the switch-on date; no
 address is exempt. For each rehearsal against real $MNTD the admin sends `setPaused(false)`, the

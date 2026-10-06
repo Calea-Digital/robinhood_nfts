@@ -24,6 +24,9 @@ jobs:
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
+        with:
+          # Pinned so a toolchain release cannot change a green build (MNT-153).
+          version: v1.8.3
 
       - name: Show Forge version
         run: forge --version
@@ -77,6 +80,9 @@ jobs:
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
+        with:
+          # Pinned so a toolchain release cannot change a green build (MNT-153).
+          version: v1.8.3
 
       - name: Run Forge build
         working-directory: .

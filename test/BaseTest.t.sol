@@ -30,7 +30,9 @@ abstract contract BaseTest is Test {
         bears.setMaxSupply(MAX_SUPPLY);
 
         mntd = new MockMNTD(18);
-        activation = new Activation(address(bears), address(mntd), _thresholds(), _weights());
+        activation = new Activation(address(this), address(bears), address(mntd), _thresholds(), _weights());
+        // Activation is constructed paused (ACT-15); the suites start from the switch-on state.
+        activation.setPaused(false);
     }
 
     /// @dev The specified thresholds, 1,666 / 3,333 / 8,333 / 16,666 / 41,666 whole $MNTD (ACT-2).

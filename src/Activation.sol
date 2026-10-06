@@ -5,40 +5,18 @@ import {Ownable} from "solady/auth/Ownable.sol";
 import {ReentrancyGuard} from "solady/utils/ReentrancyGuard.sol";
 import {SafeCastLib} from "solady/utils/SafeCastLib.sol";
 import {IMintABear} from "./interfaces/IMintABear.sol";
-
-/// @dev The two functions of $MNTD `Activation` calls: `decimals` once, in the constructor, and
-///      OpenZeppelin `ERC20Burnable.burnFrom` in `burn`.
-interface IBurnableMNTD {
-    function decimals() external view returns (uint8);
-    function burnFrom(address account, uint256 amount) external;
-}
+import {IBurnableMNTD} from "./interfaces/IBurnableMNTD.sol";
 
 /**
  * @title  Activation
- * @notice The record of $MNTD burned into each bear: its level and its royalty weight. A transfer
- *         resets both.
- * @dev    One token, one collection. $MNTD — native to Robinhood Chain — is fixed in the
- *         constructor, and the only thing done with it is burning the caller's own balance in
- *         `burn`. Recording and burning are two steps of one transaction, the record first: a
- *         token that calls back during `burnFrom` meets `nonReentrant`, and any revert undoes
- *         both. $MNTD is outside this codebase, so its `burnFrom` is untrusted: it must revert on
- *         failure (CQ-2). A different token address means a new `Activation`.
- *
- *         It reads `MintABear` — `ownerOf`, `transferNonce`, `exists` — and `MintABear` never
- *         calls it. The reset works through the token's per-bear transfer counter: a record is
- *         stored with the counter value it was made at, and reads as zero once the counter has
- *         moved. Nothing executes at reset time, so a reset can be neither skipped nor made to
- *         block a transfer; indexers key it on the token's `TransferNonceAdvanced`.
- *
- *         Levels are derived from a running total, so reaching level 5 in one burn and in
- *         twenty is the same thing. Thresholds (given in whole $MNTD, stored in base units) and
- *         weights (basis 100) are constructor arguments with no setter; the owner can only pause,
- *         and can hand ownership over but never renounce it.
- *
- *         Slither reports `locked-ether` because Solady's ownership functions are `payable`
- *         (a gas saving). Anyone can call `requestOwnershipHandover` and
- *         `cancelOwnershipHandover`, so anyone could lock their own ETH by attaching value to
- *         them; nothing here withdraws it, and nothing else accepts ETH.
+ * @notice Records $MNTD burned for each MintABear token and derives the token's level (0–5) and
+ *         royalty weight from it. A transfer of the token resets both.
+ * @dev    `burn` records the amount against the token at its current `transferNonce`, then calls
+ *         the token's `burnFrom` on the caller's balance; it is non-reentrant and any revert
+ *         undoes both. A record made at an earlier `transferNonce` reads as zero. Thresholds and
+ *         weights are fixed in the constructor. The owner, set in the constructor, can pause
+ *         `burn` and hand ownership over by Solady's two-step handover; `burn` is paused from
+ *         construction. Single-step transfer and renouncing are refused.
  */
 contract Activation is Ownable, ReentrancyGuard {
     /// @dev Cumulative burn, in $MNTD base units, at which each level is reached; read with
@@ -125,24 +103,35 @@ contract Activation is Ownable, ReentrancyGuard {
     /// @notice Levels run 0 to 5.
     error InvalidLevel();
 
-    /// @notice Ownership can be handed over, never renounced.
+    /// @notice `renounceOwnership` is refused for every caller.
     error RenounceDisabled();
+
+    /// @notice `transferOwnership` is refused for every caller; use the two-step handover.
+    error TwoStepHandoverOnly();
 
     function _requireNotPaused() internal view {
         if (paused) revert ContractPaused();
     }
 
     /**
+     * @dev    Starts paused. Reverts with `NewOwnerIsZeroAddress` for a zero owner and
+     *         `ZeroAddress` for a zero collection or token.
+     * @param owner_          The owner.
      * @param bears_          The MintABear collection.
-     * @param mntd_           $MNTD on Robinhood Chain. Final: a different token means a new
-     *                        `Activation`.
-     * @param thresholdsWhole The five cumulative thresholds in whole $MNTD, positive and strictly
-     *                        ascending (1,666 / 3,333 / 8,333 / 16,666 / 41,666); scaled here by
-     *                        the token's `decimals` into base units.
-     * @param weights_        The six royalty weights of levels 0–5, basis 100, strictly ascending
-     *                        (100 / 110 / 125 / 145 / 170 / 200).
+     * @param mntd_           The burnable $MNTD token.
+     * @param thresholdsWhole The cumulative thresholds of levels 1–5 in whole tokens, positive and
+     *                        strictly ascending; scaled by the token's `decimals` into base units.
+     * @param weights_        The royalty weights of levels 0–5, basis 100, strictly ascending.
      */
-    constructor(address bears_, address mntd_, uint128[5] memory thresholdsWhole, uint16[6] memory weights_) {
+    constructor(
+        address owner_,
+        address bears_,
+        address mntd_,
+        uint128[5] memory thresholdsWhole,
+        uint16[6] memory weights_
+    ) {
+        // Solady's `_initializeOwner` accepts the zero address.
+        if (owner_ == address(0)) revert NewOwnerIsZeroAddress();
         if (bears_ == address(0) || mntd_ == address(0)) revert ZeroAddress();
         if (thresholdsWhole[0] == 0) revert ThresholdsNotAscending();
         for (uint256 i = 1; i < 5; ++i) {
@@ -152,7 +141,9 @@ contract Activation is Ownable, ReentrancyGuard {
             if (weights_[i] <= weights_[i - 1]) revert WeightsNotAscending();
         }
 
-        _initializeOwner(msg.sender);
+        _initializeOwner(owner_);
+        paused = true;
+        emit PausedSet(true);
         BEARS = IMintABear(bears_);
         MNTD = IBurnableMNTD(mntd_);
 
@@ -223,13 +214,9 @@ contract Activation is Ownable, ReentrancyGuard {
     }
 
     /**
-     * @notice Owner, level and weight for each id, for MINT's royalty split at a closing block.
-     * @dev    An id that does not exist reads as zeroes. A wallet's weight is the sum over its
-     *         bears; the eligible total excludes bears held by `0x…dEaD`, summed off-chain. The
-     *         loop's calls go only to the immutable collection, and are views. The collection's
-     *         `ownerOf` walks back to the start of an untransferred mint batch, so the cost grows
-     *         with the length of such a batch: page by gas, not by a fixed count. `weightOf` does
-     *         not read the owner.
+     * @notice Owner, level and weight for each id. An id that does not exist reads as zeroes.
+     * @dev    The collection's `ownerOf` walks back to the start of an untransferred mint batch,
+     *         so the gas cost grows with batch length; page callers by gas, not by a fixed count.
      */
     function snapshot(uint256[] calldata ids) external view returns (BearState[] memory rows) {
         rows = new BearState[](ids.length);
@@ -242,9 +229,8 @@ contract Activation is Ownable, ReentrancyGuard {
     }
 
     /**
-     * @notice How much more $MNTD a bear needs to reach a level.
-     * @dev    The portal sizes each burn with this, and `burn` refuses any amount above
-     *         `costToReach(tokenId, 5)`.
+     * @notice How much more $MNTD a bear needs to reach a level. `burn` refuses any amount
+     *         above `costToReach(tokenId, 5)`.
      * @return The remaining base units, or zero if the level is already reached.
      */
     function costToReach(uint256 tokenId, uint8 targetLevel) external view returns (uint128) {
@@ -281,10 +267,18 @@ contract Activation is Ownable, ReentrancyGuard {
         emit PausedSet(paused_);
     }
 
-    /// @notice Refused for every caller, the owner included, so the pause can always be set and
-    ///         lifted.
+    /// @notice Always reverts with `RenounceDisabled`.
     function renounceOwnership() public payable override {
         revert RenounceDisabled();
+    }
+
+    /**
+     * @notice Always reverts with `TwoStepHandoverOnly`. Ownership moves only when the new owner
+     *         has called `requestOwnershipHandover` and the owner then calls
+     *         `completeOwnershipHandover` within 48 hours.
+     */
+    function transferOwnership(address) public payable override {
+        revert TwoStepHandoverOnly();
     }
 
     function _levelFor(uint128 cumulative) internal view returns (uint8) {

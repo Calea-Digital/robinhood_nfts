@@ -118,20 +118,22 @@ events, checked in the recorded logs against the documented signatures
 
 ```
 constructor
+├── when the owner is the zero address: it reverts with NewOwnerIsZeroAddress (ACT-12)
 ├── when the collection or the token is the zero address: it reverts with ZeroAddress
 ├── when the first threshold is zero, or thresholds are not strictly ascending: ThresholdsNotAscending
 ├── when weights are not strictly ascending: WeightsNotAscending
 ├── the thresholds are scaled by the token's decimals: a 6-decimal token reads DECIMALS 6 and
 │   thresholdFor(1) = 1,666 × 10^6
 ├── decimals that would take a threshold past uint128: it reverts rather than truncating
-└── otherwise: BEARS, MNTD and DECIMALS are set, the deployer owns it, not paused
+└── otherwise: BEARS, MNTD and DECIMALS are set, the owner argument owns it, paused and
+    PausedSet(true) emitted (ACT-15)
 ```
 
 ## Ownership
 
 ```
 Roles (ACT-12)
-├── a non-owner's setPaused, and anyone's renounceOwnership, revert (ACT-12)
+├── a non-owner's setPaused, and anyone's renounceOwnership or transferOwnership, revert (ACT-12)
 ├── the complete external interface, read from the artifact, is exactly the pinned list — no
 │   setter for the token, thresholds, weights or records, no freeze, no clawback, no way to
 │   record a level but burn, and no fallback or receive (ACT-12)
@@ -147,6 +149,15 @@ setPaused
 
 renounceOwnership
 └── by the owner, paused or not, and by anyone else: RenounceDisabled; the owner can still pause
+
+transferOwnership
+└── by the owner and by anyone else: TwoStepHandoverOnly; the owner is unchanged (ACT-12)
+
+requestOwnershipHandover → completeOwnershipHandover
+├── within 48 hours of the request: ownership moves; the new owner pauses, the old one cannot
+├── more than 48 hours after it: NoHandoverRequest; the owner is unchanged
+└── to an address that never requested it: NoHandoverRequest; the owner can still unpause
+    (test/poc/WrongAdminRotation.t.sol)
 ```
 
 ## Regression (test/poc/ForgedLevelRegression.t.sol)
@@ -154,6 +165,14 @@ renounceOwnership
 ```
 the tranche-1 review's forged-level PoC, kept inverted (ACT-1, ACT-12)
 └── setCrediter and credit are absent: the owner cannot record a level without a burn
+```
+
+## Regression (test/poc/WrongAdminRotation.t.sol)
+
+```
+the external review's L-01, kept inverted (ACT-12, ACT-15)
+└── while paused, ownership sent to an address that never requested it reverts by either route;
+    the owner is unchanged, can unpause, and the bear's level stands
 ```
 
 ## Auditor obligations (not implemented here)

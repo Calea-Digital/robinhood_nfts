@@ -4,6 +4,11 @@ export const activationAbi = [
     "type": "constructor",
     "inputs": [
       {
+        "name": "owner_",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
         "name": "bears_",
         "type": "address",
         "internalType": "address"
@@ -316,7 +321,7 @@ export const activationAbi = [
     "name": "transferOwnership",
     "inputs": [
       {
-        "name": "newOwner",
+        "name": "",
         "type": "address",
         "internalType": "address"
       }
@@ -516,6 +521,11 @@ export const activationAbi = [
   {
     "type": "error",
     "name": "ThresholdsNotAscending",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "TwoStepHandoverOnly",
     "inputs": []
   },
   {

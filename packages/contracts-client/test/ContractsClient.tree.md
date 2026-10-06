@@ -71,7 +71,8 @@ buildAllowList / allowListRoot / allowListProof
 ├── equal merkletreejs for 1, 2, 3, 7, 8, 9, 64, 100 and 1,000 rows
 ├── the root is independent of row order
 ├── a row's leaf commits to its allocations as the per-wallet limit
-└── one leaf is its own root with an empty proof; no leaves: EmptyTree; absent leaf: LeafNotFound
+├── one leaf is its own root with an empty proof; no leaves: EmptyTree; absent leaf: LeafNotFound
+└── a wallet in two rows, in any case: DUPLICATE_WALLET (audit L-02)
 ```
 
 ## Mint (`mint.test.ts`)
@@ -192,6 +193,8 @@ computeSplit
 inputs at a closing block
 ├── events mode: owners from Transfer logs (paged by block range), weights from weightOf
 ├── events mode missing bears (fromBlock after the first mint): refused against totalSupply
+├── events mode with a resale log dropped by the RPC: every bear present, but the owner from the
+│   logs is not ownerOf at the closing block: SPLIT_OWNER_MISMATCH (audit L-03)
 ├── snapshot mode over exactly 1..4,444, paged by gas, ownerless ids dropped: the same rows
 ├── both modes give the same split: 393,939 / 363,636 / 121,212 / 121,212, 825 eligible, 1 carried
 ├── weightOf answers 100 for an unminted id; events mode never reads one

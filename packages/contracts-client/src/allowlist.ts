@@ -162,7 +162,9 @@ export interface AllowList {
  * @param rows - The whitelist rows (`readClaimants`, or `mintabear.whitelist.claimants()`).
  * @param stage - The whitelist stage exactly as Studio configured it.
  * @returns The root and an `entry(wallet)` lookup.
- * @throws {ClientRefusal} `EMPTY_ALLOWLIST` for no rows.
+ * @throws {ClientRefusal} `EMPTY_ALLOWLIST` for no rows; `DUPLICATE_WALLET` when a wallet appears in
+ *   more than one row (compared without regard to case) — each row is a leaf, so the wallet could
+ *   mint under whichever row allows more.
  *
  * @example
  * ```ts
@@ -172,6 +174,12 @@ export interface AllowList {
  * ```
  */
 export function buildAllowList(rows: readonly AllowListRow[], stage: StageParams): AllowList {
+  const seen = new Set<string>();
+  for (const row of rows) {
+    const key = row.wallet.toLowerCase();
+    if (seen.has(key)) throw new ClientRefusal("DUPLICATE_WALLET", { wallet: row.wallet });
+    seen.add(key);
+  }
   const leaves = rows.map((row) => allowListLeaf(row.wallet, rowMintParams(stage, row.allocations)));
   const root = allowListRoot(leaves);
   return {

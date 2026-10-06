@@ -193,9 +193,11 @@ In a `catch`, `explainError(error)` gives `{ code, userMessage, details }` for a
 | `TRANSACTION_REVERTED` | — | The transaction failed on chain. |
 | `INVALID_ARGUMENT` | — | An argument was out of range. |
 | `EMPTY_ALLOWLIST` | — | The whitelist has no rows. |
+| `DUPLICATE_WALLET` | — | The whitelist lists undefined more than once; merge its rows into one. |
 | `WEAK_SERVER_KEY` | — | The server key must be at least 32 bytes. |
 | `SPLIT_INVALID_INPUT` | — | The split's input rows are invalid. |
 | `SPLIT_MISSING_BEARS` | — | The Transfer logs account for undefined bears but undefined exist at block undefined. Check fromBlock and the RPC's log range. |
+| `SPLIT_OWNER_MISMATCH` | — | The Transfer logs give bear #undefined to undefined, but its owner at block undefined is undefined. A log is missing; check the RPC's log range. |
 | `SPLIT_GAS_BUDGET` | — | Reading bear #undefined alone does not fit the gas budget of undefined. |
 | `UNKNOWN_DEPLOYMENT` | — | No MintABear deployment is recorded for chain undefined. |
 | `UNKNOWN_REVERT` | — | The contract refused the transaction. |
@@ -230,8 +232,9 @@ tests pin them. [`examples/03-whitelist`](examples/03-whitelist.test.ts) shows i
 
 ## The owner-imported whitelist (`WhitelistImport`, WL-7)
 
-MINT deploys one of two registries: `WhitelistClaim` (holders claim with vouchers, above) or
-`WhitelistImport`, which MINT's admin fills from a CSV on its admin page. Point
+Not deployed: the whitelist is off-chain (WL-8), and both registries are kept as a fallback. If it
+returns on-chain, MINT deploys one of the two: `WhitelistClaim` (holders claim with vouchers,
+above) or `WhitelistImport`, which MINT's admin fills from a CSV on its admin page. Point
 `addresses.registry` at whichever is deployed. The reads the mint needs — `whitelist.claimsOf`,
 `whitelist.claimants`, `whitelist.allowList`, `mint.remainingWhitelistMints` — work on both;
 `whitelist.campaign`, `isOpen`, `accountClaims` and `claim` are `WhitelistClaim`'s only, and
