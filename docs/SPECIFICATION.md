@@ -525,21 +525,25 @@ deployed paused and opens on 29 October (§8). The pause has no exemptions, so t
 rehearsal runs in a window the admin opens and closes again. Ownership can't be given up, so the
 pause can always be set and lifted.
 
-*Technical note.* `setPaused(bool)`, owner-only; while paused `burn` reverts with
-`ContractPaused`. `renounceOwnership` reverts for every caller.
+*Technical note.* `paused` is true from construction. `setPaused(bool)`, owner-only; while paused
+`burn` reverts with `ContractPaused`. `renounceOwnership` reverts for every caller.
 
 *Acceptance.* Given the owner has paused; when a holder calls `burn`; then it reverts with `ContractPaused`; and reads and every transfer still succeed.
 
 **ACT-12 Roles.** MINT's admin can only pause and hand over ownership. A bear's owner can burn for it. Nothing else
 can be changed: the token, thresholds, weights and records are fixed, and no one can record a
-level without a burn. There is no freeze or clawback (MINT, CQ-16). Which bear carries an
+level without a burn. Ownership moves only to an address that has asked for it, so it can never
+reach an address nobody controls. There is no freeze or clawback (MINT, CQ-16). Which bear carries an
 account's Status boost is MINT's, kept off-chain against the holder's Privy account (MINT, CQ-21).
 
-*Technical note.* Owner (MINT's admin): `setPaused` and ownership transfer; `renounceOwnership`
-reverts. A bear's owner: `burn` for that bear. The external interface is pinned by the ACT-12
+*Technical note.* Owner (MINT's admin, the constructor's `owner`; zero is refused with
+`NewOwnerIsZeroAddress`): `setPaused` and the two-step handover — the new owner calls
+`requestOwnershipHandover()`, then the owner calls `completeOwnershipHandover(newOwner)` within 48
+hours. `transferOwnership` reverts with `TwoStepHandoverOnly` and `renounceOwnership` with
+`RenounceDisabled`, for every caller. A bear's owner: `burn` for that bear. The external interface is pinned by the ACT-12
 test: a function added fails the suite until the specification allows it.
 
-*Acceptance.* When a non-owner calls `setPaused`, or anyone calls `renounceOwnership`; then it reverts; and no function anywhere changes the token, thresholds, weights or a bear's record other than its owner's `burn`.
+*Acceptance.* When a non-owner calls `setPaused`, or anyone calls `renounceOwnership` or `transferOwnership`; then it reverts; and no function anywhere changes the token, thresholds, weights or a bear's record other than its owner's `burn`.
 
 **ACT-13 Events.** Every burn publishes the bear, the burner, the old and new level, the amount and the new total.
 Every pause change is published.
@@ -801,10 +805,11 @@ and each contract is deployed before the page that depends on it goes live.
 Nothing is deployed on a prize chain (RAF-33).
 
 *Technical note.* The calls after construction are, in order, `setMaxSupply`,
-`setTransferValidator`, `setPaused(true)` and ownership transfers. Robinhood Chain:
+`setTransferValidator` and ownership transfers. Robinhood Chain:
 `MintABear(name, symbol, [SeaDrop])` → `setMaxSupply(4444)` → `setTransferValidator(V3)` (COL-7) →
-two-step ownership transfer; `Activation(bears, mntd, thresholds, weights)`, thresholds in whole
-$MNTD (ACT-2) → `setPaused(true)` → ownership; `MysteryBox(owner, bears)`. Arbitrum One:
+two-step ownership transfer; `Activation(owner, bears, mntd, thresholds, weights)`, thresholds in whole
+$MNTD (ACT-2), owned by MINT's admin and paused from construction (ACT-12, ACT-15), with no call
+after it; `MysteryBox(owner, bears)`. Arbitrum One:
 `PrizeDraw(owner, coordinator, subscriptionId, keyHash, worker, playable)` → added as the
 subscription's consumer.
 

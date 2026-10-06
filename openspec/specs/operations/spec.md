@@ -44,10 +44,11 @@ and each contract is deployed before the page that depends on it goes live.
 Nothing is deployed on a prize chain (RAF-33).
 
 *Technical note.* The calls after construction are, in order, `setMaxSupply`,
-`setTransferValidator`, `setPaused(true)` and ownership transfers. Robinhood Chain:
+`setTransferValidator` and ownership transfers. Robinhood Chain:
 `MintABear(name, symbol, [SeaDrop])` → `setMaxSupply(4444)` → `setTransferValidator(V3)` (COL-7) →
-two-step ownership transfer; `Activation(bears, mntd, thresholds, weights)`, thresholds in whole
-$MNTD (ACT-2) → `setPaused(true)` → ownership; `MysteryBox(owner, bears)`. Arbitrum One:
+two-step ownership transfer; `Activation(owner, bears, mntd, thresholds, weights)`, thresholds in whole
+$MNTD (ACT-2), owned by MINT's admin and paused from construction (ACT-12, ACT-15), with no call
+after it; `MysteryBox(owner, bears)`. Arbitrum One:
 `PrizeDraw(owner, coordinator, subscriptionId, keyHash, worker, playable)` → added as the
 subscription's consumer.
 

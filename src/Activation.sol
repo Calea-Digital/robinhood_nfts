@@ -14,8 +14,9 @@ import {IBurnableMNTD} from "./interfaces/IBurnableMNTD.sol";
  * @dev    `burn` records the amount against the token at its current `transferNonce`, then calls
  *         the token's `burnFrom` on the caller's balance; it is non-reentrant and any revert
  *         undoes both. A record made at an earlier `transferNonce` reads as zero. Thresholds and
- *         weights are fixed in the constructor. The owner can pause `burn` and hand ownership
- *         over; ownership cannot be renounced.
+ *         weights are fixed in the constructor. The owner, set in the constructor, can pause
+ *         `burn` and hand ownership over by Solady's two-step handover; `burn` is paused from
+ *         construction. Single-step transfer and renouncing are refused.
  */
 contract Activation is Ownable, ReentrancyGuard {
     /// @dev Cumulative burn, in $MNTD base units, at which each level is reached; read with
@@ -105,18 +106,32 @@ contract Activation is Ownable, ReentrancyGuard {
     /// @notice `renounceOwnership` is refused for every caller.
     error RenounceDisabled();
 
+    /// @notice `transferOwnership` is refused for every caller; use the two-step handover.
+    error TwoStepHandoverOnly();
+
     function _requireNotPaused() internal view {
         if (paused) revert ContractPaused();
     }
 
     /**
+     * @dev    Starts paused. Reverts with `NewOwnerIsZeroAddress` for a zero owner and
+     *         `ZeroAddress` for a zero collection or token.
+     * @param owner_          The owner.
      * @param bears_          The MintABear collection.
      * @param mntd_           The burnable $MNTD token.
      * @param thresholdsWhole The cumulative thresholds of levels 1–5 in whole tokens, positive and
      *                        strictly ascending; scaled by the token's `decimals` into base units.
      * @param weights_        The royalty weights of levels 0–5, basis 100, strictly ascending.
      */
-    constructor(address bears_, address mntd_, uint128[5] memory thresholdsWhole, uint16[6] memory weights_) {
+    constructor(
+        address owner_,
+        address bears_,
+        address mntd_,
+        uint128[5] memory thresholdsWhole,
+        uint16[6] memory weights_
+    ) {
+        // Solady's `_initializeOwner` accepts the zero address.
+        if (owner_ == address(0)) revert NewOwnerIsZeroAddress();
         if (bears_ == address(0) || mntd_ == address(0)) revert ZeroAddress();
         if (thresholdsWhole[0] == 0) revert ThresholdsNotAscending();
         for (uint256 i = 1; i < 5; ++i) {
@@ -126,7 +141,9 @@ contract Activation is Ownable, ReentrancyGuard {
             if (weights_[i] <= weights_[i - 1]) revert WeightsNotAscending();
         }
 
-        _initializeOwner(msg.sender);
+        _initializeOwner(owner_);
+        paused = true;
+        emit PausedSet(true);
         BEARS = IMintABear(bears_);
         MNTD = IBurnableMNTD(mntd_);
 
@@ -253,6 +270,15 @@ contract Activation is Ownable, ReentrancyGuard {
     /// @notice Always reverts with `RenounceDisabled`.
     function renounceOwnership() public payable override {
         revert RenounceDisabled();
+    }
+
+    /**
+     * @notice Always reverts with `TwoStepHandoverOnly`. Ownership moves only when the new owner
+     *         has called `requestOwnershipHandover` and the owner then calls
+     *         `completeOwnershipHandover` within 48 hours.
+     */
+    function transferOwnership(address) public payable override {
+        revert TwoStepHandoverOnly();
     }
 
     function _levelFor(uint128 cumulative) internal view returns (uint8) {
