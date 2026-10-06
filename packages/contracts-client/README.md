@@ -193,6 +193,7 @@ In a `catch`, `explainError(error)` gives `{ code, userMessage, details }` for a
 | `TRANSACTION_REVERTED` | — | The transaction failed on chain. |
 | `INVALID_ARGUMENT` | — | An argument was out of range. |
 | `EMPTY_ALLOWLIST` | — | The whitelist has no rows. |
+| `DUPLICATE_WALLET` | — | The whitelist lists undefined more than once; merge its rows into one. |
 | `WEAK_SERVER_KEY` | — | The server key must be at least 32 bytes. |
 | `SPLIT_INVALID_INPUT` | — | The split's input rows are invalid. |
 | `SPLIT_MISSING_BEARS` | — | The Transfer logs account for undefined bears but undefined exist at block undefined. Check fromBlock and the RPC's log range. |

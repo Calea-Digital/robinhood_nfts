@@ -164,6 +164,7 @@ export type ErrorCode =
   // Library checks
   | "INVALID_ARGUMENT"
   | "EMPTY_ALLOWLIST"
+  | "DUPLICATE_WALLET"
   | "WEAK_SERVER_KEY"
   | "SPLIT_INVALID_INPUT"
   | "SPLIT_MISSING_BEARS"
@@ -302,6 +303,7 @@ const MESSAGES: Record<ErrorCode, (d: Record<string, unknown>) => string> = {
   TRANSACTION_REVERTED: () => "The transaction failed on chain.",
   INVALID_ARGUMENT: (d) => (typeof d.reason === "string" ? d.reason : "An argument was out of range."),
   EMPTY_ALLOWLIST: () => "The whitelist has no rows.",
+  DUPLICATE_WALLET: (d) => `The whitelist lists ${String(d.wallet)} more than once; merge its rows into one.`,
   WEAK_SERVER_KEY: () => "The server key must be at least 32 bytes.",
   SPLIT_INVALID_INPUT: (d) => (typeof d.reason === "string" ? d.reason : "The split's input rows are invalid."),
   SPLIT_MISSING_BEARS: (d) =>
