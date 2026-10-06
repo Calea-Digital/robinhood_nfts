@@ -168,6 +168,7 @@ export type ErrorCode =
   | "WEAK_SERVER_KEY"
   | "SPLIT_INVALID_INPUT"
   | "SPLIT_MISSING_BEARS"
+  | "SPLIT_OWNER_MISMATCH"
   | "SPLIT_GAS_BUDGET"
   | "UNKNOWN_DEPLOYMENT"
   // Anything this library does not recognise
@@ -308,6 +309,8 @@ const MESSAGES: Record<ErrorCode, (d: Record<string, unknown>) => string> = {
   SPLIT_INVALID_INPUT: (d) => (typeof d.reason === "string" ? d.reason : "The split's input rows are invalid."),
   SPLIT_MISSING_BEARS: (d) =>
     `The Transfer logs account for ${d.owned} bears but ${d.totalSupply} exist at block ${d.closingBlock}. Check fromBlock and the RPC's log range.`,
+  SPLIT_OWNER_MISMATCH: (d) =>
+    `The Transfer logs give bear #${d.tokenId} to ${d.fromLogs}, but its owner at block ${d.closingBlock} is ${d.onChain}. A log is missing; check the RPC's log range.`,
   SPLIT_GAS_BUDGET: (d) => `Reading bear #${d.tokenId} alone does not fit the gas budget of ${d.gasBudget}.`,
   UNKNOWN_DEPLOYMENT: (d) => `No MintABear deployment is recorded for chain ${d.chainId}.`,
   UNKNOWN_REVERT: () => "The contract refused the transaction.",
