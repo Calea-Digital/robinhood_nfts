@@ -197,6 +197,7 @@ In a `catch`, `explainError(error)` gives `{ code, userMessage, details }` for a
 | `WEAK_SERVER_KEY` | — | The server key must be at least 32 bytes. |
 | `SPLIT_INVALID_INPUT` | — | The split's input rows are invalid. |
 | `SPLIT_MISSING_BEARS` | — | The Transfer logs account for undefined bears but undefined exist at block undefined. Check fromBlock and the RPC's log range. |
+| `SPLIT_OWNER_MISMATCH` | — | The Transfer logs give bear #undefined to undefined, but its owner at block undefined is undefined. A log is missing; check the RPC's log range. |
 | `SPLIT_GAS_BUDGET` | — | Reading bear #undefined alone does not fit the gas budget of undefined. |
 | `UNKNOWN_DEPLOYMENT` | — | No MintABear deployment is recorded for chain undefined. |
 | `UNKNOWN_REVERT` | — | The contract refused the transaction. |

@@ -40,7 +40,8 @@ export interface EventsModeArgs {
 /**
  * Each bear's owner at the closing block, from the collection's indexed `Transfer` events: the
  * last recipient of each id. `ConsecutiveTransfer` (ERC-2309) is applied too, though SeaDrop's
- * mint path does not emit it. No `ownerOf` walk, so the cost does not grow with mint batches.
+ * mint path does not emit it. No `ownerOf` walk, so collecting owners does not grow with mint
+ * batches; {@link rowsFromEvents} then checks each one against `ownerOf`.
  *
  * @param client - A viem public client.
  * @param bears - The collection's address.
@@ -72,7 +73,8 @@ export async function ownersFromTransferLogs(
 
 /**
  * Split inputs, mode (a): owners from `Transfer` events up to the closing block, weights from
- * `weightOf` at that block — only for ids that have an owner. `weightOf` answers 100 for an id
+ * `weightOf` at that block — only for ids that have an owner. Each owner from the logs is checked
+ * against `ownerOf` at the closing block, so a log the RPC dropped cannot pay a previous holder. `weightOf` answers 100 for an id
  * never minted, so summing it over the whole 1..4,444 range before sell-out would count phantom
  * bears. Needs an archive node for reads at a past block.
  *
@@ -81,7 +83,9 @@ export async function ownersFromTransferLogs(
  * @param a - The deployment block, the closing block, and paging.
  * @returns One row per owned bear, ascending by id.
  * @throws {ClientRefusal} `SPLIT_MISSING_BEARS` unless the owners found equal `totalSupply` at the
- *   closing block — a late `fromBlock` or a truncated log read would otherwise drop bears silently.
+ *   closing block — a late `fromBlock` or a truncated log read would otherwise drop bears silently;
+ *   `SPLIT_OWNER_MISMATCH` when a bear's last recipient in the logs is not its `ownerOf` at the
+ *   closing block — a dropped resale log would otherwise pay the seller.
  */
 export async function rowsFromEvents(
   client: Client,
@@ -102,12 +106,23 @@ export async function rowsFromEvents(
   const concurrency = a.concurrency ?? 50;
   for (let i = 0; i < ids.length; i += concurrency) {
     const batch = ids.slice(i, i + concurrency);
-    const weights = await Promise.all(
-      batch.map((id) =>
-        client.readContract({ address: c.activation, abi: activationAbi, functionName: "weightOf", args: [id], blockNumber: a.closingBlock }),
+    const [weights, onChain] = await Promise.all([
+      Promise.all(
+        batch.map((id) =>
+          client.readContract({ address: c.activation, abi: activationAbi, functionName: "weightOf", args: [id], blockNumber: a.closingBlock }),
+        ),
       ),
-    );
-    batch.forEach((id, j) => rows.push({ tokenId: id, owner: owners.get(id)!, weight: weights[j]! }));
+      Promise.all(
+        batch.map((id) => client.readContract({ address: c.bears, abi: mintABearAbi, functionName: "ownerOf", args: [id], blockNumber: a.closingBlock })),
+      ),
+    ]);
+    batch.forEach((id, j) => {
+      const fromLogs = owners.get(id)!;
+      if (fromLogs.toLowerCase() !== onChain[j]!.toLowerCase()) {
+        throw new ClientRefusal("SPLIT_OWNER_MISMATCH", { tokenId: id, fromLogs, onChain: onChain[j], closingBlock: a.closingBlock });
+      }
+      rows.push({ tokenId: id, owner: fromLogs, weight: weights[j]! });
+    });
   }
   return rows;
 }

@@ -193,6 +193,8 @@ computeSplit
 inputs at a closing block
 ├── events mode: owners from Transfer logs (paged by block range), weights from weightOf
 ├── events mode missing bears (fromBlock after the first mint): refused against totalSupply
+├── events mode with a resale log dropped by the RPC: every bear present, but the owner from the
+│   logs is not ownerOf at the closing block: SPLIT_OWNER_MISMATCH (audit L-03)
 ├── snapshot mode over exactly 1..4,444, paged by gas, ownerless ids dropped: the same rows
 ├── both modes give the same split: 393,939 / 363,636 / 121,212 / 121,212, 825 eligible, 1 carried
 ├── weightOf answers 100 for an unminted id; events mode never reads one

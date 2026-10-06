@@ -3,7 +3,8 @@ import { execFile } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
-import { encodeFunctionData, type Address } from "viem";
+import { createPublicClient, custom, encodeFunctionData, pad, toHex, zeroAddress, type Address } from "viem";
+import { foundry } from "viem/chains";
 
 import {
   activationAbi,
@@ -158,6 +159,29 @@ describe("split inputs on chain", () => {
        When the inputs are read in events mode
        Then it throws, naming the owned count against totalSupply at the closing block, instead of dropping those bears */
     await expect(rowsFromEvents(f.publicClient, c(), { fromBlock: closingBlock - 2n, closingBlock })).rejects.toMatchObject({ code: "SPLIT_MISSING_BEARS", details: { owned: 0, totalSupply: 8n } });
+  });
+
+  it("refuses events-mode inputs whose RPC dropped a resale log, rather than pay the seller", async () => {
+    /* Scenario:
+       Given an RPC that returns every mint but silently drops the Transfer of bear 7 from carol to a contract
+       When the inputs are read in events mode
+       Then every bear is still present, but it throws SPLIT_OWNER_MISMATCH naming bear 7, carol from the logs and the contract on chain */
+    const bear7 = pad(toHex(7n));
+    const fromNonZero = (topic: string | undefined) => topic !== undefined && topic !== pad(zeroAddress);
+    const dropping = createPublicClient({
+      chain: foundry,
+      transport: custom({
+        async request({ method, params }) {
+          const result = await f.publicClient.request({ method, params } as never);
+          if (method !== "eth_getLogs") return result;
+          return (result as { topics: string[] }[]).filter((log) => !(log.topics[3] === bear7 && fromNonZero(log.topics[1])));
+        },
+      }),
+    });
+    await expect(rowsFromEvents(dropping, c(), { fromBlock, closingBlock })).rejects.toMatchObject({
+      code: "SPLIT_OWNER_MISMATCH",
+      details: { tokenId: 7n, fromLogs: accounts.carol.address, onChain: contractHolder() },
+    });
   });
 
   it("reads the same rows from snapshot, paged, and drops ids never minted", async () => {
