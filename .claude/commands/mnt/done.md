@@ -22,7 +22,8 @@ ids in anything committed there, nothing private there.
    justification in the code or a Defect issue with a `Reproduce` section — never silence);
    `bash script/verify.sh 46630 --dry-run --broadcast-dir test/fixtures/broadcast` diffed
    against `test/fixtures/verify-dry-run.expected`, and `bash test/verify.test.sh`. Then the
-   client, after `forge build`: `pnpm run check` in `../NFT/packages/contracts-client`
+   client, after a fresh `forge build` (Slither's compile leaves `out/` without the test and
+   script artifacts, and `gen:abi` then fails on `SeaDrop.json`): `pnpm run check` in `../NFT/packages/contracts-client`
    (ABI drift, typecheck, build, vitest). A dependency change also re-runs the Dockerfiles'
    frozen installs and MINT's apps' tests (CLAUDE.md, "Two repositories").
    Every Scenario in the Task's `Done when` has a test carrying it in its `/* Scenario: */`

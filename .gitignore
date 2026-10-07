@@ -1,15 +1,4 @@
-# Compiler files
-cache/
-out/
-
-# Ignores development broadcast logs
-!/broadcast
-/broadcast/*/31337/
-/broadcast/**/dry-run/
-
-# Docs — ignore only `forge doc` output, not hand-written documents.
-# The default template ignores all of docs/, which silently swallowed HANDOVER.md
-# and the client questionnaires.
+# Docs — ignore only generated book output, not hand-written documents.
 docs/book/
 docs/src/
 
@@ -21,10 +10,3 @@ __pycache__/
 
 # macOS Finder metadata
 .DS_Store
-
-# Whitelist CSVs written by script/WhitelistExport.s.sol — regenerated from the chain, never committed
-exports/
-
-# The TypeScript client library (packages/contracts-client): dependencies and build output
-node_modules/
-packages/contracts-client/dist/

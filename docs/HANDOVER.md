@@ -1,24 +1,25 @@
 # MintABear — handover
 
-Written 2026-09-15, current as of 2026-10-06. Read this first when resuming.
+Written 2026-09-15, current as of 2026-10-07. Read this first when resuming.
 
 ## Where things stand
 
 **The code now lives in MINT's repository, `~/trees/NFT` (`github.com/mintdotio/NFT`)**, as
 `packages/contracts` (Foundry) and `packages/contracts-client`. This repository is the private
 workspace: the spec, the board tooling, the `/mnt:*` commands and these docs. Start sessions here
-with `../NFT` added (CLAUDE.md, "Two repositories", has the rules). The port went in as two
-local branches in NFT, neither pushed yet (2026-10-07):
-- **PR A, `feat/contracts`**: the contracts and the client, with the client kept outside the pnpm
-  workspace, so `pnpm-lock.yaml` and every Railway-watched path are untouched. This is the code
-  integration branch Task branches come off.
-- **PR B, `feat/contracts-client-workspace`** (on top of A): the client joins the workspace. The
-  regenerated lockfile re-resolves four transitive versions in MINT's wallet stack (debug, `@noble/curves`,
-  the optional `zod` peer of abitype and viem); no direct dependency changes. Lorenzo decides
-  when it merges.
+with `../NFT` added (CLAUDE.md, "Two repositories", has the rules). The port is in two PRs:
+- **PR A, `feat/contracts`**: merged into `release/1.1` as mintdotio/NFT#12 (2026-10-07). It holds
+  the contracts and the client, with the client kept outside the pnpm workspace, so `pnpm-lock.yaml`
+  and every Railway-watched path are untouched; Railway therefore built nothing for it, and the
+  first build that clones the repository with its submodules is the next change under a watched
+  path. `feat/contracts` is the code integration branch Task branches come off.
+- **PR B, `feat/contracts-client-workspace`** (local, not pushed; to be rebased onto
+  `feat/contracts`): the client joins the workspace. The regenerated lockfile re-resolves four
+  transitive versions in MINT's wallet stack (debug, `@noble/curves`, the optional `zod` peer of
+  abitype and viem); no direct dependency changes. Lorenzo decides when it merges.
 
-Both target `release/1.1` (staging). `release/1.0` is production and is never touched. The code
-here stays until PR A is merged into `release/1.1`, then leaves this repository.
+`release/1.0` is production and is never touched. Nothing of the code remains in this
+repository, and its CI runs only the spec checks.
 
 **The specification lives in `openspec/`** (v2.6: the MINT–Calea calls of 21 and
 28 September 2026, MINT's replies of 28 and 29 September, the tranche-1 review of 23–24 September,
@@ -123,9 +124,9 @@ comment and logged time. The human merges `tranche-1` into `main`.
 | | |
 |---|---|
 | Contracts | `MintABear`, `Activation`; tranche 2 is `MysteryBox` (4663) and `PrizeDraw` (Arbitrum One). `WhitelistClaim` and `WhitelistImport` are built but not deployed (the whitelist is off-chain) |
-| Scripts | `Deploy.s.sol` (OPS-2), `verify.sh` (OPS-3), `Enforcement.s.sol` (OPS-6), `WhitelistExport.s.sol` (WL-4); `docs/RUNBOOK.md`: ownership handover, whitelist export and import, transfer enforcement, royalties, Activation |
-| Tests | 229 contract tests and 125 client tests, all passing; 100% line, branch and function coverage (gate ≥90 / ≥80); every tranche-1 work-item Scenario has a test except the operational OPS-1, OPS-3 (live), OPS-4, OPS-5 |
-| CI gates | `fmt --check`, `build --sizes` (no warnings), `test`, spec lint, generated prose, `verify.sh` dry run and verdict test — all green |
+| Scripts | `Deploy.s.sol` (OPS-2), `verify.sh` (OPS-3), `Enforcement.s.sol` (OPS-6), `WhitelistExport.s.sol` (WL-4); `packages/contracts/docs/RUNBOOK.md` in NFT: ownership handover, whitelist export and import, transfer enforcement, royalties, Activation |
+| Tests | 235 contract tests and 127 client tests, all passing; 100% line, branch and function coverage (gate ≥90 / ≥80); every tranche-1 work-item Scenario has a test except the operational OPS-1, OPS-3 (live), OPS-4, OPS-5 |
+| Gates | in NFT, run locally by `/mnt:done` (NFT has no CI): `fmt --check`, `build --sizes` (no warnings), `test`, coverage, Slither, `verify.sh` dry run and verdict test, the client check; here, in CI: spec lint and generated prose; the scenario-quote check — all green (2026-10-07) |
 | Slither | no High or Critical; 3 accepted Mediums, all `locked-ether` (below) |
 
 Requirements amended since v2.1, each through an archived OpenSpec change:
@@ -152,9 +153,9 @@ Submodule pins: `forge-std` `bf647bd` (v1.16.2), `seadrop` `757590f`, `solady` `
 (v0.1.26). The chain's contract size limit is ~96 KB; every contract clears even Ethereum's
 24,576.
 
-**The external security review of 6 October** (`audit/Mint-Security-Audit-Report.md` on the
-`audit/security-review` branch: no Critical, High or Medium; three Low, three Informational) is
-answered in `audit/Audit-Response.md`. Every finding is fixed on `tranche-1`, one Defect each,
+**The external security review of 6 October** (`packages/contracts/audit/Mint-Security-Audit-Report.md` in NFT,
+its links re-pointed there: no Critical, High or Medium; three Low, three Informational) is
+answered in `packages/contracts/audit/Audit-Response.md` beside it. Every finding is fixed on `tranche-1`, one Defect each,
 MNT-147 to MNT-152, all Done on the reviewer's word (2026-10-06). The one contract change is L-01 (spec change
 `act-two-step-ownership`): `Activation` is constructed owned by MINT's admin and paused, and
 ownership moves only by Solady's two-step handover. Its constructor is therefore
@@ -165,8 +166,8 @@ Agreed at the review, still to act on:
   ride with it.
 - After the whitelist stage (29 October), decide whether to remove `WhitelistClaim` and
   `WhitelistImport`, as one `NONE` Task, if MINT's off-chain register has worked.
-- When the contracts move to `mintdotio/NFT` (CQ-14), CLAUDE.md points to `docs/DESIGN.md` rather
-  than restating it.
+- CLAUDE.md is to point to NFT's `packages/contracts/docs/DESIGN.md` rather than restate it, now
+  that the contracts have moved (CQ-14).
 
 ## Next session — the whitelist CSV, then tranche 2
 
@@ -489,10 +490,10 @@ ids.
 
 - `openspec/specs/`, `openspec/decisions.md`, `openspec/changes/tranche-1/` — the specification and the tranche's pick order.
 - `docs/SPECIFICATION.md`, `docs/OPEN-QUESTIONS.md` (generated views), `docs/client/`, `docs/tools/build_client_doc.py`, `docs/tools/board.sh`.
-- `test/<Suite>.tree.md` — one branching tree per test suite, leaves citing requirement IDs, with
+- `packages/contracts/test/<Suite>.tree.md` in NFT — one branching tree per test suite, leaves citing requirement IDs, with
   the auditor's INV-N and Fork-N obligations numbered once across all trees.
-- `docs/RUNBOOK.md` — operating steps: the ownership handover (COL-10), the whitelist into Studio (WL-4), transfer enforcement (OPS-6), royalties (COL-6) and `Activation` — the read-back, the control check, the pause around rehearsals and switch-on, and the mint batch size (OPS-2, ACT-11).
-- `test/SeaDropIntegration.t.sol` and its tree — the boundary with OpenSea Studio.
+- `packages/contracts/docs/RUNBOOK.md` in NFT — operating steps: the ownership handover (COL-10), the whitelist into Studio (WL-4), transfer enforcement (OPS-6), royalties (COL-6) and `Activation` — the read-back, the control check, the pause around rehearsals and switch-on, and the mint batch size (OPS-2, ACT-11).
+- `packages/contracts/test/SeaDropIntegration.t.sol` in NFT and its tree — the boundary with OpenSea Studio.
 - `docs/MintABear-Questionnaire-v2.0.docx` — the client questionnaire the original build answered.
 - `~/.claude/plans/i-am-starting-a-tidy-sloth.md` — the original decision log, item by item.
 - `~/.claude/plans/mutable-sparking-candy.md` — the re-specification session: fact base,

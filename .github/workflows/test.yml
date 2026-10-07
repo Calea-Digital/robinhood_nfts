@@ -7,12 +7,13 @@ on:
   pull_request:
   workflow_dispatch:
 
-env:
-  FOUNDRY_PROFILE: ci
-
 jobs:
-  check:
-    name: Foundry project
+  # The specification lives in openspec/; the prose documents under docs/ carry generated blocks
+  # between markers. Both gates run from the copies installed in docs/tools/spec_tools/, so they
+  # need nothing outside this repository. The code and its gates are in mintdotio/NFT. See
+  # CLAUDE.md, "Specification and board".
+  spec:
+    name: Specification
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -20,91 +21,8 @@ jobs:
       - uses: actions/checkout@v5
         with:
           persist-credentials: false
-          submodules: recursive
 
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          # Pinned so a toolchain release cannot change a green build (MNT-153).
-          version: v1.8.3
-
-      - name: Show Forge version
-        run: forge --version
-
-      - name: Run Forge fmt
-        run: forge fmt --check
-
-      - name: Run Forge build
-        run: forge build --sizes
-
-      - name: Run Forge tests
-        run: forge test -vvv
-
-      # The specification lives in openspec/; the prose documents under docs/
-      # carry generated blocks between markers. Both gates run from the copies
-      # installed in docs/tools/spec_tools/, so they need nothing outside this
-      # repository. See CLAUDE.md, "Specification and board".
-      - name: Spec — generated prose is current and lint is clean
+      - name: Generated prose is current and lint is clean
         run: |
           python3 docs/tools/spec_tools/lint_spec.py --root .
           python3 docs/tools/spec_tools/render_calea_prose.py --root . --check
-
-      # script/verify.sh (OPS-3) reads Deploy.s.sol broadcasts; its dry run over a fixture must
-      # list every created contract with its source path. No network is touched.
-      - name: Verification script — dry run over the fixture broadcast
-        run: |
-          bash script/verify.sh 46630 --dry-run --broadcast-dir test/fixtures/broadcast \
-            | diff - test/fixtures/verify-dry-run.expected
-
-      # Its verdict — verified, MISSING, nothing created — against Sourcify answers recorded under
-      # test/fixtures/sourcify/, read through a file:// SOURCIFY_URL. No network is touched.
-      - name: Verification script — verdict over recorded answers
-        run: bash test/verify.test.sh
-
-  # DEL-6: the TypeScript client library. Its ABIs are generated from the Forge build and checked
-  # in, so the drift check fails when a contract's interface changes without them; its tests run
-  # against anvil with the contracts deployed from out/.
-  contracts-client:
-    name: Client library
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    defaults:
-      run:
-        working-directory: packages/contracts-client
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          persist-credentials: false
-          submodules: recursive
-
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          # Pinned so a toolchain release cannot change a green build (MNT-153).
-          version: v1.8.3
-
-      - name: Run Forge build
-        working-directory: .
-        run: forge build
-
-      - uses: actions/setup-node@v5
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: packages/contracts-client/package-lock.json
-
-      - name: Install
-        run: npm ci --ignore-scripts
-
-      - name: ABIs match the Forge build
-        run: npm run check:abi
-
-      - name: Typecheck
-        run: npm run typecheck
-
-      - name: Build
-        run: npm run build
-
-      - name: Test
-        run: npm test
