@@ -4,6 +4,22 @@ Written 2026-09-15, current as of 2026-10-06. Read this first when resuming.
 
 ## Where things stand
 
+**The code now lives in MINT's repository, `~/trees/NFT` (`github.com/mintdotio/NFT`)**, as
+`packages/contracts` (Foundry) and `packages/contracts-client`. This repository is the private
+workspace: the spec, the board tooling, the `/mnt:*` commands and these docs. Start sessions here
+with `../NFT` added (CLAUDE.md, "Two repositories", has the rules). The port went in as two
+local branches in NFT, neither pushed yet (2026-10-07):
+- **PR A, `feat/contracts`**: the contracts and the client, with the client kept outside the pnpm
+  workspace, so `pnpm-lock.yaml` and every Railway-watched path are untouched. This is the code
+  integration branch Task branches come off.
+- **PR B, `feat/contracts-client-workspace`** (on top of A): the client joins the workspace. The
+  regenerated lockfile re-resolves four transitive versions in MINT's wallet stack (debug, `@noble/curves`,
+  the optional `zod` peer of abitype and viem); no direct dependency changes. Lorenzo decides
+  when it merges.
+
+Both target `release/1.1` (staging). `release/1.0` is production and is never touched. The code
+here stays until PR A is merged into `release/1.1`, then leaves this repository.
+
 **The specification lives in `openspec/`** (v2.6: the MINT–Calea calls of 21 and
 28 September 2026, MINT's replies of 28 and 29 September, the tranche-1 review of 23–24 September,
 and the readability pass of 29 September):

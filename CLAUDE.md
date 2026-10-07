@@ -8,6 +8,23 @@ MintABear — a 4,444-supply free-mint NFT collection on **Robinhood Chain (chai
 
 Start any session by reading `docs/HANDOVER.md` — it carries current state, what is done, what is next, and the open questions waiting on the client.
 
+## Two repositories
+
+**This repository is the private workspace; the code lives in MINT's repository.** Start sessions here, with `~/trees/NFT` added as a working directory (`claude --add-dir ../NFT`, or `/add-dir`).
+
+| | Here (`~/trees/robinhood_nfts`, Calea-Digital, private) | `../NFT` (`github.com/mintdotio/NFT`, MINT's) |
+|---|---|---|
+| Holds | `openspec/`, `docs/` (specification, handover, prompts, client documents, `tools/`), `reports/`, `.claude/` (the `/mnt:*` and `/opsx:*` commands), this file | `packages/contracts` (Foundry: `src/`, `test/`, `script/`, `lib/` submodules, `docs/RUNBOOK.md`, `docs/DESIGN.md`, `audit/`) and `packages/contracts-client` (TypeScript, pnpm), beside MINT's own apps |
+| Branches | spec work on this repo's branches; `tasks.md` ticks land here | Task branches `mnt/<spec-ref>` off the code integration branch (**`feat/contracts`**); PRs go into **`release/1.1`** (staging) only |
+| Visible to MINT | never | everything |
+
+Rules for `../NFT` (its `AGENTS.md` applies too: pnpm only, one root lockfile, MINT is uppercase):
+- **Never touch `release/1.0`** (production) **or `main`.** Commit, push and open PRs only when the person asks; a PR targets `release/1.1`, and merging it redeploys staging when it changes a Railway-watched path (`apps/mintabear/**`, `apps/whitelist-api/**`, `packages/whitelist-core/**`, `pnpm-lock.yaml`).
+- **Nothing private goes there:** no openspec, HANDOVER, reports, prompts, board, YouTrack links, `.claude/`, nor references to them in code, comments or docs.
+- **No `MNT-n` ids in its commits, PRs, code or docs.** MINT's own tracker uses the MNT key too (their commits read "MNT-852"); ours would collide. Requirement ids (`ACT-12`, `WL-4`) and `CQ-n` are fine: MINT has them in the specification document.
+- Commit messages follow its style: one plain imperative sentence, no prefix, plus the co-author trailer.
+- A dependency change re-resolves transitive versions in MINT's apps' wallet stack (the lockfile's peer resolution is unstable): list them in the PR, and prove the Docker installs (`pnpm install --frozen-lockfile --filter …` as each Dockerfile runs it) and the apps' tests.
+
 ## Specification and board
 
 **The specification lives in `openspec/`**, in the calea-house OpenSpec format: `openspec/specs/<family>/spec.md` (one file per family — `collection` COL, `whitelist` WL, `activation` ACT, `mystery-box` RAF, `operations` OPS, `deliverables` DEL), `openspec/decisions.md` (the `CQ-n` register) and `openspec/config.yaml` (`spec_version`). Every requirement carries `**Kind:**` (work-item, acceptance-standard, commercial or informative) and one `#### Scenario:` — the Scenario is the requirement's definition of done and the text a unit test's `/* Scenario: */` block quotes. A MODIFIED delta must repeat the Kind line; `openspec archive` drops it otherwise.
@@ -18,11 +35,11 @@ Start any session by reading `docs/HANDOVER.md` — it carries current state, wh
 
 **Who writes what on the board.** The bridge owns summary, body (statement, `Done when`, `Gates`), Type, Work Kind, Spec Ref, parent Milestone, tranche tags, decision State and Due Date, and gating links. Claude owns a requirement Task's State from Open to In Review, the claim comment, the `MNT Claude` tag, Spent time, Subtasks (only when a step has another owner), Defects (Work Kind Defect, Spec Ref = the violated requirement or `NONE`, body with `Reproduce` / `Expected` / `Observed`) and `NONE` Tasks for non-spec work. The human owns Done and Canceled, Priority, Estimation, Assignee, and picks DEL and OPS-1/5 work. Nobody targets project KNI; Claude deletes nothing.
 
-**The work loop.** The active OpenSpec change is `openspec/changes/tranche-1/`; its `tasks.md` is the pick order, one requirement id per line. `/mnt:next` takes the first unticked id, confirms the Task is Open and not hard-gated (a `depends on` link to a decision in State Open), claims it comment-first (`Claim <nonce> …` with the plan as a checklist; the earliest claim wins, the loser yields), sets In Progress, tags `MNT Claude`, branches `mnt/<spec-ref>` and works. Work happens on `mnt/<spec-ref>` branched off the integration branch `tranche-1`; `/mnt:done` runs the Task's Gates — `forge fmt --check`, warning-free `forge build --sizes`, `forge test`, the coverage gate, `slither . --exclude-dependencies` with no new High or Critical — runs a `differential-review:diff-review` self-review on value- or role-touching changes, merges the Task branch back into `tranche-1` with `--no-ff`, ticks `tasks.md`, sets In Review, comments a summary and logs time; a human sets Done and merges `tranche-1` into `main`. The skills per step are the ai-stack web3 manual's W7: `openzeppelin-skills:develop-secure-contracts` for OpenZeppelin patterns (SeaDrop and Solady win where they differ), `evm-internals` for storage and gas; never `fizz`, invariants or fuzz harnesses. `/mnt:resume` finds the live claim (a Task In Progress with no claim comment is a human's; a claim older than 24 h with no commits is released). A spec edit goes through `/opsx:propose` → lint → `/opsx:archive` (then fold the decisions delta into `openspec/decisions.md` and any REMOVED id into `## Retired Requirements` by hand) → commit → `/mnt:board`. New command names need a Claude Code restart before first use.
+**The work loop.** The active OpenSpec change is `openspec/changes/tranche-1/`; its `tasks.md` is the pick order, one requirement id per line. `/mnt:next` takes the first unticked id, confirms the Task is Open and not hard-gated (a `depends on` link to a decision in State Open), claims it comment-first (`Claim <nonce> …` with the plan as a checklist; the earliest claim wins, the loser yields), sets In Progress, tags `MNT Claude`, branches `mnt/<spec-ref>` in `../NFT` and works. Code work happens on `mnt/<spec-ref>` branched off the code integration branch `feat/contracts` in `../NFT`; `/mnt:done` runs the Task's Gates — in `../NFT/packages/contracts`: `forge fmt --check`, warning-free `forge build --sizes`, `forge test`, the coverage gate, `slither . --exclude-dependencies` with no new High or Critical, `verify.sh`'s dry run and `test/verify.test.sh`; the client's `pnpm --filter @mint/contracts-client check`; and `python3 docs/tools/check_scenario_quotes.py` here — runs a `differential-review:diff-review` self-review on value- or role-touching changes, merges the Task branch back into `feat/contracts` with `--no-ff`, ticks `tasks.md` here, sets In Review, comments a summary and logs time; `/mnt:review` takes the person through each In Review Task and sets Done only on their word; a PR into `release/1.1` is the person's step. The skills per step are the ai-stack web3 manual's W7: `openzeppelin-skills:develop-secure-contracts` for OpenZeppelin patterns (SeaDrop and Solady win where they differ), `evm-internals` for storage and gas; never `fizz`, invariants or fuzz harnesses. `/mnt:resume` finds the live claim (a Task In Progress with no claim comment is a human's; a claim older than 24 h with no commits is released). A spec edit goes through `/opsx:propose` → lint → `/opsx:archive` (then fold the decisions delta into `openspec/decisions.md` and any REMOVED id into `## Retired Requirements` by hand) → commit → `/mnt:board`. New command names need a Claude Code restart before first use.
 
 ## Architecture
 
-The specification (v2.6) calls for these contracts. On 4663: `MintABear`, `Activation` and, in tranche 2, `MysteryBox`. The whitelist is off-chain in MINT's backend (WL-8, spec v2.5): `WhitelistClaim` and `WhitelistImport` are built but not deployed. On Arbitrum One: `PrizeDraw`. No contract goes on a prize chain. The collection never calls the activation contract; the dependency runs one way only. What is on `tranche-1` today:
+The specification (v2.6) calls for these contracts. On 4663: `MintABear`, `Activation` and, in tranche 2, `MysteryBox`. The whitelist is off-chain in MINT's backend (WL-8, spec v2.5): `WhitelistClaim` and `WhitelistImport` are built but not deployed. On Arbitrum One: `PrizeDraw`. No contract goes on a prize chain. The collection never calls the activation contract; the dependency runs one way only. What is in `../NFT/packages/contracts` today (paths below are relative to it, except the client's):
 
 | File | Base | Role |
 |---|---|---|
@@ -36,7 +53,7 @@ The specification (v2.6) calls for these contracts. On 4663: `MintABear`, `Activ
 | `script/verify.sh` | bash, `jq`, `curl` | OPS-3: Sourcify verification and check of every contract a `Deploy.s.sol` broadcast created; dry run checked in CI against `test/fixtures/broadcast`, and its verdict by `test/verify.test.sh` against recorded Sourcify answers; refuses a broadcast set that created nothing |
 | `script/Enforcement.s.sol` | forge-std `Script` | OPS-6: `status`, `disable`, `enable` (one `setTransferValidator` call each, refusing a no-op) and `safeTransaction` for a Safe admin; the operator's steps are `docs/RUNBOOK.md`, "Transfer enforcement" |
 | `script/WhitelistExport.s.sol` | forge-std `Script` | read-only: `compare` must check Studio's root against MINT's final CSV (WL-4) — the CSV mode is `tasks.md` 2.6; today it reads either registry: `export` writes the claimant CSV for Studio; `compare` fails unless the allowlist root on SeaDrop is the root of the registry's rows (tree in `script/lib/AllowListTree.sol`); both refuse while the list can still change (`CampaignStillOpen`) — for `WhitelistClaim` until the window closes or the spots sell out, for `WhitelistImport` until `frozen()` |
-| `packages/contracts-client/` | TypeScript, viem 2 | DEL-6: the typed client over the tranche-1 ABIs for getminted.io. `createMintABearClient` is the facade (`mint`, `whitelist`, `bears`, `events`, `split`, `units`) over exported functions; every error is a `MintABearError` with a stable `code` and a holder-facing `userMessage` (`explainError`), plans return `{ ok: false, code, userMessage }`; `examples/` is the usage layer (one flow per file, through the package name) and `test/` the verification suite. SeaDrop mint with the allowlist tree (mirrors `AllowListTree.sol`, pinned against merkletreejs 0.2.32), whitelist claim and the voucher backend's rules (`/backend`) — for the undeployed registries; the whitelist's mint reads get a CSV path in `tasks.md` 6.2 — burn, guarded transfers, reads, emitter-scoped events and a reference indexer, and the royalty split (`bin/split.ts`). `src/abi/` is generated from `out/` (`npm run gen:abi`) and CI fails on drift. Tests run against anvil with the contracts deployed from `out/`; `test/mocks/MockOzMNTD.sol` exists for them. It moves unchanged into MINT's repository as `packages/contracts-client`, beside `packages/contracts` (CQ-14: `github.com/mintdotio/NFT`) |
+| `../NFT/packages/contracts-client/` (`@mint/contracts-client`) | TypeScript, viem 2, vitest | DEL-6: the typed client over the tranche-1 ABIs for getminted.io. `createMintABearClient` is the facade (`mint`, `whitelist`, `bears`, `events`, `split`, `units`) over exported functions; every error is a `MintABearError` with a stable `code` and a holder-facing `userMessage` (`explainError`), plans return `{ ok: false, code, userMessage }`; `examples/` is the usage layer (one flow per file, through the package name) and `test/` the verification suite. SeaDrop mint with the allowlist tree (mirrors `AllowListTree.sol`, pinned against merkletreejs 0.2.32), whitelist claim and the voucher backend's rules (`/backend`) — for the undeployed registries; the whitelist's mint reads get a CSV path in `tasks.md` 6.2 — burn, guarded transfers, reads, emitter-scoped events and a reference indexer, and the royalty split (`bin/split.ts`). `src/abi/` is generated from `../contracts/out` (`pnpm run gen:abi`) and `check:abi` fails on drift. Tests run against anvil with the contracts deployed from `../contracts/out`; `test/mocks/MockOzMNTD.sol` exists for them. It lives in MINT's repository (CQ-14) beside `packages/contracts`, outside the pnpm workspace until PR B (`feat/contracts-client-workspace`) adds it |
 
 **The transfer counter is the load-bearing idea (COL-3, COL-4).** `MintABear` increments `transferNonce[tokenId]` on every transfer and never on mint, and emits `TransferNonceAdvanced(tokenId, nonce)` in the same transaction as `Transfer`. `Activation` stores a level alongside the counter value it was recorded at, and treats it as void once the counter moves. The reset is therefore a consequence of the transfer rather than an action that must succeed — it cannot be skipped, and a defect in `Activation` cannot block a transfer. Do not replace this with a callback from the token; that pattern fails open. Indexers key the reset on `TransferNonceAdvanced`.
 
@@ -60,20 +77,25 @@ The specification (v2.6) calls for these contracts. On 4663: `MintABear`, `Activ
 
 ## Commands
 
+Run the Foundry commands in `../NFT/packages/contracts` (or pass `--root ../NFT/packages/contracts`).
+
 ```shell
-forge build --sizes        # compile + size report (what CI runs)
+forge build --sizes        # compile + size report
 forge test                 # full suite
 forge fmt --check          # format gate — run before pushing
 forge coverage --no-match-coverage 'test/|lib/'
 slither . --exclude-dependencies
 ```
 
-The client library (`packages/contracts-client`, after `forge build`):
+The client library (`../NFT/packages/contracts-client`, after `forge build`), run in its directory:
 
 ```shell
-npm ci && npm run check:abi && npm run typecheck && npm run build && npm test
-npm run gen:abi            # after any contract interface change; commit src/abi/
+pnpm install --ignore-workspace --no-lockfile   # until PR B; afterwards `pnpm install` at ../NFT
+pnpm run check             # check:abi, typecheck, build, vitest
+pnpm run gen:abi           # after any contract interface change; commit src/abi/
 ```
+
+The scenario-quote check, from here: `python3 docs/tools/check_scenario_quotes.py` (reads `../NFT/packages`; `--code-root` to override).
 
 The coverage filter `'test/|lib/'` also hides `script/lib/`; `forge coverage --no-match-coverage '^(test|lib)/'` shows `AllowListTree` as well.
 
@@ -105,11 +127,11 @@ forge test --match-contract MintABearCreatorTokenTest
 forge test --match-test test_transfer_emitsTheResetEvent_withALevel -vvvv
 ```
 
-Reproduce a CI run locally: `FOUNDRY_PROFILE=ci forge test`.
+The CI profile's fuzz and invariant runs: `FOUNDRY_PROFILE=ci forge test`.
 
 ## Setup
 
-Three submodules: `lib/forge-std`, `lib/seadrop`, `lib/solady`. After a fresh clone run `git submodule update --init --recursive`. SeaDrop carries its own nested libs (ERC721A, OpenZeppelin, solmate, utility-contracts), which the remappings in `foundry.toml` point into — do not install those separately.
+Three submodules in `../NFT`: `packages/contracts/lib/{forge-std,seadrop,solady}`, pinned. After a fresh clone of `../NFT` run `git submodule update --init --recursive` there. SeaDrop carries its own nested libs (ERC721A, OpenZeppelin, solmate, utility-contracts), which the remappings in `foundry.toml` point into — do not install those separately.
 
 ## Configuration notes
 
@@ -130,6 +152,6 @@ Developer scope is **deterministic unit tests only**, with a BTT tree per contra
 
 Write specs and docs as **final state, not changelog** — no "was X, now Y" in body prose.
 
-## CI gates
+## Gates
 
-Push and PR run `forge fmt --check`, `forge build --sizes`, `forge test -vvv` (under `FOUNDRY_PROFILE=ci`), the spec lint and the generated-prose check, then `script/verify.sh`'s dry run over `test/fixtures/broadcast` diffed against `test/fixtures/verify-dry-run.expected`, and `test/verify.test.sh` over the recorded Sourcify answers. A second job, "Client library", runs `forge build`, then in `packages/contracts-client` `npm ci`, the ABI drift check, typecheck, build and the vitest suite against anvil. All must pass.
+`../NFT` has no CI, by decision: the gates run locally through `/mnt:done` (listed under "The work loop") and are re-run by `/mnt:review`. This repository's CI runs the spec lint and the generated-prose check. All must pass before a PR into `release/1.1`.

@@ -3,17 +3,26 @@
 
 A test whose `/* Scenario:` block opens `Scenario: <ID> — <title>` must repeat the Scenario's title
 and every GIVEN / WHEN / THEN / AND line of `<ID>` in `openspec/specs/*/spec.md` (whitespace,
-backticks and emphasis ignored), in the Solidity tests under `test/` and the client library's
-TypeScript tests under `packages/*/test/`; every other test opens a bare `Scenario:` (CLAUDE.md, "Test
-conventions"). Prints the count of quoting blocks and every block that does not quote, and exits 1
-if there is one.
+backticks and emphasis ignored), in the code repository's Solidity tests (`contracts/test/`) and the
+client library's TypeScript tests (`contracts-client/test/` and `examples/`); every other test opens
+a bare `Scenario:` (CLAUDE.md, "Test conventions"). Prints the count of quoting blocks and every
+block that does not quote, and exits 1 if there is one.
 
-Usage (from the repository root):  python3 docs/tools/check_scenario_quotes.py
+Usage (from this repository's root):
+    python3 docs/tools/check_scenario_quotes.py [--code-root ../NFT/packages]
 """
+import argparse
 import collections
 import glob
+import os
 import re
 import sys
+
+ap = argparse.ArgumentParser()
+ap.add_argument("--code-root", default="../NFT/packages", help="the code repository's packages/ directory")
+code = ap.parse_args().code_root
+if not os.path.isdir(os.path.join(code, "contracts", "test")):
+    sys.exit(f"no contracts/test under {code}: pass --code-root")
 
 
 def norm(s: str) -> str:
@@ -33,8 +42,10 @@ for path in glob.glob("openspec/specs/*/spec.md"):
 
 bad = collections.defaultdict(list)
 good = collections.Counter()
-paths = [p for p in glob.glob("test/**/*.sol", recursive=True) if not p.startswith("test/fixtures")]
-paths += glob.glob("packages/*/test/**/*.ts", recursive=True)  # the client library (DEL-6)
+tests = os.path.join(code, "contracts", "test")
+paths = [p for p in glob.glob(f"{tests}/**/*.sol", recursive=True) if not p.startswith(os.path.join(tests, "fixtures"))]
+for sub in ("test", "examples"):  # the client library (DEL-6)
+    paths += glob.glob(os.path.join(code, "contracts-client", sub, "**", "*.ts"), recursive=True)
 for path in paths:
     text = open(path).read()
     for m in re.finditer(r"/\* Scenario: ([A-Z]+-\d+) — (.*?)\n(.*?)\*/", text, re.S):

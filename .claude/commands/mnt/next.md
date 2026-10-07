@@ -1,7 +1,7 @@
 ---
 name: "MNT: Next"
 description: "Pick the next requirement Task from the board, claim it, plan it in the claim comment, branch and start"
-allowed-tools: Bash(git:*), Bash(openspec:*), Bash(forge:*), mcp__claude_ai_YouTrack__search_issues, mcp__claude_ai_YouTrack__get_issue, mcp__claude_ai_YouTrack__get_issue_comments, mcp__claude_ai_YouTrack__add_issue_comment, mcp__claude_ai_YouTrack__update_issue, mcp__claude_ai_YouTrack__manage_issue_tags, mcp__claude_ai_YouTrack__create_issue, mcp__claude_ai_YouTrack__link_issues
+allowed-tools: Bash(git:*), Bash(forge:*), Bash(pnpm:*), Bash(slither:*), Bash(bash ../NFT/packages/contracts/script/verify.sh:*), Bash(bash ../NFT/packages/contracts/test/verify.test.sh:*), Bash(python3 docs/tools/check_scenario_quotes.py:*), Bash(openspec:*), mcp__claude_ai_YouTrack__search_issues, mcp__claude_ai_YouTrack__get_issue, mcp__claude_ai_YouTrack__get_issue_comments, mcp__claude_ai_YouTrack__add_issue_comment, mcp__claude_ai_YouTrack__update_issue, mcp__claude_ai_YouTrack__manage_issue_tags, mcp__claude_ai_YouTrack__create_issue, mcp__claude_ai_YouTrack__link_issues
 ---
 
 Pick up the next requirement from the MNT board and start it. The unit of work is a
@@ -11,7 +11,14 @@ requirement Task; the plan lives in the claim comment; Subtasks are the exceptio
 one change is active, ask which). Its unticked lines are the pick order, one requirement id
 per line. The first unticked id is the candidate. `$ARGUMENTS` may name an id instead.
 
-**Confirm on the board.** `search_issues` for `project: MNT Type: Task Work Kind: Feature`
+**A Defect line is a different issue.** A line that carries `(Defect MNT-n)` (e.g.
+`2.6 WL-4 — (Defect MNT-141) …`) is the fix for that Defect, not the requirement:
+the requirement's own Task is usually Done already. The candidate is the issue `MNT-n`
+itself — `get_issue` it directly, it must be `Work Kind: Defect` and `State: Open`, and every
+step below (gates, claim, branch, tick) applies to it, with the branch named
+`<ns>/<spec-ref>-<n>` so it never collides with the requirement's merged branch.
+
+**Confirm on the board** (a requirement line). `search_issues` for `project: MNT Type: Task Work Kind: Feature`
 and find the Task whose Spec Ref is the candidate (Spec Ref is a text field: match
 client-side, never by query). It must be `State: Open`. If it is In Progress with a claim
 comment, skip to the next id; if it is In Progress with no claim comment, a human has it —
@@ -34,11 +41,12 @@ comment: the earliest wins. If ours is not the earliest, post `Yielded <nonce>` 
 next id. If ours wins, `update_issue` State → **In Progress** and `manage_issue_tags` add
 `MNT Claude`. Assignee stays human-owned.
 
-**Branch and work.** The active change's name is the integration branch (`tranche-1`): create it
-from the default branch once if it does not exist, and branch each Task off it —
-`git switch <change> && git switch -c <ns>/<spec-ref>` — so a Task builds on the Tasks finished
-before it. The default branch is never touched by this loop; the human merges the integration
-branch. Read the
+**Branch and work.** The code is in `../NFT` (MINT's repository; CLAUDE.md "Two
+repositories"). Its code integration branch is named in CLAUDE.md (`feat/contracts`); branch
+each Task off it — `git -C ../NFT switch feat/contracts && git -C ../NFT switch -c
+<ns>/<spec-ref>` — so a Task builds on the Tasks finished before it. `release/1.0` and `main`
+are never touched by this loop; the human opens the PR into `release/1.1`. A branch name that
+already exists in either case gets a suffix (macOS is case-insensitive). Read the
 Task body: the statement, `Done when` (the spec's Scenario — the definition of done) and
 `Gates`; then the family's spec file under `openspec/specs/` for the neighbours it cites. Work
 per `CLAUDE.md` and the stack's web3 manual (W7): `[SKILL: openzeppelin-skills:develop-secure-contracts]`

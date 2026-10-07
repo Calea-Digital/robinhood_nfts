@@ -11,12 +11,12 @@ context: |
   PrizeDraw (Arbitrum One).
   Client engagement: yes — MINT (getminted.io); Calea / Rayco builds. Keep in sync with `engagement:` above.
   Conventions: deterministic unit tests only (fuzz and invariant harnesses are the internal auditor's), a BTT tree
-  per contract (test/<Contract>.tree.md), a /* Scenario: Given / When / Then */ block in every test, final-state prose.
+  per contract (packages/contracts/test/<Contract>.tree.md in mintdotio/NFT), a /* Scenario: Given / When / Then */ block in every test, final-state prose.
   Tracker: YouTrack project MNT through the ai-stack bridge (docs/tools/board.sh); the work loop is in CLAUDE.md.
 
 rules:
   specs:
-    - "Every Scenario must have a matching leaf in test/<Contract>.tree.md and a /* Scenario: */ block above the matching unit test."
+    - "Every Scenario must have a matching leaf in packages/contracts/test/<Contract>.tree.md (in mintdotio/NFT) and a /* Scenario: */ block above the matching unit test."
     - "A MODIFIED delta repeats the **Kind:** line; openspec archive drops it otherwise and the bridge then refuses the spec."
     - "Family prefixes in use (prefix → spec path): COL → specs/collection, WL → specs/whitelist, ACT → specs/activation, RAF → specs/mystery-box, OPS → specs/operations, DEL → specs/deliverables."
   decisions:
