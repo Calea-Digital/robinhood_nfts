@@ -32,19 +32,20 @@ ids in anything committed there, nothing private there.
    are the internal auditor's. If anything fails, fix it or stop and report — never mark done
    around a red gate.
 2. **Self-review** when the change moves value, checks ownership or gates a role: run the
-   `differential-review:diff-review` skill on `git diff <default branch>...HEAD` and, for
+   `differential-review:diff-review` skill on `git -C ../NFT diff feat/contracts...HEAD` and, for
    unit or decimal arithmetic, the `dimensional-analysis` validator read-only. Findings, or
    "none", go in the In Review comment; a real finding is fixed before In Review.
 3. **Commit** in `../NFT` on the `<ns>/<spec-ref>` branch, in NFT's style (one plain
-   imperative sentence; the Spec Ref may appear, an `MNT-n` id never), then merge it into the
-   code integration branch named in CLAUDE.md (`feat/contracts`) with
-   `git -C ../NFT switch feat/contracts && git -C ../NFT merge --no-ff <ns>/<spec-ref>`, so the
-   next Task builds on it (the merge commit is the Task boundary the reviewer reads). Never
-   touch `release/1.0` or `main`, never push and never open a PR unless asked.
+   imperative sentence; the Spec Ref may appear, an `MNT-n` id never). **Do not merge it**:
+   the branch merges into the code integration branch (`feat/contracts`) only when the person
+   accepts the Task in `/mnt:review`, so `feat/contracts` holds approved work only. Before
+   running the gates, bring the branch up to date with `feat/contracts` (`git merge
+   feat/contracts` on the Task branch) if it has moved. Never touch `release/1.0` or `main`,
+   never push and never open a PR unless asked.
 4. **Tick** the requirement's line in the active change's `tasks.md` here (`- [ ]` → `- [x]`)
-   and commit that here, naming the Spec Ref, the `MNT-n` and the NFT merge commit.
+   and commit that here, naming the Spec Ref, the `MNT-n`, the NFT branch and its head commit.
 5. **Board:** `update_issue` State → **In Review**. Post a summary comment (`In Review <nonce>` first): files changed,
-   tests added (names), Scenario ids covered, the NFT merge commit, anything left for the reviewer.
+   tests added (names), Scenario ids covered, the NFT branch and its head commit (not merged), anything left for the reviewer.
    `log_work` the time spent (type Development or Testing, whole minutes, honest).
 6. **Never set Done.** The human reviews and sets Done or Canceled. Never edit the bridge's
    fields (summary, body, Spec Ref, Work Kind, parent, tranche tags, decision State, Due Date).

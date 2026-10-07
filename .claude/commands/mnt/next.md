@@ -43,9 +43,13 @@ next id. If ours wins, `update_issue` State → **In Progress** and `manage_issu
 
 **Branch and work.** The code is in `../NFT` (MINT's repository; CLAUDE.md "Two
 repositories"). Its code integration branch is named in CLAUDE.md (`feat/contracts`); branch
-each Task off it — `git -C ../NFT switch feat/contracts && git -C ../NFT switch -c
-<ns>/<spec-ref>` — so a Task builds on the Tasks finished before it. `release/1.0` and `main`
-are never touched by this loop; the human opens the PR into `release/1.1`. A branch name that
+each Task off it, brought up to date first — `git -C ../NFT fetch origin && git -C ../NFT switch
+feat/contracts && git -C ../NFT merge --ff-only origin/feat/contracts && git -C ../NFT switch -c
+<ns>/<spec-ref>` — so a Task builds on the approved Tasks before it. `feat/contracts` holds
+approved work only: a Task that needs code from one still In Review branches off that Task's
+branch instead, and says so in the claim (it merges after it). `release/1.0` and `main` are
+never touched by this loop; the PR from `feat/contracts` into `release/1.1` is opened only on
+the person's word. A branch name that
 already exists in either case gets a suffix (macOS is case-insensitive). Read the
 Task body: the statement, `Done when` (the spec's Scenario — the definition of done) and
 `Gates`; then the family's spec file under `openspec/specs/` for the neighbours it cites. Work
