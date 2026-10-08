@@ -18,7 +18,7 @@ CQ-22 and CQ-23 are open.
 
 ## 3. Both
 
-- [ ] 3.1 RAF-34 — pause on both: the hub's `setPaused` blocks `open`, the draw's blocks `resolve` while words already requested are still applied; `PausedSet`; payout records and reads unaffected; `end` unmoved
+- [x] 3.1 RAF-34 — pause on both: the hub's `setPaused` blocks `open`, the draw's blocks `resolve` while words already requested are still applied; `PausedSet`; payout records and reads unaffected; `end` unmoved
 - [ ] 3.2 RAF-16 — events carry the documented arguments
 - [ ] 3.3 RAF-17 — every read answers; `odds(cycleId)`
 - [ ] 3.4 RAF-19 — every acceptance case has a deterministic test
