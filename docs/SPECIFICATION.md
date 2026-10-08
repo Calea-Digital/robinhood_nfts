@@ -75,7 +75,8 @@ before the page it serves goes live.
 - **Deployment** (§7): scripts, a testnet rehearsal, verified mainnet deployment, the runbook and
   the handover.
 - **Integration**: the TypeScript client library for getminted.io, review of the page's contract
-  calls, and delivery into `github.com/mintdotio/NFT` with CI (DEL-6, DEL-9, DEL-11).
+  calls, and delivery into `github.com/mintdotio/NFT`, gated by Calea before each pull request
+  (DEL-6, DEL-9, DEL-11).
 - **Support** until 19 November.
 
 ### 1.2 What Calea does not deliver
@@ -974,17 +975,19 @@ in the page.
 are built but not deployed.
 
 **DEL-9 Repository.** The contracts go into MINT's repository, `github.com/mintdotio/NFT`, as their own package beside
-the client library. CI there builds, formats and tests them, and Calea owns that CI (MINT, 28 and
-29 September 2026). The contracts go in as each tranche is accepted. The client library's mint
-and whitelist calls, and the whitelist check (WL-4), are needed before the whitelist stage.
+the client library (MINT, 28 and 29 September 2026). The repository has no CI for them: Calea
+builds, formats and tests them locally before every pull request into the staging branch, and
+again at review. The contracts go in as each tranche is accepted. The client library's mint and
+whitelist calls, and the whitelist check (WL-4), are needed before the whitelist stage.
 
 *Technical note.* `https://github.com/mintdotio/NFT`: `packages/contracts` (`@mint/contracts`)
 beside `packages/contracts-client`. `packages/contracts` is a Foundry package with a thin
 `package.json`, so `pnpm -r build|test|check` reach it, and its Foundry dependencies are git
-submodules that CI checks out. CI runs `forge fmt --check`, `forge build --sizes` and
-`forge test` (CQ-14).
+submodules. The local gates are `forge fmt --check`, `forge build --sizes` with no warning,
+`forge test`, the coverage gate and Slither, run before every pull request into `release/1.1`
+(CQ-14).
 
-*Acceptance.* When the contracts land in the monorepo; then `pnpm -r build|test|check` reach the Foundry package and CI runs the three forge gates.
+*Acceptance.* When the contracts land in the monorepo; then `pnpm -r build|test|check` reach the Foundry package and the forge gates pass locally before every pull request into the staging branch.
 
 **DEL-10 Commercial items for Rayco's agreement.** Listed so nothing is implied:
 - prize logic, the cycles and the win rule;

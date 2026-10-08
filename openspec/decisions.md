@@ -623,9 +623,9 @@ review work is the internal audit of the contracts it builds, and tranche 1's (`
 ### CQ-14 — Monorepo placement and CI
 - **Statement:** Monorepo and CI
 - **State:** resolved
-- **Status note:** MINT, 29 September 2026; repository named
+- **Status note:** MINT, 29 September 2026; repository named; no CI, 8 October 2026
 - **Section:** DEL
-- **Resolution:** the repository is `https://github.com/mintdotio/NFT`, with Calea's recommendation: `packages/contracts` as `@mint/contracts` beside `packages/contracts-client`, Foundry dependencies as git submodules, Calea owns CI.
+- **Resolution:** the repository is `https://github.com/mintdotio/NFT`, with Calea's layout: `packages/contracts` as `@mint/contracts` beside `packages/contracts-client`, Foundry dependencies as git submodules. Calea runs the gates locally before each pull request; the repository has no CI for the contracts.
 - **Summary:** `github.com/mintdotio/NFT`, with Calea's recommended layout
 - **Blocks:** DEL-9
 
@@ -647,6 +647,9 @@ and its client module.
 **Answer (MINT, 29 September 2026).** The repository is `https://github.com/mintdotio/NFT`. Calea has access.
 
 **Recorded as (29 September).** DEL-9 and DEL-11 name it.
+
+**Recorded as (8 October 2026).** No CI in the repository; Calea runs the gates locally before
+each PR (DEL-9).
 
 ### CQ-15
 - **Statement:** Royalty rate and receiver
