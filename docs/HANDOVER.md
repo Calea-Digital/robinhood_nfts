@@ -1,6 +1,6 @@
 # MintABear — handover
 
-Written 2026-09-15, current as of 2026-10-07. Read this first when resuming.
+Written 2026-09-15, current as of 2026-10-08. Read this first when resuming.
 
 ## Where things stand
 
@@ -169,62 +169,74 @@ Agreed at the review, still to act on:
 - CLAUDE.md is to point to NFT's `packages/contracts/docs/DESIGN.md` rather than restate it, now
   that the contracts have moved (CQ-14).
 
-## Next session — the whitelist CSV, then tranche 2
+## Next session — tranche 2 continues
 
-In this order (agreed 29 September 2026):
+**Where the code is** (2026-10-08, end of day). `feat/contracts` in `../NFT` is at `e3a1cb7`, local
+and **not pushed**; every gate is green there: fmt, 0 warnings, 310 tests, coverage 100/100, Slither
+51 with no High or Critical, `verify.sh`, the client's 141, quotes 36/0. Since PR A (NFT#12) it
+holds, all Done on the person's accept:
+- the whitelist fixes: `compare` decides UTF-8 from the bytes (MNT-155), and the client's input
+  edges (MNT-156);
+- `MysteryBox` (4663): cycles of at most 90 days (RAF-32), team bears excluded and frozen until the
+  exclusions leave `EXPECTED_PLAYABLE` (RAF-27), one shot per bear per cycle (RAF-28), the pause
+  (RAF-34);
+- `PrizeDraw` (Arbitrum One): worker relays strictly in order, one Chainlink VRF v2.5 word per
+  opening and never re-requested, a callback that only stores the word, outcomes applied in order
+  (`applyOutcomes` for anyone; `resolve` applies at most 16), the win rule, a constructor
+  `firstOpenIndex` so a replacement draw continues the sequence, terms fixed from the cycle's
+  start, the pause (RAF-8, RAF-29, RAF-30, RAF-34).
 
-1. **ACT-9 is out of the code** (`tasks.md` 3.15, Defect MNT-142; 3.16, ACT-15, MNT-135; both In
-   Review; merged into `tranche-1` at `fe5a927`). `Activation` has no Status link, and
-   the pause covers `burn` only. The ACT-12 pin lists 21 functions. The client library has no
-   link module. The ACT-5, ACT-13 and ACT-15 tests quote their Scenarios, and
-   `check_scenario_quotes.py` reports 6 failures, all cleared by item 2 (2.6 and 6.2). The
-   self-review is `reports/act-12-link-removal-diff-review.md`. The security review's L-01 has
-   since changed `Activation`'s constructor and ownership (above).
-2. **The whitelist root check over a CSV** (`tasks.md` 2.6, WL-4, Defect MNT-141). **On hold
-   until MINT replies** on the whitelist flow; do not start it unprompted.
-   - `WhitelistExport.s.sol`'s `compare` reads a registry today; it has to read MINT's final CSV
-     (`wallet,allocations`) and also fail when the allocations total more than 4,222 (CQ-24).
-   - Tests, tree, and the runbook's step 4.
-   - Folded in: retag the Scenario blocks in `test/WhitelistClaim.t.sol` and
-     `test/WhitelistImport.t.sol` that cite WL-1, WL-3, WL-4, WL-5 and WL-7 as bare `Scenario:`
-     blocks, since those contracts are an undeployed fallback and no longer satisfy the spec.
-     That clears five more quote failures.
+The PR from `feat/contracts` into `release/1.1` is ready whenever the person says so; it touches no
+Railway-watched path.
 
-   Needed by the freeze on 27 October. With it comes `tasks.md` 6.2 (Defect MNT-143): the client
-   library's `whitelist.allowList` and `mint.remainingWhitelistMints` from MINT's CSV rather than
-   a registry, with the registry modules marked undeployed. That clears the last quote failure
-   (DEL-6).
-3. **The OPS-4 rehearsal on 46630** (human-led; `tasks.md` 4.4). It needs:
-   - from MINT: the testnet $MNTD's address (O6, CQ-2) and the campaign dates (O7, CQ-1), written
-     into `script/config/46630.json` from `script/config/example.json`;
-   - from the operator: a funded deployer key and OpenSea Studio access.
+**Next, in `openspec/changes/tranche-2/tasks.md` order:**
+1. **RAF-16** (events), **RAF-17** (reads), **RAF-19** (acceptance cases): mostly tests over code
+   that exists. Each Task branches off `feat/contracts`.
+2. **Line 3.5, DEL-6:** the client's mystery-box calls: `open`, the reads, and a wallet's shots
+   left, counted bear by bear from `ownerOf`, `isExcluded`, `opened(currentCycle, id)`, `isOpen` and
+   `paused` in one Multicall3 call (deployed on 4663 and 46630).
+3. **Gated, waiting on MINT:** RAF-33 (CQ-22, prize delivery; its line carries "assert
+   `recordPayout` works while the draw is paused", RAF-34's open Scenario clause), RAF-14 and
+   RAF-18 (CQ-23, the worker's operator).
+4. **The deploy entry points** for `MysteryBox` and `PrizeDraw` (not yet a `tasks.md` line). Deploy
+   order: exclusions, then the box's first `scheduleCycle` (frozen at `EXPECTED_PLAYABLE`, 4,222),
+   then `PrizeDraw` with `PLAYABLE` 4,222 and `firstOpenIndex` 1, then the draw's terms for each
+   cycle before its start on 4663. Read back every constructor value, including
+   `requestConfirmations` and `callbackGasLimit` against the coordinator's limits.
+5. **OPS-4**, the rehearsal, still waits for the testnet $MNTD (MINT).
 
-   The collection and whitelist parts can run before the testnet $MNTD exists. It runs, in order:
-   - the `Deploy.s.sol` entry points, with Sourcify verification (closing MNT-95);
-   - Studio attached, and `acceptOwnership` completed;
-   - `Activation` read back, and the admin proving control (runbook, "Activation");
-   - a CSV loaded into Studio's whitelist stage, `compare` passing against it, a two-spot wallet
-     minting two and a one-spot wallet refused its second;
-   - a burn through `Activation`;
-   - enforcement toggled once.
-4. **The internal auditor** takes `MintABear` and `Activation` on 30 September and 1 October,
-   after item 1 and ahead of the rehearsal. The trees' INV-N and Fork-N obligations are theirs.
-   The whitelist has no contract.
-5. **Tranche 2 waits on the 222 excluded ids** (O2, CQ-20, due 5 October).
-   - Scope: `MysteryBox` (RAF-32, 27, 28, 34), `PrizeDraw` (RAF-8, 29, 30, 33), both (RAF-14,
-     16–19), and the admin-page and worker calls in the client library.
-   - The spec is final. The code is built for the defaults of O3 (payout), O4 (VRF subscription)
-     and O5 (worker); those three are needed before `PrizeDraw` is deployed (12 October), not
-     before it is written.
-   - MINT mints the team bears from the owner wallet: if that is the first mint, they are ids
-     1–222. Calea recommends a private team stage in Studio.
+**How the loop is worked now.** Every Task: `/mnt:next`, `/mnt:done`, then `/mnt:review` with the
+person. Review is code review, adversarial QA and a local fork run:
+- `MysteryBox` on a 46630 fork with the collection from `Deploy.s.sol` and bears minted by
+  impersonating SeaDrop.
+- `PrizeDraw` on an Arbitrum Sepolia fork against Chainlink's real coordinator. Plain anvil lacks
+  Arbitrum's `ArbSys` (`0x64`), so put a stand-in exposing `arbBlockNumber` and `arbBlockHash` there
+  with `anvil_setCode`, compiled from a throwaway file you delete afterwards. The key hash
+  `0x1770…d2be` works on the Sepolia coordinator.
 
-**Board clean-up for the human** (the 5 problems `board.sh`'s read-back reports, all in
-human-owned fields; the Tasks for retired requirements are Canceled, and the validator counts a
-resolved one as history):
-- **Four Done items point at requirements that are no longer work items,** because WL-1 and
-  WL-5 became informative: MNT-20, MNT-24, MNT-109 and MNT-110.
-- **CQ-1 is flagged** as still open while everything it blocks (WL-5) is Done.
+**Lesson from the day:** the reviews kept finding tests that passed while their property could be
+broken, and one designed feature (`rerequest`) let Chainlink's node operator choose outcomes. Plant
+a deliberate breakage for each property (a mutation, then restore) before `/mnt:done`, and run the
+adversarial model on anything that decides value.
+
+**Spec changes today** (all archived and on the board):
+- `raf-shots-off-chain-token-in-resolve`: no `shotsLeft` on the hub; `resolve` carries `tokenId`.
+- `raf-32-max-cycle-length`: a cycle lasts at most 90 days.
+- `raf-27-expected-playable`: the first cycle waits for the expected exclusions.
+- `raf-29-apply-outcomes`: the callback stores only; anyone applies; `CycleExhausted` counts relays.
+- `raf-8-rerequest` and `raf-8-rerequest-one-hour`: re-requesting was added, then
+  `raf-8-review-fixes` removed it, with `firstOpenIndex`, the apply cap, `InvalidOpener` and the
+  draw's terms fixed from `start`.
+- `del-9-local-gates`: DEL-9 names local gates, no CI; MNT-71 stays Open until PR B.
+
+CQ-20 now blocks OPS-4 as well as RAF-27.
+
+**Notes waiting for their Tasks:**
+- The runbook pauses the box before the draw (posted on MNT-65, OPS-5).
+- The worker takes `cycleId` only from `BoxOpened`: a relay naming a later cycle closes the
+  current one for good.
+- `PrizeDraw`'s subscription and coordinator are fixed; moving either means a new draw with
+  `firstOpenIndex` set to the next unrelayed opening.
 
 What each open item blocks:
 
@@ -280,11 +292,12 @@ The code is written and reviewed (above). What remains before the internal audit
 3. **Mainnet configs** `script/config/4663.json` once CQ-12, CQ-1 and CQ-2 are answered.
 4. **OPS-1 and OPS-5** — the recorded addresses and the handover — at deployment.
 
-### Tranche 2 — after the excluded ids
+### Tranche 2 — the mystery box
 
-- **`MysteryBox` on 4663:** RAF-32, RAF-27, RAF-28, RAF-34.
-- **`PrizeDraw` on Arbitrum One:** RAF-8, RAF-29, RAF-30, RAF-33.
-- **Both:** RAF-14, RAF-16 to RAF-19.
+- **Done** (on `feat/contracts`): RAF-32, RAF-27, RAF-28, RAF-34 (`MysteryBox`); RAF-8, RAF-29,
+  RAF-30 (`PrizeDraw`).
+- **Next:** RAF-16, RAF-17, RAF-19, then the client's calls (line 3.5) and the deploy entry points.
+- **Gated by MINT:** RAF-33 (CQ-22), RAF-14 and RAF-18 (CQ-23).
 - Testnet rehearsal on 46630, Arbitrum Sepolia and Sepolia, two cycles included.
 - The admin-page and worker calls in the client library (DEL-6).
 
