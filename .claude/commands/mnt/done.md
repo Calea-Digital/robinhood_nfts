@@ -16,7 +16,7 @@ ids in anything committed there, nothing private there.
 
 1. **Gates, all green or stop** — they are the Task's `Gates` line, read from the spec. In
    `../NFT/packages/contracts` (`git -C ../NFT`, `forge … --root ../NFT/packages/contracts`):
-   `forge fmt --check`; `forge build --sizes` with no warning; `forge test`;
+   `forge fmt --check`; `forge build --force --sizes` with no warning (`--force`: a cached build prints no compiler warnings); `forge test`;
    `forge coverage --no-match-coverage 'test/|lib/'` at ≥90% line / ≥80% branch;
    `slither . --exclude-dependencies` with no new High or Critical (a new Medium is an inline
    justification in the code or a Defect issue with a `Reproduce` section — never silence);
