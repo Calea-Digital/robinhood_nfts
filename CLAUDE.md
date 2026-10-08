@@ -117,7 +117,8 @@ Whitelist check (read-only, nothing broadcast; MINT's final CSV copied to `expor
 ```shell
 forge script script/WhitelistExport.s.sol --rpc-url $RPC \
   --sig "compare(string,address,address,(uint256,uint256,uint256,uint256,uint256,uint256,uint256,bool))" \
-  exports/whitelist.csv 0x00005EA00Ac477B1030CE78506496e8C2dE24bf5 $COLLECTION "(0,0,$START,$END,1,4444,$FEE_BPS,$RESTRICT)"
+  exports/whitelist.csv 0x00005EA00Ac477B1030CE78506496e8C2dE24bf5 $COLLECTION "($PRICE,0,$START,$END,$STAGE_INDEX,$STAGE_SUPPLY,$FEE_BPS,$RESTRICT)"
+# every stage field read from Studio (RUNBOOK, "Whitelist into Studio", step 4)
 # the undeployed registries only: export(address,string) and compare(address,address,address,(…))
 ```
 
