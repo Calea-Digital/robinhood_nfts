@@ -13,7 +13,7 @@ CQ-22 and CQ-23 are open.
 ## 2. PrizeDraw (Arbitrum One)
 
 - [x] 2.1 RAF-8 — one VRF v2.5 request and one word per open, `PrizeDraw` the subscription's consumer
-- [ ] 2.2 RAF-29 — `resolve(openIndex, cycleId, tokenId, opener)`: `OutOfOrder`, `UnknownCycle`, `InvalidTokenId`, `AlreadyResolved`, `CycleExhausted`, `DrawRequested`; outcomes applied in `openIndex` order; the draw's `scheduleCycle(cycleId, prizeCount, manifestHash)`
+- [x] 2.2 RAF-29 — `resolve(openIndex, cycleId, tokenId, opener)`: `OutOfOrder`, `UnknownCycle`, `InvalidTokenId`, `AlreadyResolved`, `CycleExhausted`, `DrawRequested`; outcomes applied in `openIndex` order; the draw's `scheduleCycle(cycleId, prizeCount, manifestHash)`
 - [ ] 2.3 RAF-30 — the win rule: `(w mod idsLeft) < prizesLeft`, both counters, `OutcomeRecorded`
 
 ## 3. Both
