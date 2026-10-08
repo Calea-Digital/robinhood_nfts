@@ -221,7 +221,7 @@ funded for a cycle's worth of opens, at most 4,222.
 - **Needed by:** 2026-10-05 — before tranche 2 starts; the numbers are deployment values
 - **Resolution:** the owner sets each cycle's prize count and prize list from MINT's admin page; **222** team ids are excluded, fixed for good; prizes are held on Robinhood Chain, Ethereum and possibly ApeChain in MINT's prize wallet.
 - **Default if deferred:** none for the excluded ids: the first cycle cannot be scheduled without them.
-- **Blocks:** RAF-27
+- **Blocks:** RAF-27, OPS-4
 
 **Question.** The instant mystery box (CQ-9) needs three numbers that only MINT can give.
 
