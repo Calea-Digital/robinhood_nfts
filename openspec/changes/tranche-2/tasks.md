@@ -26,6 +26,6 @@ CQ-22 and CQ-23 are open.
 
 ## 4. Gated (CQ-22, CQ-23)
 
-- [ ] 4.1 RAF-33 — `recordPayout(openIndex, chainId, txHash)`: `NotAWin`, `AlreadyPaid`, `PrizePaid`
+- [ ] 4.1 RAF-33 — `recordPayout(openIndex, chainId, txHash)`: `NotAWin`, `AlreadyPaid`, `PrizePaid`; assert `recordPayout` still works while the draw is paused (RAF-34's Scenario clause)
 - [ ] 4.2 RAF-14 — roles: the worker (`setWorker`, `WorkerSet`), non-owner and non-worker refusals
 - [ ] 4.3 RAF-18 — the worker sequence, end to end on the testnets through two cycles
