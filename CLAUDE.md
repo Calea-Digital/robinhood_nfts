@@ -142,7 +142,7 @@ Three submodules in `../NFT`: `packages/contracts/lib/{forge-std,seadrop,solady}
 - `optimizer_runs = 1_000_000` matches SeaDrop's own setting. Robinhood Chain's contract size limit is ~96 KB (four times Ethereum's), so size is not a constraint — `MintABear` is 20 KB and fits under even the Ethereum limit.
 - `[profile.ci]` raises only fuzz/invariant runs. Keep build settings in `[profile.default]` so `forge build --sizes` matches between local and CI.
 - **`forge build` prints forge-lint warnings and they count against the warning-free gate.** There are none; forge-lint *notes* remain on the test mock `MockMNTD` (constant naming), on `StubCollection.MAX_BEARS` in `test/Deploy.t.sol` (`mixed-case-function` — it mirrors `MintABear`'s getter, which the deploy script calls) and on file reads and writes in `script/` and `test/` (`unsafe-cheatcode` — the I/O is the point: config, CSV, artifacts). Do not silence a lint with a directive.
-- **`fs_permissions`** grants exactly three paths: read-write `./exports` (the whitelist CSV), read `./out` (the ACT-12 test pins `Activation`'s interface from its artifact) and read `./script/config` (the deploy configs). `ffi` stays off.
+- **`fs_permissions`** grants exactly four paths: read-write `./exports` (the whitelist CSV), read `./out` (the ACT-12 test pins `Activation`'s interface from its artifact), read `./script/config` (the deploy configs) and read `./test/fixtures/whitelist-csv` (the CSV cases the script's and the client's suites both assert, so the two parsers cannot drift). `ffi` stays off.
 
 ## Test conventions
 
