@@ -325,7 +325,7 @@ RAF-17. Four constraints:
    `burn(tokenId, amount)` with `amount` from `costToReach(tokenId, targetLevel)`. Anything above
    the level-5 remainder is refused, so nothing is destroyed for nothing. Status links are MINT's,
    kept against the Privy account; `levelOf` is what Status reads.
-3. **Reads are free; poll them.** `levelOf`, `weightOf`, `costToReach`, `snapshot`; after tranche 2, `shotsLeft`, `odds` and `outcomeOf`.
+3. **Reads are free; poll them.** `levelOf`, `weightOf`, `costToReach`, `snapshot`; after tranche 2, `odds`, `outcomeOf` and, per bear, `opened` and `isExcluded`, from which the client library counts a wallet's shots left in one Multicall3 call (a scan of all 4,444 bears on-chain would cost about 23M gas per read).
 4. **There is a reset event.** `TransferNonceAdvanced` fires on every non-mint transfer, in the
    same transaction as `Transfer`. Index it as the reset.
 
@@ -419,8 +419,13 @@ RAF-17. Four constraints:
   `PrizePaid` is visible to anyone. MINT's decision (28 September).
 - **The worker relays each open and records each payout.** It cannot change an outcome, because
   Chainlink decides it, and it cannot reorder, because `PrizeDraw` refuses an `openIndex` out of
-  turn. It can delay one, which is visible as a `BoxOpened` with no `OutcomeRecorded`. Accepted;
-  the alternative is cross-chain messaging, and 4663 has no endpoint. If Calea operates it
+  turn. It can delay one, which is visible as a `BoxOpened` with no `OutcomeRecorded`. It relays an
+  open once the 4663 sequencer has confirmed its block. Each relay names the bear (`tokenId`), and
+  `PrizeDraw` refuses an id outside the collection, a bear already resolved in the cycle and a
+  relay once the cycle has no ids left, so even an invented relay names a real bear once, cannot
+  take the pool below zero, and shows as an `OutcomeRecorded` that matches no `BoxOpened`. Nothing
+  on Arbitrum can prove an open happened. Accepted; the alternative is cross-chain messaging, and
+  4663 has no endpoint. If Calea operates it
   (CQ-23), it is the one role Calea keeps.
 - **One VRF request per open is a real cost.** At up to one request per playable bear per cycle,
   the subscription is funded for a cycle's worth and watched with a balance alarm. On Arbitrum a

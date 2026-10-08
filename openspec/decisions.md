@@ -483,6 +483,10 @@ one bear is one shot; the outcome belongs to the wallet that opened it; an opene
 "spent" for good, stays freely transferable, and cannot be opened again by its buyer.
 `shotsLeft` gives the 8/10.
 
+**Recorded as (8 October 2026).** The 8/10 is counted by the client library from each bear's
+on-chain record (RAF-28); `MysteryBox` has no per-wallet read, because the collection keeps no
+list of a wallet's bears and a scan of all 4,444 would strain an RPC's read limit.
+
 **Answer (call, 21 September 2026).** "Rewards are immediate upon opening a mystery box by a
 user that owns an NFT or multiple NFTs. One NFT — one shot at prize, consuming one ID per
 attempt out of 4,444. There is a very high chance that team allocations will be removed from

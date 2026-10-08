@@ -31,6 +31,6 @@ invariant harnesses (the internal auditor's); anything on a prize chain.
 
 ## Risks / Trade-offs
 
-- `shotsLeft(wallet)` must enumerate a wallet's bears; the collection has no owner index, so the
-  read is a bounded scan settled in RAF-28's claim.
+- A wallet's shots left are counted by the client library from per-bear reads in one Multicall3
+  call; the hub has no per-wallet read, since a scan of the collection costs about 23M gas.
 - One VRF request per open is a real cost, accepted in HANDOVER.

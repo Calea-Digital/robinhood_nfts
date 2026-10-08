@@ -8,12 +8,12 @@ CQ-22 and CQ-23 are open.
 
 - [x] 1.1 RAF-32 — cycles: `scheduleCycle(start, end, prizeCount, manifestHash)`, replaceable until `start`, `CycleInProgress`, `InvalidWindow`, `InvalidPrizeCount`, `CycleNotOpen`; owner in the constructor, two-step handover, `renounceOwnership` refused
 - [x] 1.2 RAF-27 — playable ids: `excludeRange(from, to)`, `IdsExcluded`, `ExclusionFrozen`, `PLAYABLE` fixed at the first `scheduleCycle`
-- [ ] 1.3 RAF-28 — `open(tokenId)`: `ContractPaused`, `CycleNotOpen`, `NotBearOwner`, `IdExcluded`, `AlreadyOpened`; one `openIndex` sequence; `BoxOpened`; `shotsLeft(wallet)`
+- [ ] 1.3 RAF-28 — `open(tokenId)`: the RAF-28 Scenario test (`opened(cycleId, tokenId)` reads true; the buyer refused, then free next cycle); no per-wallet read on the hub (`ContractPaused` comes with RAF-34)
 
 ## 2. PrizeDraw (Arbitrum One)
 
 - [ ] 2.1 RAF-8 — one VRF v2.5 request and one word per open, `PrizeDraw` the subscription's consumer
-- [ ] 2.2 RAF-29 — `resolve(openIndex, cycleId, opener)`: `OutOfOrder`, `UnknownCycle`, `DrawRequested`; outcomes applied in `openIndex` order; the draw's `scheduleCycle(cycleId, prizeCount, manifestHash)`
+- [ ] 2.2 RAF-29 — `resolve(openIndex, cycleId, tokenId, opener)`: `OutOfOrder`, `UnknownCycle`, `InvalidTokenId`, `AlreadyResolved`, `CycleExhausted`, `DrawRequested`; outcomes applied in `openIndex` order; the draw's `scheduleCycle(cycleId, prizeCount, manifestHash)`
 - [ ] 2.3 RAF-30 — the win rule: `(w mod idsLeft) < prizesLeft`, both counters, `OutcomeRecorded`
 
 ## 3. Both
@@ -22,6 +22,7 @@ CQ-22 and CQ-23 are open.
 - [ ] 3.2 RAF-16 — events carry the documented arguments
 - [ ] 3.3 RAF-17 — every read answers; `odds(cycleId)`
 - [ ] 3.4 RAF-19 — every acceptance case has a deterministic test
+- [ ] 3.5 DEL-6 — the client's mystery-box calls: `open`, the reads, and a wallet's shots left counted from `ownerOf`, `isExcluded` and `opened` per bear in one Multicall3 call
 
 ## 4. Gated (CQ-22, CQ-23)
 
