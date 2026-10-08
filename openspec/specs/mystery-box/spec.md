@@ -11,21 +11,22 @@ MINT's admin schedules each cycle before it starts: its window, its number of pr
 fingerprint of the prize list MINT publishes (RAF-27) (MINT, CQ-9, CQ-20). A cycle can't be
 scheduled while one is open, start in the past, or start before the previous one ends. A cycle
 lasts at most 90 days, so a mistyped end date can't hold the game in one cycle for longer. A
-scheduled cycle can be replaced until it starts; from then on its terms are fixed. Boxes open
-only inside the window, and an opening made inside it is decided even if the answer arrives
-after the window ends (RAF-29). Prizes a cycle doesn't award stay in MINT's prize wallet
-(RAF-33) for a later cycle. MINT decides when the next cycle starts, so the game can rest between
-cycles for as long as MINT needs. The draw is given the same prize count and fingerprint, and
-both chains publish them, so anyone can check they match.
+scheduled cycle can be replaced until it starts; from then on its terms are fixed, on both
+chains. Boxes open only inside the window, and an opening made inside it is decided even if the
+answer arrives after the window ends (RAF-29). Prizes a cycle doesn't award stay in MINT's prize
+wallet (RAF-33) for a later cycle. MINT decides when the next cycle starts, so the game can rest
+between cycles for as long as MINT needs. The draw is given the same start, prize count and
+fingerprint, and both chains publish them, so anyone can check they match.
 
 *Technical note.* `scheduleCycle(start, end, prizeCount, manifestHash)` on `MysteryBox` records
 the next cycle. It is refused while a cycle is open (`CycleInProgress`); for a window that starts
 in the past, starts before the previous cycle ends, ends before it starts, or has `end - start`
 above `MAX_CYCLE_LENGTH`, 90 days (`InvalidWindow`); and for a prize count of zero or above
 `PLAYABLE` (`InvalidPrizeCount`). A cycle is open from `start` to `end` inclusive. `PrizeDraw`
-carries each cycle's `prizeCount` and `manifestHash`, set by the owner with
-`scheduleCycle(cycleId, prizeCount, manifestHash)` before the cycle's first open is resolved.
-Both chains emit `CycleScheduled`.
+carries each cycle's `start`, `prizeCount` and `manifestHash`, set by the owner with
+`scheduleCycle(cycleId, start, prizeCount, manifestHash)`, and refuses to replace them once
+`start` has passed or the cycle has accepted a relay (`CycleStarted`). Both chains emit
+`CycleScheduled`.
 
 #### Scenario: A cycle opens and ends on its schedule
 - **GIVEN** the owner has scheduled cycle 1 from `start` to `end` with 5 prizes
@@ -94,26 +95,26 @@ the order they were made. It refuses one out of turn, so the worker can't choose
 meets which state of the prize pool. It can only delay one, and a delay is visible. Each opening
 gets its own random number. Several can be in flight at once, but results are applied in order.
 Each relay names the bear that opened, so every result can be matched to its opening on Robinhood
-Chain, and the draw refuses a bear relayed twice in one cycle and a relay once a cycle's bears are
-all relayed. The worker relays an opening once Robinhood Chain's sequencer has confirmed it. A
-random number is never lost to a failed delivery: the draw stores each number as it arrives, and
-anyone can apply the stored numbers in order, so a cycle's last results are recorded even when no
-further opening follows.
+Chain, and the draw refuses a bear relayed twice in one cycle, a relay with no opener, and a relay
+once a cycle's bears are all relayed. The worker relays an opening once Robinhood Chain's
+sequencer has confirmed it. A random number is never lost to a failed delivery: the draw stores
+each number as it arrives, and anyone can apply the stored numbers in order, so a cycle's last
+results are recorded even when no further opening follows.
 
 *Technical note.* `resolve(uint64 openIndex, uint64 cycleId, uint256 tokenId, address opener)` on
 `PrizeDraw`, relayed from `BoxOpened`. It refuses any `openIndex` but the next unresolved one
 (`OutOfOrder`); a cycle it has not been given or one earlier than the last it resolved
-(`UnknownCycle`); a `tokenId` outside 1 to `MAX_BEARS` (`InvalidTokenId`); a `tokenId` already
-resolved in that cycle (`AlreadyResolved`); and any resolve once the cycle has accepted
-`PLAYABLE` relays (`CycleExhausted`). It requests one Chainlink word and emits
-`DrawRequested(openIndex, requestId)`. The VRF callback stores the word for its `openIndex` and
-never reverts for a request the draw made; outcomes are applied in `openIndex` order, so an open
-waits only on the words of the opens before it. The callback and `resolve` each apply pending
-outcomes within a fixed budget, and `applyOutcomes(maxCount)`, open to anyone, applies up to
-`maxCount` more; none of them can change an outcome, only when it is recorded. A delayed open
-shows as a `BoxOpened` with no `OutcomeRecorded`; a relayed open that matches no `BoxOpened` on
-4663 is visible the same way. An open made before its cycle's `end` is resolved even if the word
-arrives after it.
+(`UnknownCycle`); a `tokenId` outside 1 to `MAX_BEARS` (`InvalidTokenId`); a zero `opener`
+(`InvalidOpener`); a `tokenId` already resolved in that cycle (`AlreadyResolved`); and any resolve
+once the cycle has accepted `PLAYABLE` relays (`CycleExhausted`). It requests one Chainlink word
+and emits `DrawRequested(openIndex, requestId)`. The VRF callback stores the word for its
+`openIndex` and never reverts for a request the draw made; outcomes are applied in `openIndex`
+order, so an open waits only on the words of the opens before it. The callback applies pending
+outcomes within the gas it has, `resolve` applies at most `RESOLVE_APPLY_LIMIT` (16), and
+`applyOutcomes(maxCount)`, open to anyone, applies up to `maxCount` more; none of them can change
+an outcome, only when it is recorded. A delayed open shows as a `BoxOpened` with no
+`OutcomeRecorded`; a relayed open that matches no `BoxOpened` on 4663 is visible the same way. An
+open made before its cycle's `end` is resolved even if the word arrives after it.
 
 #### Scenario: Relays are accepted only in order
 - **GIVEN** opens 1 and 2 recorded and neither resolved
@@ -154,22 +155,19 @@ Each opening gets its own random number from Chainlink on Arbitrum One (agreed 2
 2026). One number per opening is what makes an outcome nobody can predict, MINT included.
 Robinhood Chain has no Chainlink and no usable randomness of its own, which is why the draw runs
 on Arbitrum. The subscription that pays for the numbers is assumed to be MINT's (`→ CQ-17`). It
-is funded for a cycle's worth, at most 4,222 numbers, and topped up when its balance runs low. An
-answer normally takes seconds to minutes; if Chainlink has not answered an opening within an
-hour, the worker can ask again, so a lost request holds the queue up for an hour at most.
-Whichever answer arrives first is the one used, so asking again can never be used to pick a
-better number.
+is funded for a cycle's worth, at most 4,222 numbers, and topped up when its balance runs low.
+Each opening is asked for once and never again: asking again would let whoever delivers the
+numbers keep a losing one back and deliver a winning one instead. A request left unanswered
+because the subscription ran low is answered once it is topped up. If the draw ever has to move
+to another coordinator or subscription, a new draw takes over at the next opening.
 
-*Technical note.* Chainlink VRF v2.5, one request and one word per open. `PrizeDraw` on Arbitrum
-One (42161) uses coordinator `0x3C0Ca683b403E37668AE3DC4FB62F4B29B6f7a3e`, and on Arbitrum
-Sepolia (421614) `0x5CE8D5A2BC84beb22a398CCA51996F7930313D61`; it is the subscription's consumer.
-The subscription is funded for at most `PLAYABLE` requests per cycle and topped up on a balance
-alarm, not on a schedule. Robinhood Chain's `prevrandao` is constant. `rerequest(openIndex)`, by
-the worker, requests another word for a relayed opening with no word whose last request is at
-least `REREQUEST_AFTER` (1 hour) old, emitting `DrawRequested` again; it is refused for an
-opening not yet relayed (`NotRelayed`), one already answered (`AlreadyAnswered`) and one asked
-more recently (`TooEarly`). Every request made for an opening stays valid, and the first word
-delivered is stored and applied; later words are ignored.
+*Technical note.* Chainlink VRF v2.5, one request and one word per open, never re-requested.
+`PrizeDraw` on Arbitrum One (42161) uses coordinator `0x3C0Ca683b403E37668AE3DC4FB62F4B29B6f7a3e`,
+and on Arbitrum Sepolia (421614) `0x5CE8D5A2BC84beb22a398CCA51996F7930313D61`; it is the
+subscription's consumer. The subscription is funded for at most `PLAYABLE` requests per cycle and
+topped up on a balance alarm, not on a schedule. Robinhood Chain's `prevrandao` is constant. The
+constructor takes `firstOpenIndex`, the first opening the draw relays (1 for the first draw; for a
+replacement, the next unresolved opening), and both `nextToResolve` and `nextToApply` start there.
 
 #### Scenario: One request, one word, per open
 - **WHEN** `resolve` runs
@@ -203,16 +201,16 @@ nomination of another recipient.
 ### Requirement: RAF-14 — Roles
 **Kind:** work-item
 **MINT's admin** records the team bears, schedules cycles, sets the worker and pauses either
-contract. Ownership can't be given up. **The worker** carries openings to the draw, asks again for
-an opening Chainlink has not answered within an hour, and records payouts (who runs it `→ CQ-23`).
-**Anyone** can open a box with a bear they hold, apply outcomes whose random numbers have arrived,
-and read everything. No role can open a box for a holder, change an outcome or move a bear.
+contract. Ownership can't be given up. **The worker** carries openings to the draw and records
+payouts (who runs it `→ CQ-23`). **Anyone** can open a box with a bear they hold, apply outcomes
+whose random numbers have arrived, and read everything. No role can open a box for a holder,
+change an outcome or move a bear.
 
 *Technical note.* Owner: on `MysteryBox` `excludeRange`, `scheduleCycle`, `setPaused`; on
 `PrizeDraw` `scheduleCycle`, `setWorker`, `setPaused`; ownership transfer on both;
-`renounceOwnership` reverts on both. Worker: `resolve`, `rerequest` and `recordPayout` on
-`PrizeDraw`. Anyone: `open` on `MysteryBox`, `applyOutcomes` on `PrizeDraw`. The VRF coordinator
-alone delivers words.
+`renounceOwnership` reverts on both. Worker: `resolve` and `recordPayout` on `PrizeDraw`.
+Anyone: `open` on `MysteryBox`, `applyOutcomes` on `PrizeDraw`. The VRF coordinator alone
+delivers words.
 
 #### Scenario: Roles hold
 - **WHEN** a non-owner calls `excludeRange`, `scheduleCycle` or `setWorker`, or a non-worker calls `resolve` or `recordPayout`
@@ -242,7 +240,7 @@ payout, and every change of worker or pause.
 
 *Technical note.* Hub: `IdsExcluded(from, to)`, `CycleScheduled(cycleId, start, end, prizeCount,
 manifestHash)`, `BoxOpened(openIndex, cycleId, tokenId, opener)`, `PausedSet`. `PrizeDraw`:
-`CycleScheduled(cycleId, prizeCount, manifestHash)`, `DrawRequested(openIndex, requestId)`,
+`CycleScheduled(cycleId, start, prizeCount, manifestHash)`, `DrawRequested(openIndex, requestId)`,
 `OutcomeRecorded(openIndex, cycleId, tokenId, opener, won, prizeIndex)`, `PrizePaid(cycleId,
 openIndex, chainId, txHash)`, `WorkerSet`, `PausedSet`.
 
@@ -296,12 +294,11 @@ Each of these has a test:
 - a bear cannot be opened twice in one cycle, by its holder or its buyer, and can be opened in
   the next;
 - a cycle cannot be scheduled while one is open, and a scheduled cycle's terms cannot change
-  once it has started;
+  once it has started, on either chain;
 - a relay out of order is refused;
 - a bear relayed twice in one cycle is refused by the draw, and so is a relay once the cycle's
   bears are all decided;
-- an opening Chainlink has not answered can be asked again only after an hour, and only the
-  first answer to arrive is used;
+- an opening is asked for once, and the first word delivered for it is the one used;
 - a cycle in which every playable bear is opened awards exactly its prize count, and the pool
   neither empties early nor is left over;
 - a cycle that ends early awards no more than its prize count;
