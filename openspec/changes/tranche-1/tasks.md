@@ -65,4 +65,4 @@ becomes a Task with Spec Ref `NONE` when picked.
 
 - [x] 6.1 DEL-6 — typed TypeScript client library (`packages/contracts-client`) and the reference royalty-split script
 - [x] 6.2 DEL-6 — (Defect MNT-143) the whitelist from MINT's CSV (WL-8): `whitelist.allowList` and `mint.remainingWhitelistMints` without a registry; the registry modules marked undeployed
-- [ ] 6.3 DEL-6 — (Defect MNT-156) the client's whitelist input edges: types as wide as the runtime (any single-byte view); a detached buffer refused `INVALID_ARGUMENT`; the facade's reason names bytes and rows; the list checked before any RPC; checked rows memoised by array identity; the copy only for shared buffers; the README covers the registry's empty claimants
+- [x] 6.3 DEL-6 — (Defect MNT-156) the client's whitelist input edges: types as wide as the runtime (any single-byte view); a detached buffer refused `INVALID_ARGUMENT`; the facade's reason names bytes and rows; the list checked before any RPC; checked rows memoised by array identity; the copy only for shared buffers; the README covers the registry's empty claimants
