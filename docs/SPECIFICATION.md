@@ -688,9 +688,11 @@ decreases by one; `idsLeft` decreases by one either way;
 2026). One number per opening is what makes an outcome nobody can predict, MINT included.
 Robinhood Chain has no Chainlink and no usable randomness of its own, which is why the draw runs
 on Arbitrum. The subscription that pays for the numbers is assumed to be MINT's (`→ CQ-17`). It
-is funded for a cycle's worth, at most 4,222 numbers, and topped up when its balance runs low. If
-Chainlink has not answered an opening within 24 hours, the worker can ask again; whichever answer
-arrives first is the one used, so asking again can never be used to pick a better number.
+is funded for a cycle's worth, at most 4,222 numbers, and topped up when its balance runs low. An
+answer normally takes seconds to minutes; if Chainlink has not answered an opening within an
+hour, the worker can ask again, so a lost request holds the queue up for an hour at most.
+Whichever answer arrives first is the one used, so asking again can never be used to pick a
+better number.
 
 *Technical note.* Chainlink VRF v2.5, one request and one word per open. `PrizeDraw` on Arbitrum
 One (42161) uses coordinator `0x3C0Ca683b403E37668AE3DC4FB62F4B29B6f7a3e`, and on Arbitrum
@@ -698,7 +700,7 @@ Sepolia (421614) `0x5CE8D5A2BC84beb22a398CCA51996F7930313D61`; it is the subscri
 The subscription is funded for at most `PLAYABLE` requests per cycle and topped up on a balance
 alarm, not on a schedule. Robinhood Chain's `prevrandao` is constant. `rerequest(openIndex)`, by
 the worker, requests another word for a relayed opening with no word whose last request is at
-least `REREQUEST_AFTER` (24 hours) old, emitting `DrawRequested` again; it is refused for an
+least `REREQUEST_AFTER` (1 hour) old, emitting `DrawRequested` again; it is refused for an
 opening not yet relayed (`NotRelayed`), one already answered (`AlreadyAnswered`) and one asked
 more recently (`TooEarly`). Every request made for an opening stays valid, and the first word
 delivered is stored and applied; later words are ignored.
@@ -725,7 +727,7 @@ nomination of another recipient.
 
 **RAF-14 Roles.** **MINT's admin** records the team bears, schedules cycles, sets the worker and pauses either
 contract. Ownership can't be given up. **The worker** carries openings to the draw, asks again for
-an opening Chainlink has not answered within a day, and records payouts (who runs it `→ CQ-23`).
+an opening Chainlink has not answered within an hour, and records payouts (who runs it `→ CQ-23`).
 **Anyone** can open a box with a bear they hold, apply outcomes whose random numbers have arrived,
 and read everything. No role can open a box for a holder, change an outcome or move a bear.
 
@@ -798,7 +800,7 @@ outcomes and its payouts, and warns contract-wallet holders before they open.
 - a relay out of order is refused;
 - a bear relayed twice in one cycle is refused by the draw, and so is a relay once the cycle's
   bears are all decided;
-- an opening Chainlink has not answered can be asked again only after 24 hours, and only the
+- an opening Chainlink has not answered can be asked again only after an hour, and only the
   first answer to arrive is used;
 - a cycle in which every playable bear is opened awards exactly its prize count, and the pool
   neither empties early nor is left over;
