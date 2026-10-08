@@ -27,7 +27,7 @@ becomes a Task with Spec Ref `NONE` when picked.
 - [x] 2.4 WL-5 — window gates claims; close ≥ 48 h before the stage
 - [x] 2.5 WL-7 — `WhitelistImport`: the owner-imported variant, frozen at `closeAt`; deploy entry point, export over either registry, client module
 - [x] 2.6 WL-4 — (Defect MNT-141) `compare` over MINT's final CSV file instead of a registry (the whitelist is off-chain, WL-8); tests, tree; the runbook's step 4; `compare` also fails when the CSV's allocations total more than 4,222 (CQ-24); `compare` refuses a wallet in more than one row (`DuplicateWallet`, as the registry path and the client's `buildAllowList` do — audit L-02, MNT-148); retag the WhitelistClaim/WhitelistImport tests' WL Scenario blocks as bare scenarios (undeployed fallback)
-- [ ] 2.7 WL-4 — (Defect MNT-155) `compare`'s read failures independent of forge's wording: read bytes (`vm.readFileBinary`) and check UTF-8 in Solidity; the read-failure test asserts the error and the path, not forge's or the OS's sentence; one guarded selector-stripping helper; the docs name every readable path and say the reason is forge's raw message; the manifest/directory comparison before the verdicts; `BadHeader` shows at most 60 characters, hidden ones as `\uXXXX`
+- [x] 2.7 WL-4 — (Defect MNT-155) `compare`'s read failures independent of forge's wording: read bytes (`vm.readFileBinary`) and check UTF-8 in Solidity; the read-failure test asserts the error and the path, not forge's or the OS's sentence; one guarded selector-stripping helper; the docs name every readable path and say the reason is forge's raw message; the manifest/directory comparison before the verdicts; `BadHeader` shows at most 60 characters, hidden ones as `\uXXXX`
 
 ## 3. Activation
 

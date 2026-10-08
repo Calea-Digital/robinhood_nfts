@@ -112,7 +112,7 @@ forge script script/Deploy.s.sol --rpc-url $RPC --broadcast --verify --verifier 
 
 Verification (OPS-3) happens as the deploy broadcasts (`--verify --verifier sourcify`; Sourcify is the route on 4663 and 46630). To retry or confirm afterwards: `script/verify.sh <chainId>` re-verifies every contract in the chain's `Deploy.s.sol` broadcasts and exits non-zero unless all read verified on Sourcify; `--check` only checks, `--dry-run` prints and sends nothing.
 
-Whitelist check (read-only, nothing broadcast; MINT's final CSV copied to `exports/`, which is gitignored and the only directory the script reads and writes):
+Whitelist check (read-only, nothing broadcast; MINT's final CSV copied to `exports/`, which is gitignored and the only directory the script writes; it also reads the other `fs_permissions` paths):
 
 ```shell
 forge script script/WhitelistExport.s.sol --rpc-url $RPC \
