@@ -7,7 +7,7 @@ CQ-22 and CQ-23 are open.
 ## 1. MysteryBox (Robinhood Chain)
 
 - [x] 1.1 RAF-32 — cycles: `scheduleCycle(start, end, prizeCount, manifestHash)`, replaceable until `start`, `CycleInProgress`, `InvalidWindow`, `InvalidPrizeCount`, `CycleNotOpen`; owner in the constructor, two-step handover, `renounceOwnership` refused
-- [ ] 1.2 RAF-27 — playable ids: `excludeRange(from, to)`, `IdsExcluded`, `ExclusionFrozen`, `PLAYABLE` fixed at the first `scheduleCycle`
+- [x] 1.2 RAF-27 — playable ids: `excludeRange(from, to)`, `IdsExcluded`, `ExclusionFrozen`, `PLAYABLE` fixed at the first `scheduleCycle`
 - [ ] 1.3 RAF-28 — `open(tokenId)`: `ContractPaused`, `CycleNotOpen`, `NotBearOwner`, `IdExcluded`, `AlreadyOpened`; one `openIndex` sequence; `BoxOpened`; `shotsLeft(wallet)`
 
 ## 2. PrizeDraw (Arbitrum One)
