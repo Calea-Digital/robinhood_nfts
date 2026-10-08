@@ -1,7 +1,7 @@
 ---
 name: "MNT: Review"
-description: "Review In Review Tasks with the person, one at a time: diff, Scenario evidence, code review, hand checks; Done only on their word"
-allowed-tools: Bash(git:*), Bash(forge:*), Bash(pnpm:*), Bash(slither:*), Bash(bash ../NFT/packages/contracts/script/verify.sh:*), Bash(bash ../NFT/packages/contracts/test/verify.test.sh:*), Bash(python3 docs/tools/check_scenario_quotes.py:*), Bash(openspec:*), Skill, mcp__claude_ai_YouTrack__search_issues, mcp__claude_ai_YouTrack__get_issue, mcp__claude_ai_YouTrack__get_issue_comments, mcp__claude_ai_YouTrack__add_issue_comment, mcp__claude_ai_YouTrack__update_issue, mcp__claude_ai_YouTrack__create_issue, mcp__claude_ai_YouTrack__link_issues, mcp__claude_ai_YouTrack__log_work
+description: "Review In Review Tasks with the person, one at a time: diff, Scenario evidence, code review, adversarial QA, a local run, hand checks; Done only on their word"
+allowed-tools: Bash(git:*), Bash(forge:*), Bash(pnpm:*), Bash(slither:*), Bash(bash ../NFT/packages/contracts/script/verify.sh:*), Bash(bash ../NFT/packages/contracts/test/verify.test.sh:*), Bash(python3 docs/tools/check_scenario_quotes.py:*), Bash(openspec:*), Bash(anvil:*), Bash(cast:*), Bash(npx tsx:*), Skill, mcp__claude_ai_YouTrack__search_issues, mcp__claude_ai_YouTrack__get_issue, mcp__claude_ai_YouTrack__get_issue_comments, mcp__claude_ai_YouTrack__add_issue_comment, mcp__claude_ai_YouTrack__update_issue, mcp__claude_ai_YouTrack__create_issue, mcp__claude_ai_YouTrack__link_issues, mcp__claude_ai_YouTrack__log_work
 ---
 
 Review finished work with the person, one Task at a time. This is the human gate the work
@@ -55,11 +55,46 @@ on the person's accept here, so `feat/contracts` holds approved work only, and a
    in `../NFT`) at medium effort. Report the findings that survive, each with file:line and a
    concrete failure. Say plainly when there are none. If the diff moves value, checks
    ownership or gates a role, also run `differential-review:diff-review`.
-5. **What only a person can check.** Two or three concrete hand checks before release, for
+5. **Adversarial QA: try to break it, and run the attempts.** Reading the code is step 4; this
+   step feeds the feature hostile and messy-but-real inputs and records what happens.
+   - List what the change accepts from outside: files, call arguments, chain state, timing,
+     who calls. Build cases for each: boundaries (0, the limit, the limit + 1, above the type's
+     range); encodings (a byte-order mark, CRLF, letter case, whitespace, non-ASCII digits);
+     what a real producer emits (a spreadsheet export, MINT's backend, a smart wallet);
+     duplicates, wrong order, replays; for a contract, a caller out of role, a paused state,
+     a call out of turn, a token that calls back.
+   - **Where one rule is implemented twice** (the Solidity script and the client library, a
+     script and the contract), feed every case to both and diff their verdicts. Any case one
+     side accepts and the other refuses is a finding.
+   - Run the cases. Inputs go in a gitignored or scratch directory and are deleted afterwards.
+     Show a table: case → expected → each side's verdict.
+   - A real finding is fixed only on the person's word (see **Changes**). It is pinned with
+     a deterministic test on the Task branch, never with a fuzz or invariant harness (those
+     are the internal auditor's).
+6. **Run it locally, as the operator and the page would.** Drive the Task's feature end to end
+   through its real entry points, not through the unit tests:
+   - Start `anvil --fork-url <testnet RPC>` on a spare port. Robinhood Chain testnet 46630
+     (`https://rpc.testnet.chain.robinhood.com`) has canonical SeaDrop and the V3 validator.
+     Use Arbitrum Sepolia for `PrizeDraw`.
+   - Deploy with `script/Deploy.s.sol` and its real entry points, from a temporary
+     `script/config/<name>.json` with anvil's accounts as admin.
+   - Do MINT's and Studio's steps with `cast`, as the runbook writes them (ownership
+     acceptance, the allowed-SeaDrop reset, stage settings).
+   - Run the runbook's own commands verbatim, with its variables set.
+   - Drive `@mint/contracts-client` as getminted.io would, from a temporary `*.tmp.mts` inside
+     `packages/contracts-client` (imports do not resolve from outside it), with `npx tsx`.
+   - Exercise the pass and at least one refusal, and read the state back with `cast call`.
+   - Note what the operator sees, not only whether it worked.
+   - Clean up: stop anvil and delete the temporary config, script and inputs. **Delete the
+     `broadcast/` files the run wrote**: they carry the forked chain's id, and `verify.sh`
+     would take them for a real deployment.
+   - Say what could not be run locally (Studio itself, OpenSea, Chainlink's coordinator).
+     Those become step 7's hand checks.
+7. **What only a person can check.** Two or three concrete hand checks before release, for
    example a testnet (46630) call and what to read back, or a deploy-script dry run against the
    chain's config. Name what is live and must not be touched: the whitelist in production
    (`release/1.0`), and any deployed contract.
-6. **Verdict.** End with a one-line recommendation (accept / changes / reject) and why. Then
+8. **Verdict.** End with a one-line recommendation (accept / changes / reject) and why. Then
    **stop and wait** for the person.
 
 **Carrying out the verdict.** Act only on the person's explicit word for THIS Task. A verdict
@@ -100,7 +135,7 @@ its head. If it is ready, offer the PR. **On the person's word only:**
   the PR into `release/1.1` with `gh pr create`.
 - Body: what it adds, by Spec Ref; whether it touches a Railway-watched path, which
   redeploys staging on merge; the gates' results; and the staging and testnet checks to run
-  after merge (from step 5), on Robinhood Chain testnet 46630 and the other chains' testnets
+  after merge (from step 7), on Robinhood Chain testnet 46630 and the other chains' testnets
   the Tasks reach.
 - Merging is the person's step. After it merges, bring `feat/contracts` level with
   `git -C ../NFT fetch origin && git -C ../NFT switch feat/contracts && git -C ../NFT merge
