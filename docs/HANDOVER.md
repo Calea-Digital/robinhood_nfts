@@ -171,8 +171,8 @@ Agreed at the review, still to act on:
 
 ## Next session — tranche 2 continues
 
-**Where the code is** (2026-10-09, end of day). `feat/contracts` in `../NFT` is at `bc89abb`,
-pushed (`origin/feat/contracts` = `bc89abb`). Every gate is green there:
+**Where the code is** (2026-10-09, end of day). `feat/contracts` in `../NFT` is at `7bf67e8`
+(the mystery-box docs merged onto `bc89abb`), pushed, and in PR #13. Every gate is green there:
 - fmt, 0 warnings;
 - 328 tests, coverage 100/100;
 - Slither 51 with no High or Critical;
@@ -219,17 +219,35 @@ Since PR A (NFT#12) it holds, all Done on the person's accept:
   - `ContractPaused` and `InvalidWindow` are decoded by function; `explainError(error, functionName?)` for calls sent outside the library.
   - Self-review report: `reports/del-6-158-diff-review.md`.
 
-The PR from `feat/contracts` into `release/1.1` is ready whenever the person says so; it touches no
+The PR from `feat/contracts` into `release/1.1` is mintdotio/NFT#13 (below); it touches no
 Railway-watched path.
 
-**The next session starts from `docs/prompts/integrity-pr-mint-questions.md`:** an integrity check,
-`feat/contracts` level with `release/1.1`, the PR, and the questions document for MINT's meeting on
-Monday 12 October. `feat/contracts` was pushed at `bc89abb` on 9 October (0 commits behind
-`release/1.1`); no PR is open yet.
-It was held until the client's mystery-box calls were in, at the person's word; they are (MNT-158).
-Every Task merged since PR A is Done. MNT-154 (`NONE`, the move into NFT) is still In Progress.
-Hand checks for staging and the testnets: a real Chainlink callback after a worker relay
-(46630 and Arbitrum Sepolia), and the admin page's `scheduleCycle` with one Privy wallet.
+**9 October, evening: the PR is open and the questions are ready for MINT.**
+- **PR into `release/1.1`:** https://github.com/mintdotio/NFT/pull/13, from `feat/contracts` at
+  `7bf67e8` (pushed; 0 commits behind `release/1.1`). Merging is the person's.
+  - Every gate is green on that head: fmt; 0 warnings; 328 tests; coverage 100/100; Slither 51 with
+    no High or Critical; `verify.sh` and its test; the client's 180; quotes 40/0; tree check 26/0.
+  - No Railway-watched path, so merging does not redeploy staging.
+  - After merging: a real Chainlink callback after a worker relay (46630 and Arbitrum Sepolia),
+    and the admin page's `scheduleCycle` with one Privy wallet.
+  - Then `git merge origin/release/1.1` on `feat/contracts`.
+- **The questions document:** `docs/client/MintABear-Questions-2026-10-12.pages`, 9 pages, built
+  by `docs/tools/build_mint_questions.py`.
+  - 15 questions, each with Calea's recommendation and the default if MINT doesn't answer on
+    Monday, then a checklist.
+  - The person sends it. After the meeting:
+    - fold the answers into `decisions.md`;
+    - run `/mnt:board`;
+    - act on the defaults for anything left unanswered.
+- **Integrity check:** `reports/integrity-check-2026-10-09-b.md`.
+  - Done: IC-2 (NFT's README, DESIGN and RUNBOOK describe the mystery box; MNT-159, merged
+    `7bf67e8`), IC-3 (CLAUDE.md) and IC-7 (`docs/tools/check_tree_tests.py`, in `/mnt:done`).
+  - Still standing: IC-1 (decisions overdue), IC-4 (MINT's multisig task MNT-146 against CQ-12),
+    IC-5 (MNT-154 and PR B), IC-6 (WL-1/WL-5 Tasks), IC-9, IC-10.
+- **The register lags the 1 October call.** It settled the whitelist campaign window, 30 September
+  to 27 October 12:00 UTC (NFT's `HANDOVER.local.md`), but CQ-1 still lists the window as
+  remaining. Record it with Monday's answers.
+- **Not yet in the ai-stack templates:** `check_tree_tests.py`'s line in `/mnt:done`.
 
 **Next, in `openspec/changes/tranche-2/tasks.md` order** (RAF-17, RAF-19 and line 3.5 are Done):
 1. **Gated, waiting on MINT:** RAF-14 and RAF-18 (CQ-23, the worker's operator; RAF-18 also
