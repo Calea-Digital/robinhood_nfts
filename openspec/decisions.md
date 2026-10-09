@@ -263,7 +263,7 @@ deployment either way, but the UI names the chains.
 - **Needed by:** 2026-10-12 — before `PrizeDraw` is deployed
 - **Resolution:** Open; Calea recommends that MINT pushes each win to the opener
 - **Default if deferred:** MINT pushes each win from the prize wallet to the opener's address on the prize's chain, and the worker records it with `recordPayout`.
-- **Blocks:** RAF-33
+- **Blocks:** RAF-18
 
 **Question.** Prizes sit in MINT's prize wallet `0xf6c0…e3e3` (CQ-8), an externally owned
 account, and are paid by transfer. Two things follow that only MINT can decide.
@@ -278,6 +278,8 @@ account, and are paid by transfer. Two things follow that only MINT can decide.
 
 **Recorded as.** RAF-33: whichever way it is paid, each payout is recorded on `PrizeDraw` with
 `recordPayout(openIndex, chainId, txHash)`, so a win without a `PrizePaid` is visible to anyone.
+The record is built ahead of the answer (change `raf-33-record-ungated`, 9 October): the answer
+shapes RAF-18's step 6 and the page's prize screen, not `PrizeDraw`.
 
 ### CQ-23 — Who operates the worker
 - **Statement:** Worker operator after handover

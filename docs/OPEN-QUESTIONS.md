@@ -306,6 +306,8 @@ account, and are paid by transfer. Two things follow that only MINT can decide.
 
 **Recorded as.** RAF-33: whichever way it is paid, each payout is recorded on `PrizeDraw` with
 `recordPayout(openIndex, chainId, txHash)`, so a win without a `PrizePaid` is visible to anyone.
+The record is built ahead of the answer (change `raf-33-record-ungated`, 9 October): the answer
+shapes RAF-18's step 6 and the page's prize screen, not `PrizeDraw`.
 
 ### CQ-23 — Who operates the worker
 - **Section:** OPS

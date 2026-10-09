@@ -93,7 +93,7 @@ worker).
   prize-list hash. It checks ownership and spends a bear for the cycle.
 - `PrizeDraw` on Arbitrum One carries the same cycle terms, takes one VRF word per open in
   `openIndex` order, applies a fixed pool drawn without replacement per cycle, and records each
-  payout (`recordPayout` → `PrizePaid`; RAF-33, not built yet, gated on CQ-22).
+  payout (`recordPayout` → `PrizePaid`; RAF-33, not built yet; CQ-22 gates only how a win is sent).
 - Prizes sit in MINT's prize wallet `0xf6c0…e3e3` on Robinhood Chain, Ethereum and possibly
   ApeChain, and are paid by transfer. No contract goes on a prize chain.
 
@@ -195,22 +195,23 @@ The PR from `feat/contracts` into `release/1.1` is ready whenever the person say
 Railway-watched path.
 
 **Next, in `openspec/changes/tranche-2/tasks.md` order:**
-1. **RAF-17** (reads), **RAF-19** (acceptance cases): mostly tests over code that exists. Each Task
-   branches off `feat/contracts`. Both name `payoutOf` / a payout record, which come with RAF-33
-   (integrity check IC-1, `reports/integrity-check-2026-10-09.md`).
-2. **Line 3.5, DEL-6** (its Task MNT-69 is Done from tranche 1, so the line needs its own Task
+1. **RAF-33** (line 2.5): `recordPayout`, `NotAWin`, `AlreadyPaid`, `PrizePaid`, `payoutOf`, and
+   "assert `recordPayout` works while the draw is paused" (RAF-34's open clause). Ungated by change
+   `raf-33-record-ungated` (9 October, IC-1): CQ-22 now gates RAF-18's step 6, how a win is sent.
+2. **RAF-17** (reads), **RAF-19** (acceptance cases): mostly tests over code that exists. Each Task
+   branches off `feat/contracts`.
+3. **Line 3.5, DEL-6** (its Task MNT-69 is Done from tranche 1, so the line needs its own Task
    first, IC-2): the client's mystery-box calls: `open`, the reads, and a wallet's shots
    left, counted bear by bear from `ownerOf`, `isExcluded`, `opened(currentCycle, id)`, `isOpen` and
    `paused` in one Multicall3 call (deployed on 4663 and 46630).
-3. **Gated, waiting on MINT:** RAF-33 (CQ-22, prize delivery; its line carries "assert
-   `recordPayout` works while the draw is paused", RAF-34's open Scenario clause), RAF-14 and
-   RAF-18 (CQ-23, the worker's operator).
-4. **The deploy entry points** for `MysteryBox` and `PrizeDraw` (not yet a `tasks.md` line). Deploy
+4. **Gated, waiting on MINT:** RAF-14 and RAF-18 (CQ-23, the worker's operator; RAF-18 also
+   CQ-22, prize delivery).
+5. **The deploy entry points** for `MysteryBox` and `PrizeDraw` (not yet a `tasks.md` line). Deploy
    order: exclusions, then the box's first `scheduleCycle` (frozen at `EXPECTED_PLAYABLE`, 4,222),
    then `PrizeDraw` with `PLAYABLE` 4,222 and `firstOpenIndex` 1, then the draw's terms for each
    cycle before its start on 4663. Read back every constructor value, including
    `requestConfirmations` and `callbackGasLimit` against the coordinator's limits.
-5. **OPS-4**, the rehearsal, still waits for the testnet $MNTD (MINT).
+6. **OPS-4**, the rehearsal, still waits for the testnet $MNTD (MINT).
 
 **How the loop is worked now.** Every Task: `/mnt:next`, `/mnt:done`, then `/mnt:review` with the
 person. Review is code review, adversarial QA and a local fork run:
@@ -308,10 +309,9 @@ The code is written and reviewed (above). What remains before the internal audit
 
 - **Done** (on `feat/contracts`): RAF-32, RAF-27, RAF-28, RAF-34 (`MysteryBox`); RAF-8, RAF-29,
   RAF-30 and Defect MNT-157 (`PrizeDraw`); RAF-16 (both).
-- **Next:** RAF-17, RAF-19, then the client's calls (line 3.5, which needs its own Task) and the
-  deploy entry points. The integrity check of 9 October (`reports/integrity-check-2026-10-09.md`)
-  proposes building RAF-33's payout record ahead of them (IC-1).
-- **Gated by MINT:** RAF-33 (CQ-22), RAF-14 and RAF-18 (CQ-23).
+- **Next:** RAF-33 (the payout record, ungated 9 October), RAF-17, RAF-19, then the client's calls
+  (line 3.5, which needs its own Task) and the deploy entry points.
+- **Gated by MINT:** RAF-14 (CQ-23), RAF-18 (CQ-22, CQ-23).
 - Testnet rehearsal on 46630, Arbitrum Sepolia and Sepolia, two cycles included.
 - The admin-page and worker calls in the client library (DEL-6).
 

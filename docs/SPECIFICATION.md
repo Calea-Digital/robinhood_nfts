@@ -707,8 +707,9 @@ replacement, the next unresolved opening), and both `nextToResolve` and `nextToA
 
 **RAF-33 Prize custody and the payout record.** Prizes sit in MINT's prize wallet `0xf6c0…e3e3` on Robinhood Chain, Ethereum and possibly
 ApeChain (MINT, CQ-8, CQ-20). No contract holds a prize or runs on a prize chain. A prize is paid
-by an ordinary transfer to the winner's address on the prize's chain; by default MINT sends every
-win (`→ CQ-22`). Nothing on-chain forces a payout, and MINT can move any prize at any time.
+by an ordinary transfer to the winner's address on the prize's chain. Who sends it, and whether
+MINT pushes every win or the winner requests it, is MINT's decision (CQ-22); the record below is
+the same either way. Nothing on-chain forces a payout, and MINT can move any prize at any time.
 Custody is MINT's choice. What the chain guarantees is the record. The worker records each payout
 on the draw contract, once and only for a win, so anyone can match a win to its transfer and see
 a win that was never paid. The winner is whoever opened the box. If a winner's wallet can't
@@ -779,7 +780,7 @@ opening's bear, outcome and payout. A wallet's shots left come from these reads,
 3. Holders open boxes inside the window.
 4. The worker carries each opening to the draw, in order.
 5. Random numbers arrive and outcomes are recorded.
-6. Each win is paid from the prize wallet on its chain and recorded.
+6. Each win is paid from the prize wallet on its chain, as MINT decides (`→ CQ-22`), and recorded.
 7. After the window, MINT schedules the next cycle whenever it is ready.
 
 MINT's page shows the cycle's window, its prize list, the live odds, a wallet's shots left, its
