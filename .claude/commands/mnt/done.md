@@ -28,7 +28,8 @@ ids in anything committed there, nothing private there.
    frozen installs and MINT's apps' tests (CLAUDE.md, "Two repositories").
    Every Scenario in the Task's `Done when` has a test carrying it in its `/* Scenario: */`
    block and a leaf in the contract's tree: `python3 docs/tools/check_scenario_quotes.py`
-   here, with no new failure. No fuzz or invariant harness was added — those
+   here, with no new failure; every test a tree names exists: `python3 docs/tools/check_tree_tests.py`.
+   No fuzz or invariant harness was added — those
    are the internal auditor's. If anything fails, fix it or stop and report — never mark done
    around a red gate.
 2. **Self-review** when the change moves value, checks ownership or gates a role: run the
