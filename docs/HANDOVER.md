@@ -125,8 +125,8 @@ comment and logged time. The human merges `tranche-1` into `main`.
 |---|---|
 | Contracts | `MintABear`, `Activation`; tranche 2 is `MysteryBox` (4663) and `PrizeDraw` (Arbitrum One). `WhitelistClaim` and `WhitelistImport` are built but not deployed (the whitelist is off-chain) |
 | Scripts | `Deploy.s.sol` (OPS-2), `verify.sh` (OPS-3), `Enforcement.s.sol` (OPS-6), `WhitelistExport.s.sol` (WL-4); `packages/contracts/docs/RUNBOOK.md` in NFT: ownership handover, whitelist export and import, transfer enforcement, royalties, Activation |
-| Tests | 315 contract tests and 141 client tests (2026-10-09), all passing; 100% line, branch and function coverage (gate ≥90 / ≥80); every tranche-1 work-item Scenario has a test except the operational OPS-1, OPS-3 (live), OPS-4, OPS-5 |
-| Gates | in NFT, run locally by `/mnt:done` (NFT has no CI): `fmt --check`, `build --sizes` (no warnings), `test`, coverage, Slither, `verify.sh` dry run and verdict test, the client check; here, in CI: spec lint and generated prose; the scenario-quote check — all green (2026-10-07) |
+| Tests | 328 contract tests and 180 client tests (2026-10-09), all passing; 100% line, branch and function coverage (gate ≥90 / ≥80); every tranche-1 work-item Scenario has a test except the operational OPS-1, OPS-3 (live), OPS-4, OPS-5 |
+| Gates | in NFT, run locally by `/mnt:done` (NFT has no CI): `fmt --check`, `build --sizes` (no warnings), `test`, coverage, Slither, `verify.sh` dry run and verdict test, the client check; here, in CI: spec lint and generated prose; the scenario-quote check — all green (2026-10-09, `bc89abb`) |
 | Slither | 51 results, no High or Critical; 6 accepted Mediums: `locked-ether` on `Activation`, `MysteryBox`, `PrizeDraw`, `WhitelistClaim`, `WhitelistImport`, and `reentrancy-no-eth` on `PrizeDraw.resolve`'s request (both below and in the NatSpec) |
 
 Requirements amended since v2.1, each through an archived OpenSpec change:
@@ -171,8 +171,8 @@ Agreed at the review, still to act on:
 
 ## Next session — tranche 2 continues
 
-**Where the code is** (2026-10-09, end of day). `feat/contracts` in `../NFT` is at `bc89abb`, ahead
-of `origin/feat/contracts` (`4e74b71`) and **not pushed**. Every gate is green there:
+**Where the code is** (2026-10-09, end of day). `feat/contracts` in `../NFT` is at `bc89abb`,
+pushed (`origin/feat/contracts` = `bc89abb`). Every gate is green there:
 - fmt, 0 warnings;
 - 328 tests, coverage 100/100;
 - Slither 51 with no High or Critical;
@@ -343,7 +343,6 @@ The code is written and reviewed (above). What remains before the internal audit
 - **Next:** the deploy entry points.
 - **Gated by MINT:** RAF-14 (CQ-23), RAF-18 (CQ-22, CQ-23).
 - Testnet rehearsal on 46630, Arbitrum Sepolia and Sepolia, two cycles included.
-- The admin-page and worker calls in the client library (DEL-6).
 
 The things to get right:
 - **`PrizeDraw` must refuse an `openIndex` out of turn**, so the worker cannot choose which open
@@ -363,8 +362,7 @@ start through the `createMintABearClient` facade, the error codes with the messa
 holder, the voucher backend's rules, events and indexing, and the split. `examples/` holds one
 runnable file per flow (mint, whitelist, burn, transfer, errors, indexing and split).
 It moves unchanged into MINT's repository, `github.com/mintdotio/NFT` (CQ-14). The mystery
-box's calls and MINT's admin-page calls (exclusions, cycle scheduling, pauses) join it in
-tranche 2. Its whitelist claim and import modules are not delivered. Calea's part of the UI is the call
+box's calls for the play page, MINT's admin page and the worker are in it too (Defect MNT-158). Its whitelist claim and import modules are not delivered. Calea's part of the UI is the call
 surface, review of contract-touching pull requests, and clarifications; the rest is MINT's.
 
 ## For the portal team
