@@ -18,7 +18,7 @@
   `Blocks`, or a requirement's `→` pointer, no longer names a target, remove the bridge-made
   gating link, record it in the manifest, and report `UNLINKED`. Verify: the bridge's own tests
   pass, and `bridge.py --check-existing` against MNT lists only the expected link changes.
-- [ ] 2.2 `board.sh --dry`, then `board.sh`. Verify:
+- [x] 2.2 `board.sh --dry`, then `board.sh`. Verify:
   - MNT-137 has no link to MNT-139;
   - MNT-59 depends on MNT-139 and MNT-140;
   - MNT-137 and MNT-59 bodies are refreshed;

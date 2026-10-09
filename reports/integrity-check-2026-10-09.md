@@ -206,3 +206,12 @@ below is in a part `/mnt:board` does not look at.
   - the branch location.
 - **Left for the person:** IC-1, IC-2, IC-4, IC-6, IC-7 and IC-13 (an NFT Task through
   review), IC-8, IC-9, IC-15, IC-16 and IC-18.
+- **IC-1, done:** change `raf-33-record-ungated` (`53ee2c8`).
+  - RAF-33's payout record is ungated and first in the pick order (line 2.5).
+  - CQ-22 now gates RAF-18's step 6.
+  - The bridge (ai-stack `49d235e`) now removes a gating link an open decision's spec no longer
+    asks for, and the dry run previews link changes.
+  - Board write (manifest `MNT-20261009T114907Z-23959cb5`): 3 refreshed; CQ-22 → RAF-18 linked;
+    CQ-22 → RAF-33 unlinked. Read-back OK.
+- **IC-16, done** in the same write: the leftover links CQ-2 → ACT-2, CQ-12 → WL-3 and
+  CQ-20 → RAF-24 were removed.
