@@ -152,3 +152,19 @@
 ## Fixed here
 
 - **IC-8:** HANDOVER corrected (this commit).
+- **IC-2, on the person's word ("into this PR"):** NFT branch `docs/mystery-box` off
+  `feat/contracts`, `3df6dfe`, `NONE` Task MNT-159 (In Review):
+  - the README's contract rows and wording;
+  - DESIGN's sections for the relay, the box and the draw;
+  - a RUNBOOK mystery-box section;
+  - the CI wording in the client README and `Verify.tree.md`;
+  - the retired WL-3/WL-7 notes in their trees.
+  Merged into `feat/contracts` only on the person's word.
+- **IC-3, on the person's word:** CLAUDE.md now has rows for `MysteryBox`, `PrizeDraw` and
+  `IVRFCoordinatorV2Plus`, the client row's mystery-box calls, the paragraph rewritten with a
+  pointer to NFT's DESIGN.md, and tranche-2 as the active change (`f2abdad`).
+- **IC-7, on the person's word:** `docs/tools/check_tree_tests.py`:
+  - 26 names checked, 0 missing;
+  - a planted rename of `test_exclusion_freezesWithTheFirstCycle` fails it;
+  - run by `/mnt:done` (`f2abdad`).
+  The ai-stack template `templates/work-loop/done.md` doesn't have the line yet.
