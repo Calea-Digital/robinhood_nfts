@@ -25,7 +25,7 @@ open (and CQ-22, which gates RAF-18). RAF-33's payout record is built ahead of C
 - [x] 3.1 RAF-34 — pause on both: the hub's `setPaused` blocks `open`, the draw's blocks `resolve` while words already requested are still applied; `PausedSet`; payout records and reads unaffected; `end` unmoved
 - [x] 3.2 RAF-16 — events carry the documented arguments
 - [x] 3.3 RAF-17 — every read answers; `odds(cycleId)`
-- [ ] 3.4 RAF-19 — every acceptance case has a deterministic test
+- [x] 3.4 RAF-19 — every acceptance case has a deterministic test
 - [ ] 3.5 DEL-6 — the client's mystery-box calls: `open`, the reads, and a wallet's shots left counted from `ownerOf`, `isExcluded` and `opened` per bear in one Multicall3 call
 
 ## 4. Gated (CQ-23; RAF-18 also CQ-22)
