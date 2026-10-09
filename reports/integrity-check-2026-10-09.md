@@ -180,3 +180,29 @@ below is in a part `/mnt:board` does not look at.
 - No open Task is hard-gated by a resolved decision.
 - Tranche-1 `tasks.md` against the board.
 - Every `mnt/*` branch is merged.
+
+## Done on the person's word (2026-10-09)
+
+- **IC-3:** line 2.4 is reworded to what was built (`c704122`).
+- **IC-5:** HANDOVER is current to `7064fb7`:
+  - 315 / 141 tests, quotes 37/0;
+  - RAF-16 and MNT-157 listed as Done;
+  - the next steps, with IC-1 and IC-2;
+  - Slither's six accepted Mediums, with `reentrancy-no-eth` added to the accepted risks;
+  - the pick order points to tranche-2;
+  - ACT-11 → ACT-15;
+  - `recordPayout` marked as not built (`c704122`).
+- **IC-12:** `/mnt:review` reads the accept time from the merge commit (`c704122`). The
+  ai-stack template `templates/work-loop/review.md` doesn't have the change.
+- **IC-10:** "relates to" links added: MNT-141 and MNT-155 → MNT-23; MNT-142 → MNT-37;
+  MNT-156 → MNT-69.
+- **IC-11:** `MNT Claude` tag added to MNT-30 and MNT-63.
+- **IC-14:** memory updated:
+  - the build-decisions pointer and its index line;
+  - the CQ-14 paragraph marked superseded;
+  - the pick order;
+  - spec precedence (v2.6, O1–O7, VRF on Arbitrum);
+  - the whitelist items now built;
+  - the branch location.
+- **Left for the person:** IC-1, IC-2, IC-4, IC-6, IC-7 and IC-13 (an NFT Task through
+  review), IC-8, IC-9, IC-15, IC-16 and IC-18.
