@@ -190,7 +190,9 @@ before they open.
 *Technical note.* The prize wallet is `0xf6c02F0fDAC5c03EE9f1cc60A5D9875Efc4c83e3`, an externally
 owned account. The worker calls `recordPayout(openIndex, chainId, txHash)` on `PrizeDraw`,
 refused unless the outcome of `openIndex` is a win (`NotAWin`) not yet recorded as paid
-(`AlreadyPaid`); it emits `PrizePaid(cycleId, openIndex, chainId, txHash)`. There is no on-chain
+(`AlreadyPaid`), and refused for a zero `chainId` or `txHash` (`InvalidPayout`), which would
+close the win with no evidence; it emits `PrizePaid(cycleId, openIndex, chainId, txHash)`, and
+`payoutOf(openIndex)` reads the record. There is no on-chain
 nomination of another recipient.
 
 #### Scenario: A win is paid once, and on the record
