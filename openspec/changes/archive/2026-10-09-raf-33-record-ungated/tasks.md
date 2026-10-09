@@ -14,7 +14,7 @@
 
 ## 2. Board
 
-- [ ] 2.1 Bridge fix in `~/trees/ai-stack/scripts/youtrack-bridge`. When an open decision's
+- [x] 2.1 Bridge fix in `~/trees/ai-stack/scripts/youtrack-bridge`. When an open decision's
   `Blocks`, or a requirement's `→` pointer, no longer names a target, remove the bridge-made
   gating link, record it in the manifest, and report `UNLINKED`. Verify: the bridge's own tests
   pass, and `bridge.py --check-existing` against MNT lists only the expected link changes.
