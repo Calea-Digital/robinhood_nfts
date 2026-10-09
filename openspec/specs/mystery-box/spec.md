@@ -112,9 +112,12 @@ and emits `DrawRequested(openIndex, requestId)`. The VRF callback stores the wor
 order, so an open waits only on the words of the opens before it. The callback applies pending
 outcomes within the gas it has, `resolve` applies at most `RESOLVE_APPLY_LIMIT` (16), and
 `applyOutcomes(maxCount)`, open to anyone, applies up to `maxCount` more; none of them can change
-an outcome, only when it is recorded. A delayed open shows as a `BoxOpened` with no
-`OutcomeRecorded`; a relayed open that matches no `BoxOpened` on 4663 is visible the same way. An
-open made before its cycle's `end` is resolved even if the word arrives after it.
+an outcome, only when it is recorded. `applyOutcomes` reverts with `InsufficientGas` when it stops
+for gas with fewer than `maxCount` applied and the next opening's word stored, so a wallet's gas
+estimate applies every ready outcome up to `maxCount`; the callback and `resolve` stop quietly
+instead. A delayed open shows as a `BoxOpened` with no `OutcomeRecorded`; a relayed open that
+matches no `BoxOpened` on 4663 is visible the same way. An open made before its cycle's `end` is
+resolved even if the word arrives after it.
 
 #### Scenario: Relays are accepted only in order
 - **GIVEN** opens 1 and 2 recorded and neither resolved
@@ -259,11 +262,17 @@ opening's bear, outcome and payout. A wallet's shots left come from these reads,
 (RAF-28).
 
 *Technical note.* Hub: `MAX_BEARS`, `PLAYABLE`, `EXPECTED_PLAYABLE`, `MAX_CYCLE_LENGTH`,
-`isExcluded(tokenId)`, `currentCycle()` and each cycle's `(start, end, prizeCount, manifestHash)`,
-`isOpen()`, `opened(cycleId, tokenId)`, `openCount()`. `PrizeDraw`: `PLAYABLE`, each cycle's
-`(prizeCount, manifestHash, idsLeft, prizesLeft)`, `nextToResolve()`, `nextToApply()`,
-`outcomeOf(openIndex)` with its `tokenId`, `payoutOf(openIndex)`, and `odds(cycleId)` returning
-`(prizesLeft, idsLeft)`. Each read costs a fixed amount, whatever the number of bears.
+`excludedCount`, `isExcluded(tokenId)`, `currentCycle()` and each cycle's
+`(start, end, prizeCount, manifestHash)`, `isOpen()`, `opened(cycleId, tokenId)`, `openCount()`,
+`paused()`, `BEARS`, `owner()` and `ownershipHandoverExpiresAt(pendingOwner)`. `PrizeDraw`:
+`MAX_BEARS`, `PLAYABLE`, each cycle's `(prizeCount, manifestHash, idsLeft, prizesLeft)`,
+`nextToResolve()`, `nextToApply()`, `lastCycleResolved()`, `outcomeOf(openIndex)` with its
+`tokenId`, `payoutOf(openIndex)`, `odds(cycleId)` returning `(prizesLeft, idsLeft)`,
+`openingOfRequest(requestId)` (0 for a request the draw never made), `RESOLVE_APPLY_LIMIT`,
+`worker()`, `paused()`, the Chainlink configuration `COORDINATOR`, `KEY_HASH`, `SUBSCRIPTION_ID`,
+`CALLBACK_GAS_LIMIT`, `REQUEST_CONFIRMATIONS` and `NATIVE_PAYMENT`, `owner()` and
+`ownershipHandoverExpiresAt(pendingOwner)`. No other public read exists on either contract. Each
+read costs a fixed amount, whatever the number of bears.
 
 #### Scenario: Every read answers
 - **WHEN** every listed read is called during an open cycle
