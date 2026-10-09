@@ -171,10 +171,10 @@ Agreed at the review, still to act on:
 
 ## Next session — tranche 2 continues
 
-**Where the code is** (2026-10-09). `feat/contracts` in `../NFT` is at `7064fb7`, six commits ahead of
-`origin/feat/contracts` (`e3a1cb7`) and **not pushed**; every gate is green there: fmt, 0 warnings,
-315 tests, coverage 100/100, Slither 51 with no High or Critical, `verify.sh`, the client's 141,
-quotes 37/0. Since PR A (NFT#12) it holds, all Done on the person's accept:
+**Where the code is** (2026-10-09, end of day). `feat/contracts` in `../NFT` is at `4e74b71`, ahead
+of `origin/feat/contracts` (`e3a1cb7`) and **not pushed**; every gate is green there: fmt, 0
+warnings, 321 tests, coverage 100/100, Slither 51 with no High or Critical, `verify.sh`, the
+client's 141, quotes 38/0. **The next session starts from `docs/prompts/tranche-2-raf-17-19.md`.** Since PR A (NFT#12) it holds, all Done on the person's accept:
 - the whitelist fixes: `compare` decides UTF-8 from the bytes (MNT-155), and the client's input
   edges (MNT-156);
 - `MysteryBox` (4663): cycles of at most 90 days (RAF-32), team bears excluded and frozen until the
@@ -189,29 +189,30 @@ quotes 37/0. Since PR A (NFT#12) it holds, all Done on the person's accept:
   (RAF-16);
 - `applyOutcomes` refuses with `InsufficientGas` when it stops for gas with the next word stored,
   so a wallet's gas estimate applies every ready outcome (Defect MNT-157, found in RAF-16's fork
-  run; INV-29).
+  run; INV-29);
+- the payout record on `PrizeDraw`: `recordPayout` by the worker, once per applied win, refused
+  with `NotAWin`, `AlreadyPaid` or `InvalidPayout`, readable with `payoutOf`, not suspended by the
+  pause (RAF-33, ungated from CQ-22 on 9 October; INV-30).
 
 The PR from `feat/contracts` into `release/1.1` is ready whenever the person says so; it touches no
 Railway-watched path.
 
 **Next, in `openspec/changes/tranche-2/tasks.md` order:**
-1. **RAF-33** (line 2.5): `recordPayout`, `NotAWin`, `AlreadyPaid`, `PrizePaid`, `payoutOf`, and
-   "assert `recordPayout` works while the draw is paused" (RAF-34's open clause). Ungated by change
-   `raf-33-record-ungated` (9 October, IC-1): CQ-22 now gates RAF-18's step 6, how a win is sent.
-2. **RAF-17** (reads), **RAF-19** (acceptance cases): mostly tests over code that exists. Each Task
-   branches off `feat/contracts`.
-3. **Line 3.5, DEL-6** (its Task MNT-69 is Done from tranche 1, so the line needs its own Task
+1. **RAF-17** (reads), **RAF-19** (acceptance cases): mostly tests over code that exists. Each Task
+   branches off `feat/contracts`. The prompt lists what to settle first (IC-15: the unnamed
+   reads, an interface pin, the fixed-cost clause).
+2. **Line 3.5, DEL-6** (its Task MNT-69 is Done from tranche 1, so the line needs its own Task
    first, IC-2): the client's mystery-box calls: `open`, the reads, and a wallet's shots
    left, counted bear by bear from `ownerOf`, `isExcluded`, `opened(currentCycle, id)`, `isOpen` and
    `paused` in one Multicall3 call (deployed on 4663 and 46630).
-4. **Gated, waiting on MINT:** RAF-14 and RAF-18 (CQ-23, the worker's operator; RAF-18 also
+3. **Gated, waiting on MINT:** RAF-14 and RAF-18 (CQ-23, the worker's operator; RAF-18 also
    CQ-22, prize delivery).
-5. **The deploy entry points** for `MysteryBox` and `PrizeDraw` (not yet a `tasks.md` line). Deploy
+4. **The deploy entry points** for `MysteryBox` and `PrizeDraw` (not yet a `tasks.md` line). Deploy
    order: exclusions, then the box's first `scheduleCycle` (frozen at `EXPECTED_PLAYABLE`, 4,222),
    then `PrizeDraw` with `PLAYABLE` 4,222 and `firstOpenIndex` 1, then the draw's terms for each
    cycle before its start on 4663. Read back every constructor value, including
    `requestConfirmations` and `callbackGasLimit` against the coordinator's limits.
-6. **OPS-4**, the rehearsal, still waits for the testnet $MNTD (MINT).
+5. **OPS-4**, the rehearsal, still waits for the testnet $MNTD (MINT).
 
 **How the loop is worked now.** Every Task: `/mnt:next`, `/mnt:done`, then `/mnt:review` with the
 person. Review is code review, adversarial QA and a local fork run:
@@ -308,8 +309,8 @@ The code is written and reviewed (above). What remains before the internal audit
 ### Tranche 2 — the mystery box
 
 - **Done** (on `feat/contracts`): RAF-32, RAF-27, RAF-28, RAF-34 (`MysteryBox`); RAF-8, RAF-29,
-  RAF-30 and Defect MNT-157 (`PrizeDraw`); RAF-16 (both).
-- **Next:** RAF-33 (the payout record, ungated 9 October), RAF-17, RAF-19, then the client's calls
+  RAF-30, RAF-33 and Defect MNT-157 (`PrizeDraw`); RAF-16 (both).
+- **Next:** RAF-17, RAF-19, then the client's calls
   (line 3.5, which needs its own Task) and the deploy entry points.
 - **Gated by MINT:** RAF-14 (CQ-23), RAF-18 (CQ-22, CQ-23).
 - Testnet rehearsal on 46630, Arbitrum Sepolia and Sepolia, two cycles included.
