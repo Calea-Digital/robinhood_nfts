@@ -1,6 +1,6 @@
 # MintABear — handover
 
-Written 2026-09-15, current as of 2026-10-08. Read this first when resuming.
+Written 2026-09-15, current as of 2026-10-09. Read this first when resuming.
 
 ## Where things stand
 
@@ -48,7 +48,7 @@ version line in full, suffix included, so each draft is its own file.
 
 **The board (YouTrack MNT) follows `openspec/`** through `docs/tools/board.sh`. The work loop that
 picks requirements off it is in `CLAUDE.md` ("Specification and board"), and its pick order is
-`openspec/changes/tranche-1/tasks.md`.
+`openspec/changes/tranche-2/tasks.md` (tranche 1's has only OPS-4 left).
 
 To check a client-document build without opening Pages, export it to PDF through `osascript` and
 render or count text per page with a short Swift PDFKit script. A table that does not fit the rest
@@ -93,7 +93,7 @@ worker).
   prize-list hash. It checks ownership and spends a bear for the cycle.
 - `PrizeDraw` on Arbitrum One carries the same cycle terms, takes one VRF word per open in
   `openIndex` order, applies a fixed pool drawn without replacement per cycle, and records each
-  payout (`recordPayout` → `PrizePaid`).
+  payout (`recordPayout` → `PrizePaid`; RAF-33, not built yet, gated on CQ-22).
 - Prizes sit in MINT's prize wallet `0xf6c0…e3e3` on Robinhood Chain, Ethereum and possibly
   ApeChain, and are paid by transfer. No contract goes on a prize chain.
 
@@ -125,9 +125,9 @@ comment and logged time. The human merges `tranche-1` into `main`.
 |---|---|
 | Contracts | `MintABear`, `Activation`; tranche 2 is `MysteryBox` (4663) and `PrizeDraw` (Arbitrum One). `WhitelistClaim` and `WhitelistImport` are built but not deployed (the whitelist is off-chain) |
 | Scripts | `Deploy.s.sol` (OPS-2), `verify.sh` (OPS-3), `Enforcement.s.sol` (OPS-6), `WhitelistExport.s.sol` (WL-4); `packages/contracts/docs/RUNBOOK.md` in NFT: ownership handover, whitelist export and import, transfer enforcement, royalties, Activation |
-| Tests | 235 contract tests and 127 client tests, all passing; 100% line, branch and function coverage (gate ≥90 / ≥80); every tranche-1 work-item Scenario has a test except the operational OPS-1, OPS-3 (live), OPS-4, OPS-5 |
+| Tests | 315 contract tests and 141 client tests (2026-10-09), all passing; 100% line, branch and function coverage (gate ≥90 / ≥80); every tranche-1 work-item Scenario has a test except the operational OPS-1, OPS-3 (live), OPS-4, OPS-5 |
 | Gates | in NFT, run locally by `/mnt:done` (NFT has no CI): `fmt --check`, `build --sizes` (no warnings), `test`, coverage, Slither, `verify.sh` dry run and verdict test, the client check; here, in CI: spec lint and generated prose; the scenario-quote check — all green (2026-10-07) |
-| Slither | no High or Critical; 3 accepted Mediums, all `locked-ether` (below) |
+| Slither | 51 results, no High or Critical; 6 accepted Mediums: `locked-ether` on `Activation`, `MysteryBox`, `PrizeDraw`, `WhitelistClaim`, `WhitelistImport`, and `reentrancy-no-eth` on `PrizeDraw.resolve`'s request (both below and in the NatSpec) |
 
 Requirements amended since v2.1, each through an archived OpenSpec change:
 - **23 September:** ACT-5 (after a transfer the weight reads the level-0 weight) and OPS-2
@@ -171,10 +171,10 @@ Agreed at the review, still to act on:
 
 ## Next session — tranche 2 continues
 
-**Where the code is** (2026-10-08, end of day). `feat/contracts` in `../NFT` is at `e3a1cb7`, local
-and **not pushed**; every gate is green there: fmt, 0 warnings, 310 tests, coverage 100/100, Slither
-51 with no High or Critical, `verify.sh`, the client's 141, quotes 36/0. Since PR A (NFT#12) it
-holds, all Done on the person's accept:
+**Where the code is** (2026-10-09). `feat/contracts` in `../NFT` is at `7064fb7`, six commits ahead of
+`origin/feat/contracts` (`e3a1cb7`) and **not pushed**; every gate is green there: fmt, 0 warnings,
+315 tests, coverage 100/100, Slither 51 with no High or Critical, `verify.sh`, the client's 141,
+quotes 37/0. Since PR A (NFT#12) it holds, all Done on the person's accept:
 - the whitelist fixes: `compare` decides UTF-8 from the bytes (MNT-155), and the client's input
   edges (MNT-156);
 - `MysteryBox` (4663): cycles of at most 90 days (RAF-32), team bears excluded and frozen until the
@@ -184,15 +184,22 @@ holds, all Done on the person's accept:
   opening and never re-requested, a callback that only stores the word, outcomes applied in order
   (`applyOutcomes` for anyone; `resolve` applies at most 16), the win rule, a constructor
   `firstOpenIndex` so a replacement draw continues the sequence, terms fixed from the cycle's
-  start, the pause (RAF-8, RAF-29, RAF-30, RAF-34).
+  start, the pause (RAF-8, RAF-29, RAF-30, RAF-34);
+- every event of both contracts checked against its documented signature through two cycles
+  (RAF-16);
+- `applyOutcomes` refuses with `InsufficientGas` when it stops for gas with the next word stored,
+  so a wallet's gas estimate applies every ready outcome (Defect MNT-157, found in RAF-16's fork
+  run; INV-29).
 
 The PR from `feat/contracts` into `release/1.1` is ready whenever the person says so; it touches no
 Railway-watched path.
 
 **Next, in `openspec/changes/tranche-2/tasks.md` order:**
-1. **RAF-16** (events), **RAF-17** (reads), **RAF-19** (acceptance cases): mostly tests over code
-   that exists. Each Task branches off `feat/contracts`.
-2. **Line 3.5, DEL-6:** the client's mystery-box calls: `open`, the reads, and a wallet's shots
+1. **RAF-17** (reads), **RAF-19** (acceptance cases): mostly tests over code that exists. Each Task
+   branches off `feat/contracts`. Both name `payoutOf` / a payout record, which come with RAF-33
+   (integrity check IC-1, `reports/integrity-check-2026-10-09.md`).
+2. **Line 3.5, DEL-6** (its Task MNT-69 is Done from tranche 1, so the line needs its own Task
+   first, IC-2): the client's mystery-box calls: `open`, the reads, and a wallet's shots
    left, counted bear by bear from `ownerOf`, `isExcluded`, `opened(currentCycle, id)`, `isOpen` and
    `paused` in one Multicall3 call (deployed on 4663 and 46630).
 3. **Gated, waiting on MINT:** RAF-33 (CQ-22, prize delivery; its line carries "assert
@@ -214,12 +221,17 @@ person. Review is code review, adversarial QA and a local fork run:
   with `anvil_setCode`, compiled from a throwaway file you delete afterwards. The key hash
   `0x1770…d2be` works on the Sepolia coordinator.
 
-**Lesson from the day:** the reviews kept finding tests that passed while their property could be
+**Integrity check, 9 October** (`reports/integrity-check-2026-10-09.md`): the spec, the board and
+the code agree; the findings are stale docs (fixed here), the order of RAF-17/19/14 against RAF-33
+(IC-1), line 3.5's Task (IC-2), overdue decisions (IC-4) and NFT's README, DESIGN and RUNBOOK
+without the mystery box (IC-7).
+
+**Lesson from 8 October:** the reviews kept finding tests that passed while their property could be
 broken, and one designed feature (`rerequest`) let Chainlink's node operator choose outcomes. Plant
 a deliberate breakage for each property (a mutation, then restore) before `/mnt:done`, and run the
 adversarial model on anything that decides value.
 
-**Spec changes today** (all archived and on the board):
+**Spec changes on 8 October** (all archived and on the board):
 - `raf-shots-off-chain-token-in-resolve`: no `shotsLeft` on the hub; `resolve` carries `tokenId`.
 - `raf-32-max-cycle-length`: a cycle lasts at most 90 days.
 - `raf-27-expected-playable`: the first cycle waits for the expected exclusions.
@@ -295,8 +307,10 @@ The code is written and reviewed (above). What remains before the internal audit
 ### Tranche 2 — the mystery box
 
 - **Done** (on `feat/contracts`): RAF-32, RAF-27, RAF-28, RAF-34 (`MysteryBox`); RAF-8, RAF-29,
-  RAF-30 (`PrizeDraw`).
-- **Next:** RAF-16, RAF-17, RAF-19, then the client's calls (line 3.5) and the deploy entry points.
+  RAF-30 and Defect MNT-157 (`PrizeDraw`); RAF-16 (both).
+- **Next:** RAF-17, RAF-19, then the client's calls (line 3.5, which needs its own Task) and the
+  deploy entry points. The integrity check of 9 October (`reports/integrity-check-2026-10-09.md`)
+  proposes building RAF-33's payout record ahead of them (IC-1).
 - **Gated by MINT:** RAF-33 (CQ-22), RAF-14 and RAF-18 (CQ-23).
 - Testnet rehearsal on 46630, Arbitrum Sepolia and Sepolia, two cycles included.
 - The admin-page and worker calls in the client library (DEL-6).
@@ -398,11 +412,15 @@ RAF-17. Four constraints:
 - **The whitelist is MINT's word** (WL-8). The register, its counter and its rules are in MINT's
   backend, and nothing public shows how the list was made. The one check is that Studio's root is
   exactly MINT's final CSV (WL-4). MINT's decision, 28 September.
-- **Slither "locked ether"** on `Activation` (and on the undeployed `WhitelistClaim` and `WhitelistImport`): Solady marks ownership
+- **Slither "locked ether"** on `Activation`, `MysteryBox` and `PrizeDraw` (and on the undeployed `WhitelistClaim` and `WhitelistImport`): Solady marks ownership
   functions `payable`, and anyone can call `requestOwnershipHandover` and
   `cancelOwnershipHandover`, so anyone could lock their own ETH by attaching value; neither
   contract withdraws it. The loss is only ever the sender's own. Accepted, and said in each
   contract's NatSpec.
+- **Slither "reentrancy-no-eth"** on `PrizeDraw`: `openingOfRequest` is written after the
+  coordinator's `requestRandomWords`, since the request id is its return value. The coordinator is
+  Chainlink's, fixed at construction, answers in a later transaction, and a callback made during
+  the request would find no opening and be ignored. Accepted, and said in the NatSpec.
 - **`Activation` calls $MNTD, which is outside this codebase.** The record is written before
   `burnFrom`, and `burn` is `nonReentrant`: a token that calls back cannot burn again, and any
   revert undoes the record. The reference token is OpenZeppelin 5.5 `ERC20Burnable`, which reverts
@@ -488,7 +506,7 @@ these.
 1. Does OpenSea Studio attach to and manage a contract we deployed ourselves, validator set? (testnet)
 2. Does OpenSea emit SignedZone-restricted orders for a Limit-Break-validated collection on 4663? (mainnet: one team bear listed and sold before the drop page is published)
 3. The whitelist end to end: a CSV → Studio allowlist stage → allowlist mint. It passes when `WhitelistExport.s.sol compare` over the CSV passes against the root Studio set, a two-allocation wallet mints two, and a one-allocation wallet is refused its second — which shows Studio builds its tree like `script/lib/AllowListTree.sol` and keeps each wallet's own limit. (testnet)
-4. A burn through `Activation` against $MNTD on 46630 through to a recorded level; then against the real token on mainnet between 20 and 28 October. The pause has no exemption, so that rehearsal runs in a window the owner opens and closes again; holders' access opens on 29 October (ACT-11, §8).
+4. A burn through `Activation` against $MNTD on 46630 through to a recorded level; then against the real token on mainnet between 20 and 28 October. The pause has no exemption, so that rehearsal runs in a window the owner opens and closes again; holders' access opens on 29 October (ACT-15, §8).
 5. Two mystery-box cycles on the testnets (46630 and Arbitrum Sepolia): exclusion, scheduling on both chains, boxes opened, relays in order, words and outcomes — one open that wins and one that does not, a relay offered out of turn and refused — a win paid from a test prize wallet and recorded with `recordPayout`, and a bear opened again in the second cycle.
 6. Moot while MINT's admin is an EOA: does Safe's web interface support chain 4663?
 
@@ -506,11 +524,11 @@ ids.
 
 ## Related documents
 
-- `openspec/specs/`, `openspec/decisions.md`, `openspec/changes/tranche-1/` — the specification and the tranche's pick order.
+- `openspec/specs/`, `openspec/decisions.md`, `openspec/changes/tranche-2/` — the specification and the tranche's pick order.
 - `docs/SPECIFICATION.md`, `docs/OPEN-QUESTIONS.md` (generated views), `docs/client/`, `docs/tools/build_client_doc.py`, `docs/tools/board.sh`.
 - `packages/contracts/test/<Suite>.tree.md` in NFT — one branching tree per test suite, leaves citing requirement IDs, with
   the auditor's INV-N and Fork-N obligations numbered once across all trees.
-- `packages/contracts/docs/RUNBOOK.md` in NFT — operating steps: the ownership handover (COL-10), the whitelist into Studio (WL-4), transfer enforcement (OPS-6), royalties (COL-6) and `Activation` — the read-back, the control check, the pause around rehearsals and switch-on, and the mint batch size (OPS-2, ACT-11).
+- `packages/contracts/docs/RUNBOOK.md` in NFT — operating steps: the ownership handover (COL-10), the whitelist into Studio (WL-4), transfer enforcement (OPS-6), royalties (COL-6) and `Activation` — the read-back, the control check, the pause around rehearsals and switch-on, and the mint batch size (OPS-2, ACT-15).
 - `packages/contracts/test/SeaDropIntegration.t.sol` in NFT and its tree — the boundary with OpenSea Studio.
 - `docs/MintABear-Questionnaire-v2.0.docx` — the client questionnaire the original build answered.
 - `~/.claude/plans/i-am-starting-a-tidy-sloth.md` — the original decision log, item by item.

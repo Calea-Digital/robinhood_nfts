@@ -104,7 +104,9 @@ on one Task never covers the next.
   commit style. If the merge conflicts or a gate goes red on the result, stop and report:
   the Task stays In Review. Otherwise `update_issue` State → **Done** and comment
   `Reviewed — accepted · <merge commit> · <UTC ISO time>` with the evidence checked, and the
-  hand checks the person did or deferred. `log_work` the review time (type Testing, whole
+  hand checks the person did or deferred. The time is the merge commit's, read from git
+  (`TZ=UTC0 git -C ../NFT log -1 --date=format-local:%Y-%m-%dT%H:%M:%SZ --format=%cd <merge>`),
+  never written by hand. `log_work` the review time (type Testing, whole
   minutes). Do not push.
 - **Changes.** Record what the person wants as a comment, `Reviewed — changes requested`
   with numbered items. The Task stays **In Review**. Do not reopen it: its `tasks.md` line is
