@@ -15,6 +15,7 @@ CQ-22 and CQ-23 are open.
 - [x] 2.1 RAF-8 — one VRF v2.5 request and one word per open, `PrizeDraw` the subscription's consumer
 - [x] 2.2 RAF-29 — `resolve(openIndex, cycleId, tokenId, opener)`: `OutOfOrder`, `UnknownCycle`, `InvalidTokenId`, `AlreadyResolved`, `CycleExhausted`, `DrawRequested`; outcomes applied in `openIndex` order; the draw's `scheduleCycle(cycleId, prizeCount, manifestHash)`
 - [x] 2.3 RAF-30 — the win rule: `(w mod idsLeft) < prizesLeft`, both counters, `OutcomeRecorded`
+- [ ] 2.4 RAF-29 — (Defect MNT-157) `applyOutcomes` refuses (e.g. `InsufficientGas`) when the next opening's word is stored but nothing could be applied, so an estimated gas limit applies at least one outcome; a call with nothing to apply still returns 0; `rawFulfillRandomWords` never reverts (INV-28); the runbook gives `applyOutcomes` an explicit gas limit
 
 ## 3. Both
 
