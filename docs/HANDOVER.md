@@ -222,7 +222,10 @@ Since PR A (NFT#12) it holds, all Done on the person's accept:
 The PR from `feat/contracts` into `release/1.1` is ready whenever the person says so; it touches no
 Railway-watched path.
 
-**Asked at the end of 9 October:** whether `feat/contracts` goes to `release/1.1` (push, then a PR).
+**The next session starts from `docs/prompts/integrity-pr-mint-questions.md`:** an integrity check,
+`feat/contracts` level with `release/1.1`, the PR, and the questions document for MINT's meeting on
+Monday 12 October. `feat/contracts` was pushed at `bc89abb` on 9 October (0 commits behind
+`release/1.1`); no PR is open yet.
 It was held until the client's mystery-box calls were in, at the person's word; they are (MNT-158).
 Every Task merged since PR A is Done. MNT-154 (`NONE`, the move into NFT) is still In Progress.
 Hand checks for staging and the testnets: a real Chainlink callback after a worker relay
