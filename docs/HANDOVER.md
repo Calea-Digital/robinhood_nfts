@@ -171,13 +171,13 @@ Agreed at the review, still to act on:
 
 ## Next session — tranche 2 continues
 
-**Where the code is** (2026-10-09, end of day). `feat/contracts` in `../NFT` is at `48893ca`, ahead
+**Where the code is** (2026-10-09, end of day). `feat/contracts` in `../NFT` is at `bc89abb`, ahead
 of `origin/feat/contracts` (`4e74b71`) and **not pushed**. Every gate is green there:
 - fmt, 0 warnings;
 - 328 tests, coverage 100/100;
 - Slither 51 with no High or Critical;
 - `verify.sh` and its test;
-- the client's 141;
+- the client's 180;
 - quotes 40/0.
 
 Since PR A (NFT#12) it holds, all Done on the person's accept:
@@ -211,27 +211,33 @@ Since PR A (NFT#12) it holds, all Done on the person's accept:
     wins at the tail, then `CycleExhausted`; and, on both contracts together, a started cycle's
     terms fixed and a sold bear's outcome kept with the seller.
   - The box-and-draw suites share `MysteryBoxAndDrawBase`.
+- the client's mystery-box calls (Defect MNT-158, DEL-6, `tasks.md` line 3.5), widened at the person's word to the admin page and the worker:
+  - the page: `open`, shots left (one Multicall3 call over the wallet's bear ids; ERC721A cannot list them), outcomes, odds, payouts;
+  - MINT's admin page: exclusions, a cycle on both chains (the draw's half simulated first), pauses, `setWorker`;
+  - the worker: `nextOpening` and `relay` (checked against the box's `BoxOpened`, looked up backwards in pages of `logBlockRange`; nothing scanned before `openCount` reaches it), `applyOutcomes`, payout records.
+  - The draw is a second client, `draw: { publicClient, walletClient?, address }`, on Arbitrum One. Every draw write asks the wallet's chain first.
+  - `ContractPaused` and `InvalidWindow` are decoded by function; `explainError(error, functionName?)` for calls sent outside the library.
+  - Self-review report: `reports/del-6-158-diff-review.md`.
 
 The PR from `feat/contracts` into `release/1.1` is ready whenever the person says so; it touches no
 Railway-watched path.
 
 **Asked at the end of 9 October:** whether `feat/contracts` goes to `release/1.1` (push, then a PR).
+It was held until the client's mystery-box calls were in, at the person's word; they are (MNT-158).
 Every Task merged since PR A is Done. MNT-154 (`NONE`, the move into NFT) is still In Progress.
+Hand checks for staging and the testnets: a real Chainlink callback after a worker relay
+(46630 and Arbitrum Sepolia), and the admin page's `scheduleCycle` with one Privy wallet.
 
-**Next, in `openspec/changes/tranche-2/tasks.md` order** (RAF-17 and RAF-19 are Done):
-1. **Line 3.5, DEL-6** (its Task MNT-69 is Done from tranche 1, so the line needs its own Task
-   first, IC-2): the client's mystery-box calls: `open`, the reads, and a wallet's shots
-   left, counted bear by bear from `ownerOf`, `isExcluded`, `opened(currentCycle, id)`, `isOpen` and
-   `paused` in one Multicall3 call (deployed on 4663 and 46630).
-2. **Gated, waiting on MINT:** RAF-14 and RAF-18 (CQ-23, the worker's operator; RAF-18 also
+**Next, in `openspec/changes/tranche-2/tasks.md` order** (RAF-17, RAF-19 and line 3.5 are Done):
+1. **Gated, waiting on MINT:** RAF-14 and RAF-18 (CQ-23, the worker's operator; RAF-18 also
    CQ-22, prize delivery).
-3. **The deploy entry points** for `MysteryBox` and `PrizeDraw` (not yet a `tasks.md` line). Deploy
+2. **The deploy entry points** for `MysteryBox` and `PrizeDraw` (not yet a `tasks.md` line). Deploy
    order: exclusions, then the box's first `scheduleCycle` (frozen at `EXPECTED_PLAYABLE`, 4,222),
    then `PrizeDraw` with `PLAYABLE` 4,222 and `firstOpenIndex` 1, then the draw's terms for each
    cycle before its start on 4663. Read back every constructor value, including
    `requestConfirmations` and `callbackGasLimit` against the coordinator's limits.
-4. **OPS-4**, the rehearsal, still waits for the testnet $MNTD (MINT).
-5. **Tooling, here (not a `tasks.md` line):** a check that every test named in a tree exists,
+3. **OPS-4**, the rehearsal, still waits for the testnet $MNTD (MINT).
+4. **Tooling, here (not a `tasks.md` line):** a check that every test named in a tree exists,
    beside `check_scenario_quotes.py`. The RAF-19 review left it out of the code branch.
 
 **How the loop is worked now.** Every Task: `/mnt:next`, `/mnt:done`, then `/mnt:review` with the
@@ -329,8 +335,9 @@ The code is written and reviewed (above). What remains before the internal audit
 ### Tranche 2 — the mystery box
 
 - **Done** (on `feat/contracts`): RAF-32, RAF-27, RAF-28, RAF-34 (`MysteryBox`); RAF-8, RAF-29,
-  RAF-30, RAF-33 and Defect MNT-157 (`PrizeDraw`); RAF-16, RAF-17 and RAF-19 (both).
-- **Next:** the client's calls (line 3.5, which needs its own Task) and the deploy entry points.
+  RAF-30, RAF-33 and Defect MNT-157 (`PrizeDraw`); RAF-16, RAF-17 and RAF-19 (both); the client's
+  calls for the page, the admin page and the worker (Defect MNT-158, DEL-6).
+- **Next:** the deploy entry points.
 - **Gated by MINT:** RAF-14 (CQ-23), RAF-18 (CQ-22, CQ-23).
 - Testnet rehearsal on 46630, Arbitrum Sepolia and Sepolia, two cycles included.
 - The admin-page and worker calls in the client library (DEL-6).
