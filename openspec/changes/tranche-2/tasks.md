@@ -18,7 +18,7 @@ open (and CQ-22, which gates RAF-18). RAF-33's payout record is built ahead of C
 - [x] 2.3 RAF-30 — the win rule: `(w mod idsLeft) < prizesLeft`, both counters, `OutcomeRecorded`
 - [x] 2.4 RAF-29 — (Defect MNT-157) `applyOutcomes` refuses with `InsufficientGas` when it stops for gas with fewer than `maxCount` applied and the next opening's word stored, so a wallet's gas estimate applies every ready outcome up to `maxCount`; a missing word or `maxCount` 0 returns 0; the callback and `resolve` still stop quietly (INV-28); INV-29 records the bound and the trade (a fixed gas limit with too large a `maxCount` makes no progress)
 
-- [ ] 2.5 RAF-33 — `recordPayout(openIndex, chainId, txHash)`: `NotAWin`, `AlreadyPaid`, `PrizePaid`, and the `payoutOf(openIndex)` read; assert `recordPayout` still works while the draw is paused (RAF-34's Scenario clause)
+- [x] 2.5 RAF-33 — `recordPayout(openIndex, chainId, txHash)`: `NotAWin`, `AlreadyPaid`, `PrizePaid`, and the `payoutOf(openIndex)` read; assert `recordPayout` still works while the draw is paused (RAF-34's Scenario clause)
 
 ## 3. Both
 
