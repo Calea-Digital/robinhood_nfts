@@ -429,6 +429,23 @@ to claim from a contract that releases each prize only once. Also asked: the cla
 native), the number of prizes per cycle, and for D who creates the payout key. The message is
 `docs/client/MINT-message-prize-delivery-2026-10-14.md`.
 
+**Answers (MINT, through Calea's lead, 14 October 2026).** If winners claim, the window is until the
+end of the cycle. Prizes can be of every kind: ERC-721, ERC-1155, ERC-20 and native coins (ETH,
+APE). A cycle has about 5 prizes, at most 10.
+
+**What D needs for every prize kind (14 October).**
+- The prize list is machine-readable (chain, kind, token, id and/or amount), and the worker pays
+  only when its hash equals the cycle's `manifestHash`.
+- Before each cycle, a preflight checks that the payout wallet holds every prize and the gas on
+  each chain, and dry-runs every transfer.
+- Native: a value transfer. ERC-20: `transfer`, accepting tokens that return nothing, and checking
+  the balance moved in full. ERC-721 and ERC-1155: `safeTransferFrom`.
+- An opener whose address has code on Robinhood Chain is not paid automatically. MINT settles it
+  by hand (RAF-33).
+- Each payout is signed with a fixed nonce, and its hash is stored before broadcast. After a
+  crash the same transaction is re-sent, so a coin or token prize can never be paid twice. This
+  needs a small store for payouts in flight.
+
 ### CQ-23 — Who operates the worker
 - **Section:** OPS
 - **Needed by:** 2026-10-12 — before `PrizeDraw` is deployed

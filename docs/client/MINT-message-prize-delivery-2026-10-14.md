@@ -31,12 +31,11 @@ Following Monday's call, one decision is still open on the mystery box: how a wi
 
 **Our recommendation.** D if what matters is that the winner gets the prize straight away: it is the quickest to build and adds nothing to deploy or audit. B if MINT specifically wants winners to claim from a contract that holds the prizes and releases each one only once; we can build it, with the timing above.
 
+**What we already have from you:** a claim, if chosen, stays open until the end of the cycle; prizes can be NFTs (ERC-721, ERC-1155), tokens (ERC-20) or native ETH and APE; a cycle has about 5 prizes, at most 10. Every option handles all of these. With D, the worker checks before each cycle that every prize is in the payout wallet and can be sent, and it pays a winner whose wallet is a smart contract only after MINT checks it by hand, since that address may not work on the other chains.
+
 **To decide this we need:**
 1. A, B, C or D.
-2. For B or C, the claim window: until the end of the cycle, or a fixed time after the win (for example 30 days)?
-3. What the prizes are: NFTs (ERC-721 or ERC-1155), tokens (ERC-20), or native ETH or APE?
-4. Roughly how many prizes per cycle?
-5. For D: who creates the payout wallet's key (we suggest Lorenzo, as for the worker's key)?
+2. For D: who creates the payout wallet's key (we suggest Lorenzo, as for the worker's key)?
 
 If you can confirm by Tuesday 21 October, option B can still be ready before a first cycle in mid-November.
 
