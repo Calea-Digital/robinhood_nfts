@@ -117,7 +117,7 @@ and the code in `../NFT` against the answer.
   the baseline rule of 1 October, the wallet lock, one account per wallet, display-only team
   spots, wallet signatures, the hand-off, and the production addresses. §8 has the hand-off rows.
   This closes the spec delta the whitelist memory had left open since 29 September.
-- **Checks:** lint OK; prose current; §10 matches; quotes 40/0.
+- **Checks:** lint OK; prose current; §10 matches; quotes 37/3 against `feat/contracts` (the expected RAF-16, 27, 28 until MNT-161 merges) and 40/0 against MNT-161's branch.
 - **Open:**
   - **IC-Q5-1.** `?since=` on MINT's wager API is still asked for. Until then the 1 October
     baseline rule applies (WL-1).
@@ -211,6 +211,6 @@ and the code in `../NFT` against the answer.
   CQ-23 gives it one; it holds the randomness subscription (CQ-17)". CQ-17 resolved. §10 drops the
   item (four left: O1 CQ-22, O2 CQ-23, O3 CQ-2, O4 CQ-1). §1.3's Calea row, §10's settled table and
   HANDOVER's accepted risks follow.
-- **Checks:** lint OK; prose current; §10 matches; quotes 40/0.
+- **Checks:** lint OK; prose current; §10 matches; quotes 37/3 against `feat/contracts` (the expected RAF-16, 27, 28 until MNT-161 merges) and 40/0 against MNT-161's branch.
 - **Open:** which Calea wallet holds the subscription. It is named at `PrizeDraw`'s deployment,
   and OPS-1 records it.
