@@ -348,10 +348,10 @@ its first cycle.
 ### CQ-22 — How a prize is delivered
 - **Statement:** Prize delivery from the prize wallet
 - **State:** open
-- **Status note:** meeting, 12 October 2026; MINT prefers a claim; three options sent to MINT on 14 October
+- **Status note:** meeting, 12 October 2026; MINT prefers a claim; four options sent to MINT on 14 October
 - **Section:** RAF
 - **Needed by:** 2026-10-21 — a claim from a vault needs about a week of building and audit before the first cycle
-- **Resolution:** Open; MINT prefers that the winner claims; options A (MINT sends), B (claim from a vault on each prize chain) and C (the winner requests, MINT sends) are with MINT
+- **Resolution:** Open; MINT prefers that the winner claims; options A (MINT sends), B (claim from a vault on each prize chain), C (the winner requests, MINT sends) and D (the worker sends automatically from a payout wallet) are with MINT
 - **Default if deferred:** MINT pushes each win from the prize wallet to the opener's address on the prize's chain, and the worker records it with `recordPayout`.
 - **Blocks:** RAF-18
 
@@ -389,9 +389,16 @@ Three options went to MINT:
   audit.
 - **C. The winner requests, MINT sends.** The winner signs a free request on the page within the
   window, and MINT sends as in A. No new contract.
-Calea recommends C if what matters is that winners act, and B if MINT wants the prizes visibly
-held in a contract. Also asked: the claim window, the prize types (ERC-721, ERC-1155, ERC-20,
-native) and the number of prizes per cycle. The message is
+- **D. Automatic payout wallet** (added 14 October, after the person noted that with A and C the
+  winner sees the win at once but waits for MINT's operator). Before each cycle MINT moves its
+  prizes into a separate payout wallet on each prize chain. The worker holds that key, sends each
+  win as soon as it is recorded, and calls `recordPayout`. No new contract. The payout key is live
+  on MINT's server, exposing only the cycle's prizes; the worker, not a contract, ensures each win
+  is paid once, by checking `payoutOf` and the wallet's own transactions before every send. MINT
+  keeps gas in it on each prize chain.
+Calea recommends D if what matters is that the prize arrives at once, and B if MINT wants winners
+to claim from a contract that releases each prize only once. Also asked: the claim window, the prize types (ERC-721, ERC-1155, ERC-20,
+native), the number of prizes per cycle, and for D who creates the payout key. The message is
 `docs/client/MINT-message-prize-delivery-2026-10-14.md`.
 
 ### CQ-23 — Who operates the worker

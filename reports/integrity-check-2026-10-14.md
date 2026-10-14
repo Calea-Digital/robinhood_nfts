@@ -243,7 +243,8 @@ and the code in `../NFT` against the answer.
   signature to tell it the win (no cross-chain messaging on 4663). Three options: A, MINT sends
   (built); B, a vault per prize chain with signed claims (new contract on three chains, audit, a
   signing key in the worker, about 3–4 days plus deployment); C, the winner requests and MINT
-  sends (no contract). The message for MINT is in
+  sends (no contract); D, the worker sends automatically from a payout wallet holding the cycle's
+  prizes (no contract; added after the person noted A and C delay the prize). The message for MINT is in
   `docs/client/MINT-message-prize-delivery-2026-10-14.md`.
 - **Spec:** CQ-22 stays open, with the call's answer and the options recorded. Needed by moves to
   21 October. §10 is re-ordered (O1 CQ-2, O2 CQ-22, O3 CQ-1), and HANDOVER's open items follow. No
