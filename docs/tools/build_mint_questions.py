@@ -152,7 +152,7 @@ GROUPS = [
          "Calea runs the worker as a priced service, with MINT able to replace it at any time. MINT "
          "tops up its gas on Arbitrum One."),
         ("11", "How a prize reaches the winner", "CQ-22",
-         "Prizes sit in MINT's prize wallet `0xf6c0…e3e3`, and each win is paid by an ordinary "
+         "Prizes sit in MINT's prize wallet `0xf6c0…83e3`, and each win is paid by an ordinary "
          "transfer. Whoever sends it, every payment is recorded against the winning opening, so "
          "anyone can see a win that was never paid. This decides the payout step and the play "
          "page's prize screen.",

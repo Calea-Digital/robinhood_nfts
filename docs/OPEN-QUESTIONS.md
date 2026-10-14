@@ -30,7 +30,7 @@ Answers from each call are marked as such below.
 |---|---|---|---|---|---|
 | CQ-1 | CAL | Dates after the 29 Oct mint | Anchors stand; whitelist frozen by 27 October; other §8 rows unconfirmed | 2026-10-29 | Follow-up |
 | CQ-2 | ACT | $MNTD burn route | Native; OpenZeppelin `ERC20Burnable`, 18 decimals, immutable; testnet `0x15CF…211C`; mainnet address to follow | 2026-10-20 | Follow-up |
-| CQ-12 | OPS | Addresses; Safe on 4663 | Admin `0x1530…6141` (EOA) for every contract, to confirm; worker to follow | 2026-10-02 | Follow-up |
+| CQ-12 | OPS | Addresses; Safe on 4663 | Admin `0x1530…6141` (EOA) owns every contract on every chain | 2026-10-02 | Answered |
 | CQ-17 | RAF | VRF subscription and network | Arbitrum One; MINT owns the subscription (assumed) | 2026-10-12 | Follow-up |
 | CQ-20 | RAF | Prize count, odds and excluded ids | the owner sets each cycle's prize count and prize list from MINT's admin page; **222** team ids are excluded, fixed for good; prizes are held on Robinhood Chain, Ethereum and possibly ApeChain in MINT's prize wallet. | 2026-10-05 | Follow-up |
 | CQ-22 | RAF | Prize delivery from the prize wallet | Open; Calea recommends that MINT pushes each win to the opener | 2026-10-12 | Open |
@@ -165,8 +165,8 @@ rehearsal (OPS-4) burns.
 ### CQ-12 — Addresses and the admin wallet
 - **Section:** OPS
 - **Needed by:** 2026-10-02 — before anything is deployed to mainnet
-- **Status:** Follow-up (call, 28 September 2026; admin supplied, signer and worker to follow)
-- **Resolution:** admin `0x153052B43c8fD4ec01f14D1Edd8660778daa6141`, an EOA, assumed to own every contract on every chain; the worker to follow. No eligibility signer is needed (CQ-18).
+- **Status:** Answered (meeting, 12 October 2026; the admin confirmed for every contract)
+- **Resolution:** admin `0x153052B43c8fD4ec01f14D1Edd8660778daa6141`, an EOA, owns every contract on every chain; a later move to a multisig goes through each contract's two-step handover. The worker's address is CQ-23's. No eligibility signer is needed (CQ-18).
 
 **Question.** Four addresses, as OPS-1 records them: the **admin** (owner of every contract on
 every chain), the **worker** key (raffle lifecycle, seed relay, winners root), the **eligibility
@@ -200,6 +200,23 @@ key alone, and the runbook's reset of the minter list at handover is the remaini
 
 **Remaining.** Confirm `0x1530…6141` for every contract on every chain, or name the exceptions.
 The worker's address follows CQ-23. The whitelist is off-chain (CQ-18), so there is no signer.
+
+**Answer (meeting, 12 October 2026).** Treat `0x1530…6141` as the owner and admin of every
+contract. MINT may move to a multisig later, and asked that the contracts support a two-step
+ownership transfer for it.
+
+**Recorded as.** OPS-1: `0x1530…6141` owns `MintABear`, `Activation` and `MysteryBox` on Robinhood
+Chain and `PrizeDraw` on Arbitrum One. Each contract moves ownership in two steps, and none can be
+renounced:
+- `MintABear` (SeaDrop's `TwoStepOwnable`, COL-10): the owner calls `transferOwnership(new)`, and
+  the new owner calls `acceptOwnership()`. Until then the old owner stays owner and can cancel.
+- `Activation`, `MysteryBox` and `PrizeDraw` (Solady, ACT-12, RAF-14): the new owner calls
+  `requestOwnershipHandover()`, and the owner calls `completeOwnershipHandover(new)` within 48
+  hours. `transferOwnership` reverts, so ownership can never reach an address that has not asked
+  for it.
+A multisig takes each step as one of its own transactions. On Robinhood Chain that needs Safe's
+transaction tooling for chain 4663, which is not yet checked (rehearsal unknown 6). The worker's
+address stays with CQ-23.
 
 ### CQ-17 — VRF subscription
 - **Section:** RAF
@@ -306,7 +323,7 @@ deployment either way, but the UI names the chains.
 - **Status:** Open (new; from the call, 28 September 2026)
 - **Resolution:** Open; Calea recommends that MINT pushes each win to the opener
 
-**Question.** Prizes sit in MINT's prize wallet `0xf6c0…e3e3` (CQ-8), an externally owned
+**Question.** Prizes sit in MINT's prize wallet `0xf6c0…83e3` (CQ-8), an externally owned
 account, and are paid by transfer. Two things follow that only MINT can decide.
 
 - **Who sends the payout.** Either MINT, by hand from the wallet, or automation. Automation puts

@@ -32,7 +32,7 @@ As of 29 September 2026. Nothing is deployed yet.
 | Deployment and runbook (§7) | Scripts written and tested; the runbook covers every operating step |
 | Internal audit | Tranche 1 (collection and activation): 30 September – 1 October |
 | Testnet rehearsal | Ready to run: MINT's testnet $MNTD is deployed and checked (CQ-2) |
-| Mystery box (§6) | Specified. Built once the team bears' ids arrive (O2) |
+| Mystery box (§6) | Specified. Built once the team bears' ids arrive (O1) |
 
 **What the client library needs from MINT.** None of these changes a contract. Each is needed
 before the page it serves goes live.
@@ -93,7 +93,7 @@ before the page it serves goes live.
   - the Status boost and Status links;
   - holding and paying prizes;
   - monitoring and alerts;
-  - backend services and indexing, apart from the worker (O5).
+  - backend services and indexing, apart from the worker (O4).
 - **Not part of the design:** token-bound accounts (ERC-6551, COL-9); bridging prizes between
   chains; cross-chain messaging.
 
@@ -107,9 +107,9 @@ before the page it serves goes live.
 | Lorenzo (MINT) | Privy login; account, Status and wager APIs |
 | Vlad (MINT) | Privy connection on getminted.io and the wager API, with Lorenzo |
 | Guri (MINT) | The whitelist eligibility check |
-| MINT's wallets | Admin `0x1530…6141`: the team bears, each cycle, pauses. Prize wallet `0xf6c0…e3e3`: holds and pays prizes |
-| Worker | Carries each box opening to the draw and records payouts. Calea runs it unless MINT decides otherwise (O5) |
-| Calea / Rayco | Builds, tests, deploys and hands over the contracts and the client library. Keeps no key after handover, except the worker's if O5 decides so |
+| MINT's wallets | Admin `0x1530…6141`: the team bears, each cycle, pauses. Prize wallet `0xf6c0…83e3`: holds and pays prizes |
+| Worker | Carries each box opening to the draw and records payouts. Calea runs it unless MINT decides otherwise (O4) |
+| Calea / Rayco | Builds, tests, deploys and hands over the contracts and the client library. Keeps no key after handover, except the worker's if O4 decides so |
 | Calea internal auditor | Audits each tranche independently of the developer: review, fuzzing, report |
 
 ## 2. System overview (SYS)
@@ -121,7 +121,7 @@ before the page it serves goes live.
 | Robinhood Chain | The bears, their levels and the mystery box's openings; prizes in MINT's wallet |
 | Arbitrum One | The draw, which uses Chainlink's randomness (Robinhood Chain has none) |
 | Ethereum | Prizes in MINT's wallet; no contract |
-| ApeChain | Prizes in MINT's wallet, if MINT confirms it (O2); no contract |
+| ApeChain | Prizes in MINT's wallet, if MINT confirms it (O1); no contract |
 
 Everything is rehearsed first on the testnets: Robinhood Chain testnet (46630), Arbitrum Sepolia,
 Sepolia and, if ApeChain holds prizes, Curtis.
@@ -143,7 +143,7 @@ The whitelist has no contract (WL-8).
   - the level reset on transfer, levels and weights;
   - one shot per bear per cycle and the team-bear exclusion;
   - the order of the draw.
-- **MINT's admin wallet**, one wallet for every contract (O1), configures Studio, pauses burning,
+- **MINT's admin wallet**, one wallet for every contract, configures Studio, pauses burning,
   and schedules each cycle with its prize list. It cannot move a holder's bear, grant a level
   without a burn, or change an outcome. It can allow another minter on the collection, so that
   key has to be kept safe.
@@ -708,7 +708,7 @@ replacement, the next unresolved opening), and both `nextToResolve` and `nextToA
 
 *Acceptance.* When `resolve` runs; then exactly one VRF v2.5 request is made from the subscription with `PrizeDraw` as consumer; and the outcome uses that request's word alone.
 
-**RAF-33 Prize custody and the payout record.** Prizes sit in MINT's prize wallet `0xf6c0…e3e3` on Robinhood Chain, Ethereum and possibly
+**RAF-33 Prize custody and the payout record.** Prizes sit in MINT's prize wallet `0xf6c0…83e3` on Robinhood Chain, Ethereum and possibly
 ApeChain (MINT, CQ-8, CQ-20). No contract holds a prize or runs on a prize chain. A prize is paid
 by an ordinary transfer to the winner's address on the prize's chain. Who sends it, and whether
 MINT pushes every win or the winner requests it, is MINT's decision (CQ-22); the record below is
@@ -736,8 +736,10 @@ whose random numbers have arrived, and read everything. No role can open a box f
 change an outcome or move a bear.
 
 *Technical note.* Owner: on `MysteryBox` `excludeRange`, `scheduleCycle`, `setPaused`; on
-`PrizeDraw` `scheduleCycle`, `setWorker`, `setPaused`; ownership transfer on both;
-`renounceOwnership` reverts on both. Worker: `resolve` and `recordPayout` on `PrizeDraw`.
+`PrizeDraw` `scheduleCycle`, `setWorker`, `setPaused`. Ownership moves on both only by Solady's
+two-step handover: the new owner's `requestOwnershipHandover`, then the owner's
+`completeOwnershipHandover` within 48 hours; `transferOwnership` reverts with
+`TwoStepHandoverOnly` and `renounceOwnership` with `RenounceDisabled` on both. Worker: `resolve` and `recordPayout` on `PrizeDraw`.
 Anyone: `open` on `MysteryBox`, `applyOutcomes` on `PrizeDraw`. The VRF coordinator alone
 delivers words.
 
@@ -835,14 +837,15 @@ is recorded before the first sale (COL-6).
 
 | Role | What it does | Who holds it |
 |---|---|---|
-| Admin | owns every contract on every chain | MINT, `0x1530…6141` (to confirm for every contract, O1) |
-| Worker | carries openings to the draw and records payouts | Calea, assumed (O5) |
+| Admin | owns every contract on every chain | MINT, `0x1530…6141` |
+| Worker | carries openings to the draw and records payouts | Calea, assumed (O4) |
 | Royalty receiver | receives the 5% royalties (the pot) | MINT, `0xf7E7…0e63` |
-| Prize wallet | holds and pays every prize | MINT, `0xf6c0…e3e3` |
-| Randomness subscription | pays for the draw's random numbers | MINT, assumed (O4) |
+| Prize wallet | holds and pays every prize | MINT, `0xf6c0…83e3` |
+| Randomness subscription | pays for the draw's random numbers | MINT, assumed (O3) |
 
 *Technical note.* Admin `0x153052B43c8fD4ec01f14D1Edd8660778daa6141`, an EOA (MINT, 28 September
-2026), owner of every contract on every chain `→ CQ-12`. Worker: an EOA funded on Arbitrum,
+2026), owner of every contract on every chain (MINT, 12 October 2026, CQ-12). A later move to a
+multisig goes through each contract's two-step handover (COL-10, ACT-12, RAF-14). Worker: an EOA funded on Arbitrum,
 holding `resolve` and `recordPayout` on `PrizeDraw` `→ CQ-23`. Royalty receiver
 `0xf7E70F5ef311232dBd1b0E4dFB1e3e8FBE7b0e63`, the ERC-2981 receiver `→ CQ-15`. Prize wallet
 `0xf6c02F0fDAC5c03EE9f1cc60A5D9875Efc4c83e3`, an EOA (RAF-33). VRF subscription: the Chainlink
@@ -901,7 +904,7 @@ wallet on 46630 or Sepolia recorded with `recordPayout`.
 *Acceptance.* When the rehearsal runs on 46630, Arbitrum Sepolia and Sepolia; then each listed path completes end to end, including one open that wins and one that does not.
 
 **OPS-5 Handover.** Calea deploys, configures, hands over ownership, verifies the source and delivers the runbook,
-then holds no owner key. The one role it may keep is the worker's, if Calea runs it (O5), and
+then holds no owner key. The one role it may keep is the worker's, if Calea runs it (O4), and
 MINT's admin can take that back at any time. Technical support runs until 19 November 2026 with
 agreed response hours (DEL-10). The runbook covers:
 - the deployment order (OPS-2);
@@ -951,7 +954,7 @@ are not listed.
 | 12 Oct | Test $MNTD on the testnet, for the burn rehearsal: `0x15CF…211C`, the reference token's code | MINT (Lorenzo) | MINT |
 | 5 – 9 Oct | Mystery box, draw, worker and page tested on the testnets, two cycles included; audit report and runbooks; no open Critical or High finding | Calea; Javier; MINT | SoW |
 | 12 – 14 Oct | Mystery box and draw deployed and verified; roles and addresses checked; randomness subscription funded | Calea; Iñigo; MINT | SoW |
-| MINT's dates (O7) | Whitelist campaign open on getminted.io/mintabear | Iñigo; Javier; Vlad; Lorenzo | to confirm |
+| MINT's dates (O6) | Whitelist campaign open on getminted.io/mintabear | Iñigo; Javier; Vlad; Lorenzo | to confirm |
 | 20 Oct | TGE: $MNTD live on Robinhood Chain; Activation deployed against it, paused | MINT; Calea | MINT |
 | 20 – 28 Oct | Real burns rehearsed on mainnet, in short windows the admin opens and closes | Calea; MINT | derived |
 | by 27 Oct | Whitelist frozen, loaded into Studio and checked by Calea; mint proofs published | Iñigo; Calea | MINT |
@@ -972,7 +975,7 @@ are not listed.
   real $MNTD. That window is only nine days after TGE, and the testnet $MNTD takes the pressure
   off it.
 - **The worker outlives the handover.** It keeps running after 19 November for as long as cycles
-  run (O5).
+  run (O4).
 
 ## 9. Deliverables and acceptance (DEL)
 
@@ -1022,7 +1025,7 @@ has to handle. The reference script reproduces the split from `Activation.snapsh
 *Acceptance.* When MINT integrates the play page and the admin page; then every contract call they make is covered by the typed TypeScript library, with passing tests and documented revert reasons, and the reference script reproduces the royalty split.
 
 **DEL-8 Audit tranches.** Tranche 1 is the collection and Activation. Tranche 2 is the mystery box and the draw, once the
-team-bear ids arrive (O2). The whitelist has no contract, so none of it is audited (WL-8). Iñigo
+team-bear ids arrive (O1). The whitelist has no contract, so none of it is audited (WL-8). Iñigo
 accepts each tranche after Calea and MINT sign off, and anything not accepted stays switched off
 in the page.
 
@@ -1059,8 +1062,8 @@ submodules. The local gates are `forge fmt --check`, `forge build --sizes` with 
   - the admin-page calls in the client library.
 
 Two items are priced only if MINT confirms them:
-- **running the worker** after 19 November, if Calea runs it (O5, `→ CQ-23`);
-- **holding and invoicing the randomness subscription**, if MINT doesn't (O4, `→ CQ-17`).
+- **running the worker** after 19 November, if Calea runs it (O4, `→ CQ-23`);
+- **holding and invoicing the randomness subscription**, if MINT doesn't (O3, `→ CQ-17`).
 
 **DEL-11 Frontend collaboration.** MINT builds and owns the page holders use to mint, open boxes, burn and level up, in TypeScript
 on getminted.io (MINT, CQ-19). Calea owns the contracts and the client library (DEL-6), and
@@ -1081,6 +1084,7 @@ in one place, then lists what is still open.
 
 | Topic | Decision | Where |
 |---|---|---|
+| **Admin** | `0x1530…6141` owns every contract on every chain. Ownership moves only in two steps, the new owner accepting, so MINT can move to a multisig later; it can never be renounced (CQ-12) | OPS-1, COL-10, ACT-12, RAF-14 |
 | **Supply** | 4,444 bears, forever. No bear can be burned (CQ-6) | COL-2, COL-8 |
 | **Royalties** | 5% to `0xf7E7…0e63`, enforced on marketplace sales from deployment (CQ-7, CQ-15) | COL-6, COL-7 |
 | **Holder protection** | No freeze and no clawback. No admin can touch a holder's bear (CQ-16) | ACT-12 |
@@ -1092,7 +1096,7 @@ in one place, then lists what is still open.
 | **Mystery box** | Runs in cycles MINT schedules. Each bear gets one shot per cycle, decided on the spot by a fresh random number. The odds are fixed for the cycle, and unawarded prizes stay with MINT for later cycles (CQ-9) | RAF-32, RAF-28, RAF-30 |
 | **Team bears** | 222, excluded from the mystery box for good (CQ-20) | RAF-27 |
 | **Draw** | On Arbitrum One, using Chainlink's randomness (CQ-17) | RAF-8 |
-| **Prizes** | Held and paid by MINT's prize wallet `0xf6c0…e3e3` on Robinhood Chain, Ethereum and possibly ApeChain. Every payout is recorded on-chain (CQ-8) | RAF-33 |
+| **Prizes** | Held and paid by MINT's prize wallet `0xf6c0…83e3` on Robinhood Chain, Ethereum and possibly ApeChain. Every payout is recorded on-chain (CQ-8) | RAF-33 |
 | **Play page** | MINT builds it in TypeScript on getminted.io, using Calea's tested client library (CQ-19) | DEL-6, DEL-11 |
 | **Repository** | `github.com/mintdotio/NFT`, with Calea's recommended layout (CQ-14) | DEL-9 |
 
@@ -1100,19 +1104,10 @@ Questions closed without a decision are listed in the appendix.
 
 ### Open items
 
-Seven points are still MINT's to decide or supply, listed by the date each is needed. Each carries
+Six points are still MINT's to decide or supply, listed by the date each is needed. Each carries
 Calea's fallback, which is what is built if it is not answered in time.
 
-**O1 — Who owns the contracts (CQ-12)** · by 2 October
-
-Every contract has an owner, the one wallet that can change its settings: Studio's configuration,
-the pause on burning, the mystery box's cycles. We have `0x1530…6141`, a single ordinary wallet.
-Confirm it owns every contract on every chain, or name the exceptions.
-
-*Holds up:* the mainnet deployment and the ownership handover. *If not answered:* `0x1530…6141`
-owns everything, and the risk rests on that one key (§2).
-
-**O2 — The 222 team bears (CQ-20)** · by 5 October
+**O1 — The 222 team bears (CQ-20)** · by 5 October
 
 Team bears never play the mystery box, and the set is fixed for good before the first cycle. We
 need their token ids as ranges; if the team mints first from the owner wallet, they are 1–222.
@@ -1121,7 +1116,7 @@ Also: will ApeChain hold prizes?
 *Holds up:* the mystery box build and the first cycle. *If not answered:* no fallback; the first
 cycle cannot be scheduled.
 
-**O3 — How a prize reaches the winner (CQ-22)** · by 12 October
+**O2 — How a prize reaches the winner (CQ-22)** · by 12 October
 
 Prizes sit in MINT's prize wallet, and someone has to send each one: MINT by hand, or an automated
 service holding that wallet's key. And does MINT send every win straight away, or does the winner
@@ -1130,7 +1125,7 @@ request it within 30 days?
 *Holds up:* the payout step. *If not answered:* MINT sends each win to the winner, and the worker
 records it on-chain.
 
-**O4 — Who holds the randomness subscription (CQ-17)** · by 12 October
+**O3 — Who holds the randomness subscription (CQ-17)** · by 12 October
 
 Each box opening buys one random number from Chainlink on Arbitrum One, paid from a prepaid
 subscription that needs topping up. Someone owns and funds it.
@@ -1138,7 +1133,7 @@ subscription that needs topping up. Someone owns and funds it.
 *Holds up:* deploying the draw contract. *If not answered:* MINT owns and funds it. If Calea holds
 it instead, it is a priced service Calea invoices.
 
-**O5 — Who runs the worker (CQ-23)** · by 12 October
+**O4 — Who runs the worker (CQ-23)** · by 12 October
 
 The worker is a small service that carries each box opening from Robinhood Chain to the draw on
 Arbitrum and records payouts. It cannot change an outcome or the order, but it must be running.
@@ -1146,7 +1141,7 @@ Arbitrum and records payouts. It cannot change an outcome or the order, but it m
 *Holds up:* deploying the draw contract and the handover. *If not answered:* Calea runs it as a
 priced service; MINT can replace it at any time.
 
-**O6 — $MNTD's mainnet address (CQ-2)** · by 20 October
+**O5 — $MNTD's mainnet address (CQ-2)** · by 20 October
 
 The activation contract is tied to one $MNTD address for life. The testnet token is deployed and
 carries the reference token's code; we need the mainnet address at TGE.
@@ -1154,7 +1149,7 @@ carries the reference token's code; we need the mainnet address at TGE.
 *Holds up:* the activation contract's deployment. *If not answered:* the activation contract is
 not deployed, and burns cannot open on 29 October.
 
-**O7 — The dates (CQ-1)** · the whitelist window now; the rest by 29 October
+**O6 — The dates (CQ-1)** · the whitelist window now; the rest by 29 October
 
 Three dates are fixed: TGE 20 October, mint 29 October, burns from 29 October. Still needed: the
 whitelist campaign window (the list freezes 48 hours before the whitelist stage), the first

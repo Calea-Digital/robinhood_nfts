@@ -94,7 +94,7 @@ worker).
 - `PrizeDraw` on Arbitrum One carries the same cycle terms, takes one VRF word per open in
   `openIndex` order, applies a fixed pool drawn without replacement per cycle, and records each
   payout (`recordPayout` → `PrizePaid`; RAF-33, not built yet; CQ-22 gates only how a win is sent).
-- Prizes sit in MINT's prize wallet `0xf6c0…e3e3` on Robinhood Chain, Ethereum and possibly
+- Prizes sit in MINT's prize wallet `0xf6c0…83e3` on Robinhood Chain, Ethereum and possibly
   ApeChain, and are paid by transfer. No contract goes on a prize chain.
 
 RAF-32 (cycles), RAF-27 to RAF-30, RAF-8, RAF-33 (custody and the payout record) and RAF-34
@@ -304,13 +304,12 @@ What each open item blocks:
 
 | Open item | Blocks |
 |---|---|
-| O1 admin for every contract (CQ-12), by 2 Oct | Mainnet configs; the accepted risk on the minter list |
-| O2 the 222 excluded ids (CQ-20), by 5 Oct | The first cycle; `PrizeDraw`'s `PLAYABLE` |
-| O3 prize delivery (CQ-22), by 12 Oct | How payouts are sent and whether a request window exists; `recordPayout` is built either way |
-| O4 VRF subscription holder (CQ-17), by 12 Oct | `PrizeDraw`'s deployment (subscription id); DEL-10 if Calea holds it |
-| O5 worker operator (CQ-23), by 12 Oct | The worker's address; OPS-5's handover; DEL-10 |
-| O6 mainnet $MNTD address (CQ-2), by 20 Oct | `Activation`'s deployment (the testnet token is in: `0x15CF…211C`) |
-| O7 dates (CQ-1), by 29 Oct | The whitelist freeze (48 h before the stage); scheduling |
+| O1 the 222 excluded ids (CQ-20), by 5 Oct | The first cycle; `PrizeDraw`'s `PLAYABLE` |
+| O2 prize delivery (CQ-22), by 12 Oct | How payouts are sent and whether a request window exists; `recordPayout` is built either way |
+| O3 VRF subscription holder (CQ-17), by 12 Oct | `PrizeDraw`'s deployment (subscription id); DEL-10 if Calea holds it |
+| O4 worker operator (CQ-23), by 12 Oct | The worker's address; OPS-5's handover; DEL-10 |
+| O5 mainnet $MNTD address (CQ-2), by 20 Oct | `Activation`'s deployment (the testnet token is in: `0x15CF…211C`) |
+| O6 dates (CQ-1), by 29 Oct | The whitelist freeze (48 h before the stage); scheduling |
 
 ## Sources and precedence
 
@@ -449,10 +448,10 @@ RAF-17. Four constraints:
   setting, so the owner — Calea until `acceptOwnership`, then MINT's admin — could allow its own
   address and mint bears outside Studio's stages, without fee or allowlist, up to `MAX_BEARS`.
   Canonical SeaDrop as the only allowed minter (COL-1) is a deployment and ownership property,
-  not a constant. MINT's admin is one EOA, `0x1530…6141` (CQ-12), not a Safe, so the mitigation
+  not a constant. MINT's admin is one EOA, `0x1530…6141` (CQ-12, confirmed 12 October), not a Safe, so the mitigation
   is that key alone and the runbook's handover, which resets the list to canonical SeaDrop
   straight after acceptance.
-- **One EOA owns every contract** (assumed, CQ-12). A compromise of `0x1530…6141` controls the
+- **One EOA owns every contract** (MINT, 12 October 2026, CQ-12). A compromise of `0x1530…6141` controls the
   collection's settings, the pause of `Activation`, and
   the mystery box's exclusions and cycles. It cannot move a holder's bear, record a level
   without a burn, or change an outcome.
@@ -562,11 +561,11 @@ these.
 
 Twenty-four are in `docs/OPEN-QUESTIONS.md`, each with the section it affects, when it is
 needed, the answer where one exists, and the default otherwise:
-- **resolved or closed (17):** CQ-3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 16, 18, 19, 21, 24;
-- **in follow-up (5):** CQ-1, 2, 12, 17, 20;
+- **resolved or closed (18):** CQ-3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 19, 21, 24;
+- **in follow-up (4):** CQ-1, 2, 17, 20;
 - **open (2):** CQ-22, 23.
 
-They map onto O1–O7 in §10. Tranche 1's code is written. The whitelist root check over a CSV is
+They map onto O1–O6 in §10. Tranche 1's code is written. The whitelist root check over a CSV is
 needed by 27 October; the rehearsal is ready to run; tranche 2 waits on the excluded
 ids.
 

@@ -179,7 +179,7 @@ replacement, the next unresolved opening), and both `nextToResolve` and `nextToA
 
 ### Requirement: RAF-33 — Prize custody and the payout record
 **Kind:** work-item
-Prizes sit in MINT's prize wallet `0xf6c0…e3e3` on Robinhood Chain, Ethereum and possibly
+Prizes sit in MINT's prize wallet `0xf6c0…83e3` on Robinhood Chain, Ethereum and possibly
 ApeChain (MINT, CQ-8, CQ-20). No contract holds a prize or runs on a prize chain. A prize is paid
 by an ordinary transfer to the winner's address on the prize's chain. Who sends it, and whether
 MINT pushes every win or the winner requests it, is MINT's decision (CQ-22); the record below is
@@ -213,8 +213,10 @@ whose random numbers have arrived, and read everything. No role can open a box f
 change an outcome or move a bear.
 
 *Technical note.* Owner: on `MysteryBox` `excludeRange`, `scheduleCycle`, `setPaused`; on
-`PrizeDraw` `scheduleCycle`, `setWorker`, `setPaused`; ownership transfer on both;
-`renounceOwnership` reverts on both. Worker: `resolve` and `recordPayout` on `PrizeDraw`.
+`PrizeDraw` `scheduleCycle`, `setWorker`, `setPaused`. Ownership moves on both only by Solady's
+two-step handover: the new owner's `requestOwnershipHandover`, then the owner's
+`completeOwnershipHandover` within 48 hours; `transferOwnership` reverts with
+`TwoStepHandoverOnly` and `renounceOwnership` with `RenounceDisabled` on both. Worker: `resolve` and `recordPayout` on `PrizeDraw`.
 Anyone: `open` on `MysteryBox`, `applyOutcomes` on `PrizeDraw`. The VRF coordinator alone
 delivers words.
 

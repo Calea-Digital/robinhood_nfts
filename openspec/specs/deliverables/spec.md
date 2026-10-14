@@ -69,7 +69,7 @@ has to handle. The reference script reproduces the split from `Activation.snapsh
 ### Requirement: DEL-8 — Audit tranches
 **Kind:** informative
 Tranche 1 is the collection and Activation. Tranche 2 is the mystery box and the draw, once the
-team-bear ids arrive (O2). The whitelist has no contract, so none of it is audited (WL-8). Iñigo
+team-bear ids arrive (O1). The whitelist has no contract, so none of it is audited (WL-8). Iñigo
 accepts each tranche after Calea and MINT sign off, and anything not accepted stays switched off
 in the page.
 
@@ -116,8 +116,8 @@ Listed so nothing is implied:
   - the admin-page calls in the client library.
 
 Two items are priced only if MINT confirms them:
-- **running the worker** after 19 November, if Calea runs it (O5, `→ CQ-23`);
-- **holding and invoicing the randomness subscription**, if MINT doesn't (O4, `→ CQ-17`).
+- **running the worker** after 19 November, if Calea runs it (O4, `→ CQ-23`);
+- **holding and invoicing the randomness subscription**, if MINT doesn't (O3, `→ CQ-17`).
 
 #### Scenario: Every item is in the agreement
 - **WHEN** Rayco's agreement is drawn up
