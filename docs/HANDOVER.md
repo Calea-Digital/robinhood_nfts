@@ -89,8 +89,8 @@ Two decisions are new: CQ-22 (who sends a payout, push or request) and CQ-23 (wh
 worker).
 
 **The mystery box runs in cycles** (§6):
-- `MysteryBox` on 4663 records the excluded ids once, then each cycle's window, prize count and
-  prize-list hash. It checks ownership and spends a bear for the cycle.
+- `MysteryBox` on 4663 records each cycle's window, prize count and prize-list hash. Every bear
+  plays, the team's 222 included (CQ-20, 12 October). It checks ownership and spends a bear for the cycle.
 - `PrizeDraw` on Arbitrum One carries the same cycle terms, takes one VRF word per open in
   `openIndex` order, applies a fixed pool drawn without replacement per cycle, and records each
   payout (`recordPayout` → `PrizePaid`; RAF-33, not built yet; CQ-22 gates only how a win is sent).
