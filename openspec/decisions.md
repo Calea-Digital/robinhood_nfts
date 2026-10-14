@@ -348,10 +348,10 @@ its first cycle.
 ### CQ-22 — How a prize is delivered
 - **Statement:** Prize delivery from the prize wallet
 - **State:** open
-- **Status note:** new; from the call, 28 September 2026
+- **Status note:** meeting, 12 October 2026; MINT prefers a claim; three options sent to MINT on 14 October
 - **Section:** RAF
-- **Needed by:** 2026-10-12 — before `PrizeDraw` is deployed
-- **Resolution:** Open; Calea recommends that MINT pushes each win to the opener
+- **Needed by:** 2026-10-21 — a claim from a vault needs about a week of building and audit before the first cycle
+- **Resolution:** Open; MINT prefers that the winner claims; options A (MINT sends), B (claim from a vault on each prize chain) and C (the winner requests, MINT sends) are with MINT
 - **Default if deferred:** MINT pushes each win from the prize wallet to the opener's address on the prize's chain, and the worker records it with `recordPayout`.
 - **Blocks:** RAF-18
 
@@ -370,6 +370,29 @@ account, and are paid by transfer. Two things follow that only MINT can decide.
 `recordPayout(openIndex, chainId, txHash)`, so a win without a `PrizePaid` is visible to anyone.
 The record is built ahead of the answer (change `raf-33-record-ungated`, 9 October): the answer
 shapes RAF-18's step 6 and the page's prize screen, not `PrizeDraw`.
+
+**Answer (meeting, 12 October 2026).** MINT prefers a pull: the winner, once Chainlink's number
+decides the win, claims the prize through a smart contract. Winners would need gas on each prize
+chain, which Iñigo considers manageable.
+
+**What a claim takes (14 October).** A winner can pull a prize on a prize chain only from a
+contract there that holds it and knows the win. The win is decided on Arbitrum, and Robinhood
+Chain has no cross-chain messaging, so the contract can only learn of the win from a signature.
+Three options went to MINT:
+- **A. MINT sends.** The worker alerts MINT's operator to each win, the operator sends it from the
+  prize wallet, and the worker records it with `recordPayout`. No new contract.
+- **B. Claim from a vault.** A `PrizeVault` on each prize chain holds the cycle's prizes. The
+  worker signs a voucher (winner, openIndex, prize) after reading the outcome. The winner claims
+  on the prize's chain and pays gas there, and unclaimed prizes return to MINT after the window.
+  This reverses MINT's 28 September "no vault nor registry" and adds a contract on three chains
+  (Base later), audit scope, and a signing key in the worker. About 3–4 days plus deployment and
+  audit.
+- **C. The winner requests, MINT sends.** The winner signs a free request on the page within the
+  window, and MINT sends as in A. No new contract.
+Calea recommends C if what matters is that winners act, and B if MINT wants the prizes visibly
+held in a contract. Also asked: the claim window, the prize types (ERC-721, ERC-1155, ERC-20,
+native) and the number of prizes per cycle. The message is
+`docs/client/MINT-message-prize-delivery-2026-10-14.md`.
 
 ### CQ-23 — Who operates the worker
 - **Statement:** Worker operator after handover

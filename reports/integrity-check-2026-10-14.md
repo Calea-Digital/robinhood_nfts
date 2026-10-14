@@ -234,3 +234,19 @@ and the code in `../NFT` against the answer.
   (RAF-14) and MNT-61 (OPS-1) still "depend on" CQ-23 (MNT-140, Done) and CQ-17 (MNT-88, Done),
   and on CQ-11 (MNT-82, Done). They gate nothing, since `/mnt:next` gates on Open decisions only.
   Links are bridge-owned, so the fix is in `~/trees/ai-stack` (the bridge's W6 sweep), not by hand.
+
+## Q11 — how a prize reaches the winner (CQ-22): still open
+
+- **From the call:** MINT prefers a pull, where the winner claims through a smart contract and
+  pays gas on the prize's chain.
+- **Analysis (14 Oct):** a claim on a prize chain needs a contract there holding the prize, and a
+  signature to tell it the win (no cross-chain messaging on 4663). Three options: A, MINT sends
+  (built); B, a vault per prize chain with signed claims (new contract on three chains, audit, a
+  signing key in the worker, about 3–4 days plus deployment); C, the winner requests and MINT
+  sends (no contract). The message for MINT is in
+  `docs/client/MINT-message-prize-delivery-2026-10-14.md`.
+- **Spec:** CQ-22 stays open, with the call's answer and the options recorded. Needed by moves to
+  21 October. §10 is re-ordered (O1 CQ-2, O2 CQ-22, O3 CQ-1), and HANDOVER's open items follow. No
+  requirement changes until MINT answers. B would add a requirement and reverse RAF-33's "no
+  contract on a prize chain".
+- **Checks:** lint OK; prose current; §10 matches.

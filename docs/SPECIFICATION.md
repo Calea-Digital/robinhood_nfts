@@ -1174,16 +1174,7 @@ Questions closed without a decision are listed in the appendix.
 Three points are still MINT's to decide or supply, listed by the date each is needed. Each carries
 Calea's fallback, which is what is built if it is not answered in time.
 
-**O1 — How a prize reaches the winner (CQ-22)** · by 12 October
-
-Prizes sit in MINT's prize wallet, and someone has to send each one: MINT by hand, or an automated
-service holding that wallet's key. And does MINT send every win straight away, or does the winner
-request it within 30 days?
-
-*Holds up:* the payout step. *If not answered:* MINT sends each win to the winner, and the worker
-records it on-chain.
-
-**O2 — $MNTD's mainnet address (CQ-2)** · by 20 October
+**O1 — $MNTD's mainnet address (CQ-2)** · by 20 October
 
 The activation contract is tied to one $MNTD address for life. The testnet token is deployed and
 carries the reference token's code. MINT deploys the mainnet token on 19 October, 24 hours before
@@ -1191,6 +1182,16 @@ TGE, and sends its address that day.
 
 *Holds up:* the activation contract's deployment, not the mint. *If not answered:* the
 activation contract is not deployed, and burns cannot open on 29 October.
+
+**O2 — How a prize reaches the winner (CQ-22)** · by 21 October
+
+MINT prefers that winners claim their prizes. Three ways are on the table: MINT sends each win; the
+winner claims from a prize vault on the prize's chain, with a claim signed for each win; or the
+winner signs a free request and MINT sends. Also needed: the claim window, the prize types and
+roughly how many prizes a cycle has.
+
+*Holds up:* the payout step and the worker's last part; a vault also adds a contract on each prize
+chain. *If not answered:* MINT sends each win to the winner, and the worker records it on-chain.
 
 **O3 — The dates (CQ-1)** · by 29 October
 
