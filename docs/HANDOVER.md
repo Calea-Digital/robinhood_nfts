@@ -230,6 +230,15 @@ Since PR A (NFT#12) it holds, all Done on the person's accept:
 The PR from `feat/contracts` into `release/1.1` is mintdotio/NFT#13 (below); it touches no
 Railway-watched path.
 
+**14 October: PR #13 is merged.** mintdotio/NFT#13 merged into `release/1.1` as `f1f9ce6` (the
+person, 13:25 UTC), approved by lcampanis on `7bf67e8`. The merge deleted the remote
+`feat/contracts`; it was restored by fast-forwarding to `f1f9ce6`, which also brings MINT's #14
+(`apps/claim`) and #15 (RainbowKit, and a `pnpm-lock.yaml` change). `feat/contracts` and
+`release/1.1` are the same commit, and `packages/` is unchanged since `7bf67e8`. MNT-160 and MNT-161
+(based on `7bf67e8`) merge into it after review and reach staging in a follow-up PR. The two
+post-merge checks, a real Chainlink answer after a worker relay and the admin page's
+`scheduleCycle` from one Privy wallet, run in the rehearsal (22–28 October).
+
 **9 October, evening: the PR is open and the questions are ready for MINT.**
 - **PR into `release/1.1`:** https://github.com/mintdotio/NFT/pull/13, from `feat/contracts` at
   `7bf67e8` (pushed; 0 commits behind `release/1.1`). Merging is the person's.

@@ -295,3 +295,17 @@ and the code in `../NFT` against the answer.
 - **Recorded:** `tasks.md` 0.3, §8's 20–21 October row (basis *agreed*), HANDOVER's PR B paragraph.
   No register decision.
 - **Related standing items:** MNT-71 (DEL-9) stays Open until PR B, and MNT-154 (IC-5).
+
+## Q15 — PR #13 into staging
+
+- **State on asking:** open and approved (lcampanis, on `7bf67e8`), not merged; `release/1.1` had
+  no `MysteryBox` or `PrizeDraw`. The person merged it at 13:25 UTC: `f1f9ce6`.
+- **Side effect:** the merge deleted the remote `feat/contracts`, and the local checkout moved to
+  `main`. On the person's word, `feat/contracts` was checked out, fast-forwarded to `release/1.1`
+  (`f1f9ce6`, adding MINT's #14 and #15: `apps/claim`, README, `pnpm-lock.yaml`), and pushed. Remote
+  `feat/contracts` = `release/1.1` = `f1f9ce6`; `packages/` is identical to `7bf67e8`. No
+  Railway-watched path changed by #13 itself.
+- **Follow-ups:** MNT-160 and MNT-161 merge into `feat/contracts` after review, and go to staging
+  in a new PR. PR B (`tasks.md` 0.3) must be rebuilt over #14/#15's lockfile change too. The
+  post-merge checks (a Chainlink answer after a relay; `scheduleCycle` from a Privy wallet) are in
+  the rehearsal.
