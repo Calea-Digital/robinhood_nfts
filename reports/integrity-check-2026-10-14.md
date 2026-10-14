@@ -251,3 +251,6 @@ and the code in `../NFT` against the answer.
   requirement changes until MINT answers. B would add a requirement and reverse RAF-33's "no
   contract on a prize chain".
 - **Checks:** lint OK; prose current; §10 matches.
+- **Narrowed (14 Oct):** the request-then-send option was dropped as A with an extra step. The
+  payout wallet (D) is relabelled C. Known: a claim window until the end of the cycle, every
+  prize kind, about 5 and at most 10 prizes a cycle.

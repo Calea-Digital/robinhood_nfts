@@ -348,10 +348,10 @@ its first cycle.
 ### CQ-22 — How a prize is delivered
 - **Statement:** Prize delivery from the prize wallet
 - **State:** open
-- **Status note:** meeting, 12 October 2026; MINT prefers a claim; four options sent to MINT on 14 October
+- **Status note:** meeting, 12 October 2026; MINT prefers a claim; three options sent to MINT on 14 October
 - **Section:** RAF
 - **Needed by:** 2026-10-21 — a claim from a vault needs about a week of building and audit before the first cycle
-- **Resolution:** Open; MINT prefers that the winner claims; options A (MINT sends), B (claim from a vault on each prize chain), C (the winner requests, MINT sends) and D (the worker sends automatically from a payout wallet) are with MINT
+- **Resolution:** Open; MINT prefers that the winner claims; options A (MINT sends), B (claim from a vault on each prize chain) and C (the worker sends automatically from a payout wallet) are with MINT
 - **Default if deferred:** MINT pushes each win from the prize wallet to the opener's address on the prize's chain, and the worker records it with `recordPayout`.
 - **Blocks:** RAF-18
 
@@ -378,7 +378,7 @@ chain, which Iñigo considers manageable.
 **What a claim takes (14 October).** A winner can pull a prize on a prize chain only from a
 contract there that holds it and knows the win. The win is decided on Arbitrum, and Robinhood
 Chain has no cross-chain messaging, so the contract can only learn of the win from a signature.
-Three options went to MINT:
+The options sent to MINT:
 - **A. MINT sends.** The worker alerts MINT's operator to each win, the operator sends it from the
   prize wallet, and the worker records it with `recordPayout`. No new contract.
 - **B. Claim from a vault.** A `PrizeVault` on each prize chain holds the cycle's prizes. The
@@ -387,25 +387,23 @@ Three options went to MINT:
   This reverses MINT's 28 September "no vault nor registry" and adds a contract on three chains
   (Base later), audit scope, and a signing key in the worker. About 3–4 days plus deployment and
   audit.
-- **C. The winner requests, MINT sends.** The winner signs a free request on the page within the
-  window, and MINT sends as in A. No new contract.
-- **D. Automatic payout wallet** (added 14 October, after the person noted that with A and C the
-  winner sees the win at once but waits for MINT's operator). Before each cycle MINT moves its
+- **C. Automatic payout wallet** (added 14 October, after the person noted that with A the winner
+  sees the win at once but waits for MINT's operator). Before each cycle MINT moves its
   prizes into a separate payout wallet on each prize chain. The worker holds that key, sends each
   win as soon as it is recorded, and calls `recordPayout`. No new contract. The payout key is live
   on MINT's server, exposing only the cycle's prizes; the worker, not a contract, ensures each win
   is paid once, by checking `payoutOf` and the wallet's own transactions before every send. MINT
   keeps gas in it on each prize chain.
-Calea recommends D if what matters is that the prize arrives at once, and B if MINT wants winners
+Calea recommends C if what matters is that the prize arrives at once, and B if MINT wants winners
 to claim from a contract that releases each prize only once. Also asked: the claim window, the prize types (ERC-721, ERC-1155, ERC-20,
-native), the number of prizes per cycle, and for D who creates the payout key. The message is
+native), the number of prizes per cycle, and for C who creates the payout key. The message is
 `docs/client/MINT-message-prize-delivery-2026-10-14.md`.
 
 **Answers (MINT, through Calea's lead, 14 October 2026).** If winners claim, the window is until the
 end of the cycle. Prizes can be of every kind: ERC-721, ERC-1155, ERC-20 and native coins (ETH,
 APE). A cycle has about 5 prizes, at most 10.
 
-**What D needs for every prize kind (14 October).**
+**What C needs for every prize kind (14 October).**
 - The prize list is machine-readable (chain, kind, token, id and/or amount), and the worker pays
   only when its hash equals the cycle's `manifestHash`.
 - Before each cycle, a preflight checks that the payout wallet holds every prize and the gas on
@@ -417,6 +415,12 @@ APE). A cycle has about 5 prizes, at most 10.
 - Each payout is signed with a fixed nonce, and its hash is stored before broadcast. After a
   crash the same transaction is re-sent, so a coin or token prize can never be paid twice. This
   needs a small store for payouts in flight.
+
+**Options narrowed (14 October).** A request-then-send option, in which the winner signs a free
+request and MINT sends, was dropped before sending: it is A with an extra step for the winner. The
+payout wallet, first labelled D, is option C. As sent: A is the simplest, but the prize arrives
+when MINT acts. B is the most work and the safest, fully automated with the release enforced by a
+contract. C is the middle ground, automatic, with a live key on MINT's server.
 
 ### CQ-23 — Who operates the worker
 - **Statement:** Worker operator after handover

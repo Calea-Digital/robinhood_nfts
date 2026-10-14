@@ -1185,12 +1185,12 @@ activation contract is not deployed, and burns cannot open on 29 October.
 
 **O2 — How a prize reaches the winner (CQ-22)** · by 21 October
 
-MINT prefers that winners claim their prizes. Four ways are on the table: MINT sends each win; the
-winner claims from a prize vault on the prize's chain, with a claim signed for each win; the
-winner signs a free request and MINT sends; or the worker sends each win automatically from a
-payout wallet holding the cycle's prizes. Only the vault and the payout wallet deliver within
-seconds of the win. Also needed: the claim window, the prize types and
-roughly how many prizes a cycle has.
+MINT prefers that winners claim their prizes. Three ways are on the table: MINT sends each win,
+which is simplest, but the prize arrives when MINT acts; the winner claims from a prize vault on
+the prize's chain, with a claim signed for each win, which is the most work and the safest; or the
+worker sends each win automatically from a payout wallet holding the cycle's prizes, the middle
+ground, with a live key on MINT's server. Known: a claim stays open until the end of the cycle; prizes
+are of every kind; a cycle has about 5, at most 10.
 
 *Holds up:* the payout step and the worker's last part; a vault also adds a contract on each prize
 chain. *If not answered:* MINT sends each win to the winner, and the worker records it on-chain.
