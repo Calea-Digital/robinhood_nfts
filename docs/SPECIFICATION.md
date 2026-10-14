@@ -32,7 +32,7 @@ As of 29 September 2026. Nothing is deployed yet.
 | Deployment and runbook (§7) | Scripts written and tested; the runbook covers every operating step |
 | Internal audit | Tranche 1 (collection and activation): 30 September – 1 October |
 | Testnet rehearsal | 16 October on 46630; Studio and the first OpenSea sale are proven on mainnet, 19–21 October (OPS-4) |
-| Mystery box (§6) | Specified. Built once the team bears' ids arrive (O1) |
+| Mystery box (§6) | Built and in review for staging (pull request #13); every bear plays (CQ-20) |
 
 **What the client library needs from MINT.** None of these changes a contract. Each is needed
 before the page it serves goes live.
@@ -93,7 +93,7 @@ before the page it serves goes live.
   - the Status boost and Status links;
   - holding and paying prizes;
   - monitoring and alerts;
-  - backend services and indexing, apart from the worker (O4).
+  - backend services and indexing, apart from the worker (`→ CQ-23`).
 - **Not part of the design:** token-bound accounts (ERC-6551, COL-9); bridging prizes between
   chains; cross-chain messaging.
 
@@ -107,9 +107,9 @@ before the page it serves goes live.
 | Lorenzo (MINT) | Privy login; account, Status and wager APIs |
 | Vlad (MINT) | Privy connection on getminted.io and the wager API, with Lorenzo |
 | Guri (MINT) | The whitelist eligibility check |
-| MINT's wallets | Admin `0x1530…6141`: the team bears, each cycle, pauses. Prize wallet `0xf6c0…83e3`: holds and pays prizes |
-| Worker | Carries each box opening to the draw and records payouts. Calea runs it unless MINT decides otherwise (O4) |
-| Calea / Rayco | Builds, tests, deploys and hands over the contracts and the client library. Keeps no key after handover, except the worker's if O4 decides so |
+| MINT's wallets | Admin `0x1530…6141`: mints the team bears, schedules each cycle, pauses. Prize wallet `0xf6c0…83e3`: holds and pays prizes |
+| Worker | Carries each box opening to the draw and records payouts. Calea runs it unless MINT decides otherwise (`→ CQ-23`) |
+| Calea / Rayco | Builds, tests, deploys and hands over the contracts and the client library. Keeps no key after handover, except the worker's if CQ-23 gives it to Calea |
 | Calea internal auditor | Audits each tranche independently of the developer: review, fuzzing, report |
 
 ## 2. System overview (SYS)
@@ -121,7 +121,7 @@ before the page it serves goes live.
 | Robinhood Chain | The bears, their levels and the mystery box's openings; prizes in MINT's wallet |
 | Arbitrum One | The draw, which uses Chainlink's randomness (Robinhood Chain has none) |
 | Ethereum | Prizes in MINT's wallet; no contract |
-| ApeChain | Prizes in MINT's wallet, if MINT confirms it (O1); no contract |
+| ApeChain | Prizes in MINT's wallet, if MINT confirms it (`→ CQ-20`); no contract |
 
 Everything is rehearsed first on the testnets: Robinhood Chain testnet (46630), Arbitrum Sepolia,
 Sepolia and, if ApeChain holds prizes, Curtis.
@@ -132,7 +132,7 @@ Sepolia and, if ApeChain holds prizes, Curtis.
 |---|---|---|
 | `MintABear` | Robinhood Chain | The 4,444-bear collection. Counts every transfer, which resets a bear's level, and enforces royalties |
 | `Activation` | Robinhood Chain | Burns $MNTD for a bear and records its level and royalty weight |
-| `MysteryBox` | Robinhood Chain | Runs the cycles, keeps team bears out, checks that the opener owns the bear, and records each opening |
+| `MysteryBox` | Robinhood Chain | Runs the cycles, checks that the opener owns the bear, and records each opening |
 | `PrizeDraw` | Arbitrum One | Decides each opening in turn with a fresh random number, and records wins and payouts |
 
 The whitelist has no contract (WL-8).
@@ -141,7 +141,7 @@ The whitelist has no contract (WL-8).
 - **The contracts enforce:**
   - ownership and the 4,444 cap;
   - the level reset on transfer, levels and weights;
-  - one shot per bear per cycle and the team-bear exclusion;
+  - one shot per bear per cycle;
   - the order of the draw.
 - **MINT's admin wallet**, one wallet for every contract, configures Studio, pauses burning,
   and schedules each cycle with its prize list. It cannot move a holder's bear, grant a level
@@ -599,7 +599,7 @@ and thresholds; the cost to reach a level; the snapshot; and whether burning is 
 
 
 <!-- openspec:begin family RAF -->
-A holder opens a mystery box with a bear they own and learns the outcome on the spot. The box runs in cycles MINT schedules: in each cycle every playable bear gets one shot, and the next cycle gives every bear a new one, whoever holds it. `MysteryBox` on Robinhood Chain runs the cycles and records openings. `PrizeDraw` on Arbitrum One decides each opening and records wins and payouts.
+A holder opens a mystery box with a bear they own and learns the outcome on the spot. The box runs in cycles MINT schedules: in each cycle every bear, the team's included, gets one shot, and the next cycle gives every bear a new one, whoever holds it. `MysteryBox` on Robinhood Chain runs the cycles and records openings. `PrizeDraw` on Arbitrum One decides each opening and records wins and payouts.
 
 **RAF-32 Cycles.** MINT's admin schedules each cycle before it starts: its window, its number of prizes, and a
 fingerprint of the prize list MINT publishes (RAF-27) (MINT, CQ-9, CQ-20). A cycle can't be
@@ -624,30 +624,22 @@ carries each cycle's `start`, `prizeCount` and `manifestHash`, set by the owner 
 
 *Acceptance.* Given the owner has scheduled cycle 1 from `start` to `end` with 5 prizes; when a holder opens a box before `start`, between `start` and `end`, and after `end`; then only the open between `start` and `end` succeeds, and the others revert with `CycleNotOpen`; and scheduling cycle 2 while cycle 1 is open reverts with `CycleInProgress`.
 
-**RAF-27 Playable ids and the prize pool.** A cycle's odds depend on two numbers: how many bears can play and how many prizes it has. MINT's
-222 team bears are excluded (which ids `→ CQ-20`). The exclusion is recorded once, before the
-first cycle, and never changes. The box is told at deployment how many bears will play, and the
-first cycle can't be scheduled until the exclusions leave exactly that many, so a missed or
-mistyped range is caught before anything is fixed. An excluded bear stays out whoever holds it,
-so a sold team bear stays out. That leaves 4,222 playable bears. Before each cycle MINT publishes
+**RAF-27 Every bear plays, and the prize pool.** Every one of the 4,444 bears plays, the team's 222 included, and a team bear can win like any
+other (MINT, 12 October 2026, CQ-20). No bear is ever left out. A cycle's odds depend on two
+numbers: the 4,444 bears and the cycle's number of prizes. Before each cycle MINT publishes
 its prize list: each prize's chain, token and id or amount, in order. The n-th prize won in a
 cycle is entry n of the list. Only the count and the list's fingerprint are on-chain. The prizes
 are in MINT's prize wallet (RAF-33), so the list is MINT's commitment.
 
-*Technical note.* `MysteryBox(owner, bears, expectedPlayable)` takes the expected playable count,
-4,222, the same deploy value `PrizeDraw` takes as `PLAYABLE`; it is refused unless from 1 to
-`MAX_BEARS`. The owner records exclusions as ranges with `excludeRange(from, to)` (event
-`IdsExcluded`), allowed only until the first cycle is scheduled and frozen after it
-(`ExclusionFrozen`). `PLAYABLE = MAX_BEARS − excluded`; the first `scheduleCycle` is refused unless
-it equals `EXPECTED_PLAYABLE` (`ExclusionsIncomplete(have, want)`), and from then on `PLAYABLE` is
-fixed. The prize list's hash is the cycle's `manifestHash` (RAF-32); the contracts cannot check
+*Technical note.* `MysteryBox(owner, bears)` has no exclusion: `PLAYABLE` reads `MAX_BEARS`,
+4,444, and `PrizeDraw` is deployed with `PLAYABLE` 4,444. The prize list's hash is the cycle's `manifestHash` (RAF-32); the contracts cannot check
 it against a balance.
 
-*Acceptance.* Given ranges excluded totalling 222 ids; when the owner schedules the first cycle; then `PLAYABLE` reads 4,222 and `excludeRange` reverts with `ExclusionFrozen`.
+*Acceptance.* Given a box deployed with no other call; when the owner schedules the first cycle; then `PLAYABLE` reads 4,444 on both chains, and the holder of bear 1, a team bear, can open it.
 
 **RAF-28 Opening a box.** A bear's holder opens a box with it while a cycle is open, free apart from gas. The opening is
-refused while the box is paused, outside a cycle, for anyone who doesn't hold the bear, for a
-team bear, and for a bear already opened this cycle. Each bear has one shot per cycle (MINT,
+refused while the box is paused, outside a cycle, for anyone who doesn't hold the bear, and for a
+bear already opened this cycle. Each bear has one shot per cycle (MINT,
 CQ-9): an opened bear can still be sold, but nobody can open it again that cycle, its buyer
 included. In the next cycle, whoever holds it can. The page shows a wallet's shots left: a holder
 of ten bears who has opened two sees eight. The page counts them from each bear's own record; the
@@ -655,17 +647,16 @@ box itself keeps no count per wallet, and the count is for display only, since o
 enforces the rule.
 
 *Technical note.* `open(uint256 tokenId)` on `MysteryBox`, by `ownerOf(tokenId)` at that moment.
-It reverts with `ContractPaused`, `CycleNotOpen`, `NotBearOwner`, `IdExcluded` or
-`AlreadyOpened`. Effects: the id is spent for the cycle (`opened(cycleId, tokenId)` reads true),
+It reverts with `ContractPaused`, `CycleNotOpen`, `NotBearOwner` or `AlreadyOpened`. Effects: the id is spent for the cycle (`opened(cycleId, tokenId)` reads true),
 the next `openIndex` is assigned (one sequence across all cycles), and
 `BoxOpened(openIndex, cycleId, tokenId, opener)` is emitted. Shots left are counted by the client
 library: for each bear the page's indexer lists for the wallet, one Multicall3 call (deployed on
-4663 and 46630) reads `ownerOf`, `isExcluded` and `opened(currentCycle, tokenId)`, and a bear
-counts when the wallet holds it, it is not excluded and it has not opened in the open cycle.
+4663 and 46630) reads `ownerOf` and `opened(currentCycle, tokenId)`, and a bear counts when
+the wallet holds it and it has not opened in the open cycle.
 Because ownership is read on-chain, a stale list can leave out a bear just received but never
 counts one sold.
 
-*Acceptance.* Given an open cycle and a holder of a playable bear not yet opened in it; when the holder calls `open(tokenId)`; then `BoxOpened(openIndex, cycleId, tokenId, opener)` is emitted and `opened(cycleId, tokenId)` reads true; and the buyer of that bear cannot open it again in the same cycle, reverting with `AlreadyOpened`, and may open it in the next.
+*Acceptance.* Given an open cycle and a holder of a bear not yet opened in it; when the holder calls `open(tokenId)`; then `BoxOpened(openIndex, cycleId, tokenId, opener)` is emitted and `opened(cycleId, tokenId)` reads true; and the buyer of that bear cannot open it again in the same cycle, reverting with `AlreadyOpened`, and may open it in the next.
 
 **RAF-29 Resolution, in order.** The worker carries each opening to the draw on Arbitrum One, which decides openings strictly in
 the order they were made. It refuses one out of turn, so the worker can't choose which opening
@@ -724,7 +715,7 @@ decreases by one; `idsLeft` decreases by one either way;
 2026). One number per opening is what makes an outcome nobody can predict, MINT included.
 Robinhood Chain has no Chainlink and no usable randomness of its own, which is why the draw runs
 on Arbitrum. The subscription that pays for the numbers is assumed to be MINT's (`→ CQ-17`). It
-is funded for a cycle's worth, at most 4,222 numbers, and topped up when its balance runs low.
+is funded for a cycle's worth, at most 4,444 numbers, and topped up when its balance runs low.
 Each opening is asked for once and never again: asking again would let whoever delivers the
 numbers keep a losing one back and deliver a winning one instead. A request left unanswered
 because the subscription ran low is answered once it is topped up. If the draw ever has to move
@@ -761,13 +752,13 @@ nomination of another recipient.
 
 *Acceptance.* Given open 7 recorded as a win; when the worker calls `recordPayout(7, 1, txHash)`; then `PrizePaid(cycleId, 7, 1, txHash)` is emitted; and a second `recordPayout` for open 7 reverts with `AlreadyPaid`, and one for an open that did not win reverts with `NotAWin`.
 
-**RAF-14 Roles.** **MINT's admin** records the team bears, schedules cycles, sets the worker and pauses either
+**RAF-14 Roles.** **MINT's admin** schedules cycles, sets the worker and pauses either
 contract. Ownership can't be given up. **The worker** carries openings to the draw and records
 payouts (who runs it `→ CQ-23`). **Anyone** can open a box with a bear they hold, apply outcomes
 whose random numbers have arrived, and read everything. No role can open a box for a holder,
 change an outcome or move a bear.
 
-*Technical note.* Owner: on `MysteryBox` `excludeRange`, `scheduleCycle`, `setPaused`; on
+*Technical note.* Owner: on `MysteryBox` `scheduleCycle`, `setPaused`; on
 `PrizeDraw` `scheduleCycle`, `setWorker`, `setPaused`. Ownership moves on both only by Solady's
 two-step handover: the new owner's `requestOwnershipHandover`, then the owner's
 `completeOwnershipHandover` within 48 hours; `transferOwnership` reverts with
@@ -775,7 +766,7 @@ two-step handover: the new owner's `requestOwnershipHandover`, then the owner's
 Anyone: `open` on `MysteryBox`, `applyOutcomes` on `PrizeDraw`. The VRF coordinator alone
 delivers words.
 
-*Acceptance.* When a non-owner calls `excludeRange`, `scheduleCycle` or `setWorker`, or a non-worker calls `resolve` or `recordPayout`; then each reverts; and `open` needs no role but the bear's ownership.
+*Acceptance.* When a non-owner calls `scheduleCycle` or `setWorker`, or a non-worker calls `resolve` or `recordPayout`; then each reverts; and `open` needs no role but the bear's ownership.
 
 **RAF-34 Pause.** Pausing the mystery box stops new openings. Pausing the draw stops new random numbers being
 requested, while numbers already requested are still applied. Neither pause stops payout records
@@ -786,25 +777,23 @@ blocks `recordPayout` or any read, and a pause does not move `end`.
 
 *Acceptance.* Given the hub and the draw each paused; when `open` and `resolve` are called; then each reverts with `ContractPaused`; and `recordPayout` and every read still succeed.
 
-**RAF-16 Events.** Both contracts publish every step: the team-bear exclusions, each cycle's terms on both chains,
+**RAF-16 Events.** Both contracts publish every step: each cycle's terms on both chains,
 every opening, every request for a random number, every outcome with the bear that opened, every
 payout, and every change of worker or pause.
 
-*Technical note.* Hub: `IdsExcluded(from, to)`, `CycleScheduled(cycleId, start, end, prizeCount,
+*Technical note.* Hub: `CycleScheduled(cycleId, start, end, prizeCount,
 manifestHash)`, `BoxOpened(openIndex, cycleId, tokenId, opener)`, `PausedSet`. `PrizeDraw`:
 `CycleScheduled(cycleId, start, prizeCount, manifestHash)`, `DrawRequested(openIndex, requestId)`,
 `OutcomeRecorded(openIndex, cycleId, tokenId, opener, won, prizeIndex)`, `PrizePaid(cycleId,
 openIndex, chainId, txHash)`, `WorkerSet`, `PausedSet`.
 
-*Acceptance.* When a cycle runs through exclusion, scheduling, an open, a resolution and a payout record; then every listed event fires with the documented arguments.
+*Acceptance.* When a cycle runs through scheduling, an open, a resolution and a payout record; then every listed event fires with the documented arguments.
 
-**RAF-17 Reads.** The page can read for free: the playable count, whether a bear is excluded or already opened this
-cycle, the current cycle and its terms, the longest a cycle may last, the live odds, and each
+**RAF-17 Reads.** The page can read for free: the playable count, whether a bear has opened this cycle, the current cycle and its terms, the longest a cycle may last, the live odds, and each
 opening's bear, outcome and payout. A wallet's shots left come from these reads, one per bear
 (RAF-28).
 
-*Technical note.* Hub: `MAX_BEARS`, `PLAYABLE`, `EXPECTED_PLAYABLE`, `MAX_CYCLE_LENGTH`,
-`excludedCount`, `isExcluded(tokenId)`, `currentCycle()` and each cycle's
+*Technical note.* Hub: `MAX_BEARS`, `PLAYABLE`, `MAX_CYCLE_LENGTH`, `currentCycle()` and each cycle's
 `(start, end, prizeCount, manifestHash)`, `isOpen()`, `opened(cycleId, tokenId)`, `openCount()`,
 `paused()`, `BEARS`, `owner()` and `ownershipHandoverExpiresAt(pendingOwner)`. `PrizeDraw`:
 `MAX_BEARS`, `PLAYABLE`, each cycle's `(prizeCount, manifestHash, idsLeft, prizesLeft)`,
@@ -819,23 +808,21 @@ read costs a fixed amount, whatever the number of bears.
 *Acceptance.* When every listed read is called during an open cycle; then each returns without reverting and `odds(cycleId)` returns `(prizesLeft, idsLeft)`.
 
 **RAF-18 Worker sequence.** A cycle runs in this order:
-1. Once, before the first cycle, MINT records the team bears.
-2. For each cycle, MINT publishes the prize list, schedules the cycle on both chains with the same
+1. For each cycle, MINT publishes the prize list, schedules the cycle on both chains with the same
    prize count and fingerprint, and holds the prizes in its prize wallet.
-3. Holders open boxes inside the window.
-4. The worker carries each opening to the draw, in order.
-5. Random numbers arrive and outcomes are recorded.
-6. Each win is paid from the prize wallet on its chain, as MINT decides (`→ CQ-22`), and recorded.
-7. After the window, MINT schedules the next cycle whenever it is ready.
+2. Holders open boxes inside the window.
+3. The worker carries each opening to the draw, in order.
+4. Random numbers arrive and outcomes are recorded.
+5. Each win is paid from the prize wallet on its chain, as MINT decides (`→ CQ-22`), and recorded.
+6. After the window, MINT schedules the next cycle whenever it is ready.
 
 MINT's page shows the cycle's window, its prize list, the live odds, a wallet's shots left, its
 outcomes and its payouts, and warns contract-wallet holders before they open.
 
-*Acceptance.* When the sequence runs on the testnets through two cycles, from exclusion to the payout records; then each step succeeds in the listed order, a relay offered out of turn is refused, and a bear opened in cycle 1 opens again in cycle 2.
+*Acceptance.* When the sequence runs on the testnets through two cycles, from scheduling to the payout records; then each step succeeds in the listed order, a relay offered out of turn is refused, and a bear opened in cycle 1 opens again in cycle 2.
 
 **RAF-19 Acceptance cases.** Each of these has a test:
-- an excluded id cannot be opened, before or after it is sold;
-- exclusions cannot change once the first cycle is scheduled;
+- every bear can be opened by its holder, a team bear included;
 - a box cannot be opened outside its cycle's window;
 - a bear cannot be opened twice in one cycle, by its holder or its buyer, and can be opened in
   the next;
@@ -870,10 +857,10 @@ is recorded before the first sale (COL-6).
 | Role | What it does | Who holds it |
 |---|---|---|
 | Admin | owns every contract on every chain | MINT, `0x1530…6141` |
-| Worker | carries openings to the draw and records payouts | Calea, assumed (O4) |
+| Worker | carries openings to the draw and records payouts | Calea, assumed (`→ CQ-23`) |
 | Royalty receiver | receives the 5% royalties (the pot) | MINT, `0xf7E7…0e63` |
 | Prize wallet | holds and pays every prize | MINT, `0xf6c0…83e3` |
-| Randomness subscription | pays for the draw's random numbers | MINT, assumed (O3) |
+| Randomness subscription | pays for the draw's random numbers | MINT, assumed (`→ CQ-17`) |
 
 *Technical note.* Admin `0x153052B43c8fD4ec01f14D1Edd8660778daa6141`, an EOA (MINT, 28 September
 2026), owner of every contract on every chain (MINT, 12 October 2026, CQ-12). A later move to a
@@ -901,9 +888,9 @@ Nothing is deployed on a prize chain (RAF-33).
 `MintABear(name, symbol, [SeaDrop])` → `setMaxSupply(4444)` → `setTransferValidator(V3)` (COL-7) →
 two-step ownership transfer; `Activation(owner, bears, mntd, thresholds, weights)`, thresholds in whole
 $MNTD (ACT-2), owned by MINT's admin and paused from construction (ACT-12, ACT-15), with no call
-after it; `MysteryBox(owner, bears, expectedPlayable)` with `expectedPlayable` 4,222 (RAF-27).
+after it; `MysteryBox(owner, bears)` (RAF-27).
 Arbitrum One: `PrizeDraw(owner, coordinator, keyHash, subscriptionId, callbackGasLimit,
-requestConfirmations, nativePayment, playable, firstOpenIndex)` with `playable` 4,222 and
+requestConfirmations, nativePayment, playable, firstOpenIndex)` with `playable` 4,444 and
 `firstOpenIndex` 1 → added as the subscription's consumer → `setWorker(worker)` by the owner
 (RAF-14).
 
@@ -922,7 +909,7 @@ challenge; Arbiscan through Etherscan's API for 42161 and 421614.
 - the whitelist end to end on SeaDrop: a list set by the owner, and wallets minting their spots
   and no more;
 - a burn raising a bear's level, against a test $MNTD;
-- two mystery-box cycles: team bears excluded, both chains scheduled, one win and one loss, a win
+- two mystery-box cycles: both chains scheduled, one win and one loss, a win
   paid and recorded, and a bear opened again in the second cycle.
 
 OpenSea does not support Robinhood Chain's testnet, so what only OpenSea can show is checked on
@@ -943,7 +930,7 @@ wallet on 46630 or Sepolia recorded with `recordPayout`.
 *Acceptance.* When the rehearsal runs on 46630, Arbitrum Sepolia and Sepolia; then each listed path completes end to end, including one open that wins and one that does not.
 
 **OPS-5 Handover.** Calea deploys, configures, hands over ownership, verifies the source and delivers the runbook,
-then holds no owner key. The one role it may keep is the worker's, if Calea runs it (O4), and
+then holds no owner key. The one role it may keep is the worker's, if Calea runs it (`→ CQ-23`), and
 MINT's admin can take that back at any time. Technical support runs until 19 November 2026 with
 agreed response hours (DEL-10). The runbook covers:
 - the deployment order (OPS-2);
@@ -1029,7 +1016,7 @@ are not listed.
   real $MNTD. That window is only nine days after TGE, and the testnet $MNTD takes the pressure
   off it.
 - **The worker outlives the handover.** It keeps running after 19 November for as long as cycles
-  run (O4).
+  run (`→ CQ-23`).
 
 ## 9. Deliverables and acceptance (DEL)
 
@@ -1061,7 +1048,7 @@ typed and tested, and handles every error a caller must deal with, each with a m
 show holders:
 - **the play page:** the mint's progress, read from the chain (holders mint on OpenSea's drop
   page, WL-4); burning; and the mystery box (opening, outcomes, odds, shots left, payouts);
-- **MINT's admin page:** excluding the team bears, scheduling cycles on both chains, pauses;
+- **MINT's admin page:** scheduling cycles on both chains, pauses;
 - **the worker:** relaying openings and recording payouts.
 
 MINT builds against a library that has already been exercised, not against raw contract
@@ -1071,20 +1058,19 @@ dead-address exclusion included, so MINT can check its split adds up.
 *Technical note.* Interfaces, events, roles and calldata examples for every contract. The library
 is typed against the ABIs and covers: mint reads (the public stage, the allowlist root, a wallet's mint
 stats); burn (`costToReach`, approve, `burn`); the mystery box (`open`, outcomes,
-odds, shots left, payout records); the admin page (`excludeRange`, `scheduleCycle` on both
+odds, shots left, payout records); the admin page (`scheduleCycle` on both
 chains, pauses); the worker (`resolve`, `recordPayout`). It documents the revert reasons a caller
 has to handle. The reference script reproduces the split from `Activation.snapshot`, so that
 "allocations plus carried rounding equal funding" is testable by MINT.
 
 *Acceptance.* When MINT integrates the play page and the admin page; then every contract call they make is covered by the typed TypeScript library, with passing tests and documented revert reasons, and the reference script reproduces the royalty split.
 
-**DEL-8 Audit tranches.** Tranche 1 is the collection and Activation. Tranche 2 is the mystery box and the draw, once the
-team-bear ids arrive (O1). The whitelist has no contract, so none of it is audited (WL-8). Iñigo
+**DEL-8 Audit tranches.** Tranche 1 is the collection and Activation. Tranche 2 is the mystery box and the draw. The whitelist has no contract, so none of it is audited (WL-8). Iñigo
 accepts each tranche after Calea and MINT sign off, and anything not accepted stays switched off
 in the page.
 
 *Technical note.* Tranche 1: `MintABear` and `Activation`. Tranche 2: `MysteryBox` and
-`PrizeDraw`, once CQ-20's remaining values are supplied.
+`PrizeDraw`.
 
 **DEL-9 Repository.** The contracts go into MINT's repository, `github.com/mintdotio/NFT`, as their own package beside
 the client library (MINT, 28 and 29 September 2026). The repository has no CI for them: Calea
@@ -1115,8 +1101,8 @@ submodules. The local gates are `forge fmt --check`, `forge build --sizes` with 
   - the admin-page calls in the client library.
 
 Two items are priced only if MINT confirms them:
-- **running the worker** after 19 November, if Calea runs it (O4, `→ CQ-23`);
-- **holding and invoicing the randomness subscription**, if MINT doesn't (O3, `→ CQ-17`).
+- **running the worker** after 19 November, if Calea runs it (`→ CQ-23`);
+- **holding and invoicing the randomness subscription**, if MINT doesn't (`→ CQ-17`).
 
 **DEL-11 Frontend collaboration.** MINT builds and owns the page holders use to mint, open boxes, burn and level up, in TypeScript
 on getminted.io (MINT, CQ-19). Calea owns the contracts and the client library (DEL-6), and
@@ -1147,7 +1133,7 @@ in one place, then lists what is still open.
 | **Weights** | 1.00 / 1.10 / 1.25 / 1.45 / 1.70 / 2.00 for levels 0–5. A level-5 bear earns twice a level-0 bear's share (CQ-5) | ACT-3 |
 | **Status links** | MINT's, kept off-chain against holders' Privy accounts (CQ-21) | ACT-12 |
 | **Mystery box** | Runs in cycles MINT schedules. Each bear gets one shot per cycle, decided on the spot by a fresh random number. The odds are fixed for the cycle, and unawarded prizes stay with MINT for later cycles (CQ-9) | RAF-32, RAF-28, RAF-30 |
-| **Team bears** | 222, excluded from the mystery box for good (CQ-20) | RAF-27 |
+| **Team bears** | 222, minted first. They play the mystery box like every other bear and can win (CQ-20) | RAF-27 |
 | **Draw** | On Arbitrum One, using Chainlink's randomness (CQ-17) | RAF-8 |
 | **Prizes** | Held and paid by MINT's prize wallet `0xf6c0…83e3` on Robinhood Chain, Ethereum and possibly ApeChain. Every payout is recorded on-chain (CQ-8) | RAF-33 |
 | **Play page** | MINT builds it in TypeScript on getminted.io, using Calea's tested client library (CQ-19) | DEL-6, DEL-11 |
@@ -1160,16 +1146,7 @@ Questions closed without a decision are listed in the appendix.
 Six points are still MINT's to decide or supply, listed by the date each is needed. Each carries
 Calea's fallback, which is what is built if it is not answered in time.
 
-**O1 — The 222 team bears (CQ-20)** · by 5 October
-
-Team bears never play the mystery box, and the set is fixed for good before the first cycle. We
-need their token ids as ranges; if the team mints first from the owner wallet, they are 1–222.
-Also: will ApeChain hold prizes?
-
-*Holds up:* the mystery box build and the first cycle. *If not answered:* no fallback; the first
-cycle cannot be scheduled.
-
-**O2 — How a prize reaches the winner (CQ-22)** · by 12 October
+**O1 — How a prize reaches the winner (CQ-22)** · by 12 October
 
 Prizes sit in MINT's prize wallet, and someone has to send each one: MINT by hand, or an automated
 service holding that wallet's key. And does MINT send every win straight away, or does the winner
@@ -1178,7 +1155,7 @@ request it within 30 days?
 *Holds up:* the payout step. *If not answered:* MINT sends each win to the winner, and the worker
 records it on-chain.
 
-**O3 — Who holds the randomness subscription (CQ-17)** · by 12 October
+**O2 — Who holds the randomness subscription (CQ-17)** · by 12 October
 
 Each box opening buys one random number from Chainlink on Arbitrum One, paid from a prepaid
 subscription that needs topping up. Someone owns and funds it.
@@ -1186,7 +1163,7 @@ subscription that needs topping up. Someone owns and funds it.
 *Holds up:* deploying the draw contract. *If not answered:* MINT owns and funds it. If Calea holds
 it instead, it is a priced service Calea invoices.
 
-**O4 — Who runs the worker (CQ-23)** · by 12 October
+**O3 — Who runs the worker (CQ-23)** · by 12 October
 
 The worker is a small service that carries each box opening from Robinhood Chain to the draw on
 Arbitrum and records payouts. It cannot change an outcome or the order, but it must be running.
@@ -1194,7 +1171,7 @@ Arbitrum and records payouts. It cannot change an outcome or the order, but it m
 *Holds up:* deploying the draw contract and the handover. *If not answered:* Calea runs it as a
 priced service; MINT can replace it at any time.
 
-**O5 — $MNTD's mainnet address (CQ-2)** · by 20 October
+**O4 — $MNTD's mainnet address (CQ-2)** · by 20 October
 
 The activation contract is tied to one $MNTD address for life. The testnet token is deployed and
 carries the reference token's code. MINT deploys the mainnet token on 19 October, 24 hours before
@@ -1203,13 +1180,21 @@ TGE, and sends its address that day.
 *Holds up:* the activation contract's deployment, not the mint. *If not answered:* the
 activation contract is not deployed, and burns cannot open on 29 October.
 
-**O6 — The dates (CQ-1)** · by 29 October
+**O5 — The dates (CQ-1)** · by 29 October
 
 Fixed: TGE 20 October; the whitelist campaign closing on 27 October at 12:00 UTC; the mint on
 29 October, with the whitelist stage from 12:00 UTC; burns from 29 October. Still needed: the
 first royalty-split date and the handover date.
 
 *Holds up:* scheduling after the mint. *If not answered:* the §8 dates stay proposals.
+
+**O6 — ApeChain as a prize chain (CQ-20)** · by 29 October
+
+Every bear plays the mystery box, the team's 222 included. Still to confirm: will ApeChain hold
+prizes, beside Robinhood Chain and Ethereum?
+
+*Holds up:* the chains the play page names. *If not answered:* prizes are on Robinhood Chain and
+Ethereum only; adding ApeChain later changes the page, not the contracts.
 
 ## 11. Sign-off
 

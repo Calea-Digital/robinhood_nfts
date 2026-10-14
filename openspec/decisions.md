@@ -272,12 +272,12 @@ funded for a cycle's worth of opens, at most 4,222.
 ### CQ-20 — Prize count, odds and the token ids out of play
 - **Statement:** Prize count, odds and excluded ids
 - **State:** follow-up
-- **Status note:** call, 28 September 2026; the excluded ids to follow
+- **Status note:** meeting, 12 October 2026; every bear plays; ApeChain to confirm
 - **Section:** RAF
-- **Needed by:** 2026-10-05 — before tranche 2 starts; the numbers are deployment values
-- **Resolution:** the owner sets each cycle's prize count and prize list from MINT's admin page; **222** team ids are excluded, fixed for good; prizes are held on Robinhood Chain, Ethereum and possibly ApeChain in MINT's prize wallet.
-- **Default if deferred:** none for the excluded ids: the first cycle cannot be scheduled without them.
-- **Blocks:** RAF-27, OPS-4
+- **Needed by:** 2026-10-29 — before the first cycle's prize list is published
+- **Resolution:** the owner sets each cycle's prize count and prize list from MINT's admin page; **every bear plays**, the team's 222 included, so no id is excluded and 4,444 bears play each cycle; prizes are held on Robinhood Chain, Ethereum and possibly ApeChain in MINT's prize wallet.
+- **Default if deferred:** prizes on Robinhood Chain and Ethereum only; adding ApeChain later changes the page, not the contracts.
+- **Blocks:** RAF-18
 
 **Question.** The instant mystery box (CQ-9) needs three numbers that only MINT can give.
 
@@ -289,7 +289,7 @@ funded for a cycle's worth of opens, at most 4,222.
   after it, because a set that can change mid-game changes everybody's odds; and an excluded bear
   is excluded whoever holds it, so a team bear that is sold stays out.
 - **Whether every prize chain is known.** Each chain holding a prize needs its own vault deployed,
-- **Summary:** Prizes per cycle by the owner; 222 ids excluded, which to follow
+- **Summary:** Prizes per cycle by the owner; every bear plays, team included; ApeChain to confirm
   verified and funded, so the list closes before tranche 2 deploys and cannot be added to
   afterwards without a new deployment.
 
@@ -310,6 +310,20 @@ library.
 
 **Remaining.** The 222 excluded ids, as ranges. Whether ApeChain holds prizes. It needs no
 deployment either way, but the UI names the chains.
+
+**Answer (meeting, 12 October 2026).** Every bear is eligible to play the mystery box, the team's
+222 included. MINT confirmed (14 October, through Calea's lead) that team bears play like any
+other and can win from MINT's prize wallet: about 222 in 4,444, or 5%, of a cycle's prizes in
+expectation.
+
+**Recorded as.** RAF-27 ("Every bear plays, and the prize pool"): no exclusion, `PLAYABLE` 4,444
+on both chains. `MysteryBox` loses its exclusion code rather than deploy it unused, since an
+`excludeRange` called by mistake would block the first cycle for good (change
+`raf-every-bear-plays`; the code is a `NONE` Task). RAF-8, 14, 16, 17, 18, 19 and 28, DEL-6,
+OPS-2 and OPS-4 follow.
+
+**Remaining.** Whether ApeChain holds prizes. It needs no deployment either way, but the page
+names the chains.
 
 ### CQ-22 — How a prize is delivered
 - **Statement:** Prize delivery from the prize wallet

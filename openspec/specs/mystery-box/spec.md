@@ -1,7 +1,7 @@
 # Mystery box raffle Specification
 
 ## Purpose
-A holder opens a mystery box with a bear they own and learns the outcome on the spot. The box runs in cycles MINT schedules: in each cycle every playable bear gets one shot, and the next cycle gives every bear a new one, whoever holds it. `MysteryBox` on Robinhood Chain runs the cycles and records openings. `PrizeDraw` on Arbitrum One decides each opening and records wins and payouts.
+A holder opens a mystery box with a bear they own and learns the outcome on the spot. The box runs in cycles MINT schedules: in each cycle every bear, the team's included, gets one shot, and the next cycle gives every bear a new one, whoever holds it. `MysteryBox` on Robinhood Chain runs the cycles and records openings. `PrizeDraw` on Arbitrum One decides each opening and records wins and payouts.
 
 ## Requirements
 
@@ -34,37 +34,29 @@ carries each cycle's `start`, `prizeCount` and `manifestHash`, set by the owner 
 - **THEN** only the open between `start` and `end` succeeds, and the others revert with `CycleNotOpen`
 - **AND** scheduling cycle 2 while cycle 1 is open reverts with `CycleInProgress`
 
-### Requirement: RAF-27 — Playable ids and the prize pool
+### Requirement: RAF-27 — Every bear plays, and the prize pool
 **Kind:** work-item
-A cycle's odds depend on two numbers: how many bears can play and how many prizes it has. MINT's
-222 team bears are excluded (which ids `→ CQ-20`). The exclusion is recorded once, before the
-first cycle, and never changes. The box is told at deployment how many bears will play, and the
-first cycle can't be scheduled until the exclusions leave exactly that many, so a missed or
-mistyped range is caught before anything is fixed. An excluded bear stays out whoever holds it,
-so a sold team bear stays out. That leaves 4,222 playable bears. Before each cycle MINT publishes
+Every one of the 4,444 bears plays, the team's 222 included, and a team bear can win like any
+other (MINT, 12 October 2026, CQ-20). No bear is ever left out. A cycle's odds depend on two
+numbers: the 4,444 bears and the cycle's number of prizes. Before each cycle MINT publishes
 its prize list: each prize's chain, token and id or amount, in order. The n-th prize won in a
 cycle is entry n of the list. Only the count and the list's fingerprint are on-chain. The prizes
 are in MINT's prize wallet (RAF-33), so the list is MINT's commitment.
 
-*Technical note.* `MysteryBox(owner, bears, expectedPlayable)` takes the expected playable count,
-4,222, the same deploy value `PrizeDraw` takes as `PLAYABLE`; it is refused unless from 1 to
-`MAX_BEARS`. The owner records exclusions as ranges with `excludeRange(from, to)` (event
-`IdsExcluded`), allowed only until the first cycle is scheduled and frozen after it
-(`ExclusionFrozen`). `PLAYABLE = MAX_BEARS − excluded`; the first `scheduleCycle` is refused unless
-it equals `EXPECTED_PLAYABLE` (`ExclusionsIncomplete(have, want)`), and from then on `PLAYABLE` is
-fixed. The prize list's hash is the cycle's `manifestHash` (RAF-32); the contracts cannot check
+*Technical note.* `MysteryBox(owner, bears)` has no exclusion: `PLAYABLE` reads `MAX_BEARS`,
+4,444, and `PrizeDraw` is deployed with `PLAYABLE` 4,444. The prize list's hash is the cycle's `manifestHash` (RAF-32); the contracts cannot check
 it against a balance.
 
 #### Scenario: Opening freezes the odds
-- **GIVEN** ranges excluded totalling 222 ids
+- **GIVEN** a box deployed with no other call
 - **WHEN** the owner schedules the first cycle
-- **THEN** `PLAYABLE` reads 4,222 and `excludeRange` reverts with `ExclusionFrozen`
+- **THEN** `PLAYABLE` reads 4,444 on both chains, and the holder of bear 1, a team bear, can open it
 
 ### Requirement: RAF-28 — Opening a box
 **Kind:** work-item
 A bear's holder opens a box with it while a cycle is open, free apart from gas. The opening is
-refused while the box is paused, outside a cycle, for anyone who doesn't hold the bear, for a
-team bear, and for a bear already opened this cycle. Each bear has one shot per cycle (MINT,
+refused while the box is paused, outside a cycle, for anyone who doesn't hold the bear, and for a
+bear already opened this cycle. Each bear has one shot per cycle (MINT,
 CQ-9): an opened bear can still be sold, but nobody can open it again that cycle, its buyer
 included. In the next cycle, whoever holds it can. The page shows a wallet's shots left: a holder
 of ten bears who has opened two sees eight. The page counts them from each bear's own record; the
@@ -72,18 +64,17 @@ box itself keeps no count per wallet, and the count is for display only, since o
 enforces the rule.
 
 *Technical note.* `open(uint256 tokenId)` on `MysteryBox`, by `ownerOf(tokenId)` at that moment.
-It reverts with `ContractPaused`, `CycleNotOpen`, `NotBearOwner`, `IdExcluded` or
-`AlreadyOpened`. Effects: the id is spent for the cycle (`opened(cycleId, tokenId)` reads true),
+It reverts with `ContractPaused`, `CycleNotOpen`, `NotBearOwner` or `AlreadyOpened`. Effects: the id is spent for the cycle (`opened(cycleId, tokenId)` reads true),
 the next `openIndex` is assigned (one sequence across all cycles), and
 `BoxOpened(openIndex, cycleId, tokenId, opener)` is emitted. Shots left are counted by the client
 library: for each bear the page's indexer lists for the wallet, one Multicall3 call (deployed on
-4663 and 46630) reads `ownerOf`, `isExcluded` and `opened(currentCycle, tokenId)`, and a bear
-counts when the wallet holds it, it is not excluded and it has not opened in the open cycle.
+4663 and 46630) reads `ownerOf` and `opened(currentCycle, tokenId)`, and a bear counts when
+the wallet holds it and it has not opened in the open cycle.
 Because ownership is read on-chain, a stale list can leave out a bear just received but never
 counts one sold.
 
 #### Scenario: One bear is one shot
-- **GIVEN** an open cycle and a holder of a playable bear not yet opened in it
+- **GIVEN** an open cycle and a holder of a bear not yet opened in it
 - **WHEN** the holder calls `open(tokenId)`
 - **THEN** `BoxOpened(openIndex, cycleId, tokenId, opener)` is emitted and `opened(cycleId, tokenId)` reads true
 - **AND** the buyer of that bear cannot open it again in the same cycle, reverting with `AlreadyOpened`, and may open it in the next
@@ -158,7 +149,7 @@ Each opening gets its own random number from Chainlink on Arbitrum One (agreed 2
 2026). One number per opening is what makes an outcome nobody can predict, MINT included.
 Robinhood Chain has no Chainlink and no usable randomness of its own, which is why the draw runs
 on Arbitrum. The subscription that pays for the numbers is assumed to be MINT's (`→ CQ-17`). It
-is funded for a cycle's worth, at most 4,222 numbers, and topped up when its balance runs low.
+is funded for a cycle's worth, at most 4,444 numbers, and topped up when its balance runs low.
 Each opening is asked for once and never again: asking again would let whoever delivers the
 numbers keep a losing one back and deliver a winning one instead. A request left unanswered
 because the subscription ran low is answered once it is topped up. If the draw ever has to move
@@ -206,13 +197,13 @@ nomination of another recipient.
 
 ### Requirement: RAF-14 — Roles
 **Kind:** work-item
-**MINT's admin** records the team bears, schedules cycles, sets the worker and pauses either
+**MINT's admin** schedules cycles, sets the worker and pauses either
 contract. Ownership can't be given up. **The worker** carries openings to the draw and records
 payouts (who runs it `→ CQ-23`). **Anyone** can open a box with a bear they hold, apply outcomes
 whose random numbers have arrived, and read everything. No role can open a box for a holder,
 change an outcome or move a bear.
 
-*Technical note.* Owner: on `MysteryBox` `excludeRange`, `scheduleCycle`, `setPaused`; on
+*Technical note.* Owner: on `MysteryBox` `scheduleCycle`, `setPaused`; on
 `PrizeDraw` `scheduleCycle`, `setWorker`, `setPaused`. Ownership moves on both only by Solady's
 two-step handover: the new owner's `requestOwnershipHandover`, then the owner's
 `completeOwnershipHandover` within 48 hours; `transferOwnership` reverts with
@@ -221,7 +212,7 @@ Anyone: `open` on `MysteryBox`, `applyOutcomes` on `PrizeDraw`. The VRF coordina
 delivers words.
 
 #### Scenario: Roles hold
-- **WHEN** a non-owner calls `excludeRange`, `scheduleCycle` or `setWorker`, or a non-worker calls `resolve` or `recordPayout`
+- **WHEN** a non-owner calls `scheduleCycle` or `setWorker`, or a non-worker calls `resolve` or `recordPayout`
 - **THEN** each reverts
 - **AND** `open` needs no role but the bear's ownership
 
@@ -242,29 +233,27 @@ blocks `recordPayout` or any read, and a pause does not move `end`.
 
 ### Requirement: RAF-16 — Events
 **Kind:** work-item
-Both contracts publish every step: the team-bear exclusions, each cycle's terms on both chains,
+Both contracts publish every step: each cycle's terms on both chains,
 every opening, every request for a random number, every outcome with the bear that opened, every
 payout, and every change of worker or pause.
 
-*Technical note.* Hub: `IdsExcluded(from, to)`, `CycleScheduled(cycleId, start, end, prizeCount,
+*Technical note.* Hub: `CycleScheduled(cycleId, start, end, prizeCount,
 manifestHash)`, `BoxOpened(openIndex, cycleId, tokenId, opener)`, `PausedSet`. `PrizeDraw`:
 `CycleScheduled(cycleId, start, prizeCount, manifestHash)`, `DrawRequested(openIndex, requestId)`,
 `OutcomeRecorded(openIndex, cycleId, tokenId, opener, won, prizeIndex)`, `PrizePaid(cycleId,
 openIndex, chainId, txHash)`, `WorkerSet`, `PausedSet`.
 
 #### Scenario: Events carry the documented arguments
-- **WHEN** a cycle runs through exclusion, scheduling, an open, a resolution and a payout record
+- **WHEN** a cycle runs through scheduling, an open, a resolution and a payout record
 - **THEN** every listed event fires with the documented arguments
 
 ### Requirement: RAF-17 — Reads
 **Kind:** work-item
-The page can read for free: the playable count, whether a bear is excluded or already opened this
-cycle, the current cycle and its terms, the longest a cycle may last, the live odds, and each
+The page can read for free: the playable count, whether a bear has opened this cycle, the current cycle and its terms, the longest a cycle may last, the live odds, and each
 opening's bear, outcome and payout. A wallet's shots left come from these reads, one per bear
 (RAF-28).
 
-*Technical note.* Hub: `MAX_BEARS`, `PLAYABLE`, `EXPECTED_PLAYABLE`, `MAX_CYCLE_LENGTH`,
-`excludedCount`, `isExcluded(tokenId)`, `currentCycle()` and each cycle's
+*Technical note.* Hub: `MAX_BEARS`, `PLAYABLE`, `MAX_CYCLE_LENGTH`, `currentCycle()` and each cycle's
 `(start, end, prizeCount, manifestHash)`, `isOpen()`, `opened(cycleId, tokenId)`, `openCount()`,
 `paused()`, `BEARS`, `owner()` and `ownershipHandoverExpiresAt(pendingOwner)`. `PrizeDraw`:
 `MAX_BEARS`, `PLAYABLE`, each cycle's `(prizeCount, manifestHash, idsLeft, prizesLeft)`,
@@ -283,27 +272,25 @@ read costs a fixed amount, whatever the number of bears.
 ### Requirement: RAF-18 — Worker sequence
 **Kind:** work-item
 A cycle runs in this order:
-1. Once, before the first cycle, MINT records the team bears.
-2. For each cycle, MINT publishes the prize list, schedules the cycle on both chains with the same
+1. For each cycle, MINT publishes the prize list, schedules the cycle on both chains with the same
    prize count and fingerprint, and holds the prizes in its prize wallet.
-3. Holders open boxes inside the window.
-4. The worker carries each opening to the draw, in order.
-5. Random numbers arrive and outcomes are recorded.
-6. Each win is paid from the prize wallet on its chain, as MINT decides (`→ CQ-22`), and recorded.
-7. After the window, MINT schedules the next cycle whenever it is ready.
+2. Holders open boxes inside the window.
+3. The worker carries each opening to the draw, in order.
+4. Random numbers arrive and outcomes are recorded.
+5. Each win is paid from the prize wallet on its chain, as MINT decides (`→ CQ-22`), and recorded.
+6. After the window, MINT schedules the next cycle whenever it is ready.
 
 MINT's page shows the cycle's window, its prize list, the live odds, a wallet's shots left, its
 outcomes and its payouts, and warns contract-wallet holders before they open.
 
 #### Scenario: The sequence runs end to end
-- **WHEN** the sequence runs on the testnets through two cycles, from exclusion to the payout records
+- **WHEN** the sequence runs on the testnets through two cycles, from scheduling to the payout records
 - **THEN** each step succeeds in the listed order, a relay offered out of turn is refused, and a bear opened in cycle 1 opens again in cycle 2
 
 ### Requirement: RAF-19 — Acceptance cases
 **Kind:** work-item
 Each of these has a test:
-- an excluded id cannot be opened, before or after it is sold;
-- exclusions cannot change once the first cycle is scheduled;
+- every bear can be opened by its holder, a team bear included;
 - a box cannot be opened outside its cycle's window;
 - a bear cannot be opened twice in one cycle, by its holder or its buyer, and can be opened in
   the next;

@@ -47,7 +47,7 @@ typed and tested, and handles every error a caller must deal with, each with a m
 show holders:
 - **the play page:** the mint's progress, read from the chain (holders mint on OpenSea's drop
   page, WL-4); burning; and the mystery box (opening, outcomes, odds, shots left, payouts);
-- **MINT's admin page:** excluding the team bears, scheduling cycles on both chains, pauses;
+- **MINT's admin page:** scheduling cycles on both chains, pauses;
 - **the worker:** relaying openings and recording payouts.
 
 MINT builds against a library that has already been exercised, not against raw contract
@@ -57,7 +57,7 @@ dead-address exclusion included, so MINT can check its split adds up.
 *Technical note.* Interfaces, events, roles and calldata examples for every contract. The library
 is typed against the ABIs and covers: mint reads (the public stage, the allowlist root, a wallet's mint
 stats); burn (`costToReach`, approve, `burn`); the mystery box (`open`, outcomes,
-odds, shots left, payout records); the admin page (`excludeRange`, `scheduleCycle` on both
+odds, shots left, payout records); the admin page (`scheduleCycle` on both
 chains, pauses); the worker (`resolve`, `recordPayout`). It documents the revert reasons a caller
 has to handle. The reference script reproduces the split from `Activation.snapshot`, so that
 "allocations plus carried rounding equal funding" is testable by MINT.
@@ -68,13 +68,12 @@ has to handle. The reference script reproduces the split from `Activation.snapsh
 
 ### Requirement: DEL-8 — Audit tranches
 **Kind:** informative
-Tranche 1 is the collection and Activation. Tranche 2 is the mystery box and the draw, once the
-team-bear ids arrive (O1). The whitelist has no contract, so none of it is audited (WL-8). Iñigo
+Tranche 1 is the collection and Activation. Tranche 2 is the mystery box and the draw. The whitelist has no contract, so none of it is audited (WL-8). Iñigo
 accepts each tranche after Calea and MINT sign off, and anything not accepted stays switched off
 in the page.
 
 *Technical note.* Tranche 1: `MintABear` and `Activation`. Tranche 2: `MysteryBox` and
-`PrizeDraw`, once CQ-20's remaining values are supplied.
+`PrizeDraw`.
 
 #### Scenario: Tranche membership is fixed
 - **WHEN** a contract's audit tranche is looked up
@@ -115,8 +114,8 @@ Listed so nothing is implied:
   - the admin-page calls in the client library.
 
 Two items are priced only if MINT confirms them:
-- **running the worker** after 19 November, if Calea runs it (O4, `→ CQ-23`);
-- **holding and invoicing the randomness subscription**, if MINT doesn't (O3, `→ CQ-17`).
+- **running the worker** after 19 November, if Calea runs it (`→ CQ-23`);
+- **holding and invoicing the randomness subscription**, if MINT doesn't (`→ CQ-17`).
 
 #### Scenario: Every item is in the agreement
 - **WHEN** Rayco's agreement is drawn up

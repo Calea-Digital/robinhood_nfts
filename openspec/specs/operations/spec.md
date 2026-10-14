@@ -13,10 +13,10 @@ is recorded before the first sale (COL-6).
 | Role | What it does | Who holds it |
 |---|---|---|
 | Admin | owns every contract on every chain | MINT, `0x1530…6141` |
-| Worker | carries openings to the draw and records payouts | Calea, assumed (O4) |
+| Worker | carries openings to the draw and records payouts | Calea, assumed (`→ CQ-23`) |
 | Royalty receiver | receives the 5% royalties (the pot) | MINT, `0xf7E7…0e63` |
 | Prize wallet | holds and pays every prize | MINT, `0xf6c0…83e3` |
-| Randomness subscription | pays for the draw's random numbers | MINT, assumed (O3) |
+| Randomness subscription | pays for the draw's random numbers | MINT, assumed (`→ CQ-17`) |
 
 *Technical note.* Admin `0x153052B43c8fD4ec01f14D1Edd8660778daa6141`, an EOA (MINT, 28 September
 2026), owner of every contract on every chain (MINT, 12 October 2026, CQ-12). A later move to a
@@ -49,9 +49,9 @@ Nothing is deployed on a prize chain (RAF-33).
 `MintABear(name, symbol, [SeaDrop])` → `setMaxSupply(4444)` → `setTransferValidator(V3)` (COL-7) →
 two-step ownership transfer; `Activation(owner, bears, mntd, thresholds, weights)`, thresholds in whole
 $MNTD (ACT-2), owned by MINT's admin and paused from construction (ACT-12, ACT-15), with no call
-after it; `MysteryBox(owner, bears, expectedPlayable)` with `expectedPlayable` 4,222 (RAF-27).
+after it; `MysteryBox(owner, bears)` (RAF-27).
 Arbitrum One: `PrizeDraw(owner, coordinator, keyHash, subscriptionId, callbackGasLimit,
-requestConfirmations, nativePayment, playable, firstOpenIndex)` with `playable` 4,222 and
+requestConfirmations, nativePayment, playable, firstOpenIndex)` with `playable` 4,444 and
 `firstOpenIndex` 1 → added as the subscription's consumer → `setWorker(worker)` by the owner
 (RAF-14).
 
@@ -79,7 +79,7 @@ Before mainnet, everything on-chain is rehearsed on the testnets:
 - the whitelist end to end on SeaDrop: a list set by the owner, and wallets minting their spots
   and no more;
 - a burn raising a bear's level, against a test $MNTD;
-- two mystery-box cycles: team bears excluded, both chains scheduled, one win and one loss, a win
+- two mystery-box cycles: both chains scheduled, one win and one loss, a win
   paid and recorded, and a bear opened again in the second cycle.
 
 OpenSea does not support Robinhood Chain's testnet, so what only OpenSea can show is checked on
@@ -104,7 +104,7 @@ wallet on 46630 or Sepolia recorded with `recordPayout`.
 ### Requirement: OPS-5 — Handover
 **Kind:** work-item
 Calea deploys, configures, hands over ownership, verifies the source and delivers the runbook,
-then holds no owner key. The one role it may keep is the worker's, if Calea runs it (O4), and
+then holds no owner key. The one role it may keep is the worker's, if Calea runs it (`→ CQ-23`), and
 MINT's admin can take that back at any time. Technical support runs until 19 November 2026 with
 agreed response hours (DEL-10). The runbook covers:
 - the deployment order (OPS-2);

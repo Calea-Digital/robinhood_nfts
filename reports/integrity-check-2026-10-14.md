@@ -149,3 +149,25 @@ and the code in `../NFT` against the answer.
   The register notes that the collection doesn't depend on $MNTD: a late token moves `Activation`
   and the burn opening, not the mint.
 - **Checks:** lint OK; prose current; §10 matches.
+
+## Q7 — the 222 team bears (CQ-20)
+
+- **Answer:** every bear plays the mystery box, the team's 222 included. Team bears can win (the
+  person's confirmation). The exclusion code is removed rather than deployed unused (the person's
+  choice): an `excludeRange` called by mistake before the first cycle would make
+  `ExclusionsIncomplete` permanent.
+- **Spec:** change `2026-10-14-raf-every-bear-plays`. RAF-27 is renamed "Every bear plays, and the
+  prize pool". Its Scenario keeps its title, since OpenSpec refuses to drop one, and now reads: a
+  box deployed with no other call schedules its first cycle with `PLAYABLE` 4,444, and team bear 1
+  opens. RAF-8, 14, 16, 17, 18, 19 and 28, DEL-6, OPS-2 and OPS-4 follow, along with the Purpose
+  line. CQ-20 records the answer, keeps ApeChain open (needed by 29 October), and now blocks
+  RAF-18 instead of RAF-27 and OPS-4, so OPS-4 has no gate left.
+- **Process fix:** change `2026-10-14-drop-open-item-numbers`. Requirements cite decisions
+  (`→ CQ-n`), not §10's O-numbers, which every answer renumbered. §10 is re-ordered by Needed by
+  (the checker requires it): O1 CQ-22, O2 CQ-17, O3 CQ-23, O4 CQ-2, O5 CQ-1, O6 CQ-20.
+- **Narrative:** §0's status, §1.3's wallets and "who can do what", §2's contract table and §10's
+  settled table no longer exclude team bears.
+- **Checks:** lint OK; prose current; §10 matches.
+- **Expected failure until line 0.2 lands:** the code's tests quote RAF-27's old Scenario lines and
+  RAF-19's two exclusion cases. `check_scenario_quotes.py` reports 37/3 (RAF-16, RAF-27, RAF-28 in `MysteryBox.t.sol`), and `feat/contracts`
+  still holds the exclusion code. Line 0.2 is the `NONE` Task that closes both.
