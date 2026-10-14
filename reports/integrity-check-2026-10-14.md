@@ -62,3 +62,22 @@ and the code in `../NFT` against the answer.
     multisig is now optional and later. **Left as it is**, on the person's word.
   - **IC-Q2-3.** `MintABear-Specification-v2.6.pages`, the last specification MINT received, still
     prints `0xf6c0…e3e3`. The next client document carries the correction.
+
+## Q3 — the whitelist stage's time (CQ-1), where holders mint (CQ-19), the registries (CQ-18)
+
+- **Answers:** the campaign closes on 27 October at 12:00 UTC and the whitelist stage opens on
+  29 October at 12:00 UTC; holders mint on OpenSea's drop page; the undeployed registries are
+  removed now. The client keeps its mint reads and drops its mint writes and proofs (the person's
+  choice).
+- **Spec:** change `2026-10-14-wl-mint-on-opensea` (WL-2, WL-4, WL-5, DEL-6, DEL-8, DEL-10,
+  OPS-4). WL-2's Scenario drops the mint proofs from Calea's part; no other Scenario changed.
+  CQ-1 records the 1 October window and the stage time and stays in follow-up (the first cycle,
+  the royalty split, the handover). CQ-18 and CQ-19 record the removal and the mint's place. §0,
+  §2's end-to-end, §8's calendar and §10's settled table and O6 follow.
+- **Board:** MNT-72 (CQ-1), MNT-89 (CQ-18), MNT-90 (CQ-19), MNT-69 (DEL-6), MNT-64 (OPS-4), MNT-23
+  (WL-4) refreshed. Validator: no problems. Manifest `MNT-20261014T104350Z-59dbf8f7`.
+- **Checks:** lint OK; prose current; §10 matches the register; quotes 40/0.
+- **Code:** the removal is tranche-2 `tasks.md` line 0.1, a `NONE` Task worked on its own branch
+  off `feat/contracts`. Until it merges, `feat/contracts` still holds both registries and the
+  client's mint writes, which the spec no longer describes. That gap closes when the Task is accepted.
+  CLAUDE.md and HANDOVER are updated with it.
