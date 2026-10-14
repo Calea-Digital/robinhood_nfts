@@ -55,9 +55,10 @@ and the code in `../NFT` against the answer.
 - **Checks:** lint OK; prose current; §10 matches the register; quotes 40/0; trees 26/0.
 - **Findings left open:**
   - **IC-Q2-1.** NFT's `docs/RUNBOOK.md` has owner-rotation steps for `MintABear` and `Activation`
-    but none for `MysteryBox` or `PrizeDraw`. A multisig move needs them. It belongs to OPS-5
-    (the runbook), or to a `NONE` Task before then.
+    but none for `MysteryBox` or `PrizeDraw`. A multisig move needs them. **Acted on:** OPS-5's
+    runbook list names owner rotation for all four contracts (change `2026-10-14-ops-5-owner-rotation`);
+    the runbook edit is OPS-5's work.
   - **IC-Q2-2.** MNT-146 ("Crear multisig de Mint", Rayco's, Open) stands beside CQ-12's answer. A
-    multisig is now optional and later. It is the human's to close or keep.
+    multisig is now optional and later. **Left as it is**, on the person's word.
   - **IC-Q2-3.** `MintABear-Specification-v2.6.pages`, the last specification MINT received, still
     prints `0xf6c0…e3e3`. The next client document carries the correction.
