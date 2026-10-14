@@ -33,7 +33,7 @@ Following Monday's call, one decision is still open on the mystery box: how a wi
 
 **To decide this we need:**
 1. A, B, C or D.
-2. The claim window: until the end of the cycle, or a fixed time after the win (for example 30 days)?
+2. For B or C, the claim window: until the end of the cycle, or a fixed time after the win (for example 30 days)?
 3. What the prizes are: NFTs (ERC-721 or ERC-1155), tokens (ERC-20), or native ETH or APE?
 4. Roughly how many prizes per cycle?
 5. For D: who creates the payout wallet's key (we suggest Lorenzo, as for the worker's key)?
