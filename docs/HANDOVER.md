@@ -268,31 +268,44 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
   Open with MINT: `?since=` on the wager API.
 - **Not yet in the ai-stack templates:** `check_tree_tests.py`'s line in `/mnt:done`.
 
-**Next (written 14 October, for 15 October), in this order:**
-1. **`/mnt:review` MNT-160, then MNT-161** with the person, and on their accept merge each into
-   `feat/contracts` (`--no-ff`; MNT-161's branch sits on MNT-160's). They reach staging in a new PR.
-2. **`tasks.md` 0.5 — rehearsal preparation (OPS-4, MNT-64):** `46630.json`, `4663.json` and the
-   SeaDrop allowlist script with proofs. The testnet rehearsal runs on 16 October (§8). Test
-   $MNTD for the rehearsal wallet comes from MINT (the person asks).
-3. **Mainnet collection deploy on 19 October** (§8): Studio takes it over, `compare` on a test CSV,
-   the team's 222 minted; the team-bear sale 20–21 October; the drop page on 22 October.
-4. **`tasks.md` 0.4 — the box's and the draw's deploy entry points** (a Defect against OPS-2), by
-   29 October.
-5. **`tasks.md` 0.3 — PR B**, rebuilt and merged into `release/1.1` around 20–21 October (Lorenzo).
-6. **RAF-14** (free), then **RAF-18** (the worker service, 22–28 October), which waits on CQ-22.
-7. **Waiting on MINT:** CQ-22 (send `docs/client/MINT-message-prize-delivery-2026-10-14.md`,
-   needed by 17 October) and CQ-2 (the mainnet $MNTD address, 19 October; `Activation` on
-   20 October).
+**Session of 15 October (run 14 October): done.** Report: `reports/integrity-check-2026-10-15.md`.
+- MNT-160 and MNT-161 reviewed and accepted; `feat/contracts` is `10279d5` (local, not pushed).
+- In Review, each with its gates green:
+  - `mnt/OPS-4-prep` `8e8203b`: MNT-162 (simulations on Cancun) and `tasks.md` 0.5 (`46630.json`, `4663.json`, `RehearsalAllowList`);
+  - `mnt/OPS-2-163` `55fc4bc`: MNT-163 and 0.4, the box's and the draw's deploy entry points, the draw always 4,444. Stacked on `mnt/OPS-4-prep`;
+  - `mnt/RAF-14` `73273fa`: MNT-55 and 4.1.
+- In Progress:
+  - `mnt/RAF-18` `ce7606a`: MNT-59, the worker up to prize distribution, gated by CQ-22;
+  - `feat/contracts-client-workspace` `7087acc`: PR B, MNT-154. Its lockfile is +345 / −0 with no version moving, the images build and the apps' tests pass.
+
+**Next (written after the session of 15 October), in this order:**
+1. **`/mnt:review`** `mnt/OPS-4-prep` (before the 16 October rehearsal), then `mnt/OPS-2-163`, then `mnt/RAF-14`; merge each on accept.
+2. **Rehearsal, 16 October, on 46630** (OPS-4, MNT-64, RUNBOOK "Testnet rehearsal"):
+   - the rehearsal wallet goes into `46630.json` and `421614.json`;
+   - test $MNTD comes from MINT;
+   - the VRF subscription on Arbitrum Sepolia; the box and the draw;
+   - measure the gas per relay for the worker's README.
+3. **Follow-up PR from `feat/contracts` into `release/1.1`**, on the person's word: MNT-160 and MNT-161 now, plus whatever step 1 accepts. It touches no Railway-watched path.
+4. **PR B** (MNT-154): push and open the PR on the person's word. Lorenzo merges around 20–21 October; then one Privy login on staging. It touches `pnpm-lock.yaml`, so staging redeploys. Afterwards the worker joins the workspace on `mnt/RAF-18`.
+5. **Mainnet collection deploy on 19 October** (§8). Confirm the name and symbol first (`MintABear` / `BEAR` in `4663.json`). Then Studio takes the collection over, `compare` runs on a test CSV, and the team's 222 are minted.
+6. **Waiting on MINT:**
+   - CQ-22, needed by 17 October. Then RAF-18's payout step, a `PayoutStep` in `apps/box-worker/src/payout.ts`, and RAF-18's Scenario on the testnets.
+   - CQ-2, the mainnet $MNTD address, by 19 October; it goes into `4663.json`'s `mntd`.
+7. **Calea:**
+   - the VRF subscription id for `42161.json`, and the VRF settings: ETH payment, 300,000 callback gas and 3 confirmations, to confirm;
+   - R-2: RAF-27's Scenario title through `/opsx:propose`.
 
 ### Tranche 2 — the mystery box
 
 - **Done** (on `feat/contracts`): RAF-32, RAF-27, RAF-28, RAF-34 (`MysteryBox`); RAF-8, RAF-29,
   RAF-30, RAF-33 and Defect MNT-157 (`PrizeDraw`); RAF-16, RAF-17 and RAF-19 (both); the client's
   calls for the page, the admin page and the worker (Defect MNT-158, DEL-6).
-- **In review:** MNT-160 (the whitelist registries and the client's mint calls removed) and
-  MNT-161 (every bear plays).
-- **Next:** the deploy entry points (`tasks.md` 0.4), RAF-14, then the worker service (RAF-18).
-- **Gated by MINT:** RAF-18 (CQ-22).
+- **Done on 15 October:** MNT-160 (the whitelist registries and the client's mint calls removed)
+  and MNT-161 (every bear plays).
+- **In review:** MNT-162 and MNT-163 (`Deploy.s.sol`: Cancun simulations, the box's and the
+  draw's entry points), MNT-55 (RAF-14).
+- **In progress, gated by MINT:** RAF-18 (CQ-22). The worker, `apps/box-worker`, is built up to
+  prize distribution on `mnt/RAF-18`; the payout step is left open.
 - Testnet rehearsal on 46630, Arbitrum Sepolia and Sepolia, two cycles included.
 
 The things to get right:
