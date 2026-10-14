@@ -244,9 +244,11 @@ Railway-watched path.
     `7bf67e8`), IC-3 (CLAUDE.md) and IC-7 (`docs/tools/check_tree_tests.py`, in `/mnt:done`).
   - Still standing: IC-1 (decisions overdue), IC-4 (MINT's multisig task MNT-146 against CQ-12),
     IC-5 (MNT-154 and PR B), IC-6 (WL-1/WL-5 Tasks), IC-9, IC-10.
-- **The register lags the 1 October call.** It settled the whitelist campaign window, 30 September
-  to 27 October 12:00 UTC (NFT's `HANDOVER.local.md`), but CQ-1 still lists the window as
-  remaining. Record it with Monday's answers.
+- **The whitelist register is live** on `nft.getminted.io` (API `mintabear-api.mint.io`) since
+  1 October; 147 of 1,000 wagering spots claimed on 14 October. Its rules are WL-1 and WL-8, and
+  the 27 October hand-off is WL-5: other channels loaded before 12:00 UTC, freeze and export by
+  MINT's CTO at 12:00, list and sha256 to Iñigo and Calea by 14:00. CQ-1 records the window.
+  Open with MINT: `?since=` on the wager API.
 - **Not yet in the ai-stack templates:** `check_tree_tests.py`'s line in `/mnt:done`.
 
 **Next, in `openspec/changes/tranche-2/tasks.md` order** (RAF-17, RAF-19 and line 3.5 are Done):

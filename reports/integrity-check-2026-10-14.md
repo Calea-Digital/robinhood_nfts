@@ -103,3 +103,24 @@ and the code in `../NFT` against the answer.
   - **IC-Q4-2.** The 15 October deadline covers the removal Task's review and merge, plus the
     `46630.json` and `4663.json` configs. Mainnet `4663.json` needs nothing more from MINT for the
     collection. `Activation` waits for the $MNTD address (20 October).
+
+## Q5 — the whitelist's go-ahead for production
+
+- **Finding:** the question was out of date when sent. The register has been in production since
+  1 October (`nft.getminted.io`, API `mintabear-api.mint.io`). Read on 14 October:
+  `/public/pool` gives 147 of 1,000 claimed, the window open until 27 October 12:00 UTC, not frozen.
+  The questions document was built from staging notes that were already stale.
+- **Answer:** the 27 October hand-off is agreed (other channels before 12:00 UTC; MINT's CTO
+  freezes and exports at 12:00; list and sha256 to Iñigo and Calea by 14:00). The register's live
+  rules go into the specification.
+- **Spec:** change `2026-10-14-wl-register-rules` (WL-1, WL-2, WL-5, WL-8; no Scenario changed):
+  the baseline rule of 1 October, the wallet lock, one account per wallet, display-only team
+  spots, wallet signatures, the hand-off, and the production addresses. §8 has the hand-off rows.
+  This closes the spec delta the whitelist memory had left open since 29 September.
+- **Checks:** lint OK; prose current; §10 matches; quotes 40/0.
+- **Open:**
+  - **IC-Q5-1.** `?since=` on MINT's wager API is still asked for. Until then the 1 October
+    baseline rule applies (WL-1).
+  - **IC-Q5-2.** The register's code has no `NONE` Task on the board (the work of 29 September to
+    1 October). It is on `release/1.0` in MINT's repository, outside the `feat/contracts` flow.
+    Logging it as a `NONE` Task for the record is the person's call.
