@@ -81,3 +81,25 @@ and the code in `../NFT` against the answer.
   off `feat/contracts`. Until it merges, `feat/contracts` still holds both registries and the
   client's mint writes, which the spec no longer describes. That gap closes when the Task is accepted.
   CLAUDE.md and HANDOVER are updated with it.
+
+## Q4 — the two checks only MINT can run, and when
+
+- **Answer:** OpenSea does not support Robinhood Chain's testnet (seen by MINT and Calea in the
+  meeting). The proposed dates are accepted, provided the work before deployment is finished by
+  15 October.
+- **Read on 46630 (14 Oct):** SeaDrop, Seaport 1.6, ConduitController and validator V3 deployed;
+  SignedZone not. So the whitelist and enforcement can be rehearsed on-chain on 46630 (the root
+  set with `updateAllowList`, proofs from `AllowListTree.proof`), and Studio and the sale cannot.
+- **Spec:** change `2026-10-14-opensea-checks-on-mainnet` (COL-7, OPS-4; no Scenario changed).
+  §0's status, §8's calendar (15, 16, 19, 20–21 and 22 October, basis *agreed*) and HANDOVER's
+  unknowns 1 and 3 follow. CLAUDE.md's COL-7 paragraph follows.
+- **Board:** MNT-13 (COL-7), MNT-64 (OPS-4) refreshed. Validator: no problems. Manifest
+  `MNT-20261014T105137Z-dcf4e690`.
+- **Code:** `test/Deploy.tree.md` "Rehearsal obligations" said Studio attaches on 46630. Handed to
+  the removal Task, which edits that file anyway.
+- **Open:**
+  - **IC-Q4-1.** §8 still lists the mystery box's SoW rows (5–9 and 12–14 October), now in the
+    past. They are re-dated with questions 7 and 9–12.
+  - **IC-Q4-2.** The 15 October deadline covers the removal Task's review and merge, plus the
+    `46630.json` and `4663.json` configs. Mainnet `4663.json` needs nothing more from MINT for the
+    collection. `Activation` waits for the $MNTD address (20 October).
