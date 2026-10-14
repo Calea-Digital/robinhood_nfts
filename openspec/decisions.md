@@ -9,12 +9,12 @@ verbatim in the tracker and in the client document.
 
 ### CQ-1 — Dates after the 29 October mint
 - **Statement:** Dates after the 29 Oct mint
-- **State:** follow-up
-- **Status note:** meeting, 12 October 2026; the whitelist's times and the first cycle's start settled, its end set by MINT's admin; the royalty split and the handover to follow
+- **State:** resolved
+- **Status note:** meeting, 12 October 2026; every date settled
 - **Section:** CAL
 - **Needed by:** 2026-10-29 — before the mint
-- **Resolution:** the three anchors stand — TGE 20 October, mint 29 October, burns and level-up from 29 October. The whitelist campaign runs from 30 September to 27 October 12:00 UTC, and the whitelist stage opens on 29 October 12:00 UTC, 48 hours later. The first mystery-box cycle starts on 4 November. Every other row of §8 is unconfirmed.
-- **Summary:** Anchors stand; whitelist closes 27 Oct 12:00 UTC, stage 29 Oct 12:00 UTC; first cycle 4 Nov; other §8 rows unconfirmed
+- **Resolution:** the three anchors stand — TGE 20 October, mint 29 October, burns and level-up from 29 October. The whitelist campaign runs from 30 September to 27 October 12:00 UTC, and the whitelist stage opens on 29 October 12:00 UTC, 48 hours later. The first mystery-box cycle starts on 4 November. The first royalty split is on 5 November and the handover on 19 November. Calea's own working dates in §8 are its plan.
+- **Summary:** Anchors stand; whitelist closes 27 Oct 12:00 UTC, stage 29 Oct 12:00 UTC; first cycle 4 Nov; first split 5 Nov; handover 19 Nov
 
 **Question.** The SoW schedule chains off a 15 October mint. With the mint at 29 October, which
 dates hold and which move?
@@ -68,7 +68,11 @@ audited and deployed by 31 October, so MINT's choice is needed by 17 October.
 page when scheduling it, at most 90 days after its start. That is `scheduleCycle(start, end, …)`
 as built, which refuses a longer window (`InvalidWindow`, RAF-32), so nothing more is needed.
 
-**Remaining.** The first royalty closing block and the 19 November handover.
+**Answer (meeting, 12 October 2026), on the split and the handover.** The first royalty split is
+on 5 November, and the handover on 19 November.
+
+**Recorded as.** §8: both dates are MINT's. The split's closing block is taken on 5 November
+(ACT-10), and Calea's technical support runs to 19 November (OPS-5, DEL-10).
 
 ### CQ-2
 - **Statement:** $MNTD burn route

@@ -389,7 +389,7 @@ whitelist stage's `maxTokenSupplyForStage` is 4,444, the collection's total incl
 hours before the whitelist stage opens, which leaves time to load it into Studio, check it and
 fix anything. The campaign runs from 30 September to 27 October at 12:00 UTC, and the whitelist
 stage opens on 29 October at 12:00 UTC (MINT, 12 October 2026). The 48 hours is Calea's buffer,
-not an OpenSea rule. Dates `→ CQ-1`. The hand-off on 27 October:
+not an OpenSea rule. Dates: CQ-1. The hand-off on 27 October:
 1. Before 12:00 UTC, MINT loads every other channel's spots into the register. Nothing can be
    added after the freeze.
 2. At 12:00 UTC, MINT's CTO freezes the register and exports the final list. A second export must
@@ -1002,9 +1002,8 @@ on timestamps. The gas limit is Arbitrum-style, per transaction.
 Four dates are fixed by MINT: TGE on 20 October, the whitelist frozen on 27 October at 12:00 UTC,
 the mint on 29 October with the whitelist stage at 12:00 UTC, and burns open on 29 October.
 OpenSea does not support Robinhood Chain's testnet, so Studio and the first sale are proven on
-mainnet the week before the drop page. Every other date is Calea's plan, for MINT to confirm or
-move (`→ CQ-1`). Mystery-box cycles are MINT's to schedule, so they
-are not listed.
+mainnet the week before the drop page. Every date marked *Calea* is Calea's working plan (CQ-1). The first mystery-box cycle is listed; later cycles are MINT's to
+schedule.
 
 | Date (2026) | What happens | Who | Basis |
 |---|---|---|---|
@@ -1026,15 +1025,14 @@ are not listed.
 | 22 – 28 Oct | The worker built; the mystery box, draw and worker rehearsed on 46630 and Arbitrum Sepolia through two cycles | Calea | Calea |
 | 29 – 31 Oct | Mystery box and draw deployed and verified; the draw added to Calea's randomness subscription; MINT authorises the worker; the first cycle's terms (end, prize count, prize list) set by MINT's admin by 31 Oct, then scheduled on both chains and read back | Calea; MINT | Calea |
 | 4 Nov | First mystery-box cycle opens | MINT | MINT |
-| 5 Nov | First royalty split; after that at each ETH cap or countdown (§2) | MINT | SoW; to confirm |
-| 19 Nov | Handover; technical support ends (OPS-5) | Iñigo; Robert; Calea | SoW; to confirm |
+| 5 Nov | First royalty split; after that at each ETH cap or countdown (§2) | MINT | MINT |
+| 19 Nov | Handover; technical support ends (OPS-5) | Iñigo; Robert; Calea | MINT |
 
 **Basis:**
 - *MINT*: fixed by MINT.
 - *SoW*: set by the statement of work.
 - *derived*: follows from a MINT date.
 - *agreed*: Calea's plan, accepted for MINT on 14 October 2026.
-- *to confirm*: not yet held by anyone.
 
 **Whatever moves, three things hold:**
 - **The collection doesn't wait.** It deploys and mints without the mystery box or Activation.
@@ -1171,7 +1169,7 @@ Questions closed without a decision are listed in the appendix.
 
 ### Open items
 
-Three points are still MINT's to decide or supply, listed by the date each is needed. Each carries
+Two points are still MINT's to decide or supply, listed by the date each is needed. Each carries
 Calea's fallback, which is what is built if it is not answered in time.
 
 **O1 — How a prize reaches the winner (CQ-22)** · by 17 October
@@ -1194,16 +1192,6 @@ TGE, and sends its address that day.
 
 *Holds up:* the activation contract's deployment, not the mint. *If not answered:* the
 activation contract is not deployed, and burns cannot open on 29 October.
-
-**O3 — The dates (CQ-1)** · by 29 October
-
-Fixed: TGE 20 October; the whitelist campaign closing on 27 October at 12:00 UTC; the mint on
-29 October, with the whitelist stage from 12:00 UTC; burns from 29 October; the first mystery-box
-cycle from 4 November, its end set by MINT's admin, at most 90 days later. Still needed: the
-first royalty-split date and the handover date.
-
-*Holds up:* the royalty split and the handover. *If not answered:* the §8
-dates stay proposals.
 
 ## 11. Sign-off
 

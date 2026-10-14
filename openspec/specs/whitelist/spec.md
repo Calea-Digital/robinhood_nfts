@@ -90,7 +90,7 @@ MINT's backend takes claims only during the campaign window. The list is frozen 
 hours before the whitelist stage opens, which leaves time to load it into Studio, check it and
 fix anything. The campaign runs from 30 September to 27 October at 12:00 UTC, and the whitelist
 stage opens on 29 October at 12:00 UTC (MINT, 12 October 2026). The 48 hours is Calea's buffer,
-not an OpenSea rule. Dates `→ CQ-1`. The hand-off on 27 October:
+not an OpenSea rule. Dates: CQ-1. The hand-off on 27 October:
 1. Before 12:00 UTC, MINT loads every other channel's spots into the register. Nothing can be
    added after the freeze.
 2. At 12:00 UTC, MINT's CTO freezes the register and exports the final list. A second export must

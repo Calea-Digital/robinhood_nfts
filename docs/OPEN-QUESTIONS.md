@@ -28,7 +28,7 @@ Answers from each call are marked as such below.
 <!-- openspec:begin register -->
 | ID | Section | Question | Resolution / default | Needed by | Status |
 |---|---|---|---|---|---|
-| CQ-1 | CAL | Dates after the 29 Oct mint | Anchors stand; whitelist closes 27 Oct 12:00 UTC, stage 29 Oct 12:00 UTC; first cycle 4 Nov; other §8 rows unconfirmed | 2026-10-29 | Follow-up |
+| CQ-1 | CAL | Dates after the 29 Oct mint | Anchors stand; whitelist closes 27 Oct 12:00 UTC, stage 29 Oct 12:00 UTC; first cycle 4 Nov; first split 5 Nov; handover 19 Nov | 2026-10-29 | Answered |
 | CQ-2 | ACT | $MNTD burn route | Native; OpenZeppelin `ERC20Burnable`, 18 decimals, immutable; testnet `0x15CF…211C`; mainnet deployed 19 October (planned) | 2026-10-20 | Follow-up |
 | CQ-12 | OPS | Addresses; Safe on 4663 | Admin `0x1530…6141` (EOA) owns every contract on every chain | 2026-10-02 | Answered |
 | CQ-17 | RAF | VRF subscription and network | Arbitrum One; Calea holds and funds the subscription, invoicing MINT | 2026-10-12 | Answered |
@@ -61,8 +61,8 @@ Answers from each call are marked as such below.
 ### CQ-1 — Dates after the 29 October mint
 - **Section:** CAL
 - **Needed by:** 2026-10-29 — before the mint
-- **Status:** Follow-up (meeting, 12 October 2026; the whitelist's times and the first cycle's start settled, its end set by MINT's admin; the royalty split and the handover to follow)
-- **Resolution:** the three anchors stand — TGE 20 October, mint 29 October, burns and level-up from 29 October. The whitelist campaign runs from 30 September to 27 October 12:00 UTC, and the whitelist stage opens on 29 October 12:00 UTC, 48 hours later. The first mystery-box cycle starts on 4 November. Every other row of §8 is unconfirmed.
+- **Status:** Answered (meeting, 12 October 2026; every date settled)
+- **Resolution:** the three anchors stand — TGE 20 October, mint 29 October, burns and level-up from 29 October. The whitelist campaign runs from 30 September to 27 October 12:00 UTC, and the whitelist stage opens on 29 October 12:00 UTC, 48 hours later. The first mystery-box cycle starts on 4 November. The first royalty split is on 5 November and the handover on 19 November. Calea's own working dates in §8 are its plan.
 
 **Question.** The SoW schedule chains off a 15 October mint. With the mint at 29 October, which
 dates hold and which move?
@@ -116,7 +116,11 @@ audited and deployed by 31 October, so MINT's choice is needed by 17 October.
 page when scheduling it, at most 90 days after its start. That is `scheduleCycle(start, end, …)`
 as built, which refuses a longer window (`InvalidWindow`, RAF-32), so nothing more is needed.
 
-**Remaining.** The first royalty closing block and the 19 November handover.
+**Answer (meeting, 12 October 2026), on the split and the handover.** The first royalty split is
+on 5 November, and the handover on 19 November.
+
+**Recorded as.** §8: both dates are MINT's. The split's closing block is taken on 5 November
+(ACT-10), and Calea's technical support runs to 19 November (OPS-5, DEL-10).
 
 ### CQ-2 — $MNTD burn route
 - **Section:** ACT

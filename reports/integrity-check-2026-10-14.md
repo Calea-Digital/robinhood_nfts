@@ -271,3 +271,13 @@ and the code in `../NFT` against the answer.
   17 October, O2 CQ-2, O3 CQ-1), and HANDOVER follows.
 - **Checks:** lint OK; prose current; §10 matches.
 - **Follow-up:** MINT's admin sets the cycle's end when scheduling, at most 90 days, as built (RAF-32). CQ-1 now waits only on the royalty split and the handover.
+
+## Q13 — the first royalty split and the handover (CQ-1)
+
+- **Answer:** the first royalty split on 5 November, and the handover on 19 November.
+- **Spec:** CQ-1 resolved. §8's two rows take MINT as their basis; the unused *to confirm* legend
+  and "cycles are not listed" go. WL-5 cites CQ-1 as settled rather than as a gate (change
+  `2026-10-14-wl-5-dates-settled`). §10 keeps two open items: O1 CQ-22 (17 October) and O2 CQ-2
+  (19–20 October). HANDOVER's open items and counts follow (22 resolved or closed, 1 in follow-up,
+  1 open).
+- **Checks:** lint OK; prose current; §10 matches.
