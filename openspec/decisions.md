@@ -10,7 +10,7 @@ verbatim in the tracker and in the client document.
 ### CQ-1 — Dates after the 29 October mint
 - **Statement:** Dates after the 29 Oct mint
 - **State:** follow-up
-- **Status note:** meeting, 12 October 2026; the whitelist's times and the first cycle's start settled; the royalty split and the handover to follow
+- **Status note:** meeting, 12 October 2026; the whitelist's times and the first cycle's start settled, its end set by MINT's admin; the royalty split and the handover to follow
 - **Section:** CAL
 - **Needed by:** 2026-10-29 — before the mint
 - **Resolution:** the three anchors stand — TGE 20 October, mint 29 October, burns and level-up from 29 October. The whitelist campaign runs from 30 September to 27 October 12:00 UTC, and the whitelist stage opens on 29 October 12:00 UTC, 48 hours later. The first mystery-box cycle starts on 4 November. Every other row of §8 is unconfirmed.
@@ -64,8 +64,11 @@ before the start (RAF-32). An unclaimed prize joins the next cycle's list, as an
 already does (RAF-32). If MINT chooses a claim from a vault (CQ-22 B), the vaults must be built,
 audited and deployed by 31 October, so MINT's choice is needed by 17 October.
 
-**Remaining.** The first cycle's end. The first royalty closing block and the 19 November
-handover.
+**Answer (14 October 2026), on the cycle's end.** MINT's admin sets each cycle's end in the admin
+page when scheduling it, at most 90 days after its start. That is `scheduleCycle(start, end, …)`
+as built, which refuses a longer window (`InvalidWindow`, RAF-32), so nothing more is needed.
+
+**Remaining.** The first royalty closing block and the 19 November handover.
 
 ### CQ-2
 - **Statement:** $MNTD burn route

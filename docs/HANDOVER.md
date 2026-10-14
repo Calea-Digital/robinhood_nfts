@@ -312,7 +312,7 @@ What each open item blocks:
 |---|---|
 | O1 prize delivery (CQ-22), by 17 Oct | MINT prefers a claim; options A (MINT sends), B (vault per prize chain, signed claims), C (worker sends from a payout wallet) sent 14 Oct (`docs/client/MINT-message-prize-delivery-2026-10-14.md`). Holds up RAF-18's payout step; B adds a contract on three chains |
 | O2 mainnet $MNTD address (CQ-2), on 19 Oct (MINT deploys 24 h before TGE) | `Activation`'s deployment, not the mint (the testnet token is in: `0x15CF…211C`) |
-| O3 dates (CQ-1), by 29 Oct | The first cycle's end (it starts 4 Nov), the royalty split and the handover |
+| O3 dates (CQ-1), by 29 Oct | The royalty split and the handover (the first cycle starts 4 Nov; MINT's admin sets its end, at most 90 days) |
 
 ## Sources and precedence
 

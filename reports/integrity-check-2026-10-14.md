@@ -270,3 +270,4 @@ and the code in `../NFT` against the answer.
   deployed, worker authorised, first terms scheduled) and 4 November. §10 is re-ordered (O1 CQ-22 by
   17 October, O2 CQ-2, O3 CQ-1), and HANDOVER follows.
 - **Checks:** lint OK; prose current; §10 matches.
+- **Follow-up:** MINT's admin sets the cycle's end when scheduling, at most 90 days, as built (RAF-32). CQ-1 now waits only on the royalty split and the handover.

@@ -1024,7 +1024,7 @@ are not listed.
 | 27 Oct 14:00 – 29 Oct 12:00 UTC | List loaded into Studio and checked by Calea | Iñigo; Calea | MINT |
 | 29 Oct | Mint on OpenSea's drop page: the whitelist stage first, from 12:00 UTC, then the other stages; burns and level-up open | Iñigo; Javier; Calea | MINT |
 | 22 – 28 Oct | The worker built; the mystery box, draw and worker rehearsed on 46630 and Arbitrum Sepolia through two cycles | Calea | Calea |
-| 29 – 31 Oct | Mystery box and draw deployed and verified; the draw added to Calea's randomness subscription; MINT authorises the worker; the first cycle's terms (end, prizes) to Calea by 31 Oct, then scheduled on both chains and read back | Calea; MINT | Calea |
+| 29 – 31 Oct | Mystery box and draw deployed and verified; the draw added to Calea's randomness subscription; MINT authorises the worker; the first cycle's terms (end, prize count, prize list) set by MINT's admin by 31 Oct, then scheduled on both chains and read back | Calea; MINT | Calea |
 | 4 Nov | First mystery-box cycle opens | MINT | MINT |
 | 5 Nov | First royalty split; after that at each ETH cap or countdown (§2) | MINT | SoW; to confirm |
 | 19 Nov | Handover; technical support ends (OPS-5) | Iñigo; Robert; Calea | SoW; to confirm |
@@ -1199,10 +1199,10 @@ activation contract is not deployed, and burns cannot open on 29 October.
 
 Fixed: TGE 20 October; the whitelist campaign closing on 27 October at 12:00 UTC; the mint on
 29 October, with the whitelist stage from 12:00 UTC; burns from 29 October; the first mystery-box
-cycle from 4 November. Still needed: that cycle's end, the first royalty-split date and the
-handover date.
+cycle from 4 November, its end set by MINT's admin, at most 90 days later. Still needed: the
+first royalty-split date and the handover date.
 
-*Holds up:* the first cycle's end, the royalty split and the handover. *If not answered:* the §8
+*Holds up:* the royalty split and the handover. *If not answered:* the §8
 dates stay proposals.
 
 ## 11. Sign-off
