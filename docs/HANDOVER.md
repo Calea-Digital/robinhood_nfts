@@ -536,6 +536,7 @@ these.
 | MINT's admin | `0x153052B43c8fD4ec01f14D1Edd8660778daa6141` — EOA; transactions on 4663 and Ethereum |
 | Royalty receiver | `0xf7E70F5ef311232dBd1b0E4dFB1e3e8FBE7b0e63` — EOA, unused |
 | Prize wallet | `0xf6c02F0fDAC5c03EE9f1cc60A5D9875Efc4c83e3` — EOA; active on 4663 and Ethereum, nothing on Arbitrum or ApeChain |
+| OpenSea contracts on 46630 | SeaDrop, Seaport 1.6, ConduitController and validator V3 deployed; OpenSea's SignedZone not deployed; OpenSea itself does not support the chain (read 2026-10-14) |
 | Testnet $MNTD (46630) | `0x15CFC2be2Dc468E3f173c560C493A71C3fE4211C` — verified; the reference token's runtime code apart from the EIP-712 immutables (read 2026-10-14); supply held by MINT's wallets, none by `0x1530…6141` |
 | Reference $MNTD | Base Sepolia `0xa21273093af1b3b880b73afd54514bb3d6269968`: OpenZeppelin 5.5 `ERC20 + ERC20Burnable + ERC20Permit`, 18 decimals, 1,000,000,000 minted once, no owner, no proxy; solc 0.8.28, `cancun` |
 
@@ -550,9 +551,9 @@ these.
 
 ## Unknowns to settle by rehearsal
 
-1. Does OpenSea Studio attach to and manage a contract we deployed ourselves, validator set? (testnet)
+1. Does OpenSea Studio attach to and manage a contract we deployed ourselves, validator set? (mainnet, 19 October: OpenSea does not support 46630)
 2. Does OpenSea emit SignedZone-restricted orders for a Limit-Break-validated collection on 4663? (mainnet: one team bear listed and sold before the drop page is published)
-3. The whitelist end to end: a CSV → Studio allowlist stage → allowlist mint. It passes when `WhitelistExport.s.sol compare` over the CSV passes against the root Studio set, a two-allocation wallet mints two, and a one-allocation wallet is refused its second — which shows Studio builds its tree like `script/lib/AllowListTree.sol` and keeps each wallet's own limit. (testnet)
+3. The whitelist end to end, in two halves. On 46630 (16 October): the owner sets the root with SeaDrop's `updateAllowList`, `compare` passes, a two-allocation wallet mints two with its proof from `AllowListTree.proof`, and a one-allocation wallet is refused its second. On mainnet (19 October, before any stage opens): `compare` passes over a test CSV against the root Studio set, which shows Studio builds its tree like `script/lib/AllowListTree.sol`, each wallet's limit included.
 4. A burn through `Activation` against $MNTD on 46630 through to a recorded level; then against the real token on mainnet between 20 and 28 October. The pause has no exemption, so that rehearsal runs in a window the owner opens and closes again; holders' access opens on 29 October (ACT-15, §8).
 5. Two mystery-box cycles on the testnets (46630 and Arbitrum Sepolia): exclusion, scheduling on both chains, boxes opened, relays in order, words and outcomes — one open that wins and one that does not, a relay offered out of turn and refused — a win paid from a test prize wallet and recorded with `recordPayout`, and a bear opened again in the second cycle.
 6. Moot while MINT's admin is an EOA: does Safe's web interface support chain 4663?

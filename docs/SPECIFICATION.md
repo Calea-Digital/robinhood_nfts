@@ -31,7 +31,7 @@ As of 29 September 2026. Nothing is deployed yet.
 | Client library (DEL-6) | Built and reviewed: mint, burn, transfers, reads and the royalty split, with a ready-to-show message for every error. Holders mint on OpenSea's drop page, so the library reads the mint's progress and sends no mint |
 | Deployment and runbook (§7) | Scripts written and tested; the runbook covers every operating step |
 | Internal audit | Tranche 1 (collection and activation): 30 September – 1 October |
-| Testnet rehearsal | Ready to run: MINT's testnet $MNTD is deployed and checked (CQ-2) |
+| Testnet rehearsal | 16 October on 46630; Studio and the first OpenSea sale are proven on mainnet, 19–21 October (OPS-4) |
 | Mystery box (§6) | Specified. Built once the team bears' ids arrive (O1) |
 
 **What the client library needs from MINT.** None of these changes a contract. Each is needed
@@ -244,8 +244,9 @@ doesn't hold up deployment.
 Payment Processor venue, and royalties are collected on every such sale; orders from other
 venues fail. A holder's own transfers always pass, so a sale arranged outside a marketplace
 (directly, or through an escrow) pays no royalty. No setting that lets holders move their own
-bears can prevent that. OpenSea's handling on Robinhood Chain is proven first on testnet with
-Studio, then by selling one team bear before the drop page is published. If OpenSea cannot fill
+bears can prevent that. OpenSea does not support Robinhood Chain's testnet, so its handling is
+proven on mainnet before the drop page is published: Studio takes over the collection, and one
+team bear is listed and sold. If OpenSea cannot fill
 orders, one owner call lifts enforcement and one restores it (OPS-6).
 
 *Technical note.* `MintABear` implements `ICreatorToken` (ERC-721C) and is deployed with
@@ -881,22 +882,27 @@ challenge; Arbiscan through Etherscan's API for 42161 and 421614.
 
 *Acceptance.* When a contract is deployed on 4663 or 46630; then its source is verified through Sourcify and readable there.
 
-**OPS-4 Rehearsal on testnets (46630, Arbitrum Sepolia, Sepolia).** Before mainnet, everything is rehearsed on the testnets:
-- Studio managing a collection Calea deployed, with royalty enforcement on;
-- minting through OpenSea's drop page;
-- the whitelist end to end: a list from MINT's register loaded into Studio, Calea's check
-  passing, and wallets minting their spots and no more;
+**OPS-4 Rehearsal on testnets (46630, Arbitrum Sepolia, Sepolia).** Before mainnet, everything on-chain is rehearsed on the testnets:
+- the collection deployed with royalty enforcement on, and a holder's own transfer passing;
+- the whitelist end to end on SeaDrop: a list set by the owner, and wallets minting their spots
+  and no more;
 - a burn raising a bear's level, against a test $MNTD;
 - two mystery-box cycles: team bears excluded, both chains scheduled, one win and one loss, a win
-  paid and recorded, and a bear opened again in the second cycle;
-- an OpenSea testnet listing.
+  paid and recorded, and a bear opened again in the second cycle.
 
-On mainnet, before the drop page goes live, one team bear is listed and sold on OpenSea (COL-7).
+OpenSea does not support Robinhood Chain's testnet, so what only OpenSea can show is checked on
+mainnet before the drop page is published:
+- Studio takes over the collection Calea deployed, and Calea's check passes against a test list
+  loaded into the whitelist stage, before any stage opens;
+- the team's bears are minted, and one is listed and sold on OpenSea (COL-7).
 
-*Technical note.* Testnets 46630, Arbitrum Sepolia (421614) and Sepolia. The whitelist case:
-`compare` passes over the CSV against Studio's root, a two-spot wallet mints two, and a one-spot
-wallet is refused its second. The burn goes through `Activation` against $MNTD on 46630 to a
-recorded level. The cycles cover relays in order, words and outcomes, and a payout from a prize
+*Technical note.* Testnets 46630, Arbitrum Sepolia (421614) and Sepolia. SeaDrop, Seaport 1.6
+and Limit Break's validator V3 are deployed on 46630; OpenSea's SignedZone is not. The whitelist
+case on 46630: the owner sets the allowlist root with SeaDrop's `updateAllowList`, `compare`
+passes over the CSV against it, a two-spot wallet mints two with its proof, and a one-spot wallet
+is refused its second. On mainnet, `compare` passing over a test CSV against the root Studio set
+shows that Studio builds the tree, each wallet's limit included, as `AllowListTree` does. The
+burn goes through `Activation` against $MNTD on 46630 to a recorded level. The cycles cover relays in order, words and outcomes, and a payout from a prize
 wallet on 46630 or Sepolia recorded with `recordPayout`.
 
 *Acceptance.* When the rehearsal runs on 46630, Arbitrum Sepolia and Sepolia; then each listed path completes end to end, including one open that wins and one that does not.
@@ -946,19 +952,25 @@ on timestamps. The gas limit is Arbitrum-style, per transaction.
 ## 8. Calendar (CAL)
 
 Four dates are fixed by MINT: TGE on 20 October, the whitelist frozen on 27 October at 12:00 UTC,
-the mint on 29 October with the whitelist stage at 12:00 UTC, and burns open on 29 October. Every other date is Calea's plan from the statement of
-work, for MINT to confirm or move (`→ CQ-1`). Mystery-box cycles are MINT's to schedule, so they
+the mint on 29 October with the whitelist stage at 12:00 UTC, and burns open on 29 October.
+OpenSea does not support Robinhood Chain's testnet, so Studio and the first sale are proven on
+mainnet the week before the drop page. Every other date is Calea's plan, for MINT to confirm or
+move (`→ CQ-1`). Mystery-box cycles are MINT's to schedule, so they
 are not listed.
 
 | Date (2026) | What happens | Who | Basis |
 |---|---|---|---|
-| 29 Sep – 2 Oct | Collection final and deployed with royalty enforcement; Studio proven on testnet; OpenSea page live; one team bear listed and sold | Calea; Iñigo | SoW |
 | 30 Sep – 1 Oct | Internal audit of the collection and activation contracts | Calea | Calea |
 | 12 Oct | Test $MNTD on the testnet, for the burn rehearsal: `0x15CF…211C`, the reference token's code | MINT (Lorenzo) | MINT |
 | 5 – 9 Oct | Mystery box, draw, worker and page tested on the testnets, two cycles included; audit report and runbooks; no open Critical or High finding | Calea; Javier; MINT | SoW |
 | 12 – 14 Oct | Mystery box and draw deployed and verified; roles and addresses checked; randomness subscription funded | Calea; Iñigo; MINT | SoW |
 | 30 Sep – 27 Oct 12:00 UTC | Whitelist campaign open on getminted.io/mintabear | Iñigo; Javier; Vlad; Lorenzo | MINT |
+| 15 Oct | Work before deployment finished: the whitelist registries removed, the deploy configs for 46630 and 4663 | Calea | agreed |
+| 16 Oct | Testnet rehearsal on 46630: the collection with royalty enforcement, the whitelist on SeaDrop, a burn against the test $MNTD | Calea | agreed |
+| 19 Oct | Collection deployed on 4663 with royalty enforcement; the admin accepts ownership; Studio takes it over and Calea's check passes on a test list; the team's 222 minted | Calea; MINT's admin; Iñigo | agreed |
 | 20 Oct | TGE: $MNTD live on Robinhood Chain; Activation deployed against it, paused | MINT; Calea | MINT |
+| 20 – 21 Oct | One team bear listed and sold on OpenSea from a second MINT wallet; Calea confirms it settled and the 5% reached the pot | MINT; Calea | agreed |
+| 22 Oct | Go or no-go on royalty enforcement (OPS-6), then the drop page is published | MINT | agreed |
 | 20 – 28 Oct | Real burns rehearsed on mainnet, in short windows the admin opens and closes | Calea; MINT | derived |
 | 27 Oct 12:00 – 29 Oct 12:00 UTC | Whitelist frozen, exported, loaded into Studio and checked by Calea | MINT; Iñigo; Calea | MINT |
 | 29 Oct | Mint on OpenSea's drop page: the whitelist stage first, from 12:00 UTC, then the other stages; burns and level-up open | Iñigo; Javier; Calea | MINT |
@@ -970,6 +982,7 @@ are not listed.
 - *MINT*: fixed by MINT.
 - *SoW*: set by the statement of work.
 - *derived*: follows from a MINT date.
+- *agreed*: Calea's plan, accepted for MINT on 14 October 2026.
 - *to confirm*: not yet held by anyone.
 
 **Whatever moves, three things hold:**

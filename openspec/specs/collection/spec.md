@@ -100,8 +100,9 @@ Royalties are enforced from deployment. A marketplace sale settles only through 
 Payment Processor venue, and royalties are collected on every such sale; orders from other
 venues fail. A holder's own transfers always pass, so a sale arranged outside a marketplace
 (directly, or through an escrow) pays no royalty. No setting that lets holders move their own
-bears can prevent that. OpenSea's handling on Robinhood Chain is proven first on testnet with
-Studio, then by selling one team bear before the drop page is published. If OpenSea cannot fill
+bears can prevent that. OpenSea does not support Robinhood Chain's testnet, so its handling is
+proven on mainnet before the drop page is published: Studio takes over the collection, and one
+team bear is listed and sold. If OpenSea cannot fill
 orders, one owner call lifts enforcement and one restores it (OPS-6).
 
 *Technical note.* `MintABear` implements `ICreatorToken` (ERC-721C) and is deployed with
