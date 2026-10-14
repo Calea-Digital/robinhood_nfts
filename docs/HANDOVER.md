@@ -13,10 +13,14 @@ with `../NFT` added (CLAUDE.md, "Two repositories", has the rules). The port is 
   and every Railway-watched path are untouched; Railway therefore built nothing for it, and the
   first build that clones the repository with its submodules is the next change under a watched
   path. `feat/contracts` is the code integration branch Task branches come off.
-- **PR B, `feat/contracts-client-workspace`** (local, not pushed; to be rebased onto
-  `feat/contracts`): the client joins the workspace. The regenerated lockfile re-resolves four
-  transitive versions in MINT's wallet stack (debug, `@noble/curves`, the optional `zod` peer of
-  abitype and viem); no direct dependency changes. Lorenzo decides when it merges.
+- **PR B, `feat/contracts-client-workspace`** (local, not pushed; stale: built on PR A, so it still
+  holds the registries): the client joins the workspace. The regenerated lockfile moves `debug`
+  4.3.4 → 4.4.3, `@noble/curves` 1.9.1 → 1.9.7, and the optional `zod` peer of viem and Privy
+  4.6.5 → 3.25.76 (viem unchanged; `whitelist-api` keeps its own `zod` 4.6.5). Agreed 14 October
+  (`tasks.md` 0.3): rebuild it after MNT-160 and MNT-161 merge, prove the Docker installs, the apps'
+  tests and a Privy login on staging, and Lorenzo merges it into `release/1.1` around 20–21 October,
+  before the worker that uses it. `release/1.0` is not promoted before 29 October. Risk: low on
+  staging, low to medium for the `zod` peer; promoting production during the drop is what to avoid.
 
 `release/1.0` is production and is never touched. Nothing of the code remains in this
 repository, and its CI runs only the spec checks.

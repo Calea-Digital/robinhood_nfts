@@ -1022,6 +1022,7 @@ schedule.
 | 27 Oct 12:00 UTC | Register frozen and the final list exported by MINT's CTO; list and checksum to Iñigo and Calea by 14:00 UTC | MINT (CTO) | agreed |
 | 27 Oct 14:00 – 29 Oct 12:00 UTC | List loaded into Studio and checked by Calea | Iñigo; Calea | MINT |
 | 29 Oct | Mint on OpenSea's drop page: the whitelist stage first, from 12:00 UTC, then the other stages; burns and level-up open | Iñigo; Javier; Calea | MINT |
+| 20 – 21 Oct | The client library joins MINT's workspace on staging (`release/1.1`), before the worker that uses it; production (`release/1.0`) unchanged until after the mint | Calea; MINT (Lorenzo) | agreed |
 | 22 – 28 Oct | The worker built; the mystery box, draw and worker rehearsed on 46630 and Arbitrum Sepolia through two cycles | Calea | Calea |
 | 29 – 31 Oct | Mystery box and draw deployed and verified; the draw added to Calea's randomness subscription; MINT authorises the worker; the first cycle's terms (end, prize count, prize list) set by MINT's admin by 31 Oct, then scheduled on both chains and read back | Calea; MINT | Calea |
 | 4 Nov | First mystery-box cycle opens | MINT | MINT |

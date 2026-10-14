@@ -281,3 +281,17 @@ and the code in `../NFT` against the answer.
   (19–20 October). HANDOVER's open items and counts follow (22 resolved or closed, 1 in follow-up,
   1 open).
 - **Checks:** lint OK; prose current; §10 matches.
+
+## Q14 — the client library joining MINT's workspace (PR B)
+
+- **Read (14 Oct):** PR B is stale, built on PR A's commit and behind `feat/contracts`, still holding
+  the registries. Its lockfile moves `debug` 4.3.4 → 4.4.3, `@noble/curves` 1.9.1 → 1.9.7 and the
+  optional `zod` peer of viem and Privy 4.6.5 → 3.25.76. viem is unchanged, and `whitelist-api`
+  keeps its own `zod` 4.6.5.
+- **Agreed:** rebuild after MNT-160 and MNT-161 merge, prove the Docker installs, the apps' tests
+  and a Privy login, and merge into `release/1.1` (staging) around 20–21 October, before the
+  worker (RAF-18) that uses it. Production (`release/1.0`) is not promoted before 29 October.
+  Calea prepares it; Lorenzo merges.
+- **Recorded:** `tasks.md` 0.3, §8's 20–21 October row (basis *agreed*), HANDOVER's PR B paragraph.
+  No register decision.
+- **Related standing items:** MNT-71 (DEL-9) stays Open until PR B, and MNT-154 (IC-5).
