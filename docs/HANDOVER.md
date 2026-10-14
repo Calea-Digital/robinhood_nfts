@@ -257,7 +257,8 @@ Railway-watched path.
    then `PrizeDraw` with `PLAYABLE` 4,222 and `firstOpenIndex` 1, then the draw's terms for each
    cycle before its start on 4663. Read back every constructor value, including
    `requestConfirmations` and `callbackGasLimit` against the coordinator's limits.
-3. **OPS-4**, the rehearsal, still waits for the testnet $MNTD (MINT).
+3. **OPS-4**, the rehearsal: the testnet $MNTD is deployed and checked (CQ-2, 12 October), so it is
+   no longer gated. The rehearsal wallet needs test $MNTD from MINT.
 4. **Tooling, here (not a `tasks.md` line):** a check that every test named in a tree exists,
    beside `check_scenario_quotes.py`. The RAF-19 review left it out of the code branch.
 
@@ -308,7 +309,7 @@ What each open item blocks:
 | O3 prize delivery (CQ-22), by 12 Oct | How payouts are sent and whether a request window exists; `recordPayout` is built either way |
 | O4 VRF subscription holder (CQ-17), by 12 Oct | `PrizeDraw`'s deployment (subscription id); DEL-10 if Calea holds it |
 | O5 worker operator (CQ-23), by 12 Oct | The worker's address; OPS-5's handover; DEL-10 |
-| O6 testnet and mainnet $MNTD addresses (CQ-2), mainnet by 20 Oct | `Activation`'s deployment and the rehearsal |
+| O6 mainnet $MNTD address (CQ-2), by 20 Oct | `Activation`'s deployment (the testnet token is in: `0x15CF…211C`) |
 | O7 dates (CQ-1), by 29 Oct | The whitelist freeze (48 h before the stage); scheduling |
 
 ## Sources and precedence
@@ -536,6 +537,7 @@ these.
 | MINT's admin | `0x153052B43c8fD4ec01f14D1Edd8660778daa6141` — EOA; transactions on 4663 and Ethereum |
 | Royalty receiver | `0xf7E70F5ef311232dBd1b0E4dFB1e3e8FBE7b0e63` — EOA, unused |
 | Prize wallet | `0xf6c02F0fDAC5c03EE9f1cc60A5D9875Efc4c83e3` — EOA; active on 4663 and Ethereum, nothing on Arbitrum or ApeChain |
+| Testnet $MNTD (46630) | `0x15CFC2be2Dc468E3f173c560C493A71C3fE4211C` — verified; the reference token's runtime code apart from the EIP-712 immutables (read 2026-10-14); supply held by MINT's wallets, none by `0x1530…6141` |
 | Reference $MNTD | Base Sepolia `0xa21273093af1b3b880b73afd54514bb3d6269968`: OpenZeppelin 5.5 `ERC20 + ERC20Burnable + ERC20Permit`, 18 decimals, 1,000,000,000 minted once, no owner, no proxy; solc 0.8.28, `cancun` |
 
 - **Contract size limit is ~96 KB**, four times Ethereum's.
@@ -565,7 +567,7 @@ needed, the answer where one exists, and the default otherwise:
 - **open (2):** CQ-22, 23.
 
 They map onto O1–O7 in §10. Tranche 1's code is written. The whitelist root check over a CSV is
-needed by 27 October; the rehearsal waits on the testnet $MNTD; tranche 2 waits on the excluded
+needed by 27 October; the rehearsal is ready to run; tranche 2 waits on the excluded
 ids.
 
 ## Related documents

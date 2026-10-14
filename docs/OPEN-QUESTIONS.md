@@ -29,7 +29,7 @@ Answers from each call are marked as such below.
 | ID | Section | Question | Resolution / default | Needed by | Status |
 |---|---|---|---|---|---|
 | CQ-1 | CAL | Dates after the 29 Oct mint | Anchors stand; whitelist frozen by 27 October; other §8 rows unconfirmed | 2026-10-29 | Follow-up |
-| CQ-2 | ACT | $MNTD burn route | Native; OpenZeppelin `ERC20Burnable`, 18 decimals, immutable; addresses to follow | 2026-10-20 | Follow-up |
+| CQ-2 | ACT | $MNTD burn route | Native; OpenZeppelin `ERC20Burnable`, 18 decimals, immutable; testnet `0x15CF…211C`; mainnet address to follow | 2026-10-20 | Follow-up |
 | CQ-12 | OPS | Addresses; Safe on 4663 | Admin `0x1530…6141` (EOA) for every contract, to confirm; worker to follow | 2026-10-02 | Follow-up |
 | CQ-17 | RAF | VRF subscription and network | Arbitrum One; MINT owns the subscription (assumed) | 2026-10-12 | Follow-up |
 | CQ-20 | RAF | Prize count, odds and excluded ids | the owner sets each cycle's prize count and prize list from MINT's admin page; **222** team ids are excluded, fixed for good; prizes are held on Robinhood Chain, Ethereum and possibly ApeChain in MINT's prize wallet. | 2026-10-05 | Follow-up |
@@ -90,7 +90,7 @@ after TGE, so the burn is rehearsed against real $MNTD on Robinhood Chain betwee
 ### CQ-2 — $MNTD burn route
 - **Section:** ACT
 - **Needed by:** 2026-10-20 — before `Activation` is deployed
-- **Status:** Follow-up (call, 28 September 2026; the testnet and mainnet addresses to follow)
+- **Status:** Follow-up (testnet address received and checked, 12 October 2026; the mainnet address to follow at TGE)
 - **Resolution:** option (a1) — $MNTD is **native** to Robinhood Chain, burned by `Activation` in the same transaction as the record. The token is OpenZeppelin `ERC20Burnable` with 18 decimals, fixed supply and no owner or proxy, so its address is final once deployed.
 
 **Question.** On which chain does the $MNTD burn happen, what does the token's level-up function
@@ -148,6 +148,19 @@ not proposed. Compiled for `cancun`, which Robinhood Chain runs apart from `blob
 
 **Remaining.** The address of the copy on testnet 46630 when MINT deploys it, and the mainnet
 address at TGE, each confirmed to carry this bytecode.
+
+**Answer (meeting, 12 October 2026).** The copy is deployed on testnet 46630 at
+`0x15CFC2be2Dc468E3f173c560C493A71C3fE4211C`.
+
+**Read from the testnet token** (46630, read 14 October 2026). Verified on the testnet explorer:
+`src/token/MNTD.sol`, `MNTD is ERC20, ERC20Burnable, ERC20Permit` on OpenZeppelin, solc 0.8.28,
+`cancun`, 200 optimizer runs. `name` and `symbol` "MNTD", `decimals` 18, `totalSupply`
+1,000,000,000, minted to a distributor contract that has passed it on; no owner, no proxy. Its
+runtime code is byte for byte the reference token's (4,010 bytes) apart from the three EIP-712
+immutables: its own address, the chain id and the cached domain separator. It is the token the
+rehearsal (OPS-4) burns.
+
+**Remaining.** The mainnet address at TGE, confirmed to carry the same code.
 
 ### CQ-12 — Addresses and the admin wallet
 - **Section:** OPS

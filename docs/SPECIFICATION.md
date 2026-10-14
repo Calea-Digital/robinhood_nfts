@@ -31,7 +31,7 @@ As of 29 September 2026. Nothing is deployed yet.
 | Client library (DEL-6) | Built and reviewed: mint, burn, transfers, reads and the royalty split, with a ready-to-show message for every error. Mint proofs from MINT's whitelist list are being added |
 | Deployment and runbook (§7) | Scripts written and tested; the runbook covers every operating step |
 | Internal audit | Tranche 1 (collection and activation): 30 September – 1 October |
-| Testnet rehearsal | As soon as MINT's testnet $MNTD is deployed (O6) |
+| Testnet rehearsal | Ready to run: MINT's testnet $MNTD is deployed and checked (CQ-2) |
 | Mystery box (§6) | Specified. Built once the team bears' ids arrive (O2) |
 
 **What the client library needs from MINT.** None of these changes a contract. Each is needed
@@ -948,7 +948,7 @@ are not listed.
 |---|---|---|---|
 | 29 Sep – 2 Oct | Collection final and deployed with royalty enforcement; Studio proven on testnet; OpenSea page live; one team bear listed and sold | Calea; Iñigo | SoW |
 | 30 Sep – 1 Oct | Internal audit of the collection and activation contracts | Calea | Calea |
-| when MINT deploys it | Test $MNTD on the testnet, for the burn rehearsal (O6) | MINT (Lorenzo) | MINT |
+| 12 Oct | Test $MNTD on the testnet, for the burn rehearsal: `0x15CF…211C`, the reference token's code | MINT (Lorenzo) | MINT |
 | 5 – 9 Oct | Mystery box, draw, worker and page tested on the testnets, two cycles included; audit report and runbooks; no open Critical or High finding | Calea; Javier; MINT | SoW |
 | 12 – 14 Oct | Mystery box and draw deployed and verified; roles and addresses checked; randomness subscription funded | Calea; Iñigo; MINT | SoW |
 | MINT's dates (O7) | Whitelist campaign open on getminted.io/mintabear | Iñigo; Javier; Vlad; Lorenzo | to confirm |
@@ -1146,13 +1146,13 @@ Arbitrum and records payouts. It cannot change an outcome or the order, but it m
 *Holds up:* deploying the draw contract and the handover. *If not answered:* Calea runs it as a
 priced service; MINT can replace it at any time.
 
-**O6 — $MNTD's addresses (CQ-2)** · testnet as soon as possible; mainnet by 20 October
+**O6 — $MNTD's mainnet address (CQ-2)** · by 20 October
 
-The activation contract is tied to one $MNTD address for life. We need the testnet token's address
-for the rehearsal, and the mainnet address at TGE.
+The activation contract is tied to one $MNTD address for life. The testnet token is deployed and
+carries the reference token's code; we need the mainnet address at TGE.
 
-*Holds up:* the testnet rehearsal and the activation contract's deployment. *If not answered:* the
-rehearsal waits.
+*Holds up:* the activation contract's deployment. *If not answered:* the activation contract is
+not deployed, and burns cannot open on 29 October.
 
 **O7 — The dates (CQ-1)** · the whitelist window now; the rest by 29 October
 
