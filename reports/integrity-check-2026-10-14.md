@@ -117,7 +117,7 @@ and the code in `../NFT` against the answer.
   the baseline rule of 1 October, the wallet lock, one account per wallet, display-only team
   spots, wallet signatures, the hand-off, and the production addresses. §8 has the hand-off rows.
   This closes the spec delta the whitelist memory had left open since 29 September.
-- **Checks:** lint OK; prose current; §10 matches; quotes 37/3 against `feat/contracts` (the expected RAF-16, 27, 28 until MNT-161 merges) and 40/0 against MNT-161's branch.
+- **Checks:** lint OK; prose current; §10 matches; quotes 40/0.
 - **Open:**
   - **IC-Q5-1.** `?since=` on MINT's wager API is still asked for. Until then the 1 October
     baseline rule applies (WL-1).
