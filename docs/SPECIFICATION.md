@@ -901,9 +901,11 @@ Nothing is deployed on a prize chain (RAF-33).
 `MintABear(name, symbol, [SeaDrop])` → `setMaxSupply(4444)` → `setTransferValidator(V3)` (COL-7) →
 two-step ownership transfer; `Activation(owner, bears, mntd, thresholds, weights)`, thresholds in whole
 $MNTD (ACT-2), owned by MINT's admin and paused from construction (ACT-12, ACT-15), with no call
-after it; `MysteryBox(owner, bears)`. Arbitrum One:
-`PrizeDraw(owner, coordinator, subscriptionId, keyHash, worker, playable)` → added as the
-subscription's consumer.
+after it; `MysteryBox(owner, bears, expectedPlayable)` with `expectedPlayable` 4,222 (RAF-27).
+Arbitrum One: `PrizeDraw(owner, coordinator, keyHash, subscriptionId, callbackGasLimit,
+requestConfirmations, nativePayment, playable, firstOpenIndex)` with `playable` 4,222 and
+`firstOpenIndex` 1 → added as the subscription's consumer → `setWorker(worker)` by the owner
+(RAF-14).
 
 *Acceptance.* When the deploy script runs on a fresh chain; then each contract is created with its constructor arguments in the listed order and is never left deployed-but-unconfigured; and no address is set after construction; every call after construction is a listed setting or ownership transfer, in the listed order.
 

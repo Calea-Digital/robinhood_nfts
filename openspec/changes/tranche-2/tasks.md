@@ -30,6 +30,6 @@ open (and CQ-22, which gates RAF-18). RAF-33's payout record is built ahead of C
 
 ## 4. Gated (CQ-23; RAF-18 also CQ-22)
 
-- [ ] 0.1 Remove the undeployed whitelist registries (CQ-18, 12 October): `WhitelistClaim`, `WhitelistImport`, their tests, trees, mock and PoC; `runWhitelist` and `runWhitelistImport` in `Deploy.s.sol`; `export` and the registry `compare` overload in `WhitelistExport.s.sol`; the client's registry, voucher and import modules and ABIs, and its mint writes and proofs (CQ-19: holders mint on OpenSea's drop page; the mint reads stay); the docs that describe them
+- [x] 0.1 Remove the undeployed whitelist registries (CQ-18, 12 October): `WhitelistClaim`, `WhitelistImport`, their tests, trees, mock and PoC; `runWhitelist` and `runWhitelistImport` in `Deploy.s.sol`; `export` and the registry `compare` overload in `WhitelistExport.s.sol`; the client's registry, voucher and import modules and ABIs, and its mint writes and proofs (CQ-19: holders mint on OpenSea's drop page; the mint reads stay); the docs that describe them
 - [ ] 4.1 RAF-14 — roles: the worker (`setWorker`, `WorkerSet`), non-owner and non-worker refusals
 - [ ] 4.2 RAF-18 — the worker sequence, end to end on the testnets through two cycles

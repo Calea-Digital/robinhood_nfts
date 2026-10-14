@@ -124,3 +124,19 @@ and the code in `../NFT` against the answer.
   - **IC-Q5-2.** The register's code has no `NONE` Task on the board (the work of 29 September to
     1 October). It is on `release/1.0` in MINT's repository, outside the `feat/contracts` flow.
     Logging it as a `NONE` Task for the record is the person's call.
+
+## The removal Task (MNT-160) — after Q3
+
+- **Branch** `mnt/NONE-wl-removal` at `22c1120` off `feat/contracts` `7bf67e8`, worktree
+  `~/trees/NFT-wl-removal`; 71 files, +318 / −7,673. In Review, not merged.
+- **Gates (fork's run):** fmt; 0 warnings; 252 contract tests; coverage 100/100; Slither 43, no High
+  or Critical; `verify.sh` dry run and its 6 cases; client check, 104 tests; quotes 40/0; trees 26/0.
+- **Drift it found and fixed here:** OPS-2's technical note gave `MysteryBox(owner, bears)` and a
+  `PrizeDraw` with a worker argument. Corrected to the built constructors, with `setWorker` after
+  (change `2026-10-14-ops-2-box-draw-constructors`).
+- **Here:** `tasks.md` 0.1 ticked; CLAUDE.md's architecture table, whitelist paragraph, commands and
+  `fs_permissions` note follow the branch; HANDOVER's contracts, tests and Slither rows give the
+  branch's numbers. CLAUDE.md describes the branch, which is ahead of `feat/contracts` until the
+  merge.
+- **Left as history:** `packages/contracts/audit/` (the external report and our response) still
+  names the registries.

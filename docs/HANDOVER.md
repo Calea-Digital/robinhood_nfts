@@ -123,11 +123,11 @@ comment and logged time. The human merges `tranche-1` into `main`.
 
 | | |
 |---|---|
-| Contracts | `MintABear`, `Activation`; tranche 2 is `MysteryBox` (4663) and `PrizeDraw` (Arbitrum One). `WhitelistClaim` and `WhitelistImport` are built but not deployed (the whitelist is off-chain) |
+| Contracts | `MintABear`, `Activation`; tranche 2 is `MysteryBox` (4663) and `PrizeDraw` (Arbitrum One). No whitelist contract: `WhitelistClaim` and `WhitelistImport` are removed (MNT-160, In Review) |
 | Scripts | `Deploy.s.sol` (OPS-2), `verify.sh` (OPS-3), `Enforcement.s.sol` (OPS-6), `WhitelistExport.s.sol` (WL-4); `packages/contracts/docs/RUNBOOK.md` in NFT: ownership handover, whitelist export and import, transfer enforcement, royalties, Activation |
-| Tests | 328 contract tests and 180 client tests (2026-10-09), all passing; 100% line, branch and function coverage (gate ≥90 / ≥80); every tranche-1 work-item Scenario has a test except the operational OPS-1, OPS-3 (live), OPS-4, OPS-5 |
+| Tests | 252 contract tests and 104 client tests on MNT-160's branch (2026-10-14; 328 and 180 on `feat/contracts` before it), all passing; 100% line, branch and function coverage (gate ≥90 / ≥80); every tranche-1 work-item Scenario has a test except the operational OPS-1, OPS-3 (live), OPS-4, OPS-5 |
 | Gates | in NFT, run locally by `/mnt:done` (NFT has no CI): `fmt --check`, `build --sizes` (no warnings), `test`, coverage, Slither, `verify.sh` dry run and verdict test, the client check; here, in CI: spec lint and generated prose; the scenario-quote check — all green (2026-10-09, `bc89abb`) |
-| Slither | 51 results, no High or Critical; 6 accepted Mediums: `locked-ether` on `Activation`, `MysteryBox`, `PrizeDraw`, `WhitelistClaim`, `WhitelistImport`, and `reentrancy-no-eth` on `PrizeDraw.resolve`'s request (both below and in the NatSpec) |
+| Slither | 43 results on MNT-160's branch, no High or Critical; 4 accepted Mediums: `locked-ether` on `Activation`, `MysteryBox`, `PrizeDraw`, and `reentrancy-no-eth` on `PrizeDraw.resolve`'s request (both below and in the NatSpec) |
 
 Requirements amended since v2.1, each through an archived OpenSpec change:
 - **23 September:** ACT-5 (after a transfer the weight reads the level-0 weight) and OPS-2
@@ -164,8 +164,9 @@ audit takes.
 Agreed at the review, still to act on:
 - `spec_version` stays 2.6 until the next client document; the ACT-12, ACT-15 and OPS-2 changes
   ride with it.
-- After the whitelist stage (29 October), decide whether to remove `WhitelistClaim` and
-  `WhitelistImport`, as one `NONE` Task, if MINT's off-chain register has worked.
+- `WhitelistClaim` and `WhitelistImport` are removed now (CQ-18, 12 October), with the client's
+  mint calls (CQ-19): `NONE` Task MNT-160, branch `mnt/NONE-wl-removal` at `22c1120` (worktree
+  `~/trees/NFT-wl-removal`), In Review.
 - CLAUDE.md is to point to NFT's `packages/contracts/docs/DESIGN.md` rather than restate it, now
   that the contracts have moved (CQ-14).
 
@@ -460,7 +461,7 @@ RAF-17. Four constraints:
 - **The whitelist is MINT's word** (WL-8). The register, its counter and its rules are in MINT's
   backend, and nothing public shows how the list was made. The one check is that Studio's root is
   exactly MINT's final CSV (WL-4). MINT's decision, 28 September.
-- **Slither "locked ether"** on `Activation`, `MysteryBox` and `PrizeDraw` (and on the undeployed `WhitelistClaim` and `WhitelistImport`): Solady marks ownership
+- **Slither "locked ether"** on `Activation`, `MysteryBox` and `PrizeDraw` : Solady marks ownership
   functions `payable`, and anyone can call `requestOwnershipHandover` and
   `cancelOwnershipHandover`, so anyone could lock their own ETH by attaching value; neither
   contract withdraws it. The loss is only ever the sender's own. Accepted, and said in each
