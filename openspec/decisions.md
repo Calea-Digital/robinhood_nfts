@@ -271,11 +271,11 @@ funded for a cycle's worth of opens, at most 4,222.
 
 ### CQ-20 — Prize count, odds and the token ids out of play
 - **Statement:** Prize count, odds and excluded ids
-- **State:** follow-up
-- **Status note:** meeting, 12 October 2026; every bear plays; ApeChain to confirm
+- **State:** resolved
+- **Status note:** meeting, 12 October 2026; every bear plays; ApeChain a prize chain, Base possible later
 - **Section:** RAF
 - **Needed by:** 2026-10-29 — before the first cycle's prize list is published
-- **Resolution:** the owner sets each cycle's prize count and prize list from MINT's admin page; **every bear plays**, the team's 222 included, so no id is excluded and 4,444 bears play each cycle; prizes are held on Robinhood Chain, Ethereum and possibly ApeChain in MINT's prize wallet.
+- **Resolution:** the owner sets each cycle's prize count and prize list from MINT's admin page; **every bear plays**, the team's 222 included, so no id is excluded and 4,444 bears play each cycle; prizes are held in MINT's prize wallet on Robinhood Chain, Ethereum and ApeChain, and possibly Base in a later cycle; a prize chain needs no contract.
 - **Default if deferred:** prizes on Robinhood Chain and Ethereum only; adding ApeChain later changes the page, not the contracts.
 - **Blocks:** RAF-18
 
@@ -289,7 +289,7 @@ funded for a cycle's worth of opens, at most 4,222.
   after it, because a set that can change mid-game changes everybody's odds; and an excluded bear
   is excluded whoever holds it, so a team bear that is sold stays out.
 - **Whether every prize chain is known.** Each chain holding a prize needs its own vault deployed,
-- **Summary:** Prizes per cycle by the owner; every bear plays, team included; ApeChain to confirm
+- **Summary:** Prizes per cycle by the owner; every bear plays, team included; prizes on Robinhood, Ethereum, ApeChain, later possibly Base
   verified and funded, so the list closes before tranche 2 deploys and cannot be added to
   afterwards without a new deployment.
 
@@ -324,6 +324,15 @@ OPS-2 and OPS-4 follow.
 
 **Remaining.** Whether ApeChain holds prizes. It needs no deployment either way, but the page
 names the chains.
+
+**Answer (meeting, 12 October 2026), on ApeChain.** ApeChain is a prize chain. MINT would also
+like Base as an option for later cycles, not for the first.
+
+**Recorded as.** RAF-33: prizes on Robinhood Chain, Ethereum and ApeChain, and possibly Base in a
+later cycle. A chain needs no contract: the prize wallet is an EOA with the same address on every
+EVM chain, and `recordPayout` takes any non-zero chain id. Adding Base is a line in that cycle's
+prize list and a chain on the page. Calea checks the prize wallet's address on a new chain before
+its first cycle.
 
 ### CQ-22 — How a prize is delivered
 - **Statement:** Prize delivery from the prize wallet

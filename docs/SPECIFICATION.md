@@ -121,7 +121,8 @@ before the page it serves goes live.
 | Robinhood Chain | The bears, their levels and the mystery box's openings; prizes in MINT's wallet |
 | Arbitrum One | The draw, which uses Chainlink's randomness (Robinhood Chain has none) |
 | Ethereum | Prizes in MINT's wallet; no contract |
-| ApeChain | Prizes in MINT's wallet, if MINT confirms it (`→ CQ-20`); no contract |
+| ApeChain | Prizes in MINT's wallet; no contract |
+| Base | Prizes in MINT's wallet in a later cycle, if MINT chooses; no contract |
 
 Everything is rehearsed first on the testnets: Robinhood Chain testnet (46630), Arbitrum Sepolia,
 Sepolia and, if ApeChain holds prizes, Curtis.
@@ -731,8 +732,10 @@ replacement, the next unresolved opening), and both `nextToResolve` and `nextToA
 
 *Acceptance.* When `resolve` runs; then exactly one VRF v2.5 request is made from the subscription with `PrizeDraw` as consumer; and the outcome uses that request's word alone.
 
-**RAF-33 Prize custody and the payout record.** Prizes sit in MINT's prize wallet `0xf6c0…83e3` on Robinhood Chain, Ethereum and possibly
-ApeChain (MINT, CQ-8, CQ-20). No contract holds a prize or runs on a prize chain. A prize is paid
+**RAF-33 Prize custody and the payout record.** Prizes sit in MINT's prize wallet `0xf6c0…83e3` on Robinhood Chain, Ethereum and ApeChain, and
+MINT may add Base for a later cycle (MINT, CQ-8, CQ-20). No contract holds a prize or runs on a
+prize chain, so a chain is added by naming it in a cycle's prize list and on the page; nothing
+is deployed or changed on-chain. A prize is paid
 by an ordinary transfer to the winner's address on the prize's chain. Who sends it, and whether
 MINT pushes every win or the winner requests it, is MINT's decision (CQ-22); the record below is
 the same either way. Nothing on-chain forces a payout, and MINT can move any prize at any time.
@@ -747,8 +750,10 @@ owned account. The worker calls `recordPayout(openIndex, chainId, txHash)` on `P
 refused unless the outcome of `openIndex` is a win (`NotAWin`) not yet recorded as paid
 (`AlreadyPaid`), and refused for a zero `chainId` or `txHash` (`InvalidPayout`), which would
 close the win with no evidence; it emits `PrizePaid(cycleId, openIndex, chainId, txHash)`, and
-`payoutOf(openIndex)` reads the record. There is no on-chain
-nomination of another recipient.
+`payoutOf(openIndex)` reads the record. `chainId` is the prize's chain (1 Ethereum, 4663
+Robinhood Chain, 33139 ApeChain, 8453 Base); the draw accepts any non-zero id, so no chain list is
+fixed in code. The prize wallet, an EOA, has the same address on every one of them. There is no
+on-chain nomination of another recipient.
 
 *Acceptance.* Given open 7 recorded as a win; when the worker calls `recordPayout(7, 1, txHash)`; then `PrizePaid(cycleId, 7, 1, txHash)` is emitted; and a second `recordPayout` for open 7 reverts with `AlreadyPaid`, and one for an open that did not win reverts with `NotAWin`.
 
@@ -1135,7 +1140,7 @@ in one place, then lists what is still open.
 | **Mystery box** | Runs in cycles MINT schedules. Each bear gets one shot per cycle, decided on the spot by a fresh random number. The odds are fixed for the cycle, and unawarded prizes stay with MINT for later cycles (CQ-9) | RAF-32, RAF-28, RAF-30 |
 | **Team bears** | 222, minted first. They play the mystery box like every other bear and can win (CQ-20) | RAF-27 |
 | **Draw** | On Arbitrum One, using Chainlink's randomness (CQ-17) | RAF-8 |
-| **Prizes** | Held and paid by MINT's prize wallet `0xf6c0…83e3` on Robinhood Chain, Ethereum and possibly ApeChain. Every payout is recorded on-chain (CQ-8) | RAF-33 |
+| **Prizes** | Held and paid by MINT's prize wallet `0xf6c0…83e3` on Robinhood Chain, Ethereum and ApeChain, and possibly Base in later cycles. A prize chain needs no contract. Every payout is recorded on-chain (CQ-8, CQ-20) | RAF-33 |
 | **Play page** | MINT builds it in TypeScript on getminted.io, using Calea's tested client library (CQ-19) | DEL-6, DEL-11 |
 | **Repository** | `github.com/mintdotio/NFT`, with Calea's recommended layout (CQ-14) | DEL-9 |
 
@@ -1143,7 +1148,7 @@ Questions closed without a decision are listed in the appendix.
 
 ### Open items
 
-Six points are still MINT's to decide or supply, listed by the date each is needed. Each carries
+Five points are still MINT's to decide or supply, listed by the date each is needed. Each carries
 Calea's fallback, which is what is built if it is not answered in time.
 
 **O1 — How a prize reaches the winner (CQ-22)** · by 12 October
@@ -1187,14 +1192,6 @@ Fixed: TGE 20 October; the whitelist campaign closing on 27 October at 12:00 UTC
 first royalty-split date and the handover date.
 
 *Holds up:* scheduling after the mint. *If not answered:* the §8 dates stay proposals.
-
-**O6 — ApeChain as a prize chain (CQ-20)** · by 29 October
-
-Every bear plays the mystery box, the team's 222 included. Still to confirm: will ApeChain hold
-prizes, beside Robinhood Chain and Ethereum?
-
-*Holds up:* the chains the play page names. *If not answered:* prizes are on Robinhood Chain and
-Ethereum only; adding ApeChain later changes the page, not the contracts.
 
 ## 11. Sign-off
 

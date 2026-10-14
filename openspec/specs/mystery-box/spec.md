@@ -170,8 +170,10 @@ replacement, the next unresolved opening), and both `nextToResolve` and `nextToA
 
 ### Requirement: RAF-33 — Prize custody and the payout record
 **Kind:** work-item
-Prizes sit in MINT's prize wallet `0xf6c0…83e3` on Robinhood Chain, Ethereum and possibly
-ApeChain (MINT, CQ-8, CQ-20). No contract holds a prize or runs on a prize chain. A prize is paid
+Prizes sit in MINT's prize wallet `0xf6c0…83e3` on Robinhood Chain, Ethereum and ApeChain, and
+MINT may add Base for a later cycle (MINT, CQ-8, CQ-20). No contract holds a prize or runs on a
+prize chain, so a chain is added by naming it in a cycle's prize list and on the page; nothing
+is deployed or changed on-chain. A prize is paid
 by an ordinary transfer to the winner's address on the prize's chain. Who sends it, and whether
 MINT pushes every win or the winner requests it, is MINT's decision (CQ-22); the record below is
 the same either way. Nothing on-chain forces a payout, and MINT can move any prize at any time.
@@ -186,8 +188,10 @@ owned account. The worker calls `recordPayout(openIndex, chainId, txHash)` on `P
 refused unless the outcome of `openIndex` is a win (`NotAWin`) not yet recorded as paid
 (`AlreadyPaid`), and refused for a zero `chainId` or `txHash` (`InvalidPayout`), which would
 close the win with no evidence; it emits `PrizePaid(cycleId, openIndex, chainId, txHash)`, and
-`payoutOf(openIndex)` reads the record. There is no on-chain
-nomination of another recipient.
+`payoutOf(openIndex)` reads the record. `chainId` is the prize's chain (1 Ethereum, 4663
+Robinhood Chain, 33139 ApeChain, 8453 Base); the draw accepts any non-zero id, so no chain list is
+fixed in code. The prize wallet, an EOA, has the same address on every one of them. There is no
+on-chain nomination of another recipient.
 
 #### Scenario: A win is paid once, and on the record
 - **GIVEN** open 7 recorded as a win

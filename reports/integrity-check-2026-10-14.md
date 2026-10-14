@@ -171,3 +171,16 @@ and the code in `../NFT` against the answer.
 - **Expected failure until line 0.2 lands:** the code's tests quote RAF-27's old Scenario lines and
   RAF-19's two exclusion cases. `check_scenario_quotes.py` reports 37/3 (RAF-16, RAF-27, RAF-28 in `MysteryBox.t.sol`), and `feat/contracts`
   still holds the exclusion code. Line 0.2 is the `NONE` Task that closes both.
+
+## Q8 — ApeChain, and Base (CQ-20)
+
+- **Answer:** ApeChain is a prize chain. MINT wants Base as an option for later cycles, not the first.
+- **Read in code:** `PrizeDraw.recordPayout` takes any non-zero `chainId`, and the client passes it
+  through. No chain list exists anywhere, so a new prize chain costs no code. The prize wallet is
+  an EOA, so it has the same address on every EVM chain.
+- **Spec:** change `2026-10-14-raf-33-prize-chains` (RAF-33; no Scenario changed). CQ-20 resolved.
+  §2's chain table gains Base, §10's settled table updated, open item O6 removed (five left).
+  CLAUDE.md and HANDOVER (open items, register counts) follow.
+- **Checks:** lint OK; prose current; §10 matches.
+- **Note:** before the first cycle that names Base, Calea confirms the prize wallet holds the
+  prizes on Base (CQ-20's record).

@@ -94,8 +94,8 @@ worker).
 - `PrizeDraw` on Arbitrum One carries the same cycle terms, takes one VRF word per open in
   `openIndex` order, applies a fixed pool drawn without replacement per cycle, and records each
   payout (`recordPayout` → `PrizePaid`; RAF-33, not built yet; CQ-22 gates only how a win is sent).
-- Prizes sit in MINT's prize wallet `0xf6c0…83e3` on Robinhood Chain, Ethereum and possibly
-  ApeChain, and are paid by transfer. No contract goes on a prize chain.
+- Prizes sit in MINT's prize wallet `0xf6c0…83e3` on Robinhood Chain, Ethereum and
+  ApeChain (Base possibly in a later cycle), and are paid by transfer. No contract goes on a prize chain.
 
 RAF-32 (cycles), RAF-27 to RAF-30, RAF-8, RAF-33 (custody and the payout record) and RAF-34
 (pause) carry it. RAF-2 to 6, 11, 15 and 24 to 26 and 31 are retired.
@@ -307,12 +307,11 @@ What each open item blocks:
 
 | Open item | Blocks |
 |---|---|
-| O1 the 222 excluded ids (CQ-20), by 5 Oct | The first cycle; `PrizeDraw`'s `PLAYABLE` |
-| O2 prize delivery (CQ-22), by 12 Oct | How payouts are sent and whether a request window exists; `recordPayout` is built either way |
-| O3 VRF subscription holder (CQ-17), by 12 Oct | `PrizeDraw`'s deployment (subscription id); DEL-10 if Calea holds it |
-| O4 worker operator (CQ-23), by 12 Oct | The worker's address; OPS-5's handover; DEL-10 |
-| O5 mainnet $MNTD address (CQ-2), on 19 Oct (MINT deploys 24 h before TGE) | `Activation`'s deployment, not the mint (the testnet token is in: `0x15CF…211C`) |
-| O6 dates (CQ-1), by 29 Oct | The whitelist freeze (48 h before the stage); scheduling |
+| O1 prize delivery (CQ-22), by 12 Oct | How payouts are sent and whether a request window exists; `recordPayout` is built either way |
+| O2 VRF subscription holder (CQ-17), by 12 Oct | `PrizeDraw`'s deployment (subscription id); DEL-10 if Calea holds it |
+| O3 worker operator (CQ-23), by 12 Oct | The worker's address; OPS-5's handover; DEL-10 |
+| O4 mainnet $MNTD address (CQ-2), on 19 Oct (MINT deploys 24 h before TGE) | `Activation`'s deployment, not the mint (the testnet token is in: `0x15CF…211C`) |
+| O5 dates (CQ-1), by 29 Oct | The first cycle, the royalty split and the handover |
 
 ## Sources and precedence
 
@@ -565,11 +564,11 @@ these.
 
 Twenty-four are in `docs/OPEN-QUESTIONS.md`, each with the section it affects, when it is
 needed, the answer where one exists, and the default otherwise:
-- **resolved or closed (18):** CQ-3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 19, 21, 24;
-- **in follow-up (4):** CQ-1, 2, 17, 20;
+- **resolved or closed (19):** CQ-3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 19, 20, 21, 24;
+- **in follow-up (3):** CQ-1, 2, 17;
 - **open (2):** CQ-22, 23.
 
-They map onto O1–O6 in §10. Tranche 1's code is written. The whitelist root check over a CSV is
+They map onto O1–O5 in §10. Tranche 1's code is written. The whitelist root check over a CSV is
 needed by 27 October; the rehearsal is ready to run; tranche 2 waits on the excluded
 ids.
 
