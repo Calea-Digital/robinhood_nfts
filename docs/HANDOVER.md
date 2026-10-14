@@ -1,6 +1,6 @@
 # MintABear — handover
 
-Written 2026-09-15, current as of 2026-10-09. Read this first when resuming.
+Written 2026-09-15, current as of 2026-10-14. Read this first when resuming.
 
 ## Where things stand
 
@@ -115,7 +115,7 @@ An integrity check of spec, prose, client document, code and board ran first (th
 "Integrity check"), and three tranche-end `solidity-auditor` passes after (the log's
 "Tranche-end pass"); `reports/tranche-1-review.md` summarises it all.
 
-**WL-7** (MNT-134, merge `451554c`, In Review) was built on 28 September by the developer, with
+**WL-7** (MNT-134, merge `451554c`, Canceled: retired in v2.5) was built on 28 September by the developer, with
 tests and self-review (`reports/wl-7-diff-review.md`). It is not deployed: the whitelist went off-chain the same day (WL-8). With it:
 242 contract tests and 133 client tests; 200 rows cost 14.0M gas to add.
 
@@ -268,113 +268,31 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
   Open with MINT: `?since=` on the wager API.
 - **Not yet in the ai-stack templates:** `check_tree_tests.py`'s line in `/mnt:done`.
 
-**Next, in `openspec/changes/tranche-2/tasks.md` order** (RAF-17, RAF-19 and line 3.5 are Done):
-1. **Gated, waiting on MINT:** RAF-14 and RAF-18 (CQ-23, the worker's operator; RAF-18 also
-   CQ-22, prize delivery).
-2. **The deploy entry points** for `MysteryBox` and `PrizeDraw` (not yet a `tasks.md` line). Deploy
-   order: the box, then its first `scheduleCycle`,
-   then `PrizeDraw` with `PLAYABLE` 4,444 and `firstOpenIndex` 1, then the draw's terms for each
-   cycle before its start on 4663. Read back every constructor value, including
-   `requestConfirmations` and `callbackGasLimit` against the coordinator's limits.
-3. **OPS-4**, the rehearsal: the testnet $MNTD is deployed and checked (CQ-2, 12 October), so it is
-   no longer gated. The rehearsal wallet needs test $MNTD from MINT.
-4. **Tooling, here (not a `tasks.md` line):** a check that every test named in a tree exists,
-   beside `check_scenario_quotes.py`. The RAF-19 review left it out of the code branch.
-
-**How the loop is worked now.** Every Task: `/mnt:next`, `/mnt:done`, then `/mnt:review` with the
-person. Review is code review, adversarial QA and a local fork run:
-- `MysteryBox` on a 46630 fork with the collection from `Deploy.s.sol` and bears minted by
-  impersonating SeaDrop.
-- `PrizeDraw` on an Arbitrum Sepolia fork against Chainlink's real coordinator. Plain anvil lacks
-  Arbitrum's `ArbSys` (`0x64`), so put a stand-in exposing `arbBlockNumber` and `arbBlockHash` there
-  with `anvil_setCode`, compiled from a throwaway file you delete afterwards. The key hash
-  `0x1770…d2be` works on the Sepolia coordinator.
-
-**Integrity check, 9 October** (`reports/integrity-check-2026-10-09.md`): the spec, the board and
-the code agree; the findings are stale docs (fixed here), the order of RAF-17/19/14 against RAF-33
-(IC-1), line 3.5's Task (IC-2), overdue decisions (IC-4) and NFT's README, DESIGN and RUNBOOK
-without the mystery box (IC-7).
-
-**Lesson from 8 October:** the reviews kept finding tests that passed while their property could be
-broken, and one designed feature (`rerequest`) let Chainlink's node operator choose outcomes. Plant
-a deliberate breakage for each property (a mutation, then restore) before `/mnt:done`, and run the
-adversarial model on anything that decides value.
-
-**Spec changes on 8 October** (all archived and on the board):
-- `raf-shots-off-chain-token-in-resolve`: no `shotsLeft` on the hub; `resolve` carries `tokenId`.
-- `raf-32-max-cycle-length`: a cycle lasts at most 90 days.
-- `raf-27-expected-playable`: the first cycle waits for the expected exclusions.
-- `raf-29-apply-outcomes`: the callback stores only; anyone applies; `CycleExhausted` counts relays.
-- `raf-8-rerequest` and `raf-8-rerequest-one-hour`: re-requesting was added, then
-  `raf-8-review-fixes` removed it, with `firstOpenIndex`, the apply cap, `InvalidOpener` and the
-  draw's terms fixed from `start`.
-- `del-9-local-gates`: DEL-9 names local gates, no CI; MNT-71 stays Open until PR B.
-
-CQ-20 now blocks OPS-4 as well as RAF-27.
-
-**Notes waiting for their Tasks:**
-- The runbook pauses the box before the draw (posted on MNT-65, OPS-5).
-- The worker takes `cycleId` only from `BoxOpened`: a relay naming a later cycle closes the
-  current one for good.
-- `PrizeDraw`'s subscription and coordinator are fixed; moving either means a new draw with
-  `firstOpenIndex` set to the next unrelayed opening.
-
-What each open item blocks:
-
-| Open item | Blocks |
-|---|---|
-| O1 prize delivery (CQ-22), by 17 Oct | MINT prefers a claim; options A (MINT sends), B (vault per prize chain, signed claims), C (worker sends from a payout wallet) sent 14 Oct (`docs/client/MINT-message-prize-delivery-2026-10-14.md`). Holds up RAF-18's payout step; B adds a contract on three chains |
-| O2 mainnet $MNTD address (CQ-2), on 19 Oct (MINT deploys 24 h before TGE) | `Activation`'s deployment, not the mint (the testnet token is in: `0x15CF…211C`) |
-
-## Sources and precedence
-
-1. `docs/SPECIFICATION.md` — the resolution of everything below; outranks each source once signed.
-2. MINT's statement of work, 2026-09-14 (`~/Downloads/MINTaBEAR_SoW.pages`), as amended by
-   MINT's written answers to specification v1.0 (September 2026) and the *WL Wager Based Checker*
-   brief — scope, deliverables, the calendar anchors, the answers.
-3. Meeting notes, 2026-09-15 — ERC-6551 out, mint leeway to 29 Oct, weights as constructor values, artwork immutable.
-4. The architecture email of 2026-09-10, then the original spec sheet — only where the above are silent.
-
-Requirements carry IDs (`COL-n`, `WL-n`, `ACT-n`, `RAF-n`, `OPS-n`, `DEL-n`); trees, tests and
-client replies cite them.
-
-## Calendar
-
-MINT's fixed dates:
-- the whitelist frozen by 27 October, 48 hours before the whitelist stage;
-- TGE on 20 October ($MNTD live on Robinhood Chain);
-- the mint on 29 October;
-- burns and level-up from 29 October.
-
-The mystery box's cycles are the owner's to schedule after that. Every other date is proposed in
-§8 and confirmed under CQ-1.
-
-Two decouplings hold whatever moves:
-- the collection deploys and mints without the mystery box or `Activation`;
-- `Activation` stays paused until its burn has been exercised against real $MNTD.
-
-The whitelist is frozen at least 48 hours before the whitelist stage, so the Studio upload and the
-root check fit.
-
-## What is left
-
-### Tranche 1 — `MintABear`, `Activation`, then the internal auditor
-
-The code is written and reviewed (above). What remains before the internal auditor takes it:
-
-1. **The merge** of `tranche-1` into `main` (the human's).
-2. **OPS-4 rehearsal on 46630** with MINT's values, closing Subtask MNT-95 and rehearsal items
-   1, 3 and 4 below.
-3. **Mainnet configs** `script/config/4663.json` once CQ-12, CQ-1 and CQ-2 are answered.
-4. **OPS-1 and OPS-5** — the recorded addresses and the handover — at deployment.
+**Next (written 14 October, for 15 October), in this order:**
+1. **`/mnt:review` MNT-160, then MNT-161** with the person, and on their accept merge each into
+   `feat/contracts` (`--no-ff`; MNT-161's branch sits on MNT-160's). They reach staging in a new PR.
+2. **`tasks.md` 0.5 — rehearsal preparation (OPS-4, MNT-64):** `46630.json`, `4663.json` and the
+   SeaDrop allowlist script with proofs. The testnet rehearsal runs on 16 October (§8). Test
+   $MNTD for the rehearsal wallet comes from MINT (the person asks).
+3. **Mainnet collection deploy on 19 October** (§8): Studio takes it over, `compare` on a test CSV,
+   the team's 222 minted; the team-bear sale 20–21 October; the drop page on 22 October.
+4. **`tasks.md` 0.4 — the box's and the draw's deploy entry points** (a Defect against OPS-2), by
+   29 October.
+5. **`tasks.md` 0.3 — PR B**, rebuilt and merged into `release/1.1` around 20–21 October (Lorenzo).
+6. **RAF-14** (free), then **RAF-18** (the worker service, 22–28 October), which waits on CQ-22.
+7. **Waiting on MINT:** CQ-22 (send `docs/client/MINT-message-prize-delivery-2026-10-14.md`,
+   needed by 17 October) and CQ-2 (the mainnet $MNTD address, 19 October; `Activation` on
+   20 October).
 
 ### Tranche 2 — the mystery box
 
 - **Done** (on `feat/contracts`): RAF-32, RAF-27, RAF-28, RAF-34 (`MysteryBox`); RAF-8, RAF-29,
   RAF-30, RAF-33 and Defect MNT-157 (`PrizeDraw`); RAF-16, RAF-17 and RAF-19 (both); the client's
   calls for the page, the admin page and the worker (Defect MNT-158, DEL-6).
-- **Next:** the deploy entry points.
-- **Gated by MINT:** RAF-14 (CQ-23), RAF-18 (CQ-22, CQ-23).
+- **In review:** MNT-160 (the whitelist registries and the client's mint calls removed) and
+  MNT-161 (every bear plays).
+- **Next:** the deploy entry points (`tasks.md` 0.4), RAF-14, then the worker service (RAF-18).
+- **Gated by MINT:** RAF-18 (CQ-22).
 - Testnet rehearsal on 46630, Arbitrum Sepolia and Sepolia, two cycles included.
 
 The things to get right:
@@ -400,15 +318,16 @@ surface, review of contract-touching pull requests, and clarifications; the rest
 
 ## For the portal team
 
-The call surface after tranche 1 is WL-4 (mint proofs from the CSV), ACT-14 and COL-12 in the spec; after tranche 2,
-RAF-17. Four constraints:
+The call surface after tranche 1 is ACT-14 and COL-12 in the spec, plus the mint's reads; after
+tranche 2, RAF-17. Four constraints:
 
 0. **The client library is Calea's deliverable and it is TypeScript** (DEL-6, D9). It is typed
    against the ABIs, covers every call the app makes, and carries its own tests and the revert
    reasons a caller has to handle. MINT builds the page on getminted.io against it. It lives in
    `packages/contracts-client`, and its `README.md` is the reference for everything below.
-1. **The whitelist is MINT's backend** (WL-8). The mint page builds each wallet's allowlist proof
-   from MINT's final CSV with `buildAllowList`; nothing on-chain is read for eligibility.
+1. **The whitelist is MINT's backend** (WL-8), and holders mint on OpenSea's drop page, which
+   serves each wallet's proof (CQ-19). getminted.io sends no mint; it reads the mint's progress
+   (`mint.publicStage`, `mint.allowListRoot`, `mint.stats`).
 2. **Activation is approve, then one click.** Approve `Activation` on $MNTD, then call
    `burn(tokenId, amount)` with `amount` from `costToReach(tokenId, targetLevel)`. Anything above
    the level-5 remainder is refused, so nothing is destroyed for nothing. Status links are MINT's,
