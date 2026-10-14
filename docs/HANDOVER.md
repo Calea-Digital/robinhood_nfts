@@ -278,6 +278,24 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
   - `mnt/RAF-18` `ce7606a`: MNT-59, the worker up to prize distribution, gated by CQ-22;
   - `feat/contracts-client-workspace` `7087acc`: PR B, MNT-154. Its lockfile is +345 / −0 with no version moving, the images build and the apps' tests pass.
 
+**Waiting on the person before the follow-up session** (paused 14 October: the Robinhood testnet
+$MNTD has not arrived yet). Ask for each one that is still missing at the start:
+1. **The rehearsal wallet's address.** It goes into `admin` in `script/config/46630.json` and
+   `421614.json`; both are refused (`MissingAddress(admin)`) until then.
+2. **A test $MNTD balance for that wallet, from MINT** (token `0x15CF…211C` on 46630), for the
+   rehearsal's burn.
+3. **The collection's name and symbol, before 19 October.** `MintABear` / `BEAR` is in the configs
+   for now, and it is fixed at deploy.
+4. **The VRF subscription id and settings.** The id goes into `421614.json` and `42161.json`
+   (`"0"` now, refused with `UnknownSubscription(0)`). Confirm or change the settings: ETH payment,
+   300,000 callback gas, 3 confirmations.
+5. **The person's word to push and open either PR:** the follow-up from `feat/contracts` into
+   `release/1.1` (MNT-160, MNT-161, plus whatever review accepts), and PR B
+   (`feat/contracts-client-workspace`).
+
+The follow-up session starts with `/mnt:review` of `mnt/OPS-4-prep`, then the rehearsal once items
+1 and 2 are in.
+
 **Next (written after the session of 15 October), in this order:**
 1. **`/mnt:review`** `mnt/OPS-4-prep` (before the 16 October rehearsal), then `mnt/OPS-2-163`, then `mnt/RAF-14`; merge each on accept.
 2. **Rehearsal, 16 October, on 46630** (OPS-4, MNT-64, RUNBOOK "Testnet rehearsal"):
