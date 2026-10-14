@@ -229,3 +229,8 @@ and the code in `../NFT` against the answer.
   counts and accepted risk.
 - **Pick order:** RAF-14 is free; RAF-18 (now including the service) waits for CQ-22.
 - **Checks:** lint OK; prose current; §10 matches.
+- **IC-Q10-1 (tooling).** After a decision resolves, the bridge removes its links from the
+  register's `Blocks`, but not the links it made from `→ CQ-n` in requirement text. MNT-55
+  (RAF-14) and MNT-61 (OPS-1) still "depend on" CQ-23 (MNT-140, Done) and CQ-17 (MNT-88, Done),
+  and on CQ-11 (MNT-82, Done). They gate nothing, since `/mnt:next` gates on Open decisions only.
+  Links are bridge-owned, so the fix is in `~/trees/ai-stack` (the bridge's W6 sweep), not by hand.
