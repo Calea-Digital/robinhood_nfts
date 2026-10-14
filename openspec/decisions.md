@@ -56,11 +56,11 @@ the 19 November handover.
 ### CQ-2
 - **Statement:** $MNTD burn route
 - **State:** follow-up
-- **Status note:** testnet address received and checked, 12 October 2026; the mainnet address to follow at TGE
+- **Status note:** meeting, 12 October 2026; testnet address checked; mainnet deployment planned for 19 October, 24 hours before TGE
 - **Section:** ACT
 - **Needed by:** 2026-10-20 — before `Activation` is deployed
 - **Resolution:** option (a1) — $MNTD is **native** to Robinhood Chain, burned by `Activation` in the same transaction as the record. The token is OpenZeppelin `ERC20Burnable` with 18 decimals, fixed supply and no owner or proxy, so its address is final once deployed.
-- **Summary:** Native; OpenZeppelin `ERC20Burnable`, 18 decimals, immutable; testnet `0x15CF…211C`; mainnet address to follow
+- **Summary:** Native; OpenZeppelin `ERC20Burnable`, 18 decimals, immutable; testnet `0x15CF…211C`; mainnet deployed 19 October (planned)
 - **Blocks:** ACT-7, OPS-2, OPS-5
 
 **Question.** On which chain does the $MNTD burn happen, what does the token's level-up function
@@ -131,6 +131,18 @@ immutables: its own address, the chain id and the cached domain separator. It is
 rehearsal (OPS-4) burns.
 
 **Remaining.** The mainnet address at TGE, confirmed to carry the same code.
+
+**Answer (meeting, 12 October 2026), on mainnet.** $MNTD is deployed on mainnet 24 hours before
+TGE, so on 19 October. Investors' allocation wallets are still missing; if investors miss the
+deadline, Iñigo's team creates the wallets. MINT notes the NFT drop could be delayed if the two
+fall out of step.
+
+**Recorded as.** §8: $MNTD on mainnet on 19 October; `Activation` deployed against it, paused, on
+20 October once Calea has confirmed its code. The collection does not depend on $MNTD (OPS-2,
+§8), so a late token moves `Activation`, the mainnet burn rehearsal and at worst the opening of
+burns, not the mint, unless MINT chooses to move them together.
+
+**Remaining.** The mainnet address on 19 October.
 
 ### CQ-12 — Addresses and the admin wallet
 - **Statement:** Addresses; Safe on 4663

@@ -311,7 +311,7 @@ What each open item blocks:
 | O2 prize delivery (CQ-22), by 12 Oct | How payouts are sent and whether a request window exists; `recordPayout` is built either way |
 | O3 VRF subscription holder (CQ-17), by 12 Oct | `PrizeDraw`'s deployment (subscription id); DEL-10 if Calea holds it |
 | O4 worker operator (CQ-23), by 12 Oct | The worker's address; OPS-5's handover; DEL-10 |
-| O5 mainnet $MNTD address (CQ-2), by 20 Oct | `Activation`'s deployment (the testnet token is in: `0x15CF…211C`) |
+| O5 mainnet $MNTD address (CQ-2), on 19 Oct (MINT deploys 24 h before TGE) | `Activation`'s deployment, not the mint (the testnet token is in: `0x15CF…211C`) |
 | O6 dates (CQ-1), by 29 Oct | The whitelist freeze (48 h before the stage); scheduling |
 
 ## Sources and precedence

@@ -140,3 +140,12 @@ and the code in `../NFT` against the answer.
   merge.
 - **Left as history:** `packages/contracts/audit/` (the external report and our response) still
   names the registries.
+
+## Q6 — $MNTD on mainnet (CQ-2)
+
+- **Answer:** MINT deploys $MNTD on mainnet 24 hours before TGE, so on 19 October. Investors'
+  allocation wallets may delay it; MINT says the drop could slip if the two fall out of step.
+- **Recorded:** CQ-2 (still follow-up: the address itself), §8 (19 October row), §10 O5, HANDOVER.
+  The register notes that the collection doesn't depend on $MNTD: a late token moves `Activation`
+  and the burn opening, not the mint.
+- **Checks:** lint OK; prose current; §10 matches.

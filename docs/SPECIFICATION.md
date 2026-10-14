@@ -1003,6 +1003,7 @@ are not listed.
 | 15 Oct | Work before deployment finished: the whitelist registries removed, the deploy configs for 46630 and 4663 | Calea | agreed |
 | 16 Oct | Testnet rehearsal on 46630: the collection with royalty enforcement, the whitelist on SeaDrop, a burn against the test $MNTD | Calea | agreed |
 | 19 Oct | Collection deployed on 4663 with royalty enforcement; the admin accepts ownership; Studio takes it over and Calea's check passes on a test list; the team's 222 minted | Calea; MINT's admin; Iñigo | agreed |
+| 19 Oct | $MNTD deployed on Robinhood Chain; its address to Calea, which checks its code against the reference token | MINT | MINT |
 | 20 Oct | TGE: $MNTD live on Robinhood Chain; Activation deployed against it, paused | MINT; Calea | MINT |
 | 20 – 21 Oct | One team bear listed and sold on OpenSea from a second MINT wallet; Calea confirms it settled and the 5% reached the pot | MINT; Calea | agreed |
 | 22 Oct | Go or no-go on royalty enforcement (OPS-6), then the drop page is published | MINT | agreed |
@@ -1196,10 +1197,11 @@ priced service; MINT can replace it at any time.
 **O5 — $MNTD's mainnet address (CQ-2)** · by 20 October
 
 The activation contract is tied to one $MNTD address for life. The testnet token is deployed and
-carries the reference token's code; we need the mainnet address at TGE.
+carries the reference token's code. MINT deploys the mainnet token on 19 October, 24 hours before
+TGE, and sends its address that day.
 
-*Holds up:* the activation contract's deployment. *If not answered:* the activation contract is
-not deployed, and burns cannot open on 29 October.
+*Holds up:* the activation contract's deployment, not the mint. *If not answered:* the
+activation contract is not deployed, and burns cannot open on 29 October.
 
 **O6 — The dates (CQ-1)** · by 29 October
 
