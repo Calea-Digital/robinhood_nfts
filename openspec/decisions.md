@@ -10,11 +10,11 @@ verbatim in the tracker and in the client document.
 ### CQ-1 — Dates after the 29 October mint
 - **Statement:** Dates after the 29 Oct mint
 - **State:** follow-up
-- **Status note:** call, 28 September 2026
+- **Status note:** meeting, 12 October 2026; the whitelist's times settled, the cycle and later dates to follow
 - **Section:** CAL
 - **Needed by:** 2026-10-29 — before the mint
-- **Resolution:** the three anchors stand — TGE 20 October, mint 29 October, burns and level-up from 29 October. The whitelist is frozen by 27 October, 48 hours before the whitelist stage. Every other row of §8 is unconfirmed.
-- **Summary:** Anchors stand; whitelist frozen by 27 October; other §8 rows unconfirmed
+- **Resolution:** the three anchors stand — TGE 20 October, mint 29 October, burns and level-up from 29 October. The whitelist campaign runs from 30 September to 27 October 12:00 UTC, and the whitelist stage opens on 29 October 12:00 UTC, 48 hours later. Every other row of §8 is unconfirmed.
+- **Summary:** Anchors stand; whitelist closes 27 Oct 12:00 UTC, stage 29 Oct 12:00 UTC; other §8 rows unconfirmed
 
 **Question.** The SoW schedule chains off a 15 October mint. With the mint at 29 October, which
 dates hold and which move?
@@ -38,6 +38,20 @@ which fixes the freeze 48 hours earlier. The first mystery-box cycle's window, w
 sets (RAF-32). The first royalty closing block. The 19 November handover. Burns open nine days
 after TGE, so the burn is rehearsed against real $MNTD on Robinhood Chain between 20 and
 28 October, and the testnet $MNTD makes that rehearsal independent of TGE (CQ-2).
+
+**Answer (call, 1 October 2026).** The whitelist campaign runs from 30 September to 27 October
+at 12:00 UTC.
+
+**Answer (meeting, 12 October 2026).** "The whitelist stage will start on October 29th, with the
+campaign closing two days prior on October 27th to allow adequate time for CSV integration and
+production generation." The stage opens at 12:00 UTC.
+
+**Recorded as.** WL-5: the campaign closes on 27 October at 12:00 UTC and the whitelist stage
+opens on 29 October at 12:00 UTC, exactly 48 hours later. In those 48 hours MINT exports the
+final CSV, Iñigo loads it into Studio, and Calea runs `compare` against the root Studio set.
+
+**Remaining.** The first mystery-box cycle's window (RAF-32), the first royalty closing block and
+the 19 November handover.
 
 ### CQ-2
 - **Statement:** $MNTD burn route
@@ -783,6 +797,13 @@ belongs to, the wagering history, the two-per-account whitelist cap and the roya
 getminted.io accounts — recorded in §2, WL-1, WL-3 and ACT-10. Please confirm the reading, since
 it also says where the wager API and the splitter wallet read and write.
 
+**Answer (meeting, 12 October 2026).** Holders mint on OpenSea's drop page.
+
+**Recorded as.** WL-4 and DEL-6: getminted.io sends no mint transaction, and OpenSea serves each
+wallet's allowlist proof. The client library keeps the mint reads (the public stage, the
+allowlist root, a wallet's mint stats) so the page can show the mint's progress, and drops the
+mint calls and the proofs built from the CSV.
+
 ### CQ-21 — How MINT's Status counts links across an account's wallets
 - **Statement:** Status links per account
 - **State:** resolved
@@ -913,6 +934,13 @@ mechanism, 2 for wagering max, and the rest through other mechanisms (channels).
 **Recorded as (29 September).** WL-1 and WL-8: the 1,000 spots and the two-per-wallet limit are
 the wagering channel's; spots from other channels do not count toward the 1,000 and come on top;
 getminted.io shows a wallet every spot it holds, and the final list carries each wallet's total.
+
+**Answer (meeting, 12 October 2026).** The fallback registries are removed now rather than after
+the whitelist stage.
+
+**Recorded as.** `WhitelistClaim` and `WhitelistImport` leave MINT's repository, with their
+deploy entry points, the export and registry comparison that served them, and the client's
+registry and voucher modules. What stays for the whitelist is `compare` over MINT's CSV (WL-4).
 
 ### CQ-24 — Whitelist spots over supply
 - **Statement:** Whitelist spots over supply

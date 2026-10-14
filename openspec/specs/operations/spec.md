@@ -74,7 +74,7 @@ challenge; Arbiscan through Etherscan's API for 42161 and 421614.
 **Kind:** work-item
 Before mainnet, everything is rehearsed on the testnets:
 - Studio managing a collection Calea deployed, with royalty enforcement on;
-- minting through OpenSea and through getminted.io;
+- minting through OpenSea's drop page;
 - the whitelist end to end: a list from MINT's register loaded into Studio, Calea's check
   passing, and wallets minting their spots and no more;
 - a burn raising a bear's level, against a test $MNTD;

@@ -45,8 +45,8 @@ by the internal auditor independently of the developer.
 A TypeScript client library for getminted.io that covers every contract call the app makes. It is
 typed and tested, and handles every error a caller must deal with, each with a message ready to
 show holders:
-- **the play page:** minting, with whitelist proofs from MINT's final list (WL-4); burning; and
-  the mystery box (opening, outcomes, odds, shots left, payouts);
+- **the play page:** the mint's progress, read from the chain (holders mint on OpenSea's drop
+  page, WL-4); burning; and the mystery box (opening, outcomes, odds, shots left, payouts);
 - **MINT's admin page:** excluding the team bears, scheduling cycles on both chains, pauses;
 - **the worker:** relaying openings and recording payouts.
 
@@ -55,8 +55,8 @@ interfaces (`→ CQ-19`). It also includes a reference script that reproduces th
 dead-address exclusion included, so MINT can check its split adds up.
 
 *Technical note.* Interfaces, events, roles and calldata examples for every contract. The library
-is typed against the ABIs and covers: mint (SeaDrop stages, allowlist proofs from the whitelist
-CSV, `mintPublic`); burn (`costToReach`, approve, `burn`); the mystery box (`open`, outcomes,
+is typed against the ABIs and covers: mint reads (the public stage, the allowlist root, a wallet's mint
+stats); burn (`costToReach`, approve, `burn`); the mystery box (`open`, outcomes,
 odds, shots left, payout records); the admin page (`excludeRange`, `scheduleCycle` on both
 chains, pauses); the worker (`resolve`, `recordPayout`). It documents the revert reasons a caller
 has to handle. The reference script reproduces the split from `Activation.snapshot`, so that
@@ -74,8 +74,7 @@ accepts each tranche after Calea and MINT sign off, and anything not accepted st
 in the page.
 
 *Technical note.* Tranche 1: `MintABear` and `Activation`. Tranche 2: `MysteryBox` and
-`PrizeDraw`, once CQ-20's remaining values are supplied. `WhitelistClaim` and `WhitelistImport`
-are built but not deployed.
+`PrizeDraw`, once CQ-20's remaining values are supplied.
 
 #### Scenario: Tranche membership is fixed
 - **WHEN** a contract's audit tranche is looked up
@@ -109,7 +108,7 @@ Listed so nothing is implied:
 - mainnet execution and handover on every chain;
 - technical support through 19 November with agreed response hours;
 - beyond the statement of work's single-chain design:
-  - **whitelist support**: the check, the mint proofs and a review of the claim rules (WL-4,
+  - **whitelist support**: the check and a review of the claim rules (WL-4,
     WL-8);
   - the **cross-chain draw**: the draw on Arbitrum, relaying each opening, and the payout
     record;

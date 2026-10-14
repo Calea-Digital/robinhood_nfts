@@ -28,7 +28,7 @@ As of 29 September 2026. Nothing is deployed yet.
 | Collection (§3) | Built and reviewed |
 | Whitelist (§4) | In MINT's backend. Calea's check that Studio's list matches MINT's final list is ready before the freeze on 27 October |
 | Activation (§5) | Built and reviewed. Deployed at TGE with burning paused; burning opens on 29 October |
-| Client library (DEL-6) | Built and reviewed: mint, burn, transfers, reads and the royalty split, with a ready-to-show message for every error. Mint proofs from MINT's whitelist list are being added |
+| Client library (DEL-6) | Built and reviewed: mint, burn, transfers, reads and the royalty split, with a ready-to-show message for every error. Holders mint on OpenSea's drop page, so the library reads the mint's progress and sends no mint |
 | Deployment and runbook (§7) | Scripts written and tested; the runbook covers every operating step |
 | Internal audit | Tranche 1 (collection and activation): 30 September – 1 October |
 | Testnet rehearsal | Ready to run: MINT's testnet $MNTD is deployed and checked (CQ-2) |
@@ -169,7 +169,7 @@ What a level is worth is MINT's to define. The chain records only that it was re
 **End to end.**
 1. **Whitelist.** Holders claim spots on getminted.io. MINT freezes the list and loads it into
    Studio, and Calea checks it.
-2. **Mint.** Iñigo runs the drop in Studio, and holders mint on OpenSea or getminted.io.
+2. **Mint.** Iñigo runs the drop in Studio, and holders mint on OpenSea's drop page.
 3. **Burn.** A holder burns $MNTD for a bear, and its level and weight rise.
 4. **Transfer.** Any transfer resets the bear's level to 0.
 5. **Mystery box.** MINT schedules a cycle and publishes its prize list. A holder opens a box with
@@ -349,7 +349,6 @@ MINT runs a 1,000-spot whitelist for its wagering holders in its own backend. Ca
   - the final list.
 - **Calea:**
   - the check that Studio's list is MINT's final list (WL-4);
-  - the mint proofs for getminted.io, built from the same list (DEL-6);
   - a review of the backend's claim rules, on request.
 
 **WL-4 Into the mint.** Once the list is frozen (WL-5), MINT exports the final list, one row per wallet with its number
@@ -363,15 +362,14 @@ of spots, and Iñigo loads it into Studio's whitelist stage.
 - **The limit counts every bear the wallet mints, in any stage.** So the whitelist stage is the
   first stage anyone but the team can mint in, no other stage overlaps it, and a later stage's
   limit counts the whitelist mints too.
-- **Before the stage opens,** Calea checks that Studio's list is exactly MINT's final list. The
-  getminted.io page builds its mint proofs from the same list.
+- **Before the stage opens,** Calea checks that Studio's list is exactly MINT's final list.
+- **Holders mint on OpenSea's drop page,** which serves each wallet's proof from Studio's list.
 
 *Technical note.* The final list is a CSV, `wallet,allocations`. Each row becomes a SeaDrop
 allowlist leaf whose `maxTotalMintableByWallet` is the row's allocations, and SeaDrop counts it
 against every bear minted to the wallet. `compare` in `script/WhitelistExport.s.sol` rebuilds the
 allowlist Merkle root from the CSV and the stage's parameters, and fails unless it is the root on
-SeaDrop, naming the difference. The client library's `buildAllowList` builds the getminted.io
-proofs from the same CSV (DEL-6). The row's address is the address that calls `mintAllowList`.
+SeaDrop, naming the difference. The row's address is the address that calls `mintAllowList`.
 The CSV's allocations total at most 4,222, and `compare` also fails when they total more. The
 whitelist stage's `maxTokenSupplyForStage` is 4,444, the collection's total including the team's
 222, so the stage can fill every row.
@@ -380,8 +378,8 @@ whitelist stage's `maxTokenSupplyForStage` is 4,444, the collection's total incl
 
 **WL-5 Timing.** MINT's backend takes claims only during the campaign window. The list is frozen at least 48
 hours before the whitelist stage opens, which leaves time to load it into Studio, check it and
-fix anything. The stage opens with the mint on 29 October, so the list is frozen by 27 October at
-the same time of day. The 48 hours is Calea's buffer, not an OpenSea rule. Dates `→ CQ-1`.
+fix anything. The campaign runs from 30 September to 27 October at 12:00 UTC, and
+the whitelist stage opens on 29 October at 12:00 UTC (MINT, 12 October 2026). The 48 hours is Calea's buffer, not an OpenSea rule. Dates `→ CQ-1`.
 
 **WL-8 Off-chain register.** The whitelist lives in MINT's backend, and no contract is deployed for it (MINT, 28 September
 2026, `→ CQ-18`).
@@ -885,7 +883,7 @@ challenge; Arbiscan through Etherscan's API for 42161 and 421614.
 
 **OPS-4 Rehearsal on testnets (46630, Arbitrum Sepolia, Sepolia).** Before mainnet, everything is rehearsed on the testnets:
 - Studio managing a collection Calea deployed, with royalty enforcement on;
-- minting through OpenSea and through getminted.io;
+- minting through OpenSea's drop page;
 - the whitelist end to end: a list from MINT's register loaded into Studio, Calea's check
   passing, and wallets minting their spots and no more;
 - a burn raising a bear's level, against a test $MNTD;
@@ -947,8 +945,8 @@ on timestamps. The gas limit is Arbitrum-style, per transaction.
 
 ## 8. Calendar (CAL)
 
-Four dates are fixed by MINT: TGE on 20 October, the whitelist frozen by 27 October, the mint on
-29 October, and burns open on 29 October. Every other date is Calea's plan from the statement of
+Four dates are fixed by MINT: TGE on 20 October, the whitelist frozen on 27 October at 12:00 UTC,
+the mint on 29 October with the whitelist stage at 12:00 UTC, and burns open on 29 October. Every other date is Calea's plan from the statement of
 work, for MINT to confirm or move (`→ CQ-1`). Mystery-box cycles are MINT's to schedule, so they
 are not listed.
 
@@ -959,11 +957,11 @@ are not listed.
 | 12 Oct | Test $MNTD on the testnet, for the burn rehearsal: `0x15CF…211C`, the reference token's code | MINT (Lorenzo) | MINT |
 | 5 – 9 Oct | Mystery box, draw, worker and page tested on the testnets, two cycles included; audit report and runbooks; no open Critical or High finding | Calea; Javier; MINT | SoW |
 | 12 – 14 Oct | Mystery box and draw deployed and verified; roles and addresses checked; randomness subscription funded | Calea; Iñigo; MINT | SoW |
-| MINT's dates (O6) | Whitelist campaign open on getminted.io/mintabear | Iñigo; Javier; Vlad; Lorenzo | to confirm |
+| 30 Sep – 27 Oct 12:00 UTC | Whitelist campaign open on getminted.io/mintabear | Iñigo; Javier; Vlad; Lorenzo | MINT |
 | 20 Oct | TGE: $MNTD live on Robinhood Chain; Activation deployed against it, paused | MINT; Calea | MINT |
 | 20 – 28 Oct | Real burns rehearsed on mainnet, in short windows the admin opens and closes | Calea; MINT | derived |
-| by 27 Oct | Whitelist frozen, loaded into Studio and checked by Calea; mint proofs published | Iñigo; Calea | MINT |
-| 29 Oct | Mint: the whitelist stage first, then the other stages; burns and level-up open | Iñigo; Javier; Calea | MINT |
+| 27 Oct 12:00 – 29 Oct 12:00 UTC | Whitelist frozen, exported, loaded into Studio and checked by Calea | MINT; Iñigo; Calea | MINT |
+| 29 Oct | Mint on OpenSea's drop page: the whitelist stage first, from 12:00 UTC, then the other stages; burns and level-up open | Iñigo; Javier; Calea | MINT |
 | after 29 Oct | First mystery-box cycle, scheduled by MINT with its prize list | Iñigo; Calea | MINT |
 | 5 Nov | First royalty split; after that at each ETH cap or countdown (§2) | MINT | SoW; to confirm |
 | 19 Nov | Handover; technical support ends (OPS-5) | Iñigo; Robert; Calea | SoW; to confirm |
@@ -1010,8 +1008,8 @@ by the internal auditor independently of the developer.
 **DEL-6 Integration package.** A TypeScript client library for getminted.io that covers every contract call the app makes. It is
 typed and tested, and handles every error a caller must deal with, each with a message ready to
 show holders:
-- **the play page:** minting, with whitelist proofs from MINT's final list (WL-4); burning; and
-  the mystery box (opening, outcomes, odds, shots left, payouts);
+- **the play page:** the mint's progress, read from the chain (holders mint on OpenSea's drop
+  page, WL-4); burning; and the mystery box (opening, outcomes, odds, shots left, payouts);
 - **MINT's admin page:** excluding the team bears, scheduling cycles on both chains, pauses;
 - **the worker:** relaying openings and recording payouts.
 
@@ -1020,8 +1018,8 @@ interfaces (`→ CQ-19`). It also includes a reference script that reproduces th
 dead-address exclusion included, so MINT can check its split adds up.
 
 *Technical note.* Interfaces, events, roles and calldata examples for every contract. The library
-is typed against the ABIs and covers: mint (SeaDrop stages, allowlist proofs from the whitelist
-CSV, `mintPublic`); burn (`costToReach`, approve, `burn`); the mystery box (`open`, outcomes,
+is typed against the ABIs and covers: mint reads (the public stage, the allowlist root, a wallet's mint
+stats); burn (`costToReach`, approve, `burn`); the mystery box (`open`, outcomes,
 odds, shots left, payout records); the admin page (`excludeRange`, `scheduleCycle` on both
 chains, pauses); the worker (`resolve`, `recordPayout`). It documents the revert reasons a caller
 has to handle. The reference script reproduces the split from `Activation.snapshot`, so that
@@ -1035,8 +1033,7 @@ accepts each tranche after Calea and MINT sign off, and anything not accepted st
 in the page.
 
 *Technical note.* Tranche 1: `MintABear` and `Activation`. Tranche 2: `MysteryBox` and
-`PrizeDraw`, once CQ-20's remaining values are supplied. `WhitelistClaim` and `WhitelistImport`
-are built but not deployed.
+`PrizeDraw`, once CQ-20's remaining values are supplied.
 
 **DEL-9 Repository.** The contracts go into MINT's repository, `github.com/mintdotio/NFT`, as their own package beside
 the client library (MINT, 28 and 29 September 2026). The repository has no CI for them: Calea
@@ -1060,7 +1057,7 @@ submodules. The local gates are `forge fmt --check`, `forge build --sizes` with 
 - mainnet execution and handover on every chain;
 - technical support through 19 November with agreed response hours;
 - beyond the statement of work's single-chain design:
-  - **whitelist support**: the check, the mint proofs and a review of the claim rules (WL-4,
+  - **whitelist support**: the check and a review of the claim rules (WL-4,
     WL-8);
   - the **cross-chain draw**: the draw on Arbitrum, relaying each opening, and the payout
     record;
@@ -1093,7 +1090,7 @@ in one place, then lists what is still open.
 | **Supply** | 4,444 bears, forever. No bear can be burned (CQ-6) | COL-2, COL-8 |
 | **Royalties** | 5% to `0xf7E7…0e63`, enforced on marketplace sales from deployment (CQ-7, CQ-15) | COL-6, COL-7 |
 | **Holder protection** | No freeze and no clawback. No admin can touch a holder's bear (CQ-16) | ACT-12 |
-| **Whitelist** | Kept in MINT's backend, with no contract. Wagering gives up to 2 spots per wallet out of 1,000, all guaranteed; collaborations and giveaways add up to 3,222 spots on top, so every spot has a bear. getminted.io shows a wallet all of its spots. The final list goes into Studio, and Calea checks the two match (CQ-18, CQ-24) | WL-1, WL-8, WL-4 |
+| **Whitelist** | Kept in MINT's backend, with no contract. Wagering gives up to 2 spots per wallet out of 1,000, all guaranteed; collaborations and giveaways add up to 3,222 spots on top, so every spot has a bear. getminted.io shows a wallet all of its spots. The final list goes into Studio, and Calea checks the two match (CQ-18, CQ-24). The campaign closes on 27 October at 12:00 UTC; the whitelist stage opens on 29 October at 12:00 UTC, and holders mint on OpenSea's drop page (CQ-1, CQ-19) | WL-1, WL-8, WL-4, WL-5 |
 | **$MNTD** | Native to Robinhood Chain. A standard burnable token: 18 decimals, fixed supply, no owner (CQ-2) | ACT-7 |
 | **Levels** | Burning 1,666 / 3,333 / 8,333 / 16,666 / 41,666 $MNTD in total reaches levels 1–5 (CQ-4) | ACT-2 |
 | **Weights** | 1.00 / 1.10 / 1.25 / 1.45 / 1.70 / 2.00 for levels 0–5. A level-5 bear earns twice a level-0 bear's share (CQ-5) | ACT-3 |
@@ -1154,13 +1151,13 @@ carries the reference token's code; we need the mainnet address at TGE.
 *Holds up:* the activation contract's deployment. *If not answered:* the activation contract is
 not deployed, and burns cannot open on 29 October.
 
-**O6 — The dates (CQ-1)** · the whitelist window now; the rest by 29 October
+**O6 — The dates (CQ-1)** · by 29 October
 
-Three dates are fixed: TGE 20 October, mint 29 October, burns from 29 October. Still needed: the
-whitelist campaign window (the list freezes 48 hours before the whitelist stage), the first
-royalty-split date and the handover date.
+Fixed: TGE 20 October; the whitelist campaign closing on 27 October at 12:00 UTC; the mint on
+29 October, with the whitelist stage from 12:00 UTC; burns from 29 October. Still needed: the
+first royalty-split date and the handover date.
 
-*Holds up:* the whitelist freeze and scheduling. *If not answered:* the §8 dates stay proposals.
+*Holds up:* scheduling after the mint. *If not answered:* the §8 dates stay proposals.
 
 ## 11. Sign-off
 

@@ -41,12 +41,11 @@ MINT runs a 1,000-spot whitelist for its wagering holders in its own backend. Ca
   - the final list.
 - **Calea:**
   - the check that Studio's list is MINT's final list (WL-4);
-  - the mint proofs for getminted.io, built from the same list (DEL-6);
   - a review of the backend's claim rules, on request.
 
 #### Scenario: The division of work holds
 - **WHEN** a step of the whitelist flow is traced
-- **THEN** the login, wager API, eligibility check, UI, register and CSV are MINT's, and the root check, the mint proofs and the review are Calea's
+- **THEN** the login, wager API, eligibility check, UI, register and CSV are MINT's, and the root check and the review are Calea's
 
 ### Requirement: WL-4 — Into the mint
 **Kind:** work-item
@@ -61,15 +60,14 @@ of spots, and Iñigo loads it into Studio's whitelist stage.
 - **The limit counts every bear the wallet mints, in any stage.** So the whitelist stage is the
   first stage anyone but the team can mint in, no other stage overlaps it, and a later stage's
   limit counts the whitelist mints too.
-- **Before the stage opens,** Calea checks that Studio's list is exactly MINT's final list. The
-  getminted.io page builds its mint proofs from the same list.
+- **Before the stage opens,** Calea checks that Studio's list is exactly MINT's final list.
+- **Holders mint on OpenSea's drop page,** which serves each wallet's proof from Studio's list.
 
 *Technical note.* The final list is a CSV, `wallet,allocations`. Each row becomes a SeaDrop
 allowlist leaf whose `maxTotalMintableByWallet` is the row's allocations, and SeaDrop counts it
 against every bear minted to the wallet. `compare` in `script/WhitelistExport.s.sol` rebuilds the
 allowlist Merkle root from the CSV and the stage's parameters, and fails unless it is the root on
-SeaDrop, naming the difference. The client library's `buildAllowList` builds the getminted.io
-proofs from the same CSV (DEL-6). The row's address is the address that calls `mintAllowList`.
+SeaDrop, naming the difference. The row's address is the address that calls `mintAllowList`.
 The CSV's allocations total at most 4,222, and `compare` also fails when they total more. The
 whitelist stage's `maxTokenSupplyForStage` is 4,444, the collection's total including the team's
 222, so the stage can fill every row.
@@ -83,8 +81,8 @@ whitelist stage's `maxTokenSupplyForStage` is 4,444, the collection's total incl
 **Kind:** informative
 MINT's backend takes claims only during the campaign window. The list is frozen at least 48
 hours before the whitelist stage opens, which leaves time to load it into Studio, check it and
-fix anything. The stage opens with the mint on 29 October, so the list is frozen by 27 October at
-the same time of day. The 48 hours is Calea's buffer, not an OpenSea rule. Dates `→ CQ-1`.
+fix anything. The campaign runs from 30 September to 27 October at 12:00 UTC, and
+the whitelist stage opens on 29 October at 12:00 UTC (MINT, 12 October 2026). The 48 hours is Calea's buffer, not an OpenSea rule. Dates `→ CQ-1`.
 
 #### Scenario: The window gates claims
 - **GIVEN** a campaign window closing at least 48 hours before the whitelist stage
