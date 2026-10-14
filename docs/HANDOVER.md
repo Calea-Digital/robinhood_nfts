@@ -167,6 +167,9 @@ Agreed at the review, still to act on:
 - `WhitelistClaim` and `WhitelistImport` are removed now (CQ-18, 12 October), with the client's
   mint calls (CQ-19): `NONE` Task MNT-160, branch `mnt/NONE-wl-removal` at `22c1120` (worktree
   `~/trees/NFT-wl-removal`), In Review.
+- Every bear plays (CQ-20, 12 October): `NONE` Task MNT-161, branch `mnt/NONE-every-bear` at
+  `01b5f91`, stacked on MNT-160 (worktree `~/trees/NFT-every-bear`), In Review: 246 contract
+  tests, coverage 100/100, Slither 41, client 104, quotes 40/0. Merge MNT-160 first.
 - CLAUDE.md is to point to NFT's `packages/contracts/docs/DESIGN.md` rather than restate it, now
   that the contracts have moved (CQ-14).
 
@@ -184,8 +187,8 @@ Agreed at the review, still to act on:
 Since PR A (NFT#12) it holds, all Done on the person's accept:
 - the whitelist fixes: `compare` decides UTF-8 from the bytes (MNT-155), and the client's input
   edges (MNT-156);
-- `MysteryBox` (4663): cycles of at most 90 days (RAF-32), team bears excluded and frozen until the
-  exclusions leave `EXPECTED_PLAYABLE` (RAF-27), one shot per bear per cycle (RAF-28), the pause
+- `MysteryBox` (4663): cycles of at most 90 days (RAF-32), every bear playing (RAF-27; the exclusion
+  removed on MNT-161's branch, CQ-20), one shot per bear per cycle (RAF-28), the pause
   (RAF-34);
 - `PrizeDraw` (Arbitrum One): worker relays strictly in order, one Chainlink VRF v2.5 word per
   opening and never re-requested, a callback that only stores the word, outcomes applied in order
@@ -214,7 +217,7 @@ Since PR A (NFT#12) it holds, all Done on the person's accept:
   - The box-and-draw suites share `MysteryBoxAndDrawBase`.
 - the client's mystery-box calls (Defect MNT-158, DEL-6, `tasks.md` line 3.5), widened at the person's word to the admin page and the worker:
   - the page: `open`, shots left (one Multicall3 call over the wallet's bear ids; ERC721A cannot list them), outcomes, odds, payouts;
-  - MINT's admin page: exclusions, a cycle on both chains (the draw's half simulated first), pauses, `setWorker`;
+  - MINT's admin page: a cycle on both chains (the draw's half simulated first), pauses, `setWorker`;
   - the worker: `nextOpening` and `relay` (checked against the box's `BoxOpened`, looked up backwards in pages of `logBlockRange`; nothing scanned before `openCount` reaches it), `applyOutcomes`, payout records.
   - The draw is a second client, `draw: { publicClient, walletClient?, address }`, on Arbitrum One. Every draw write asks the wallet's chain first.
   - `ContractPaused` and `InvalidWindow` are decoded by function; `explainError(error, functionName?)` for calls sent outside the library.
@@ -256,8 +259,8 @@ Railway-watched path.
 1. **Gated, waiting on MINT:** RAF-14 and RAF-18 (CQ-23, the worker's operator; RAF-18 also
    CQ-22, prize delivery).
 2. **The deploy entry points** for `MysteryBox` and `PrizeDraw` (not yet a `tasks.md` line). Deploy
-   order: exclusions, then the box's first `scheduleCycle` (frozen at `EXPECTED_PLAYABLE`, 4,222),
-   then `PrizeDraw` with `PLAYABLE` 4,222 and `firstOpenIndex` 1, then the draw's terms for each
+   order: the box, then its first `scheduleCycle`,
+   then `PrizeDraw` with `PLAYABLE` 4,444 and `firstOpenIndex` 1, then the draw's terms for each
    cycle before its start on 4663. Read back every constructor value, including
    `requestConfirmations` and `callbackGasLimit` against the coordinator's limits.
 3. **OPS-4**, the rehearsal: the testnet $MNTD is deployed and checked (CQ-2, 12 October), so it is
@@ -400,7 +403,7 @@ RAF-17. Four constraints:
    `burn(tokenId, amount)` with `amount` from `costToReach(tokenId, targetLevel)`. Anything above
    the level-5 remainder is refused, so nothing is destroyed for nothing. Status links are MINT's,
    kept against the Privy account; `levelOf` is what Status reads.
-3. **Reads are free; poll them.** `levelOf`, `weightOf`, `costToReach`, `snapshot`; after tranche 2, `odds`, `outcomeOf` and, per bear, `opened` and `isExcluded`, from which the client library counts a wallet's shots left in one Multicall3 call (a scan of all 4,444 bears on-chain would cost about 23M gas per read).
+3. **Reads are free; poll them.** `levelOf`, `weightOf`, `costToReach`, `snapshot`; after tranche 2, `odds`, `outcomeOf` and, per bear, `opened`, from which the client library counts a wallet's shots left in one Multicall3 call (a scan of all 4,444 bears on-chain would cost about 23M gas per read).
 4. **There is a reset event.** `TransferNonceAdvanced` fires on every non-mint transfer, in the
    same transaction as `Transfer`. Index it as the reset.
 
@@ -455,7 +458,7 @@ RAF-17. Four constraints:
   straight after acceptance.
 - **One EOA owns every contract** (MINT, 12 October 2026, CQ-12). A compromise of `0x1530…6141` controls the
   collection's settings, the pause of `Activation`, and
-  the mystery box's exclusions and cycles. It cannot move a holder's bear, record a level
+  the mystery box's cycles. It cannot move a holder's bear, record a level
   without a burn, or change an outcome.
 - **The whitelist is MINT's word** (WL-8). The register, its counter and its rules are in MINT's
   backend, and nothing public shows how the list was made. The one check is that Studio's root is
@@ -557,7 +560,7 @@ these.
 2. Does OpenSea emit SignedZone-restricted orders for a Limit-Break-validated collection on 4663? (mainnet: one team bear listed and sold before the drop page is published)
 3. The whitelist end to end, in two halves. On 46630 (16 October): the owner sets the root with SeaDrop's `updateAllowList`, `compare` passes, a two-allocation wallet mints two with its proof from `AllowListTree.proof`, and a one-allocation wallet is refused its second. On mainnet (19 October, before any stage opens): `compare` passes over a test CSV against the root Studio set, which shows Studio builds its tree like `script/lib/AllowListTree.sol`, each wallet's limit included.
 4. A burn through `Activation` against $MNTD on 46630 through to a recorded level; then against the real token on mainnet between 20 and 28 October. The pause has no exemption, so that rehearsal runs in a window the owner opens and closes again; holders' access opens on 29 October (ACT-15, §8).
-5. Two mystery-box cycles on the testnets (46630 and Arbitrum Sepolia): exclusion, scheduling on both chains, boxes opened, relays in order, words and outcomes — one open that wins and one that does not, a relay offered out of turn and refused — a win paid from a test prize wallet and recorded with `recordPayout`, and a bear opened again in the second cycle.
+5. Two mystery-box cycles on the testnets (46630 and Arbitrum Sepolia): scheduling on both chains, boxes opened, relays in order, words and outcomes — one open that wins and one that does not, a relay offered out of turn and refused — a win paid from a test prize wallet and recorded with `recordPayout`, and a bear opened again in the second cycle.
 6. Moot while MINT's admin is an EOA: does Safe's web interface support chain 4663?
 
 ## Open questions with the client

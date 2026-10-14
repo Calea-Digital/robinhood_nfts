@@ -184,3 +184,17 @@ and the code in `../NFT` against the answer.
 - **Checks:** lint OK; prose current; §10 matches.
 - **Note:** before the first cycle that names Base, Calea confirms the prize wallet holds the
   prizes on Base (CQ-20's record).
+
+## The every-bear Task (MNT-161) — after Q7
+
+- **Branch** `mnt/NONE-every-bear` at `01b5f91`, stacked on MNT-160's `22c1120`; worktree
+  `~/trees/NFT-every-bear`; 25 files, +265 / −731. In Review. MNT-160 merges first.
+- **Gates (fork's run):** fmt; 0 warnings; 246 contract tests; coverage 100/100 (492/492 lines,
+  120/120 branches); Slither 41, no High or Critical; `verify.sh` and its 6 cases; client 104;
+  quotes 40/0 (the 3 failures from Q7 are gone); trees 26/0.
+- **Planted breakages** (open refusing id 1 or 4,444; `PLAYABLE` 4,443; shots left capped; a team
+  bear refused in `planOpen`): each caught, then restored.
+- **Here:** `tasks.md` 0.2 ticked; CLAUDE.md's `MysteryBox` row and mystery-box paragraph, and
+  HANDOVER's mystery-box lines, follow.
+- **Residual risk (as before):** `PrizeDraw` deployed with a `playable` other than 4,444 would end
+  its cycles at the wrong count. The runbook's step 1 now reads `PLAYABLE` back on both chains.
