@@ -207,12 +207,12 @@ address stays with CQ-23.
 
 ### CQ-17 — VRF subscription
 - **Statement:** VRF subscription and network
-- **State:** follow-up
-- **Status note:** call, 28 September 2026; the network is settled, the subscription's holder is assumed
+- **State:** resolved
+- **Status note:** meeting, 12 October 2026; Calea holds the subscription and invoices MINT
 - **Section:** RAF
 - **Needed by:** 2026-10-12 — before `PrizeDraw` is deployed
-- **Resolution:** **Arbitrum One**; the subscription is assumed to be owned and funded by MINT, with `PrizeDraw` as consumer.
-- **Summary:** Arbitrum One; MINT owns the subscription (assumed)
+- **Resolution:** **Arbitrum One**; Calea owns and funds the subscription and invoices MINT, a service it keeps after the handover, with `PrizeDraw` as consumer.
+- **Summary:** Arbitrum One; Calea holds and funds the subscription, invoicing MINT
 
 **Question.** The Chainlink VRF v2.5 subscription on Base: MINT creates and funds it and adds the
 `PrizeDraw` as a consumer. Confirm, and name the account that will hold it.
@@ -268,6 +268,17 @@ change or reorder one.
 keeps a role after handover (OPS-5) and it becomes a priced item (DEL-10). A request's cost on
 Arbitrum is small — the network fee plus Chainlink's premium per word — and the subscription is
 funded for a cycle's worth of opens, at most 4,222.
+
+**Answer (meeting, 12 October 2026).** Calea holds and funds the subscription and invoices MINT.
+It is a service Calea keeps after the handover.
+
+**Recorded as.** RAF-8, OPS-1, OPS-5 and DEL-10. A Calea wallet on Arbitrum One owns the
+subscription, funds it for a cycle's worth, at most 4,444 numbers since every bear plays (CQ-20),
+and adds `PrizeDraw` as its consumer at deployment. The holder can stop the numbers (by not
+funding, removing the consumer or cancelling) but cannot choose an outcome. It can hand the
+subscription to MINT at any time with the coordinator's two-step transfer, keeping the
+subscription id, so `PrizeDraw` keeps running. The coordinator on Arbitrum One has both steps
+(read 14 October 2026).
 
 ### CQ-20 — Prize count, odds and the token ids out of play
 - **Statement:** Prize count, odds and excluded ids

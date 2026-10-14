@@ -198,3 +198,19 @@ and the code in `../NFT` against the answer.
   HANDOVER's mystery-box lines, follow.
 - **Residual risk (as before):** `PrizeDraw` deployed with a `playable` other than 4,444 would end
   its cycles at the wrong count. The runbook's step 1 now reads `PLAYABLE` back on both chains.
+
+## Q9 — the randomness subscription (CQ-17)
+
+- **Answer:** Calea holds and funds it and invoices MINT, a service it keeps after the handover.
+- **Read on Arbitrum One (14 Oct):** the VRF v2.5 coordinator `0x3C0C…7a3e` has
+  `requestSubscriptionOwnerTransfer`, `acceptSubscriptionOwnerTransfer`, `removeConsumer` and
+  `cancelSubscription`. The subscription can go to MINT later with its id unchanged, so
+  `PrizeDraw`, which fixes the id, keeps running.
+- **Spec:** change `2026-10-14-cq-17-calea-subscription` (RAF-8, OPS-1, OPS-5, DEL-10). OPS-5's
+  Scenario now ends: "Calea holds no owner key and no contract role other than the worker's where
+  CQ-23 gives it one; it holds the randomness subscription (CQ-17)". CQ-17 resolved. §10 drops the
+  item (four left: O1 CQ-22, O2 CQ-23, O3 CQ-2, O4 CQ-1). §1.3's Calea row, §10's settled table and
+  HANDOVER's accepted risks follow.
+- **Checks:** lint OK; prose current; §10 matches; quotes 40/0.
+- **Open:** which Calea wallet holds the subscription. It is named at `PrizeDraw`'s deployment,
+  and OPS-1 records it.

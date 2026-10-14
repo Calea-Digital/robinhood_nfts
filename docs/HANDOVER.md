@@ -311,10 +311,9 @@ What each open item blocks:
 | Open item | Blocks |
 |---|---|
 | O1 prize delivery (CQ-22), by 12 Oct | How payouts are sent and whether a request window exists; `recordPayout` is built either way |
-| O2 VRF subscription holder (CQ-17), by 12 Oct | `PrizeDraw`'s deployment (subscription id); DEL-10 if Calea holds it |
-| O3 worker operator (CQ-23), by 12 Oct | The worker's address; OPS-5's handover; DEL-10 |
-| O4 mainnet $MNTD address (CQ-2), on 19 Oct (MINT deploys 24 h before TGE) | `Activation`'s deployment, not the mint (the testnet token is in: `0x15CF…211C`) |
-| O5 dates (CQ-1), by 29 Oct | The first cycle, the royalty split and the handover |
+| O2 worker operator (CQ-23), by 12 Oct | The worker's address; OPS-5's handover; DEL-10 |
+| O3 mainnet $MNTD address (CQ-2), on 19 Oct (MINT deploys 24 h before TGE) | `Activation`'s deployment, not the mint (the testnet token is in: `0x15CF…211C`) |
+| O4 dates (CQ-1), by 29 Oct | The first cycle, the royalty split and the handover |
 
 ## Sources and precedence
 
@@ -509,6 +508,10 @@ RAF-17. Four constraints:
   on Arbitrum can prove an open happened. Accepted; the alternative is cross-chain messaging, and
   4663 has no endpoint. If Calea operates it
   (CQ-23), it is the one role Calea keeps.
+- **Calea holds the VRF subscription** (CQ-17, 12 October). A Calea wallet on Arbitrum One owns and
+  funds it and invoices MINT, after the handover too. The holder can stop the draw's numbers (not
+  funding, removing the consumer, cancelling) but cannot choose an outcome; it can hand the
+  subscription to MINT with the coordinator's two-step transfer, keeping its id.
 - **One VRF request per open is a real cost.** At up to one request per playable bear per cycle,
   the subscription is funded for a cycle's worth and watched with a balance alarm. On Arbitrum a
   request costs the network fee plus Chainlink's premium. Accepted as the price of an instant
@@ -567,11 +570,11 @@ these.
 
 Twenty-four are in `docs/OPEN-QUESTIONS.md`, each with the section it affects, when it is
 needed, the answer where one exists, and the default otherwise:
-- **resolved or closed (19):** CQ-3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 19, 20, 21, 24;
-- **in follow-up (3):** CQ-1, 2, 17;
+- **resolved or closed (20):** CQ-3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 24;
+- **in follow-up (2):** CQ-1, 2;
 - **open (2):** CQ-22, 23.
 
-They map onto O1–O5 in §10. Tranche 1's code is written. The whitelist root check over a CSV is
+They map onto O1–O4 in §10. Tranche 1's code is written. The whitelist root check over a CSV is
 needed by 27 October; the rehearsal is ready to run; tranche 2 waits on the excluded
 ids.
 

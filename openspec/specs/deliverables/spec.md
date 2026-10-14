@@ -113,9 +113,11 @@ Listed so nothing is implied:
     record;
   - the admin-page calls in the client library.
 
-Two items are priced only if MINT confirms them:
-- **running the worker** after 19 November, if Calea runs it (`→ CQ-23`);
-- **holding and invoicing the randomness subscription**, if MINT doesn't (`→ CQ-17`).
+Priced as a service after the handover:
+- **holding and funding the randomness subscription**, invoiced to MINT (CQ-17).
+
+Priced only if MINT confirms it:
+- **running the worker** after 19 November, if Calea runs it (`→ CQ-23`).
 
 #### Scenario: Every item is in the agreement
 - **WHEN** Rayco's agreement is drawn up

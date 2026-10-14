@@ -31,7 +31,7 @@ Answers from each call are marked as such below.
 | CQ-1 | CAL | Dates after the 29 Oct mint | Anchors stand; whitelist closes 27 Oct 12:00 UTC, stage 29 Oct 12:00 UTC; other §8 rows unconfirmed | 2026-10-29 | Follow-up |
 | CQ-2 | ACT | $MNTD burn route | Native; OpenZeppelin `ERC20Burnable`, 18 decimals, immutable; testnet `0x15CF…211C`; mainnet deployed 19 October (planned) | 2026-10-20 | Follow-up |
 | CQ-12 | OPS | Addresses; Safe on 4663 | Admin `0x1530…6141` (EOA) owns every contract on every chain | 2026-10-02 | Answered |
-| CQ-17 | RAF | VRF subscription and network | Arbitrum One; MINT owns the subscription (assumed) | 2026-10-12 | Follow-up |
+| CQ-17 | RAF | VRF subscription and network | Arbitrum One; Calea holds and funds the subscription, invoicing MINT | 2026-10-12 | Answered |
 | CQ-20 | RAF | Prize count, odds and excluded ids | the owner sets each cycle's prize count and prize list from MINT's admin page; **every bear plays**, the team's 222 included, so no id is excluded and 4,444 bears play each cycle; prizes are held in MINT's prize wallet on Robinhood Chain, Ethereum and ApeChain, and possibly Base in a later cycle; a prize chain needs no contract. | 2026-10-29 | Answered |
 | CQ-22 | RAF | Prize delivery from the prize wallet | Open; Calea recommends that MINT pushes each win to the opener | 2026-10-12 | Open |
 | CQ-23 | OPS | Worker operator after handover | Open; assumed that Calea operates the worker | 2026-10-12 | Open |
@@ -247,8 +247,8 @@ address stays with CQ-23.
 ### CQ-17 — VRF subscription
 - **Section:** RAF
 - **Needed by:** 2026-10-12 — before `PrizeDraw` is deployed
-- **Status:** Follow-up (call, 28 September 2026; the network is settled, the subscription's holder is assumed)
-- **Resolution:** **Arbitrum One**; the subscription is assumed to be owned and funded by MINT, with `PrizeDraw` as consumer.
+- **Status:** Answered (meeting, 12 October 2026; Calea holds the subscription and invoices MINT)
+- **Resolution:** **Arbitrum One**; Calea owns and funds the subscription and invoices MINT, a service it keeps after the handover, with `PrizeDraw` as consumer.
 
 **Question.** The Chainlink VRF v2.5 subscription on Base: MINT creates and funds it and adds the
 `PrizeDraw` as a consumer. Confirm, and name the account that will hold it.
@@ -304,6 +304,17 @@ change or reorder one.
 keeps a role after handover (OPS-5) and it becomes a priced item (DEL-10). A request's cost on
 Arbitrum is small — the network fee plus Chainlink's premium per word — and the subscription is
 funded for a cycle's worth of opens, at most 4,222.
+
+**Answer (meeting, 12 October 2026).** Calea holds and funds the subscription and invoices MINT.
+It is a service Calea keeps after the handover.
+
+**Recorded as.** RAF-8, OPS-1, OPS-5 and DEL-10. A Calea wallet on Arbitrum One owns the
+subscription, funds it for a cycle's worth, at most 4,444 numbers since every bear plays (CQ-20),
+and adds `PrizeDraw` as its consumer at deployment. The holder can stop the numbers (by not
+funding, removing the consumer or cancelling) but cannot choose an outcome. It can hand the
+subscription to MINT at any time with the coordinator's two-step transfer, keeping the
+subscription id, so `PrizeDraw` keeps running. The coordinator on Arbitrum One has both steps
+(read 14 October 2026).
 
 ### CQ-20 — Prize count, odds and the token ids out of play
 - **Section:** RAF
