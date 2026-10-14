@@ -8,7 +8,7 @@ Following Monday's call, one decision is still open on the mystery box: how a wi
 
 **B. The winner claims from a contract (MINT's preference; the most work, the safest).** On each prize chain we deploy a prize vault, and MINT moves the cycle's prizes into it. Because the win is decided on Arbitrum, the vault learns about it from a signature: after Chainlink decides a win, the worker signs a claim ticket for that winner and prize. The winner claims on the prize's chain, paying gas there, until the end of the cycle; the contract releases each prize only once, and unclaimed prizes go back to MINT. What this adds:
 - a new contract, deployed and verified on Robinhood Chain, Ethereum and ApeChain (Base when a cycle first uses it), and added to the audit;
-- about 3–4 days of building and testing, plus deployment and audit time, so the first cycle would start mid-November at the earliest;
+- about 3–4 days of building and testing, plus deployment and audit time, all finished by 31 October for a first cycle on 4 November;
 - the worker holds a signing key that releases prizes, so that key must be protected like the prize wallet's;
 - winners need gas on the prize's chain to claim;
 - MINT funds each chain's vault before each cycle.
@@ -32,7 +32,9 @@ Following Monday's call, one decision is still open on the mystery box: how a wi
 1. A, B or C.
 2. For C: who creates the payout wallet's key (we suggest Lorenzo, as for the worker's key)?
 
-If you can confirm by Tuesday 21 October, option B can still be ready before a first cycle in mid-November.
+With the first cycle on 4 November, option B needs your answer by Friday 17 October. After that, the first cycle runs with A or C, and B can start from the second cycle.
+
+One check on your note from the call: in our design each win is one prize on one chain, so a winner never has several chains to claim from. If you meant a single win to be a bundle of prizes on several chains, please tell us, as that changes the design.
 
 Thanks,
 Bojan

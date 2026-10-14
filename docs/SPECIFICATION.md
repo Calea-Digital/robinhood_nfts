@@ -1010,8 +1010,6 @@ are not listed.
 |---|---|---|---|
 | 30 Sep – 1 Oct | Internal audit of the collection and activation contracts | Calea | Calea |
 | 12 Oct | Test $MNTD on the testnet, for the burn rehearsal: `0x15CF…211C`, the reference token's code | MINT (Lorenzo) | MINT |
-| 5 – 9 Oct | Mystery box, draw, worker and page tested on the testnets, two cycles included; audit report and runbooks; no open Critical or High finding | Calea; Javier; MINT | SoW |
-| 12 – 14 Oct | Mystery box and draw deployed and verified; roles and addresses checked; randomness subscription funded | Calea; Iñigo; MINT | SoW |
 | 30 Sep – 27 Oct 12:00 UTC | Whitelist campaign open on getminted.io/mintabear | Iñigo; Javier; Vlad; Lorenzo | MINT |
 | 15 Oct | Work before deployment finished: the whitelist registries removed, the deploy configs for 46630 and 4663 | Calea | agreed |
 | 16 Oct | Testnet rehearsal on 46630: the collection with royalty enforcement, the whitelist on SeaDrop, a burn against the test $MNTD | Calea | agreed |
@@ -1025,7 +1023,9 @@ are not listed.
 | 27 Oct 12:00 UTC | Register frozen and the final list exported by MINT's CTO; list and checksum to Iñigo and Calea by 14:00 UTC | MINT (CTO) | agreed |
 | 27 Oct 14:00 – 29 Oct 12:00 UTC | List loaded into Studio and checked by Calea | Iñigo; Calea | MINT |
 | 29 Oct | Mint on OpenSea's drop page: the whitelist stage first, from 12:00 UTC, then the other stages; burns and level-up open | Iñigo; Javier; Calea | MINT |
-| after 29 Oct | First mystery-box cycle, scheduled by MINT with its prize list | Iñigo; Calea | MINT |
+| 22 – 28 Oct | The worker built; the mystery box, draw and worker rehearsed on 46630 and Arbitrum Sepolia through two cycles | Calea | Calea |
+| 29 – 31 Oct | Mystery box and draw deployed and verified; the draw added to Calea's randomness subscription; MINT authorises the worker; the first cycle's terms (end, prizes) to Calea by 31 Oct, then scheduled on both chains and read back | Calea; MINT | Calea |
+| 4 Nov | First mystery-box cycle opens | MINT | MINT |
 | 5 Nov | First royalty split; after that at each ETH cap or countdown (§2) | MINT | SoW; to confirm |
 | 19 Nov | Handover; technical support ends (OPS-5) | Iñigo; Robert; Calea | SoW; to confirm |
 
@@ -1174,16 +1174,7 @@ Questions closed without a decision are listed in the appendix.
 Three points are still MINT's to decide or supply, listed by the date each is needed. Each carries
 Calea's fallback, which is what is built if it is not answered in time.
 
-**O1 — $MNTD's mainnet address (CQ-2)** · by 20 October
-
-The activation contract is tied to one $MNTD address for life. The testnet token is deployed and
-carries the reference token's code. MINT deploys the mainnet token on 19 October, 24 hours before
-TGE, and sends its address that day.
-
-*Holds up:* the activation contract's deployment, not the mint. *If not answered:* the
-activation contract is not deployed, and burns cannot open on 29 October.
-
-**O2 — How a prize reaches the winner (CQ-22)** · by 21 October
+**O1 — How a prize reaches the winner (CQ-22)** · by 17 October
 
 MINT prefers that winners claim their prizes. Three ways are on the table: MINT sends each win,
 which is simplest, but the prize arrives when MINT acts; the winner claims from a prize vault on
@@ -1195,13 +1186,24 @@ are of every kind; a cycle has about 5, at most 10.
 *Holds up:* the payout step and the worker's last part; a vault also adds a contract on each prize
 chain. *If not answered:* MINT sends each win to the winner, and the worker records it on-chain.
 
+**O2 — $MNTD's mainnet address (CQ-2)** · by 20 October
+
+The activation contract is tied to one $MNTD address for life. The testnet token is deployed and
+carries the reference token's code. MINT deploys the mainnet token on 19 October, 24 hours before
+TGE, and sends its address that day.
+
+*Holds up:* the activation contract's deployment, not the mint. *If not answered:* the
+activation contract is not deployed, and burns cannot open on 29 October.
+
 **O3 — The dates (CQ-1)** · by 29 October
 
 Fixed: TGE 20 October; the whitelist campaign closing on 27 October at 12:00 UTC; the mint on
-29 October, with the whitelist stage from 12:00 UTC; burns from 29 October. Still needed: the
-first royalty-split date and the handover date.
+29 October, with the whitelist stage from 12:00 UTC; burns from 29 October; the first mystery-box
+cycle from 4 November. Still needed: that cycle's end, the first royalty-split date and the
+handover date.
 
-*Holds up:* scheduling after the mint. *If not answered:* the §8 dates stay proposals.
+*Holds up:* the first cycle's end, the royalty split and the handover. *If not answered:* the §8
+dates stay proposals.
 
 ## 11. Sign-off
 

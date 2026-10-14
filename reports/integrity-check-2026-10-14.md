@@ -254,3 +254,19 @@ and the code in `../NFT` against the answer.
 - **Narrowed (14 Oct):** the request-then-send option was dropped as A with an extra step. The
   payout wallet (D) is relabelled C. Known: a claim window until the end of the cycle, every
   prize kind, about 5 and at most 10 prizes a cycle.
+
+## Q12 — the first cycle (CQ-1)
+
+- **Answer:** the first cycle starts on 4 November. Prizes are defined and recorded from the admin
+  page before it, and a prize a winner leaves unclaimed goes into the following cycle.
+- **Consequence:** option B of CQ-22 must be deployed by 31 October for a 4 November start, so
+  CQ-22 is needed by 17 October. The message to MINT says so: B from the second cycle if later. It
+  also asks whether "claim on all the chains" means a win can be a bundle across chains. In the
+  design, one win is one prize on one chain.
+- **Spec:** CQ-1 records the start, the terms to Calea by 31 October (three days to schedule both
+  chains, RAF-32), and the roll-forward. CQ-1 stays open for the cycle's end, the royalty split and
+  the handover. §8 replaces the two stale mystery-box rows from the statement of work (IC-Q4-1,
+  closed) with 22–28 October (worker built, two cycles on the testnets), 29–31 October (box and draw
+  deployed, worker authorised, first terms scheduled) and 4 November. §10 is re-ordered (O1 CQ-22 by
+  17 October, O2 CQ-2, O3 CQ-1), and HANDOVER follows.
+- **Checks:** lint OK; prose current; §10 matches.

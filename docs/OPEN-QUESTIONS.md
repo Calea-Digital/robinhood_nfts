@@ -28,12 +28,12 @@ Answers from each call are marked as such below.
 <!-- openspec:begin register -->
 | ID | Section | Question | Resolution / default | Needed by | Status |
 |---|---|---|---|---|---|
-| CQ-1 | CAL | Dates after the 29 Oct mint | Anchors stand; whitelist closes 27 Oct 12:00 UTC, stage 29 Oct 12:00 UTC; other §8 rows unconfirmed | 2026-10-29 | Follow-up |
+| CQ-1 | CAL | Dates after the 29 Oct mint | Anchors stand; whitelist closes 27 Oct 12:00 UTC, stage 29 Oct 12:00 UTC; first cycle 4 Nov; other §8 rows unconfirmed | 2026-10-29 | Follow-up |
 | CQ-2 | ACT | $MNTD burn route | Native; OpenZeppelin `ERC20Burnable`, 18 decimals, immutable; testnet `0x15CF…211C`; mainnet deployed 19 October (planned) | 2026-10-20 | Follow-up |
 | CQ-12 | OPS | Addresses; Safe on 4663 | Admin `0x1530…6141` (EOA) owns every contract on every chain | 2026-10-02 | Answered |
 | CQ-17 | RAF | VRF subscription and network | Arbitrum One; Calea holds and funds the subscription, invoicing MINT | 2026-10-12 | Answered |
 | CQ-20 | RAF | Prize count, odds and excluded ids | the owner sets each cycle's prize count and prize list from MINT's admin page; **every bear plays**, the team's 222 included, so no id is excluded and 4,444 bears play each cycle; prizes are held in MINT's prize wallet on Robinhood Chain, Ethereum and ApeChain, and possibly Base in a later cycle; a prize chain needs no contract. | 2026-10-29 | Answered |
-| CQ-22 | RAF | Prize delivery from the prize wallet | Open; MINT prefers that the winner claims; options A (MINT sends), B (claim from a vault on each prize chain) and C (the worker sends automatically from a payout wallet) are with MINT | 2026-10-21 | Open |
+| CQ-22 | RAF | Prize delivery from the prize wallet | Open; MINT prefers that the winner claims; options A (MINT sends), B (claim from a vault on each prize chain) and C (the worker sends automatically from a payout wallet) are with MINT | 2026-10-17 | Open |
 | CQ-23 | OPS | Worker operator after handover | MINT runs the worker; Calea builds it | 2026-10-12 | Answered |
 | CQ-3 | ACT | Token-agnostic `credit` design | Superseded — `Activation` burns $MNTD itself; MINT's reply concerned the royalty pot (§2) | — | Closed |
 | CQ-4 | ACT | Five burn thresholds | 1,666 / 3,333 / 8,333 / 16,666 / 41,666, read cumulatively | — | Answered |
@@ -61,8 +61,8 @@ Answers from each call are marked as such below.
 ### CQ-1 — Dates after the 29 October mint
 - **Section:** CAL
 - **Needed by:** 2026-10-29 — before the mint
-- **Status:** Follow-up (meeting, 12 October 2026; the whitelist's times settled, the cycle and later dates to follow)
-- **Resolution:** the three anchors stand — TGE 20 October, mint 29 October, burns and level-up from 29 October. The whitelist campaign runs from 30 September to 27 October 12:00 UTC, and the whitelist stage opens on 29 October 12:00 UTC, 48 hours later. Every other row of §8 is unconfirmed.
+- **Status:** Follow-up (meeting, 12 October 2026; the whitelist's times and the first cycle's start settled; the royalty split and the handover to follow)
+- **Resolution:** the three anchors stand — TGE 20 October, mint 29 October, burns and level-up from 29 October. The whitelist campaign runs from 30 September to 27 October 12:00 UTC, and the whitelist stage opens on 29 October 12:00 UTC, 48 hours later. The first mystery-box cycle starts on 4 November. Every other row of §8 is unconfirmed.
 
 **Question.** The SoW schedule chains off a 15 October mint. With the mint at 29 October, which
 dates hold and which move?
@@ -100,6 +100,20 @@ final CSV, Iñigo loads it into Studio, and Calea runs `compare` against the roo
 
 **Remaining.** The first mystery-box cycle's window (RAF-32), the first royalty closing block and
 the 19 November handover.
+
+**Answer (meeting, 12 October 2026), on the first cycle.** MINT proposes 4 November for the first
+mystery-box cycle, about five days after the mint. The prizes are defined and recorded from the
+admin page before the cycle starts. What recording means depends on how prizes reach winners
+(CQ-22). If winners claim, a prize a winner leaves unclaimed goes into the following cycle.
+
+**Recorded as.** §8: the first cycle starts on 4 November. Its terms (end, prize count and prize
+list) reach Calea by 31 October, so both chains are scheduled and read back at least three days
+before the start (RAF-32). An unclaimed prize joins the next cycle's list, as an unawarded one
+already does (RAF-32). If MINT chooses a claim from a vault (CQ-22 B), the vaults must be built,
+audited and deployed by 31 October, so MINT's choice is needed by 17 October.
+
+**Remaining.** The first cycle's end. The first royalty closing block and the 19 November
+handover.
 
 ### CQ-2 — $MNTD burn route
 - **Section:** ACT
@@ -379,7 +393,7 @@ its first cycle.
 
 ### CQ-22 — How a prize is delivered
 - **Section:** RAF
-- **Needed by:** 2026-10-21 — a claim from a vault needs about a week of building and audit before the first cycle
+- **Needed by:** 2026-10-17 — a claim from a vault must be built, audited and deployed before the first cycle on 4 November
 - **Status:** Open (meeting, 12 October 2026; MINT prefers a claim; three options sent to MINT on 14 October)
 - **Resolution:** Open; MINT prefers that the winner claims; options A (MINT sends), B (claim from a vault on each prize chain) and C (the worker sends automatically from a payout wallet) are with MINT
 
