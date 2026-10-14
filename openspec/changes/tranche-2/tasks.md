@@ -1,8 +1,8 @@
 # Tasks
 
 One line per requirement id, in pick order. `/mnt:next` takes the first unticked line whose Task
-is Open and not hard-gated; `/mnt:done` ticks it. RAF-14 and RAF-18 stay last while CQ-23 is
-open (and CQ-22, which gates RAF-18). RAF-33's payout record is built ahead of CQ-22 (change
+is Open and not hard-gated; `/mnt:done` ticks it. RAF-18 waits for CQ-22 (how a prize
+is delivered); RAF-14 is free since CQ-23 was resolved (MINT runs the worker, 12 October). RAF-33's payout record is built ahead of CQ-22 (change
 `raf-33-record-ungated`), so RAF-17, RAF-19 and RAF-14 can quote it.
 
 ## 1. MysteryBox (Robinhood Chain)
@@ -28,9 +28,9 @@ open (and CQ-22, which gates RAF-18). RAF-33's payout record is built ahead of C
 - [x] 3.4 RAF-19 — every acceptance case has a deterministic test
 - [x] 3.5 DEL-6 — (Defect MNT-158) the client's mystery-box calls: `open`, the reads, and a wallet's shots left counted from `ownerOf`, `isExcluded` and `opened` per bear in one Multicall3 call
 
-## 4. Gated (CQ-23; RAF-18 also CQ-22)
+## 4. The worker (RAF-18 gated by CQ-22)
 
 - [x] 0.1 Remove the undeployed whitelist registries (CQ-18, 12 October): `WhitelistClaim`, `WhitelistImport`, their tests, trees, mock and PoC; `runWhitelist` and `runWhitelistImport` in `Deploy.s.sol`; `export` and the registry `compare` overload in `WhitelistExport.s.sol`; the client's registry, voucher and import modules and ABIs, and its mint writes and proofs (CQ-19: holders mint on OpenSea's drop page; the mint reads stay); the docs that describe them
 - [x] 0.2 Every bear plays (CQ-20, 12 October): remove the exclusion from `MysteryBox` (`excludeRange`, `isExcluded`, `excludedCount`, `EXPECTED_PLAYABLE`, `IdsExcluded`, `ExclusionFrozen`, `ExclusionsIncomplete`, `IdExcluded`; constructor `(owner, bears)`; `PLAYABLE` reads `MAX_BEARS`); `PrizeDraw` deployed with `playable` 4,444; the client's `excludeRange` and `isExcluded`; RAF-27's new Scenario and RAF-19's case; on top of line 0.1's branch
 - [ ] 4.1 RAF-14 — roles: the worker (`setWorker`, `WorkerSet`), non-owner and non-worker refusals
-- [ ] 4.2 RAF-18 — the worker sequence, end to end on the testnets through two cycles
+- [ ] 4.2 RAF-18 — the worker service (`apps/box-worker`, packaged like the whitelist API, run by MINT), its instructions, and the sequence end to end on the testnets through two cycles

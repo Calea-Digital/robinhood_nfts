@@ -214,3 +214,18 @@ and the code in `../NFT` against the answer.
 - **Checks:** lint OK; prose current; §10 matches; quotes 37/3 against `feat/contracts` (the expected RAF-16, 27, 28 until MNT-161 merges) and 40/0 against MNT-161's branch.
 - **Open:** which Calea wallet holds the subscription. It is named at `PrizeDraw`'s deployment,
   and OPS-1 records it.
+
+## Q10 — who runs the worker (CQ-23)
+
+- **Answer:** MINT runs it on its own infrastructure, from a key MINT creates after TGE. Calea
+  builds it and writes the instructions (agreed 14 October).
+- **Corrected from the call's notes:** the worker is the mystery box's relay, not a royalty
+  service, and its gas is ETH on Arbitrum One, not Ethereum.
+- **Spec:** change `2026-10-14-cq-23-mint-runs-worker`. RAF-18 makes the worker service an
+  explicit deliverable (`apps/box-worker`, packaged like the whitelist API, no state of its own,
+  alarms, a key MINT creates). RAF-14, OPS-1, OPS-5 (Calea keeps no contract role; the Scenario's
+  last line follows) and DEL-10 follow. CQ-23 resolved. §10 has three open items left (O1 CQ-22,
+  O2 CQ-2, O3 CQ-1). §1.2, §1.3, §8 and §10's settled table follow, as do HANDOVER's open items,
+  counts and accepted risk.
+- **Pick order:** RAF-14 is free; RAF-18 (now including the service) waits for CQ-22.
+- **Checks:** lint OK; prose current; §10 matches.

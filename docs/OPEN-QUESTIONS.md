@@ -34,7 +34,7 @@ Answers from each call are marked as such below.
 | CQ-17 | RAF | VRF subscription and network | Arbitrum One; Calea holds and funds the subscription, invoicing MINT | 2026-10-12 | Answered |
 | CQ-20 | RAF | Prize count, odds and excluded ids | the owner sets each cycle's prize count and prize list from MINT's admin page; **every bear plays**, the team's 222 included, so no id is excluded and 4,444 bears play each cycle; prizes are held in MINT's prize wallet on Robinhood Chain, Ethereum and ApeChain, and possibly Base in a later cycle; a prize chain needs no contract. | 2026-10-29 | Answered |
 | CQ-22 | RAF | Prize delivery from the prize wallet | Open; Calea recommends that MINT pushes each win to the opener | 2026-10-12 | Open |
-| CQ-23 | OPS | Worker operator after handover | Open; assumed that Calea operates the worker | 2026-10-12 | Open |
+| CQ-23 | OPS | Worker operator after handover | MINT runs the worker; Calea builds it | 2026-10-12 | Answered |
 | CQ-3 | ACT | Token-agnostic `credit` design | Superseded — `Activation` burns $MNTD itself; MINT's reply concerned the royalty pot (§2) | — | Closed |
 | CQ-4 | ACT | Five burn thresholds | 1,666 / 3,333 / 8,333 / 16,666 / 41,666, read cumulatively | — | Answered |
 | CQ-5 | ACT | Weight table | 1.00 / 1.10 / 1.25 / 1.45 / 1.70 / 2.00, six levels | — | Answered |
@@ -402,8 +402,8 @@ shapes RAF-18's step 6 and the page's prize screen, not `PrizeDraw`.
 ### CQ-23 — Who operates the worker
 - **Section:** OPS
 - **Needed by:** 2026-10-12 — before `PrizeDraw` is deployed
-- **Status:** Open (new; from the call, 28 September 2026)
-- **Resolution:** Open; assumed that Calea operates the worker
+- **Status:** Answered (meeting, 12 October 2026; MINT runs the worker, Calea builds it)
+- **Resolution:** MINT runs the worker on its own infrastructure, from a key MINT creates and funds with ETH on Arbitrum One; Calea builds the service and writes its instructions (RAF-18).
 
 **Question.** The worker relays every open from Robinhood Chain to `PrizeDraw` on Arbitrum, in
 order, and records every payout (RAF-18, RAF-33). The mystery box runs cycle after cycle past the
@@ -414,6 +414,18 @@ service?
 and `recordPayout` on `PrizeDraw`. It cannot change an outcome, reorder opens or move a bear or a
 prize, and the admin can replace it (OPS-5, RAF-14). If Calea operates it, it is the one role
 Calea keeps after handover, and operating it beyond 19 November is a priced item (DEL-10).
+
+**Answer (meeting, 12 October 2026).** The worker runs on MINT's server, from an address MINT
+authorises, funded for its transactions. Iñigo coordinates the key with Lorenzo (MINT's CTO) after
+TGE. The call's notes called it the worker "for royalty distribution" and spoke of Ethereum. It is
+the mystery box's relay, and its gas is ETH on Arbitrum One.
+
+**Recorded as (14 October).** RAF-18: Calea builds the worker as a service in MINT's repository,
+packaged like the whitelist API, with instructions to create, fund and run it. It keeps no state
+of its own and raises alarms for low gas and a stalled opening. MINT creates the key, which Calea
+never sees, and MINT's admin authorises it with `setWorker`. RAF-14, OPS-1, OPS-5 and DEL-10
+follow: Calea keeps no contract role, and running the worker is not a Calea service. How payouts
+reach `recordPayout` depends on CQ-22.
 
 ### CQ-3 — Confirm the token-agnostic `credit` design
 - **Section:** ACT

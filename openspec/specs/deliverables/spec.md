@@ -116,8 +116,7 @@ Listed so nothing is implied:
 Priced as a service after the handover:
 - **holding and funding the randomness subscription**, invoiced to MINT (CQ-17).
 
-Priced only if MINT confirms it:
-- **running the worker** after 19 November, if Calea runs it (`→ CQ-23`).
+The worker is built by Calea and run by MINT (CQ-23), so running it is not a Calea service.
 
 #### Scenario: Every item is in the agreement
 - **WHEN** Rayco's agreement is drawn up

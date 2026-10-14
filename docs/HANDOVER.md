@@ -311,9 +311,8 @@ What each open item blocks:
 | Open item | Blocks |
 |---|---|
 | O1 prize delivery (CQ-22), by 12 Oct | How payouts are sent and whether a request window exists; `recordPayout` is built either way |
-| O2 worker operator (CQ-23), by 12 Oct | The worker's address; OPS-5's handover; DEL-10 |
-| O3 mainnet $MNTD address (CQ-2), on 19 Oct (MINT deploys 24 h before TGE) | `Activation`'s deployment, not the mint (the testnet token is in: `0x15CF…211C`) |
-| O4 dates (CQ-1), by 29 Oct | The first cycle, the royalty split and the handover |
+| O2 mainnet $MNTD address (CQ-2), on 19 Oct (MINT deploys 24 h before TGE) | `Activation`'s deployment, not the mint (the testnet token is in: `0x15CF…211C`) |
+| O3 dates (CQ-1), by 29 Oct | The first cycle, the royalty split and the handover |
 
 ## Sources and precedence
 
@@ -506,8 +505,7 @@ RAF-17. Four constraints:
   relay once the cycle has no ids left, so even an invented relay names a real bear once, cannot
   take the pool below zero, and shows as an `OutcomeRecorded` that matches no `BoxOpened`. Nothing
   on Arbitrum can prove an open happened. Accepted; the alternative is cross-chain messaging, and
-  4663 has no endpoint. If Calea operates it
-  (CQ-23), it is the one role Calea keeps.
+  4663 has no endpoint. MINT runs it from a key MINT creates (CQ-23, 12 October); Calea builds it and keeps no role.
 - **Calea holds the VRF subscription** (CQ-17, 12 October). A Calea wallet on Arbitrum One owns and
   funds it and invoices MINT, after the handover too. The holder can stop the draw's numbers (not
   funding, removing the consumer, cancelling) but cannot choose an outcome; it can hand the
@@ -570,11 +568,11 @@ these.
 
 Twenty-four are in `docs/OPEN-QUESTIONS.md`, each with the section it affects, when it is
 needed, the answer where one exists, and the default otherwise:
-- **resolved or closed (20):** CQ-3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 24;
+- **resolved or closed (21):** CQ-3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 23, 24;
 - **in follow-up (2):** CQ-1, 2;
-- **open (2):** CQ-22, 23.
+- **open (1):** CQ-22.
 
-They map onto O1–O4 in §10. Tranche 1's code is written. The whitelist root check over a CSV is
+They map onto O1–O3 in §10. Tranche 1's code is written. The whitelist root check over a CSV is
 needed by 27 October; the rehearsal is ready to run; tranche 2 waits on the excluded
 ids.
 

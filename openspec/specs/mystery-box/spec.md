@@ -208,7 +208,7 @@ on-chain nomination of another recipient.
 **Kind:** work-item
 **MINT's admin** schedules cycles, sets the worker and pauses either
 contract. Ownership can't be given up. **The worker** carries openings to the draw and records
-payouts (who runs it `→ CQ-23`). **Anyone** can open a box with a bear they hold, apply outcomes
+payouts; MINT runs it (CQ-23). **Anyone** can open a box with a bear they hold, apply outcomes
 whose random numbers have arrived, and read everything. No role can open a box for a holder,
 change an outcome or move a bear.
 
@@ -291,6 +291,21 @@ A cycle runs in this order:
 
 MINT's page shows the cycle's window, its prize list, the live odds, a wallet's shots left, its
 outcomes and its payouts, and warns contract-wallet holders before they open.
+
+The worker is a service Calea builds and MINT runs on its own infrastructure (MINT, 12 October
+2026, CQ-23), with Calea's instructions: how to create its wallet, fund it and start it. MINT
+creates the worker's key, which Calea never sees, and MINT's admin authorises its address on the
+draw. The wallet holds only ETH on Arbitrum One for gas. The worker keeps no state of its own: on
+every start it reads from both chains where it stands, so a restart or a redeploy can't skip or
+repeat an opening. It raises an alarm when its gas runs low and when an opening waits too long
+for its outcome.
+
+*Technical note.* A service in MINT's repository (`apps/box-worker`), packaged like the whitelist
+API: a Dockerfile, Railway configuration and a health check. It reads `BoxOpened` on Robinhood
+Chain and `nextToResolve`, `nextToApply` and `openCount` on both chains, and calls `resolve`,
+`applyOutcomes` and `recordPayout` on `PrizeDraw` through the client library (DEL-6). The key is
+a secret in MINT's Railway project; MINT's admin sets the address with `setWorker`. Its gas per
+relay is measured on Arbitrum Sepolia in the rehearsal (OPS-4).
 
 #### Scenario: The sequence runs end to end
 - **WHEN** the sequence runs on the testnets through two cycles, from scheduling to the payout records

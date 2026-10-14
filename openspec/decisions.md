@@ -373,13 +373,13 @@ shapes RAF-18's step 6 and the page's prize screen, not `PrizeDraw`.
 
 ### CQ-23 — Who operates the worker
 - **Statement:** Worker operator after handover
-- **State:** open
-- **Status note:** new; from the call, 28 September 2026
+- **State:** resolved
+- **Status note:** meeting, 12 October 2026; MINT runs the worker, Calea builds it
 - **Section:** OPS
 - **Needed by:** 2026-10-12 — before `PrizeDraw` is deployed
-- **Resolution:** Open; assumed that Calea operates the worker
-- **Default if deferred:** Calea operates the worker as a service priced in Rayco's agreement; MINT's admin can replace it at any time with `setWorker`.
+- **Resolution:** MINT runs the worker on its own infrastructure, from a key MINT creates and funds with ETH on Arbitrum One; Calea builds the service and writes its instructions (RAF-18).
 - **Blocks:** OPS-5, RAF-18
+- **Summary:** MINT runs the worker; Calea builds it
 
 **Question.** The worker relays every open from Robinhood Chain to `PrizeDraw` on Arbitrum, in
 order, and records every payout (RAF-18, RAF-33). The mystery box runs cycle after cycle past the
@@ -390,6 +390,18 @@ service?
 and `recordPayout` on `PrizeDraw`. It cannot change an outcome, reorder opens or move a bear or a
 prize, and the admin can replace it (OPS-5, RAF-14). If Calea operates it, it is the one role
 Calea keeps after handover, and operating it beyond 19 November is a priced item (DEL-10).
+
+**Answer (meeting, 12 October 2026).** The worker runs on MINT's server, from an address MINT
+authorises, funded for its transactions. Iñigo coordinates the key with Lorenzo (MINT's CTO) after
+TGE. The call's notes called it the worker "for royalty distribution" and spoke of Ethereum. It is
+the mystery box's relay, and its gas is ETH on Arbitrum One.
+
+**Recorded as (14 October).** RAF-18: Calea builds the worker as a service in MINT's repository,
+packaged like the whitelist API, with instructions to create, fund and run it. It keeps no state
+of its own and raises alarms for low gas and a stalled opening. MINT creates the key, which Calea
+never sees, and MINT's admin authorises it with `setWorker`. RAF-14, OPS-1, OPS-5 and DEL-10
+follow: Calea keeps no contract role, and running the worker is not a Calea service. How payouts
+reach `recordPayout` depends on CQ-22.
 
 ## RESOLVED Decisions
 
