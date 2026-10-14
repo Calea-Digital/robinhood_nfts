@@ -24,3 +24,40 @@ and the code in `../NFT` against the answer.
   describes the testnet token as pending.
 - **Open:** the rehearsal wallet needs test $MNTD from MINT. The supply sits in MINT's wallets
   (deployer `0xA10D…04B5` holds ~212.8M).
+
+## Q2 — the admin wallet (CQ-12)
+
+- **Answer:** `0x1530…6141` owns and administers every contract. MINT may move to a multisig later
+  and asked that ownership move in two steps.
+- **Code (`../NFT` at `7bf67e8`) confirms the two steps on every deployed contract:** `MintABear`, SeaDrop
+  `TwoStepOwnable` (`transferOwnership` → `acceptOwnership`, `renounceOwnership` → `RenounceDisabled`);
+  `Activation`, `MysteryBox`, `PrizeDraw`, Solady handover (`requestOwnershipHandover` →
+  `completeOwnershipHandover` within 48 h; `transferOwnership` → `TwoStepHandoverOnly`;
+  `renounceOwnership` → `RenounceDisabled`). Pinned by `test_ownership_movesOnlyByTheTwoStepHandover`
+  in `MysteryBox.t.sol` and `PrizeDraw.t.sol`, and the ACT-12 and COL-10 suites.
+- **Address mismatch MINT saw (question 11):** the prize wallet's full address is right everywhere
+  (`0xf6c02F0fDAC5c03EE9f1cc60A5D9875Efc4c83e3`, as quoted from MINT on 28 September; an EOA with
+  13 transactions on Ethereum), but its short form was written `0xf6c0…e3e3`. The correct form is
+  `0xf6c0…83e3`. It was wrong in 16 places: RAF-33, OPS-1, CQ-22, the prose views, HANDOVER,
+  CLAUDE.md and the questions document's source. All are corrected (change
+  `2026-10-14-prize-wallet-short-form`), and `MintABear-Questions-2026-10-12.pages` is rebuilt and
+  reads `0xf6c0…83e3`. Every other short form was checked against its full address: `0x1530…6141`,
+  `0xf7E7…0e63`, `0x15CF…211C`, `0x1E00…3c71`, `0x721C…cd1B`, `0xa212…9968` are right. Archived
+  changes and `.memsearch` keep the old form as history.
+- **Drift found and fixed:** RAF-14's note said "ownership transfer on both" for `MysteryBox` and
+  `PrizeDraw`, but the code refuses `transferOwnership`. It now states the handover the code has
+  (change `2026-10-14-cq-12-admin-confirmed`, with OPS-1).
+- **Spec:** CQ-12 resolved. §10 drops O1 and renumbers O2–O7 to O1–O6, with the references in
+  DEL-8, DEL-10, OPS-1 and OPS-5 (change `2026-10-14-renumber-open-items`). HANDOVER follows.
+- **Board:** MNT-83 (CQ-12) resolved; its gating links to OPS-1, OPS-2 and COL-10 removed. RAF-33,
+  RAF-14, OPS-1, OPS-5 and CQ-22 refreshed. Validator: no problems. Manifest
+  `MNT-20261014T102631Z-42b4a0ee`.
+- **Checks:** lint OK; prose current; §10 matches the register; quotes 40/0; trees 26/0.
+- **Findings left open:**
+  - **IC-Q2-1.** NFT's `docs/RUNBOOK.md` has owner-rotation steps for `MintABear` and `Activation`
+    but none for `MysteryBox` or `PrizeDraw`. A multisig move needs them. It belongs to OPS-5
+    (the runbook), or to a `NONE` Task before then.
+  - **IC-Q2-2.** MNT-146 ("Crear multisig de Mint", Rayco's, Open) stands beside CQ-12's answer. A
+    multisig is now optional and later. It is the human's to close or keep.
+  - **IC-Q2-3.** `MintABear-Specification-v2.6.pages`, the last specification MINT received, still
+    prints `0xf6c0…e3e3`. The next client document carries the correction.
