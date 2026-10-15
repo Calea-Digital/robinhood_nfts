@@ -278,8 +278,8 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
 
 **Session of 15 October (the follow-up): done.**
 - Reviewed and accepted, each merged into `feat/contracts` (local, not pushed): MNT-162 `98aa18f`,
-  MNT-163 `56edbd4`, MNT-55 (RAF-14) `08f33ef`, MNT-64 (OPS-4) `3649aad`. `feat/contracts` is 16
-  commits ahead of `release/1.1` and 0 behind; it touches only `packages/contracts` and
+  MNT-163 `56edbd4`, MNT-55 (RAF-14) `08f33ef`, MNT-64 (OPS-4) `3649aad`, MNT-165 (RUNBOOK) `5300d35`.
+  `feat/contracts` is 18 commits ahead of `release/1.1` and 0 behind; it touches only `packages/contracts` and
   `packages/contracts-client`, no Railway-watched path.
 - **The testnet rehearsal (OPS-4) ran end to end** on 46630 and Arbitrum Sepolia:
   `reports/ops-4-rehearsal-2026-10-15.md`. The collection, the whitelist on SeaDrop, a burn through
@@ -315,7 +315,7 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
 5. **Waiting on MINT:** CQ-2, the mainnet $MNTD address, by 19 October (`4663.json`'s `mntd`).
 6. **Calea:** the VRF subscription on Arbitrum One for `42161.json` (CQ-17); R-2: RAF-27's
    Scenario title through `/opsx:propose`; the RUNBOOK notes (a burn command; log queries
-   within Robinhood Chain's 10,000,000-block range) are `NONE` Task MNT-165, In Review.
+   within Robinhood Chain's 10,000,000-block range) are Done (MNT-165, merge `5300d35`).
 
 ### Tranche 2 — the mystery box
 
