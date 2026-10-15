@@ -53,7 +53,7 @@ becomes a Task with Spec Ref `NONE` when picked.
 - [x] 4.1 OPS-2 — deploy scripts in the specified order, constructor arguments, `setMaxSupply`, `setTransferValidator`, `setPaused(true)`, ownership
 - [x] 4.2 OPS-3 — Sourcify verification for 4663 and 46630
 - [x] 4.3 OPS-6 — enforcement toggle script and runbook section
-- [ ] 4.4 OPS-4 — testnet rehearsal on 46630 (human-led; Claude prepares the scripts and records the results)
+- [x] 4.4 OPS-4 — testnet rehearsal on 46630 (human-led; Claude prepares the scripts and records the results)
 
 ## 5. Non-spec work (Spec Ref `NONE`)
 
