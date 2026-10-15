@@ -1,6 +1,6 @@
 # MintABear — handover
 
-Written 2026-09-15, current as of 2026-10-14. Read this first when resuming.
+Written 2026-09-15, current as of 2026-10-15. Read this first when resuming.
 
 ## Where things stand
 
@@ -119,19 +119,19 @@ An integrity check of spec, prose, client document, code and board ran first (th
 tests and self-review (`reports/wl-7-diff-review.md`). It is not deployed: the whitelist went off-chain the same day (WL-8). With it:
 242 contract tests and 133 client tests; 200 rows cost 14.0M gas to add.
 
-Still ahead:
-- **OPS-4**, the rehearsal, with Subtask MNT-95 (Sourcify on 46630).
+OPS-4's testnet rehearsal ran on 15 October (MNT-64, Done; Sourcify on 46630 for MNT-95); its mainnet
+half is Subtask MNT-164.
 
 Each Task carries a claim comment, a summary with its commits and gates, a `Reviewed — Done`
 comment and logged time. The human merges `tranche-1` into `main`.
 
 | | |
 |---|---|
-| Contracts | `MintABear`, `Activation`; tranche 2 is `MysteryBox` (4663) and `PrizeDraw` (Arbitrum One). No whitelist contract: `WhitelistClaim` and `WhitelistImport` are removed (MNT-160, In Review) |
-| Scripts | `Deploy.s.sol` (OPS-2), `verify.sh` (OPS-3), `Enforcement.s.sol` (OPS-6), `WhitelistExport.s.sol` (WL-4); `packages/contracts/docs/RUNBOOK.md` in NFT: ownership handover, whitelist export and import, transfer enforcement, royalties, Activation |
-| Tests | 252 contract tests and 104 client tests on MNT-160's branch (2026-10-14; 328 and 180 on `feat/contracts` before it), all passing; 100% line, branch and function coverage (gate ≥90 / ≥80); every tranche-1 work-item Scenario has a test except the operational OPS-1, OPS-3 (live), OPS-4, OPS-5 |
-| Gates | in NFT, run locally by `/mnt:done` (NFT has no CI): `fmt --check`, `build --sizes` (no warnings), `test`, coverage, Slither, `verify.sh` dry run and verdict test, the client check; here, in CI: spec lint and generated prose; the scenario-quote check — all green (2026-10-09, `bc89abb`) |
-| Slither | 43 results on MNT-160's branch, no High or Critical; 4 accepted Mediums: `locked-ether` on `Activation`, `MysteryBox`, `PrizeDraw`, and `reentrancy-no-eth` on `PrizeDraw.resolve`'s request (both below and in the NatSpec) |
+| Contracts | `MintABear`, `Activation`; tranche 2 is `MysteryBox` (4663) and `PrizeDraw` (Arbitrum One). No whitelist contract: `WhitelistClaim` and `WhitelistImport` are removed (MNT-160) |
+| Scripts | `Deploy.s.sol` (OPS-2: `runCollection`, `runActivation`, `runMysteryBox`, `runPrizeDraw`), `verify.sh` (OPS-3), `Enforcement.s.sol` (OPS-6), `WhitelistExport.s.sol` (WL-4), `RehearsalAllowList.s.sol` (OPS-4, 46630 only); `packages/contracts/docs/RUNBOOK.md` in NFT: ownership handover, whitelist into Studio, transfer enforcement, royalties, Activation, the mystery box, the testnet rehearsal |
+| Tests | 259 contract tests and 104 client tests on `feat/contracts` `3649aad` (2026-10-15), all passing; 100% line, branch and function coverage (gate ≥90 / ≥80); every work-item Scenario has a test except the operational OPS-1, OPS-3 (live), OPS-4 (run on the testnets, below), OPS-5 |
+| Gates | in NFT, run locally by `/mnt:done` (NFT has no CI): `fmt --check`, `build --sizes` (no warnings), `test`, coverage, Slither, `verify.sh` dry run and verdict test, the client check; here, in CI: spec lint and generated prose; the scenario-quote check (41/0) and the tree check (26/0) — all green (2026-10-15, `3649aad`) |
+| Slither | 41 results on `feat/contracts`, no High or Critical; 4 accepted Mediums: `locked-ether` on `Activation`, `MysteryBox`, `PrizeDraw`, and `reentrancy-no-eth` on `PrizeDraw.resolve`'s request (both below and in the NatSpec) |
 
 Requirements amended since v2.1, each through an archived OpenSpec change:
 - **23 September:** ACT-5 (after a transfer the weight reads the level-0 weight) and OPS-2
@@ -168,12 +168,8 @@ audit takes.
 Agreed at the review, still to act on:
 - `spec_version` stays 2.6 until the next client document; the ACT-12, ACT-15 and OPS-2 changes
   ride with it.
-- `WhitelistClaim` and `WhitelistImport` are removed now (CQ-18, 12 October), with the client's
-  mint calls (CQ-19): `NONE` Task MNT-160, branch `mnt/NONE-wl-removal` at `22c1120` (worktree
-  `~/trees/NFT-wl-removal`), In Review.
-- Every bear plays (CQ-20, 12 October): `NONE` Task MNT-161, branch `mnt/NONE-every-bear` at
-  `01b5f91`, stacked on MNT-160 (worktree `~/trees/NFT-every-bear`), In Review: 246 contract
-  tests, coverage 100/100, Slither 41, client 104, quotes 40/0. Merge MNT-160 first.
+- `WhitelistClaim` and `WhitelistImport` are removed (CQ-18, 12 October), with the client's
+  mint calls (CQ-19): MNT-160, Done. Every bear plays (CQ-20, 12 October): MNT-161, Done.
 - CLAUDE.md is to point to NFT's `packages/contracts/docs/DESIGN.md` rather than restate it, now
   that the contracts have moved (CQ-14).
 
@@ -278,53 +274,57 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
   - `mnt/RAF-18` `ce7606a`: MNT-59, the worker up to prize distribution, gated by CQ-22;
   - `feat/contracts-client-workspace` `7087acc`: PR B, MNT-154. Its lockfile is +345 / −0 with no version moving, the images build and the apps' tests pass.
 
-**Waiting on the person before the follow-up session** (paused 14 October: the Robinhood testnet
-$MNTD has not arrived yet). Ask for each one that is still missing at the start:
-1. **The rehearsal wallet's address.** It goes into `admin` in `script/config/46630.json` and
-   `421614.json`; both are refused (`MissingAddress(admin)`) until then.
-2. **A test $MNTD balance for that wallet, from MINT** (token `0x15CF…211C` on 46630), for the
-   rehearsal's burn.
-3. **The collection's name and symbol, before 19 October.** `MintABear` / `BEAR` is in the configs
-   for now, and it is fixed at deploy.
-4. **The VRF subscription id and settings.** The id goes into `421614.json` and `42161.json`
-   (`"0"` now, refused with `UnknownSubscription(0)`). Confirm or change the settings: ETH payment,
-   300,000 callback gas, 3 confirmations.
-5. **The person's word to push and open either PR:** the follow-up from `feat/contracts` into
-   `release/1.1` (MNT-160, MNT-161, plus whatever review accepts), and PR B
-   (`feat/contracts-client-workspace`).
+**Session of 15 October (the follow-up): done.**
+- Reviewed and accepted, each merged into `feat/contracts` (local, not pushed): MNT-162 `98aa18f`,
+  MNT-163 `56edbd4`, MNT-55 (RAF-14) `08f33ef`, MNT-64 (OPS-4) `3649aad`. `feat/contracts` is 16
+  commits ahead of `release/1.1` and 0 behind; it touches only `packages/contracts` and
+  `packages/contracts-client`, no Railway-watched path.
+- **The testnet rehearsal (OPS-4) ran end to end** on 46630 and Arbitrum Sepolia:
+  `reports/ops-4-rehearsal-2026-10-15.md`. The collection, the whitelist on SeaDrop, a burn through
+  `Activation` and its reset on transfer, and two mystery-box cycles with real Chainlink words (three
+  losses, three wins, each paid on 46630 and recorded); every outcome recomputed from its word; the
+  six `BoxOpened` match the six `OutcomeRecorded`; all four contracts Sourcify `exact_match`. The
+  Sepolia leg was skipped on the person's word (the payout was on 46630, which OPS-4's note allows).
+- The mainnet half of OPS-4 is Subtask MNT-164: Studio takes the collection over, `compare` passes
+  against Studio's root over a test CSV, the team's bears are minted and one is sold on OpenSea,
+  and `verify.sh 4663` exits 0 (MNT-95's mainnet repeat). 19 October, before the drop page.
+- The rehearsal wallet `0x7672…04Aa` owns every testnet contract and the VRF subscription, and
+  holds bears 1–3. Its keystore was removed after the run; re-import it
+  (`cast wallet import rehearsal --interactive`) for any later testnet step. The throwaway deployer,
+  minter, worker and prize keys are deleted: the draw's worker on Arbitrum Sepolia must be set again
+  (`setWorker`) before RAF-18's testnet run.
+- Name and symbol confirmed: `MintABear` / `BEAR`. VRF settings confirmed: ETH payment, 300,000
+  callback gas, 3 confirmations.
 
-The follow-up session starts with `/mnt:review` of `mnt/OPS-4-prep`, then the rehearsal once items
-1 and 2 are in.
-
-**Next (written after the session of 15 October), in this order:**
-1. **`/mnt:review`** `mnt/OPS-4-prep` (before the 16 October rehearsal), then `mnt/OPS-2-163`, then `mnt/RAF-14`; merge each on accept.
-2. **Rehearsal, 16 October, on 46630** (OPS-4, MNT-64, RUNBOOK "Testnet rehearsal"):
-   - the rehearsal wallet goes into `46630.json` and `421614.json`;
-   - test $MNTD comes from MINT;
-   - the VRF subscription on Arbitrum Sepolia; the box and the draw;
-   - measure the gas per relay for the worker's README.
-3. **Follow-up PR from `feat/contracts` into `release/1.1`**, on the person's word: MNT-160 and MNT-161 now, plus whatever step 1 accepts. It touches no Railway-watched path.
-4. **PR B** (MNT-154): push and open the PR on the person's word. Lorenzo merges around 20–21 October; then one Privy login on staging. It touches `pnpm-lock.yaml`, so staging redeploys. Afterwards the worker joins the workspace on `mnt/RAF-18`.
-5. **Mainnet collection deploy on 19 October** (§8). Confirm the name and symbol first (`MintABear` / `BEAR` in `4663.json`). Then Studio takes the collection over, `compare` runs on a test CSV, and the team's 222 are minted.
-6. **Waiting on MINT:**
-   - CQ-22, needed by 17 October. Then RAF-18's payout step, a `PayoutStep` in `apps/box-worker/src/payout.ts`, and RAF-18's Scenario on the testnets.
-   - CQ-2, the mainnet $MNTD address, by 19 October; it goes into `4663.json`'s `mntd`.
-7. **Calea:**
-   - the VRF subscription id for `42161.json`, and the VRF settings: ETH payment, 300,000 callback gas and 3 confirmations, to confirm;
-   - R-2: RAF-27's Scenario title through `/opsx:propose`.
+**Next, in this order:**
+1. **MINT's prize-delivery decision (CQ-22)**, sent 14 October
+   (`docs/client/MINT-message-prize-delivery-2026-10-14.md`: A MINT sends, B claim from a vault,
+   C automatic payout wallet; B needs the answer by 17 October). Fold it into `decisions.md`,
+   `/mnt:board`, then RAF-18's payout step (`apps/box-worker/src/payout.ts`) on `mnt/RAF-18`.
+2. **Follow-up PR from `feat/contracts` into `release/1.1`**, on the person's word: MNT-160, 161,
+   162, 163, 55 and 64. No Railway-watched path.
+3. **PR B** (MNT-154, `tasks.md` 0.3): `feat/contracts-client-workspace` `7087acc` is based on
+   `10279d5`, 9 commits behind `feat/contracts`, and merges cleanly. Merge `feat/contracts` into it,
+   re-run its proof (lockfile, Docker installs, the apps' tests), push and open the PR on the
+   person's word; Lorenzo merges around 20–21 October; then one Privy login on staging. Then the
+   worker joins the workspace on `mnt/RAF-18`.
+4. **Mainnet collection deploy on 19 October** (§8) and MNT-164 before the drop page.
+5. **Waiting on MINT:** CQ-2, the mainnet $MNTD address, by 19 October (`4663.json`'s `mntd`).
+6. **Calea:** the VRF subscription on Arbitrum One for `42161.json` (CQ-17); R-2: RAF-27's
+   Scenario title through `/opsx:propose`; two RUNBOOK lines (a burn command in the Activation
+   section; on 46630, log queries start at the contract's deploy block, since `--from-block 0`
+   returns nothing without an error).
 
 ### Tranche 2 — the mystery box
 
 - **Done** (on `feat/contracts`): RAF-32, RAF-27, RAF-28, RAF-34 (`MysteryBox`); RAF-8, RAF-29,
-  RAF-30, RAF-33 and Defect MNT-157 (`PrizeDraw`); RAF-16, RAF-17 and RAF-19 (both); the client's
-  calls for the page, the admin page and the worker (Defect MNT-158, DEL-6).
-- **Done on 15 October:** MNT-160 (the whitelist registries and the client's mint calls removed)
-  and MNT-161 (every bear plays).
-- **In review:** MNT-162 and MNT-163 (`Deploy.s.sol`: Cancun simulations, the box's and the
-  draw's entry points), MNT-55 (RAF-14).
+  RAF-30, RAF-33 and Defect MNT-157 (`PrizeDraw`); RAF-16, RAF-17, RAF-19 and RAF-14 (both); the
+  client's calls for the page, the admin page and the worker (Defect MNT-158, DEL-6); MNT-160
+  (the whitelist registries removed), MNT-161 (every bear plays), MNT-162 and MNT-163
+  (`Deploy.s.sol`: Cancun simulations, the box's and the draw's entry points); OPS-4's testnet
+  rehearsal (MNT-64), two cycles included.
 - **In progress, gated by MINT:** RAF-18 (CQ-22). The worker, `apps/box-worker`, is built up to
   prize distribution on `mnt/RAF-18`; the payout step is left open.
-- Testnet rehearsal on 46630, Arbitrum Sepolia and Sepolia, two cycles included.
 
 The things to get right:
 - **`PrizeDraw` must refuse an `openIndex` out of turn**, so the worker cannot choose which open
@@ -505,7 +505,8 @@ these.
 | Royalty receiver | `0xf7E70F5ef311232dBd1b0E4dFB1e3e8FBE7b0e63` — EOA, unused |
 | Prize wallet | `0xf6c02F0fDAC5c03EE9f1cc60A5D9875Efc4c83e3` — EOA; active on 4663 and Ethereum, nothing on Arbitrum or ApeChain |
 | OpenSea contracts on 46630 | SeaDrop, Seaport 1.6, ConduitController and validator V3 deployed; OpenSea's SignedZone not deployed; OpenSea itself does not support the chain (read 2026-10-14) |
-| Testnet $MNTD (46630) | `0x15CFC2be2Dc468E3f173c560C493A71C3fE4211C` — verified; the reference token's runtime code apart from the EIP-712 immutables (read 2026-10-14); supply held by MINT's wallets, none by `0x1530…6141` |
+| Testnet $MNTD (46630) | `0x63573eD184850Df903C908314Bc6aA3fD6d0128B` — the one MINT funded the rehearsal wallet from (1,000,000), named in `46630.json`; `0x15CFC2be2Dc468E3f173c560C493A71C3fE4211C` is a second deployment of the same runtime (only the EIP-712 immutables differ). Both the reference token's code, 18 decimals (read 2026-10-14 and 15) |
+| Rehearsal deployments (2026-10-15) | 46630: `MintABear` `0x8108AE7e4EB89CcCE253B8aD93d7c46250790A05`, `Activation` `0x389578ECe1E63DBEe48c9b22504D1Af29E2aef2f`, `MysteryBox` `0xA15a5B96849435B0030F1F6D6E3f886c8C0d55a7`; Arbitrum Sepolia: `PrizeDraw` `0x8108AE7e4EB89CcCE253B8aD93d7c46250790A05` (same address as the collection: deployer nonce 0 on both). All owned by the rehearsal wallet `0x7672D1F3C832796D378827019a9f9Bf4D80404Aa`; VRF subscription `19717353…670789` (in `421614.json`). Sourcify `exact_match` |
 | Reference $MNTD | Base Sepolia `0xa21273093af1b3b880b73afd54514bb3d6269968`: OpenZeppelin 5.5 `ERC20 + ERC20Burnable + ERC20Permit`, 18 decimals, 1,000,000,000 minted once, no owner, no proxy; solc 0.8.28, `cancun` |
 
 - **Contract size limit is ~96 KB**, four times Ethereum's.
@@ -521,9 +522,9 @@ these.
 
 1. Does OpenSea Studio attach to and manage a contract we deployed ourselves, validator set? (mainnet, 19 October: OpenSea does not support 46630)
 2. Does OpenSea emit SignedZone-restricted orders for a Limit-Break-validated collection on 4663? (mainnet: one team bear listed and sold before the drop page is published)
-3. The whitelist end to end, in two halves. On 46630 (16 October): the owner sets the root with SeaDrop's `updateAllowList`, `compare` passes, a two-allocation wallet mints two with its proof from `AllowListTree.proof`, and a one-allocation wallet is refused its second. On mainnet (19 October, before any stage opens): `compare` passes over a test CSV against the root Studio set, which shows Studio builds its tree like `script/lib/AllowListTree.sol`, each wallet's limit included.
-4. A burn through `Activation` against $MNTD on 46630 through to a recorded level; then against the real token on mainnet between 20 and 28 October. The pause has no exemption, so that rehearsal runs in a window the owner opens and closes again; holders' access opens on 29 October (ACT-15, §8).
-5. Two mystery-box cycles on the testnets (46630 and Arbitrum Sepolia): scheduling on both chains, boxes opened, relays in order, words and outcomes — one open that wins and one that does not, a relay offered out of turn and refused — a win paid from a test prize wallet and recorded with `recordPayout`, and a bear opened again in the second cycle.
+3. The whitelist on mainnet (19 October, before any stage opens): `compare` passes over a test CSV against the root Studio set, which shows Studio builds its tree like `script/lib/AllowListTree.sol`, each wallet's limit included (MNT-164). The 46630 half passed on 15 October: the owner set the root with `RehearsalAllowList.set`, `compare` matched, a two-spot wallet minted two and a one-spot wallet was refused its second.
+4. A burn through `Activation` against the real token on mainnet between 20 and 28 October (the 46630 half passed on 15 October: a burn to level 1 against the test $MNTD, and the reset on transfer). The pause has no exemption, so that rehearsal runs in a window the owner opens and closes again; holders' access opens on 29 October (ACT-15, §8).
+5. Settled on 15 October: two mystery-box cycles on 46630 and Arbitrum Sepolia, scheduling on both chains, relays in order (one out of turn refused), real Chainlink words, wins and losses, payouts recorded with `recordPayout`, the same bears opened again in the second cycle. Gas: `open` 62,112; `resolve` 155,322 for a cycle's first relay, then about 136k; `recordPayout` 75,492; a VRF request about 0.0000081 ETH at Arbitrum Sepolia's prices.
 6. Moot while MINT's admin is an EOA: does Safe's web interface support chain 4663?
 
 ## Open questions with the client
