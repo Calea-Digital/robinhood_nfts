@@ -368,13 +368,12 @@ its first cycle.
 
 ### CQ-22 — How a prize is delivered
 - **Statement:** Prize delivery from the prize wallet
-- **State:** open
-- **Status note:** meeting, 12 October 2026; MINT prefers a claim; three options sent to MINT on 14 October
+- **State:** resolved
+- **Status note:** MINT, 15 October 2026; option B, the winner claims from a prize vault
 - **Section:** RAF
-- **Needed by:** 2026-10-17 — a claim from a vault must be built, audited and deployed before the first cycle on 4 November
-- **Resolution:** Open; MINT prefers that the winner claims; options A (MINT sends), B (claim from a vault on each prize chain) and C (the worker sends automatically from a payout wallet) are with MINT
-- **Default if deferred:** MINT pushes each win from the prize wallet to the opener's address on the prize's chain, and the worker records it with `recordPayout`.
-- **Blocks:** RAF-18
+- **Resolution:** Option B: a `PrizeVault` on each prize chain holds the cycle's prizes, the worker signs a ticket for each win, and the winner claims on the prize's chain until one hour after the cycle's end; unclaimed prizes stay in the vault for a later cycle
+- **Rationale:** MINT wants winners to pull their prizes from a contract that releases each one only once, to the winner the draw named, rather than trusting a push from a wallet.
+- **Blocks:** RAF-18, RAF-35, RAF-36, RAF-37
 
 **Question.** Prizes sit in MINT's prize wallet `0xf6c0…83e3` (CQ-8), an externally owned
 account, and are paid by transfer. Two things follow that only MINT can decide.
@@ -442,6 +441,20 @@ request and MINT sends, was dropped before sending: it is A with an extra step f
 payout wallet, first labelled D, is option C. As sent: A is the simplest, but the prize arrives
 when MINT acts. B is the most work and the safest, fully automated with the release enforced by a
 contract. C is the middle ground, automatic, with a live key on MINT's server.
+
+**Answer (MINT, 15 October 2026).** Option B. The terms, settled in the grilling of
+15 October (change `raf-prize-vault-claims`):
+- MINT's admin page sends each cycle's prizes from the prize wallet to the vault during cycle
+  setup; MINT's admin then registers the cycle's full prize list on each vault, which checks it
+  against `manifestHash` and that it holds this chain's entries.
+- The worker's key signs each ticket. Only the winner sends `claim`, and pays gas on the prize's
+  chain: MINT stated that a claimer needs ETH on every prize chain.
+- The window closes one hour after the cycle's end. A prize not claimed by then, including one
+  decided after the window closed, stays in the vault for a later cycle's list.
+- Every recipient is treated alike. A smart-contract wallet that does not exist on a prize chain
+  cannot claim there, and that prize carries over.
+- The worker records each claim on the draw with `recordPayout`, so the payout record is
+  unchanged.
 
 ### CQ-23 — Who operates the worker
 - **Statement:** Worker operator after handover

@@ -1,8 +1,8 @@
 # Tasks
 
 One line per requirement id, in pick order. `/mnt:next` takes the first unticked line whose Task
-is Open and not hard-gated; `/mnt:done` ticks it. RAF-18 waits for CQ-22 (how a prize
-is delivered); RAF-14 is free since CQ-23 was resolved (MINT runs the worker, 12 October). RAF-33's payout record is built ahead of CQ-22 (change
+is Open and not hard-gated; `/mnt:done` ticks it. CQ-22 is resolved (MINT, 15 October: winners claim from a prize vault, change
+`raf-prize-vault-claims`), so the vault comes before RAF-18's payout step; RAF-14 is free since CQ-23 was resolved (MINT runs the worker, 12 October). RAF-33's payout record is built ahead of CQ-22 (change
 `raf-33-record-ungated`), so RAF-17, RAF-19 and RAF-14 can quote it.
 
 ## 1. MysteryBox (Robinhood Chain)
@@ -36,4 +36,13 @@ is delivered); RAF-14 is free since CQ-23 was resolved (MINT runs the worker, 12
 - [x] 0.4 OPS-2 — (Defect MNT-163) deploy entry points for `MysteryBox(owner, bears)` and `PrizeDraw(owner, coordinator, keyHash, subscriptionId, callbackGasLimit, requestConfirmations, nativePayment, 4444, 1)` in `Deploy.s.sol`, from `script/config/<chain>.json`, with the read-back of every constructor value (`requestConfirmations` and `callbackGasLimit` against the coordinator's limits) and `PLAYABLE` on both chains; `playable` is `MAX_BEARS`, passed by the script and never read from config, and the script refuses to finish unless both `PLAYABLE` reads are 4,444 (MNT-161's review, R-1: a draw deployed with a stale 4,222 wedges the in-order relay with `CycleExhausted`), with DESIGN's odds sentence reworded to match; `OPS-2` is Done, so this is a Defect against it when picked; needed by 29 October
 - [x] 0.5 OPS-4 — rehearsal preparation for 16 October: `script/config/46630.json` and `4663.json` (collection), and a script that sets SeaDrop's allowlist on 46630 from a CSV and prints each wallet's proof (`AllowListTree.proof`); work on OPS-4's Task (MNT-64); with it, (Defect MNT-162) `runActivation` fails in forge's London simulation against the test $MNTD (`NotActivated`), so the rehearsal's `Activation` step needs a simulation EVM that runs it, with the deployed bytecode and the Sourcify verification unchanged
 - [x] 4.1 RAF-14 — roles: the worker (`setWorker`, `WorkerSet`), non-owner and non-worker refusals
-- [ ] 4.2 RAF-18 — the worker service (`apps/box-worker`, packaged like the whitelist API, run by MINT), its instructions, and the sequence end to end on the testnets through two cycles
+## 5. The prize vault (CQ-22, option B; change `raf-prize-vault-claims`)
+
+- [ ] 5.1 RAF-35 — `PrizeVault(owner, signer)`: receives native, ERC-20, ERC-721, ERC-1155; `registerCycle(cycleId, start, end, prizes, manifestHash)` with `ManifestMismatch`, `Unfunded`, `InvalidPrizeCount`, `InvalidWindow`, `CycleStarted`, own-chain reservations; Solady two-step ownership, renounce refused; with it the vault's share of RAF-14, RAF-16, RAF-17 (every public read pinned from the artifact, like the box and the draw) and RAF-34, whose Tasks are Done
+- [ ] 5.2 RAF-36 — `claim(cycleId, openIndex, prizeIndex, signature)`: the EIP-712 ticket signed by `signer`, `msg.sender` the winner, `InvalidTicket`, `AlreadyClaimed`, `ClaimClosed` at `end + CLAIM_GRACE` (1 hour), `WrongChain`, `UnknownCycle`, `ContractPaused`, safe transfers per kind, non-reentrant, `PrizeClaimed`
+- [ ] 5.3 RAF-37 — `release(cycleId)` after the window and the owner's `withdraw(kind, token, id, amount, to)` refused below the reserved amount (`Reserved`); carry-over into a later cycle's list
+- [ ] 5.4 OPS-2 — `runPrizeVault` in `Deploy.s.sol` through the CREATE2 deployer, the same address on every prize chain, every constructor value read back; `OPS-2` is Done, so this is a Defect against it when picked
+- [ ] 5.5 OPS-3 — `verify.sh` knows `PrizeVault` and the prize chains and their testnets (1, 33139, 8453; 11155111, 33111, 84532); `OPS-3` is Done, so a Defect against it when picked
+- [ ] 5.6 DEL-6 — the client's vault calls: funding transfers per prize kind from the prize wallet, `manifestHash` from the list, `registerCycle`, the ticket's typed data and `claim`, the reads, `release`, `withdraw`, `setSigner`, pauses; the worker's ticket signing; `DEL-6` is Done, so a Defect against it when picked
+
+- [ ] 4.2 RAF-18 — the worker service (`apps/box-worker`, packaged like the whitelist API, run by MINT), its instructions, and the sequence end to end on the testnets through two cycles; its payout step signs and serves each win's ticket (`GET /tickets/:openIndex`), watches `PrizeClaimed` on every vault and records the claim with `recordPayout`; after section 5

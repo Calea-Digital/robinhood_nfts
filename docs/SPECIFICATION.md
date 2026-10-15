@@ -118,11 +118,11 @@ before the page it serves goes live.
 
 | Chain | What it holds |
 |---|---|
-| Robinhood Chain | The bears, their levels and the mystery box's openings; prizes in MINT's wallet |
+| Robinhood Chain | The bears, their levels and the mystery box's openings; the prize vault for prizes on this chain |
 | Arbitrum One | The draw, which uses Chainlink's randomness (Robinhood Chain has none) |
-| Ethereum | Prizes in MINT's wallet; no contract |
-| ApeChain | Prizes in MINT's wallet; no contract |
-| Base | Prizes in MINT's wallet in a later cycle, if MINT chooses; no contract |
+| Ethereum | The prize vault for prizes on Ethereum |
+| ApeChain | The prize vault for prizes on ApeChain |
+| Base | The prize vault, deployed when a cycle first holds a prize on Base |
 
 Everything is rehearsed first on the testnets: Robinhood Chain testnet (46630), Arbitrum Sepolia,
 Sepolia and, if ApeChain holds prizes, Curtis.
@@ -148,11 +148,14 @@ The whitelist has no contract (WL-8).
   and schedules each cycle with its prize list. It cannot move a holder's bear, grant a level
   without a burn, or change an outcome. It can allow another minter on the collection, so that
   key has to be kept safe.
-- **MINT's prize wallet** holds and pays the prizes. Nothing on-chain forces a payout. What the
-  chain guarantees is the record: every win and every payout is public, so an unpaid win is
-  visible to anyone.
-- **The worker** carries each opening to the draw and records payouts. It cannot change an
-  outcome or the order. It can only delay one, and a delay is visible.
+- **The prize vault** on each prize chain holds the cycle's prizes, which MINT's prize wallet
+  sends it during cycle setup. It releases each prize once, only to the winner the draw named,
+  within the claim window; what is not claimed stays for a later cycle. Every win and every
+  claim is public, so an unclaimed win is visible to anyone.
+- **The worker** carries each opening to the draw, signs each winner's claim ticket and records
+  the claims. It cannot change an outcome or the order. It can only delay one, and a delay is
+  visible. Its key also signs tickets, so a leak of it could claim the current cycle's unclaimed
+  prizes; MINT can pause the vaults and change the key.
 - **The whitelist is MINT's word.** MINT's backend decides who is on it. The chain holds only
   Studio's list, which Calea checks against MINT's final list.
 
@@ -174,7 +177,7 @@ What a level is worth is MINT's to define. The chain records only that it was re
 3. **Burn.** A holder burns $MNTD for a bear, and its level and weight rise.
 4. **Transfer.** Any transfer resets the bear's level to 0.
 5. **Mystery box.** MINT schedules a cycle and publishes its prize list. A holder opens a box with
-   a bear and the draw decides it at once. A win is paid from MINT's prize wallet and recorded.
+   a bear and the draw decides it at once. A winner claims the prize from the vault on its chain within an hour of the cycle's end, and the claim is recorded.
 6. **Royalties.** At each closing, MINT reads every bear's weight and splits the pot.
 
 ## 3. Collection contract — MintABear (COL)
@@ -608,10 +611,11 @@ scheduled while one is open, start in the past, or start before the previous one
 lasts at most 90 days, so a mistyped end date can't hold the game in one cycle for longer. A
 scheduled cycle can be replaced until it starts; from then on its terms are fixed, on both
 chains. Boxes open only inside the window, and an opening made inside it is decided even if the
-answer arrives after the window ends (RAF-29). Prizes a cycle doesn't award stay in MINT's prize
-wallet (RAF-33) for a later cycle. MINT decides when the next cycle starts, so the game can rest
-between cycles for as long as MINT needs. The draw is given the same start, prize count and
-fingerprint, and both chains publish them, so anyone can check they match.
+answer arrives after the window ends (RAF-29). Prizes a cycle doesn't award, and prizes not
+claimed in time, stay in the prize vault (RAF-35, RAF-37) for a later cycle. MINT decides when
+the next cycle starts, so the game can rest between cycles for as long as MINT needs. The draw
+and every prize vault are given the same terms, and each chain publishes them, so anyone can
+check they match.
 
 *Technical note.* `scheduleCycle(start, end, prizeCount, manifestHash)` on `MysteryBox` records
 the next cycle. It is refused while a cycle is open (`CycleInProgress`); for a window that starts
@@ -620,8 +624,8 @@ above `MAX_CYCLE_LENGTH`, 90 days (`InvalidWindow`); and for a prize count of ze
 `PLAYABLE` (`InvalidPrizeCount`). A cycle is open from `start` to `end` inclusive. `PrizeDraw`
 carries each cycle's `start`, `prizeCount` and `manifestHash`, set by the owner with
 `scheduleCycle(cycleId, start, prizeCount, manifestHash)`, and refuses to replace them once
-`start` has passed or the cycle has accepted a relay (`CycleStarted`). Both chains emit
-`CycleScheduled`.
+`start` has passed or the cycle has accepted a relay (`CycleStarted`). Each `PrizeVault` carries
+the cycle's `start`, `end` and full prize list (RAF-35). All three emit their cycle's terms.
 
 *Acceptance.* Given the owner has scheduled cycle 1 from `start` to `end` with 5 prizes; when a holder opens a box before `start`, between `start` and `end`, and after `end`; then only the open between `start` and `end` succeeds, and the others revert with `CycleNotOpen`; and scheduling cycle 2 while cycle 1 is open reverts with `CycleInProgress`.
 
@@ -737,71 +741,78 @@ replacement, the next unresolved opening), and both `nextToResolve` and `nextToA
 
 *Acceptance.* When `resolve` runs; then exactly one VRF v2.5 request is made from the subscription with `PrizeDraw` as consumer; and the outcome uses that request's word alone.
 
-**RAF-33 Prize custody and the payout record.** Prizes sit in MINT's prize wallet `0xf6c0…83e3` on Robinhood Chain, Ethereum and ApeChain, and
-MINT may add Base for a later cycle (MINT, CQ-8, CQ-20). No contract holds a prize or runs on a
-prize chain, so a chain is added by naming it in a cycle's prize list and on the page; nothing
-is deployed or changed on-chain. A prize is paid
-by an ordinary transfer to the winner's address on the prize's chain. Who sends it, and whether
-MINT pushes every win or the winner requests it, is MINT's decision (CQ-22); the record below is
-the same either way. Nothing on-chain forces a payout, and MINT can move any prize at any time.
-Custody is MINT's choice. What the chain guarantees is the record. The worker records each payout
-on the draw contract, once and only for a win, so anyone can match a win to its transfer and see
-a win that was never paid. The winner is whoever opened the box. If a winner's wallet can't
-receive on a prize chain, MINT settles it by hand, and the page warns contract-wallet holders
-before they open.
+**RAF-33 Prize custody and the payout record.** Each cycle's prizes are held by the prize vault on their chain (RAF-35), funded from MINT's prize
+wallet `0xf6c0…83e3` on Robinhood Chain, Ethereum and ApeChain, and Base when a later cycle uses
+it (MINT, CQ-8, CQ-20, CQ-22). A winner claims the prize from the vault (RAF-36); the vault
+releases each prize once, only to the winner, and only within the claim window. Whatever is not
+reserved for a claim stays MINT's to withdraw (RAF-37). What the chain guarantees beyond the
+vault is the record. The worker records each claim on the draw contract, once and only for a
+win, so anyone can match a win to its claim and see a win that was never paid. The winner is
+whoever opened the box, and there is no way to name another recipient.
 
 *Technical note.* The prize wallet is `0xf6c02F0fDAC5c03EE9f1cc60A5D9875Efc4c83e3`, an externally
-owned account. The worker calls `recordPayout(openIndex, chainId, txHash)` on `PrizeDraw`,
-refused unless the outcome of `openIndex` is a win (`NotAWin`) not yet recorded as paid
-(`AlreadyPaid`), and refused for a zero `chainId` or `txHash` (`InvalidPayout`), which would
-close the win with no evidence; it emits `PrizePaid(cycleId, openIndex, chainId, txHash)`, and
-`payoutOf(openIndex)` reads the record. `chainId` is the prize's chain (1 Ethereum, 4663
-Robinhood Chain, 33139 ApeChain, 8453 Base); the draw accepts any non-zero id, so no chain list is
-fixed in code. The prize wallet, an EOA, has the same address on every one of them. There is no
-on-chain nomination of another recipient.
+owned account, and the funding transfers are sent from it on MINT's admin page (DEL-6). After a
+vault's `PrizeClaimed`, the worker calls `recordPayout(openIndex, chainId, txHash)` on
+`PrizeDraw` with the claim's transaction, refused unless the outcome of `openIndex` is a win
+(`NotAWin`) not yet recorded as paid (`AlreadyPaid`), and refused for a zero `chainId` or
+`txHash` (`InvalidPayout`), which would close the win with no evidence; it emits
+`PrizePaid(cycleId, openIndex, chainId, txHash)`, and `payoutOf(openIndex)` reads the record.
+`chainId` is the prize's chain (1 Ethereum, 4663 Robinhood Chain, 33139 ApeChain, 8453 Base);
+the draw accepts any non-zero id, so no chain list is fixed in code.
 
 *Acceptance.* Given open 7 recorded as a win; when the worker calls `recordPayout(7, 1, txHash)`; then `PrizePaid(cycleId, 7, 1, txHash)` is emitted; and a second `recordPayout` for open 7 reverts with `AlreadyPaid`, and one for an open that did not win reverts with `NotAWin`.
 
-**RAF-14 Roles.** **MINT's admin** schedules cycles, sets the worker and pauses either
-contract. Ownership can't be given up. **The worker** carries openings to the draw and records
-payouts; MINT runs it (CQ-23). **Anyone** can open a box with a bear they hold, apply outcomes
-whose random numbers have arrived, and read everything. No role can open a box for a holder,
-change an outcome or move a bear.
+**RAF-14 Roles.** **MINT's admin** schedules cycles, registers each cycle's prizes on the vaults, withdraws what
+is not reserved, sets the worker and the vaults' signer, and pauses any contract. Ownership
+can't be given up. **The worker** carries openings to the draw, signs each winner's claim ticket
+and records payouts; MINT runs it (CQ-23). **A winner** claims their own prize. **Anyone** can
+open a box with a bear they hold, apply outcomes whose random numbers have arrived, release a
+closed cycle's reservations, and read everything. No role can open a box for a holder, change
+an outcome, move a bear, or send a reserved prize anywhere but to its winner.
 
 *Technical note.* Owner: on `MysteryBox` `scheduleCycle`, `setPaused`; on
-`PrizeDraw` `scheduleCycle`, `setWorker`, `setPaused`. Ownership moves on both only by Solady's
+`PrizeDraw` `scheduleCycle`, `setWorker`, `setPaused`; on `PrizeVault` `registerCycle`,
+`withdraw`, `setSigner`, `setPaused`. Ownership moves on all three only by Solady's
 two-step handover: the new owner's `requestOwnershipHandover`, then the owner's
 `completeOwnershipHandover` within 48 hours; `transferOwnership` reverts with
-`TwoStepHandoverOnly` and `renounceOwnership` with `RenounceDisabled` on both. Worker: `resolve` and `recordPayout` on `PrizeDraw`.
-Anyone: `open` on `MysteryBox`, `applyOutcomes` on `PrizeDraw`. The VRF coordinator alone
-delivers words.
+`TwoStepHandoverOnly` and `renounceOwnership` with `RenounceDisabled`. Worker: `resolve` and
+`recordPayout` on `PrizeDraw`, and the vaults' `signer`. Winner: `claim` on `PrizeVault`.
+Anyone: `open` on `MysteryBox`, `applyOutcomes` on `PrizeDraw`, `release` on `PrizeVault`. The
+VRF coordinator alone delivers words.
 
 *Acceptance.* When a non-owner calls `scheduleCycle` or `setWorker`, or a non-worker calls `resolve` or `recordPayout`; then each reverts; and `open` needs no role but the bear's ownership.
 
 **RAF-34 Pause.** Pausing the mystery box stops new openings. Pausing the draw stops new random numbers being
-requested, while numbers already requested are still applied. Neither pause stops payout records
-or reads. A pause doesn't extend a cycle; it only shortens the time holders have.
+requested, while numbers already requested are still applied. Pausing a prize vault stops
+claims, for instance while a suspected key leak is handled. No pause stops payout records,
+reads, registration or withdrawal, and no pause extends a cycle or a claim window; it only
+shortens the time holders have.
 
-*Technical note.* Pausing the hub blocks `open`; pausing `PrizeDraw` blocks `resolve`. Neither
-blocks `recordPayout` or any read, and a pause does not move `end`.
+*Technical note.* Pausing the hub blocks `open`; pausing `PrizeDraw` blocks `resolve`; pausing
+`PrizeVault` blocks `claim`. None blocks `recordPayout`, `registerCycle`, `withdraw`, `release`
+or any read, and no pause moves `end` or `end + CLAIM_GRACE`.
 
 *Acceptance.* Given the hub and the draw each paused; when `open` and `resolve` are called; then each reverts with `ContractPaused`; and `recordPayout` and every read still succeed.
 
-**RAF-16 Events.** Both contracts publish every step: each cycle's terms on both chains,
+**RAF-16 Events.** The contracts publish every step: each cycle's terms on every chain,
 every opening, every request for a random number, every outcome with the bear that opened, every
-payout, and every change of worker or pause.
+claim, every payout, every release and withdrawal from a vault, and every change of worker,
+signer or pause.
 
 *Technical note.* Hub: `CycleScheduled(cycleId, start, end, prizeCount,
 manifestHash)`, `BoxOpened(openIndex, cycleId, tokenId, opener)`, `PausedSet`. `PrizeDraw`:
 `CycleScheduled(cycleId, start, prizeCount, manifestHash)`, `DrawRequested(openIndex, requestId)`,
 `OutcomeRecorded(openIndex, cycleId, tokenId, opener, won, prizeIndex)`, `PrizePaid(cycleId,
-openIndex, chainId, txHash)`, `WorkerSet`, `PausedSet`.
+openIndex, chainId, txHash)`, `WorkerSet`, `PausedSet`. `PrizeVault`: `CycleRegistered(cycleId,
+start, end, manifestHash)`, `PrizeClaimed(cycleId, openIndex, prizeIndex, winner)`,
+`Released(cycleId)`, `Withdrawn(kind, token, id, amount, to)`, `SignerSet(signer)`, `PausedSet`.
 
 *Acceptance.* When a cycle runs through scheduling, an open, a resolution and a payout record; then every listed event fires with the documented arguments.
 
-**RAF-17 Reads.** The page can read for free: the playable count, whether a bear has opened this cycle, the current cycle and its terms, the longest a cycle may last, the live odds, and each
-opening's bear, outcome and payout. A wallet's shots left come from these reads, one per bear
-(RAF-28).
+**RAF-17 Reads.** The page can read for free: the playable count, whether a bear has opened this cycle, the current cycle and its terms, the longest a cycle may last, the live odds, each
+opening's bear, outcome and payout, and on each prize vault the cycle's prizes, which are
+claimed, the claim deadline and what is reserved. A wallet's shots left come from these reads,
+one per bear (RAF-28).
 
 *Technical note.* Hub: `MAX_BEARS`, `PLAYABLE`, `MAX_CYCLE_LENGTH`, `currentCycle()` and each cycle's
 `(start, end, prizeCount, manifestHash)`, `isOpen()`, `opened(cycleId, tokenId)`, `openCount()`,
@@ -812,39 +823,49 @@ opening's bear, outcome and payout. A wallet's shots left come from these reads,
 `openingOfRequest(requestId)` (0 for a request the draw never made), `RESOLVE_APPLY_LIMIT`,
 `worker()`, `paused()`, the Chainlink configuration `COORDINATOR`, `KEY_HASH`, `SUBSCRIPTION_ID`,
 `CALLBACK_GAS_LIMIT`, `REQUEST_CONFIRMATIONS` and `NATIVE_PAYMENT`, `owner()` and
-`ownershipHandoverExpiresAt(pendingOwner)`. No other public read exists on either contract. Each
-read costs a fixed amount, whatever the number of bears.
+`ownershipHandoverExpiresAt(pendingOwner)`. `PrizeVault`: `MAX_PRIZES`, `CLAIM_GRACE`, each
+cycle's `(start, end, manifestHash, prizeCount)`, `prizeOf(cycleId, prizeIndex)`,
+`claimed(cycleId, prizeIndex)`, `claimDeadline(cycleId)`, `reserved(kind, token, id)`,
+`signer()`, `paused()`, `owner()` and `ownershipHandoverExpiresAt(pendingOwner)`. No other public
+read exists on any of them. Each read costs a fixed amount, whatever the number of bears.
 
 *Acceptance.* When every listed read is called during an open cycle; then each returns without reverting and `odds(cycleId)` returns `(prizesLeft, idsLeft)`.
 
 **RAF-18 Worker sequence.** A cycle runs in this order:
-1. For each cycle, MINT publishes the prize list, schedules the cycle on both chains with the same
-   prize count and fingerprint, and holds the prizes in its prize wallet.
+1. For each cycle, MINT publishes the prize list. On MINT's admin page it sends the prizes from
+   the prize wallet to the vault on each prize chain, registers the list on every vault, and
+   schedules the cycle on both game chains, all with the same fingerprint.
 2. Holders open boxes inside the window.
 3. The worker carries each opening to the draw, in order.
 4. Random numbers arrive and outcomes are recorded.
-5. Each win is paid from the prize wallet on its chain, as MINT decides (`→ CQ-22`), and recorded.
-6. After the window, MINT schedules the next cycle whenever it is ready.
+5. For each win the worker signs a claim ticket and serves it to the page; the winner claims on
+   the prize's chain until one hour after the cycle's end (CQ-22), and the worker records
+   each claim on the draw.
+6. After the window, unclaimed prizes are released for a later cycle, and MINT schedules the
+   next cycle whenever it is ready.
 
 MINT's page shows the cycle's window, its prize list, the live odds, a wallet's shots left, its
-outcomes and its payouts, and warns contract-wallet holders before they open.
+outcomes, its tickets with the claim button and deadline, and its payouts.
 
 The worker is a service Calea builds and MINT runs on its own infrastructure (MINT, 12 October
 2026, CQ-23), with Calea's instructions: how to create its wallet, fund it and start it. MINT
 creates the worker's key, which Calea never sees, and MINT's admin authorises its address on the
-draw. The wallet holds only ETH on Arbitrum One for gas. The worker keeps no state of its own: on
-every start it reads from both chains where it stands, so a restart or a redeploy can't skip or
-repeat an opening. It raises an alarm when its gas runs low and when an opening waits too long
-for its outcome.
+draw and as the vaults' signer. The wallet holds only ETH on Arbitrum One for gas. The worker
+keeps no state of its own: on every start it reads from every chain where it stands, so a
+restart or a redeploy can't skip or repeat an opening, a ticket or a record. It raises an alarm
+when its gas runs low and when an opening waits too long for its outcome.
 
 *Technical note.* A service in MINT's repository (`apps/box-worker`), packaged like the whitelist
 API: a Dockerfile, Railway configuration and a health check. It reads `BoxOpened` on Robinhood
-Chain and `nextToResolve`, `nextToApply` and `openCount` on both chains, and calls `resolve`,
-`applyOutcomes` and `recordPayout` on `PrizeDraw` through the client library (DEL-6). The key is
-a secret in MINT's Railway project; MINT's admin sets the address with `setWorker`. Its gas per
-relay is measured on Arbitrum Sepolia in the rehearsal (OPS-4).
+Chain and `nextToResolve`, `nextToApply` and `openCount` on both game chains, and calls `resolve`,
+`applyOutcomes` and `recordPayout` on `PrizeDraw` through the client library (DEL-6). For each
+`OutcomeRecorded` that won, it signs the EIP-712 ticket of RAF-36 and serves it at
+`GET /tickets/:openIndex` and by wallet; it watches each vault's `PrizeClaimed` and records the
+claim's transaction with `recordPayout`. The key is a secret in MINT's Railway project; MINT's
+admin sets the address with `setWorker` and each vault's `setSigner`. Its gas per relay is
+measured on Arbitrum Sepolia in the rehearsal (OPS-4).
 
-*Acceptance.* When the sequence runs on the testnets through two cycles, from scheduling to the payout records; then each step succeeds in the listed order, a relay offered out of turn is refused, and a bear opened in cycle 1 opens again in cycle 2.
+*Acceptance.* When the sequence runs on the testnets through two cycles, from funding and scheduling to the payout records; then each step succeeds in the listed order, a relay offered out of turn is refused, each win is claimed from its vault with the worker's ticket and recorded, and a bear opened in cycle 1 opens again in cycle 2.
 
 **RAF-19 Acceptance cases.** Each of these has a test:
 - every bear can be opened by its holder, a team bear included;
@@ -864,6 +885,65 @@ relay is measured on Arbitrum Sepolia in the rehearsal (OPS-4).
 - a holder who sells a bear after opening it keeps its outcome.
 
 *Acceptance.* When the tranche-2 test suite runs; then every listed case has a passing deterministic test.
+
+**RAF-35 Prize vault and the cycle's prize list.** Each cycle's prizes are held by a prize vault on the prize's chain: Robinhood Chain, Ethereum
+and ApeChain, and Base when a cycle first uses it (MINT, 15 October 2026, CQ-22). The vault has
+the same address on every chain and is owned by MINT's admin. It holds every kind of prize:
+native coins (ETH, APE), tokens (ERC-20) and NFTs (ERC-721, ERC-1155). During cycle setup, MINT's
+admin page sends the cycle's prizes from the prize wallet to the vault on each chain, then MINT's
+admin registers the cycle's full prize list on every vault. The vault accepts the list only if
+it is the list the cycle's fingerprint names and if it already holds every prize on its own
+chain, so a published prize is provably there from the start. The list can be replaced until
+the cycle starts. From registration until the claim window closes (RAF-36), the cycle's prizes
+on that chain are reserved for their winners.
+
+*Technical note.* `PrizeVault(owner, signer)` in `packages/contracts`, deployed through the
+CREATE2 deployer `0x4e59…956C` with the same arguments on every chain, so its address is the
+same. A prize is `(chainId, kind, token, id, amount)` with kind native, ERC-20, ERC-721 or
+ERC-1155; the list's fingerprint is `keccak256(abi.encode(prizes))` over the full ordered list,
+the cycle's `manifestHash` on `MysteryBox` and `PrizeDraw` (RAF-32). Prize n of the list is the
+draw's `prizeIndex` n (RAF-27, RAF-30). The owner's `registerCycle(cycleId, start, end, prizes,
+manifestHash)` is refused when the list hashes to another value (`ManifestMismatch`), is empty
+or longer than `MAX_PRIZES` (`InvalidPrizeCount`), has `end` before `start` (`InvalidWindow`),
+or the vault holds less of an entry for its own chain than what is already reserved plus the
+entry (`Unfunded`), and once `start` has passed (`CycleStarted`). It reserves each own-chain
+entry. The vault receives native coins, ERC-20 transfers and safe ERC-721 and ERC-1155
+transfers.
+
+*Acceptance.* Given a vault on chain 1 holding prize 2 of a cycle's list, an ERC-721, and not prize 4, an ERC-20 amount on chain 1; when the owner registers the list, then sends prize 4 and registers it again, and once more with an entry changed; then the first registration reverts with `Unfunded`, the second succeeds and reserves prizes 2 and 4, and the changed list reverts with `ManifestMismatch`.
+
+**RAF-36 Claiming a prize.** A winner claims their prize on the prize's chain, paying gas there, with a ticket the worker
+signs once the draw has recorded the win. MINT has stated that a winner needs gas on every
+prize chain to claim. The ticket names the cycle, the opening, the prize and the winner: the
+address that opened the box. Only that address can claim, the prize goes only to it, and each
+prize is released once. The claim is open until one hour after the cycle's end, on the vault's
+own chain clock. Every recipient is treated alike: a smart-contract wallet that does not exist
+on a prize chain cannot claim there, and that prize carries over (RAF-37).
+
+*Technical note.* The ticket is an EIP-712 message `Claim(cycleId, openIndex, prizeIndex,
+winner)` in the domain of the vault's chain and address, signed by the vault's `signer`, which is
+the worker's address (CQ-23). `claim(cycleId, openIndex, prizeIndex, signature)` from
+`msg.sender` = the winner is refused when paused (`ContractPaused`), for an unregistered cycle
+(`UnknownCycle`), after `end + CLAIM_GRACE`, one hour (`ClaimClosed`), for an entry on another
+chain (`WrongChain`), for a signature that does not recover to `signer` over the sender
+(`InvalidTicket`), and for a prize already claimed (`AlreadyClaimed`). It transfers the prize to
+the winner (native by value, ERC-20 by a safe transfer, ERC-721 and ERC-1155 by a safe transfer,
+so a contract that cannot receive refuses it), lifts its reservation, and emits
+`PrizeClaimed(cycleId, openIndex, prizeIndex, winner)`. It is non-reentrant.
+
+*Acceptance.* Given cycle 1 registered with prize 1 on this chain, opening 7 won prize 1 for Alice, and the worker's ticket for it; when Bob sends Alice's ticket, then Alice claims, then Alice claims again, and Carol claims with her own winning ticket after `end` plus one hour; then Bob's claim reverts with `InvalidTicket`, Alice receives prize 1 and `PrizeClaimed` is emitted, her second claim reverts with `AlreadyClaimed`, and Carol's reverts with `ClaimClosed`.
+
+**RAF-37 Carry-over and withdrawal.** A prize not claimed by the time the window closes stays in the vault, no longer reserved, and
+MINT can put it in a later cycle's prize list. A prize decided after the window closed carries
+over the same way. MINT's admin can withdraw anything the vault holds that is not reserved for
+an open claim window, at any time, and never a reserved prize.
+
+*Technical note.* After `end + CLAIM_GRACE`, anyone's `release(cycleId)` lifts the cycle's
+remaining reservations and emits `Released(cycleId)`; `registerCycle` and `withdraw` count only
+what is still reserved. The owner's `withdraw(kind, token, id, amount, to)` is refused when it
+would leave less than the reserved amount of that asset (`Reserved`) and emits `Withdrawn`.
+
+*Acceptance.* Given cycle 1's prize 3, an ERC-20 amount on this chain, unclaimed; when the owner withdraws it before the window closes, and after the window closes and `release(1)`; then the first withdrawal reverts with `Reserved`, and after the release the amount can be registered in cycle 2's list or withdrawn.
 <!-- openspec:end -->
 
 <!-- openspec:begin retired -->
@@ -905,8 +985,9 @@ and each contract is deployed before the page that depends on it goes live.
   royalties in Studio before the drop page goes live (COL-5, COL-6, COL-10). Next comes
   Activation, deployed paused until 29 October once $MNTD is on the chain. Then the mystery box.
 - **Arbitrum One:** the draw, added to the randomness subscription.
-
-Nothing is deployed on a prize chain (RAF-33).
+- **Every prize chain** (Robinhood Chain, Ethereum, ApeChain; Base when a cycle first uses it):
+  the prize vault, at the same address on each, before the first cycle that holds a prize there
+  (RAF-35).
 
 *Technical note.* The calls after construction are, in order, `setMaxSupply`,
 `setTransferValidator` and ownership transfers. Robinhood Chain:
@@ -917,15 +998,20 @@ after it; `MysteryBox(owner, bears)` (RAF-27).
 Arbitrum One: `PrizeDraw(owner, coordinator, keyHash, subscriptionId, callbackGasLimit,
 requestConfirmations, nativePayment, playable, firstOpenIndex)` with `playable` 4,444 and
 `firstOpenIndex` 1 → added as the subscription's consumer → `setWorker(worker)` by the owner
-(RAF-14).
+(RAF-14). Each prize chain: `PrizeVault(owner, signer)` through the CREATE2 deployer
+`0x4e59b44847b379578588920cA78FbF26c0B4956C` with the same salt and arguments, owned by MINT's
+admin with the worker as `signer` from construction, with no call after it.
 
 *Acceptance.* When the deploy script runs on a fresh chain; then each contract is created with its constructor arguments in the listed order and is never left deployed-but-unconfigured; and no address is set after construction; every call after construction is a listed setting or ownership transfer, in the listed order.
 
 **OPS-3 Verification.** Every contract's source is published and verified: on Sourcify for Robinhood Chain and its
-testnet, and on Arbiscan for Arbitrum One and Arbitrum Sepolia.
+testnet, and on Arbiscan for Arbitrum One and Arbitrum Sepolia. Each prize vault is verified on
+its chain too, on Sourcify where the chain is supported and on the chain's explorer otherwise.
 
 *Technical note.* Sourcify for 4663 and 46630, because mainnet Blockscout's API sits behind a bot
-challenge; Arbiscan through Etherscan's API for 42161 and 421614.
+challenge; Arbiscan through Etherscan's API for 42161 and 421614. `PrizeVault` on 1, 33139 and
+8453 and on their testnets (11155111, 33111, 84532) through Sourcify, or Etherscan's API for the
+chain's explorer.
 
 *Acceptance.* When a contract is deployed on 4663 or 46630; then its source is verified through Sourcify and readable there.
 
@@ -989,7 +1075,9 @@ call.
 
 **OPS-7 Chain constraints.** Three facts about Robinhood Chain shape the design:
 - it can block an individual holder's transactions (compliance screening), so nothing depends on
-  a holder acting by a deadline; a box left unopened is just a shot not taken;
+  a holder acting by a deadline except a prize claim: a box left unopened is just a shot not
+  taken, and a prize not claimed within one hour of the cycle's end carries over to a later
+  cycle (RAF-36, RAF-37);
 - each transaction has a gas limit, so no call loops over the whole collection;
 - there is no randomness on Robinhood Chain or ApeChain, so the draw runs on Arbitrum One.
 
@@ -1072,9 +1160,13 @@ by the internal auditor independently of the developer.
 typed and tested, and handles every error a caller must deal with, each with a message ready to
 show holders:
 - **the play page:** the mint's progress, read from the chain (holders mint on OpenSea's drop
-  page, WL-4); burning; and the mystery box (opening, outcomes, odds, shots left, payouts);
-- **MINT's admin page:** scheduling cycles on both chains, pauses;
-- **the worker:** relaying openings and recording payouts.
+  page, WL-4); burning; and the mystery box (opening, outcomes, odds, shots left, a winner's
+  ticket and claim, payouts);
+- **MINT's admin page:** setting up a cycle — sending each prize from the prize wallet to the
+  vault on its chain, registering the prize list on every vault and scheduling the cycle on both
+  game chains, all with one fingerprint computed from the list — then pauses, the vaults' signer,
+  releases and withdrawals;
+- **the worker:** relaying openings, signing and serving claim tickets, and recording payouts.
 
 MINT builds against a library that has already been exercised, not against raw contract
 interfaces (`→ CQ-19`). It also includes a reference script that reproduces the royalty split,
@@ -1083,19 +1175,24 @@ dead-address exclusion included, so MINT can check its split adds up.
 *Technical note.* Interfaces, events, roles and calldata examples for every contract. The library
 is typed against the ABIs and covers: mint reads (the public stage, the allowlist root, a wallet's mint
 stats); burn (`costToReach`, approve, `burn`); the mystery box (`open`, outcomes,
-odds, shots left, payout records); the admin page (`scheduleCycle` on both
-chains, pauses); the worker (`resolve`, `recordPayout`). It documents the revert reasons a caller
-has to handle. The reference script reproduces the split from `Activation.snapshot`, so that
-"allocations plus carried rounding equal funding" is testable by MINT.
+odds, shots left, payout records); the prize vault (the funding transfer for each prize kind —
+native, ERC-20 `transfer`, ERC-721 and ERC-1155 `safeTransferFrom` — from the prize wallet,
+`manifestHash` computed as `keccak256(abi.encode(prizes))`, `registerCycle`, the ticket's EIP-712
+typed data, `claim`, the vault's reads, `release`, `withdraw`, `setSigner`, pauses); the admin
+page (`scheduleCycle` on both game chains, pauses); the worker (`resolve`, `recordPayout`,
+ticket signing). It documents the revert reasons a caller has to handle. The reference script
+reproduces the split from `Activation.snapshot`, so that "allocations plus carried rounding equal
+funding" is testable by MINT.
 
 *Acceptance.* When MINT integrates the play page and the admin page; then every contract call they make is covered by the typed TypeScript library, with passing tests and documented revert reasons, and the reference script reproduces the royalty split.
 
-**DEL-8 Audit tranches.** Tranche 1 is the collection and Activation. Tranche 2 is the mystery box and the draw. The whitelist has no contract, so none of it is audited (WL-8). Iñigo
+**DEL-8 Audit tranches.** Tranche 1 is the collection and Activation. Tranche 2 is the mystery box, the draw and the prize
+vault. The whitelist has no contract, so none of it is audited (WL-8). Iñigo
 accepts each tranche after Calea and MINT sign off, and anything not accepted stays switched off
 in the page.
 
-*Technical note.* Tranche 1: `MintABear` and `Activation`. Tranche 2: `MysteryBox` and
-`PrizeDraw`.
+*Technical note.* Tranche 1: `MintABear` and `Activation`. Tranche 2: `MysteryBox`, `PrizeDraw`
+and `PrizeVault`.
 
 **DEL-9 Repository.** The contracts go into MINT's repository, `github.com/mintdotio/NFT`, as their own package beside
 the client library (MINT, 28 and 29 September 2026). The repository has no CI for them: Calea
@@ -1158,11 +1255,11 @@ in one place, then lists what is still open.
 | **Levels** | Burning 1,666 / 3,333 / 8,333 / 16,666 / 41,666 $MNTD in total reaches levels 1–5 (CQ-4) | ACT-2 |
 | **Weights** | 1.00 / 1.10 / 1.25 / 1.45 / 1.70 / 2.00 for levels 0–5. A level-5 bear earns twice a level-0 bear's share (CQ-5) | ACT-3 |
 | **Status links** | MINT's, kept off-chain against holders' Privy accounts (CQ-21) | ACT-12 |
-| **Mystery box** | Runs in cycles MINT schedules. Each bear gets one shot per cycle, decided on the spot by a fresh random number. The odds are fixed for the cycle, and unawarded prizes stay with MINT for later cycles (CQ-9) | RAF-32, RAF-28, RAF-30 |
+| **Mystery box** | Runs in cycles MINT schedules. Each bear gets one shot per cycle, decided on the spot by a fresh random number. The odds are fixed for the cycle, and unawarded or unclaimed prizes stay in the prize vault for later cycles (CQ-9, CQ-22) | RAF-32, RAF-28, RAF-30 |
 | **Team bears** | 222, minted first. They play the mystery box like every other bear and can win (CQ-20) | RAF-27 |
 | **Draw** | On Arbitrum One, using Chainlink's randomness. Calea holds and funds the subscription and invoices MINT, after the handover too (CQ-17) | RAF-8, DEL-10 |
 | **Worker** | Built by Calea, run by MINT on its own infrastructure from a key MINT creates, with ETH on Arbitrum One for gas (CQ-23) | RAF-18 |
-| **Prizes** | Held and paid by MINT's prize wallet `0xf6c0…83e3` on Robinhood Chain, Ethereum and ApeChain, and possibly Base in later cycles. A prize chain needs no contract. Every payout is recorded on-chain (CQ-8, CQ-20) | RAF-33 |
+| **Prizes** | Held by a prize vault on each prize chain (Robinhood Chain, Ethereum, ApeChain; Base when a cycle first uses it), funded from MINT's prize wallet `0xf6c0…83e3` on MINT's admin page during cycle setup. A winner claims with a ticket the worker signs, paying gas on the prize's chain, until one hour after the cycle's end; each prize is released once, only to the winner, and an unclaimed prize stays for a later cycle. Every claim is recorded on-chain (CQ-8, CQ-20, CQ-22) | RAF-33, RAF-35, RAF-36, RAF-37 |
 | **Play page** | MINT builds it in TypeScript on getminted.io, using Calea's tested client library (CQ-19) | DEL-6, DEL-11 |
 | **Repository** | `github.com/mintdotio/NFT`, with Calea's recommended layout (CQ-14) | DEL-9 |
 
@@ -1170,22 +1267,10 @@ Questions closed without a decision are listed in the appendix.
 
 ### Open items
 
-Two points are still MINT's to decide or supply, listed by the date each is needed. Each carries
+One point is still MINT's to supply, with the date it is needed. It carries
 Calea's fallback, which is what is built if it is not answered in time.
 
-**O1 — How a prize reaches the winner (CQ-22)** · by 17 October
-
-MINT prefers that winners claim their prizes. Three ways are on the table: MINT sends each win,
-which is simplest, but the prize arrives when MINT acts; the winner claims from a prize vault on
-the prize's chain, with a claim signed for each win, which is the most work and the safest; or the
-worker sends each win automatically from a payout wallet holding the cycle's prizes, the middle
-ground, with a live key on MINT's server. Known: a claim stays open until the end of the cycle; prizes
-are of every kind; a cycle has about 5, at most 10.
-
-*Holds up:* the payout step and the worker's last part; a vault also adds a contract on each prize
-chain. *If not answered:* MINT sends each win to the winner, and the worker records it on-chain.
-
-**O2 — $MNTD's mainnet address (CQ-2)** · by 20 October
+**O1 — $MNTD's mainnet address (CQ-2)** · by 20 October
 
 The activation contract is tied to one $MNTD address for life. The testnet token is deployed and
 carries the reference token's code. MINT deploys the mainnet token on 19 October, 24 hours before

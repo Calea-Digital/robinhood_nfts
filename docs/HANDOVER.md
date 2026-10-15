@@ -64,7 +64,7 @@ Both calls are folded in.
 
 **The call of 28 September** answered most of v2.3's O1–O9:
 - **Mystery box:** cycles the owner schedules; 222 excluded ids (which ones, to follow); the draw
-  on Arbitrum One; prizes in MINT's own wallet; no vaults.
+  on Arbitrum One; prizes in MINT's own wallet (superseded on 15 October: prize vaults, CQ-22).
 - **Status links** are off-chain, so ACT-9 is retired.
 - **Addresses:** the admin `0x1530…6141` and the royalty receiver `0xf7E7…0e63`.
 - **$MNTD's interface** is known from the reference token.
@@ -97,9 +97,11 @@ worker).
   plays, the team's 222 included (CQ-20, 12 October). It checks ownership and spends a bear for the cycle.
 - `PrizeDraw` on Arbitrum One carries the same cycle terms, takes one VRF word per open in
   `openIndex` order, applies a fixed pool drawn without replacement per cycle, and records each
-  payout (`recordPayout` → `PrizePaid`; RAF-33, not built yet; CQ-22 gates only how a win is sent).
-- Prizes sit in MINT's prize wallet `0xf6c0…83e3` on Robinhood Chain, Ethereum and
-  ApeChain (Base possibly in a later cycle), and are paid by transfer. No contract goes on a prize chain.
+  payout (`recordPayout` → `PrizePaid`; RAF-33).
+- Prizes sit in a `PrizeVault` on each prize chain (Robinhood Chain, Ethereum, ApeChain; Base when
+  a cycle first uses it), funded from MINT's prize wallet `0xf6c0…83e3` during cycle setup. A
+  winner claims with the worker's signed ticket until one hour after the cycle's end; unclaimed
+  prizes carry over (CQ-22, 15 October; RAF-35 to RAF-37, not built yet).
 
 RAF-32 (cycles), RAF-27 to RAF-30, RAF-8, RAF-33 (custody and the payout record) and RAF-34
 (pause) carry it. RAF-2 to 6, 11, 15 and 24 to 26 and 31 are retired.
@@ -297,10 +299,11 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
   callback gas, 3 confirmations.
 
 **Next, in this order:**
-1. **MINT's prize-delivery decision (CQ-22)**, sent 14 October
-   (`docs/client/MINT-message-prize-delivery-2026-10-14.md`: A MINT sends, B claim from a vault,
-   C automatic payout wallet; B needs the answer by 17 October). Fold it into `decisions.md`,
-   `/mnt:board`, then RAF-18's payout step (`apps/box-worker/src/payout.ts`) on `mnt/RAF-18`.
+1. **The prize vault** (CQ-22 resolved 15 October: option B; change
+   `2026-10-15-raf-prize-vault-claims`). `tranche-2/tasks.md` 5.1–5.6: RAF-35, RAF-36, RAF-37,
+   then OPS-2's and OPS-3's vault entry points and DEL-6's client calls (Defects when picked);
+   then RAF-18's payout step on `mnt/RAF-18`. Built by about 22 October, audited and deployed by
+   31 October for the first cycle on 4 November.
 2. **Follow-up PR from `feat/contracts` into `release/1.1`**, on the person's word: MNT-160, 161,
    162, 163, 55 and 64. No Railway-watched path.
 3. **PR B** (MNT-154, `tasks.md` 0.3): `feat/contracts-client-workspace` `7087acc` is based on
@@ -400,8 +403,11 @@ tranche 2, RAF-17. Four constraints:
 - **A fixed pool drawn without replacement, per cycle.** `(word mod idsLeft) < prizesLeft`. It
   gives every holder the same odds going in. A cycle that ends with bears unopened awards fewer
   prizes, and the rest roll forward (MINT's option (a), 28 September).
-- **No vaults.** Prizes are held and paid by MINT's prize wallet; `PrizeDraw` records the payout
-  (MINT, 28 September).
+- **Winners claim from a prize vault** (MINT, 15 October, CQ-22, option B). One `PrizeVault` per
+  prize chain at one address; the full prize list registered on every vault against
+  `manifestHash`, funded before registration; the worker's key signs tickets; only the winner
+  claims, paying gas there; the window closes one hour after the cycle's end and unclaimed prizes
+  carry over. `PrizeDraw` still records each claim with `recordPayout`.
 - **Fuzz and invariant harnesses are the internal auditor's.** The developer writes
   deterministic unit tests; the SoW's "fuzzing report" is the auditor's output.
 - **Final-state prose in specs and docs.** No "was / now".
@@ -454,10 +460,14 @@ tranche 2, RAF-17. Four constraints:
 - **A sale arranged outside a marketplace pays no creator earnings.** At level 0 the holder's own
   transfers pass, so a direct or escrow-mediated sale settles without royalties (COL-7). Inherent
   to every level that lets holders move their bears; the level is settled.
-- **Prizes are in MINT's wallet, not in a contract.** Nothing on-chain forces a payout or keeps a
-  listed prize in the wallet; a cycle's prize list is committed by hash only. What is checkable is
-  the record: every win is an `OutcomeRecorded`, and every payout a `PrizePaid`. A win without a
-  `PrizePaid` is visible to anyone. MINT's decision (28 September).
+- **The worker's key signs claim tickets** (the person's choice, 15 October). Whoever holds it can
+  sign tickets naming their own address and claim the current cycle's unclaimed registered prizes,
+  on every chain, until the window closes; nothing outside the registered list, nothing twice.
+  Such a claim matches no `OutcomeRecorded`, so it is visible. Mitigation: the key is a secret in
+  MINT's Railway project; on a suspected leak, pause the vaults, `setSigner` and `setWorker`.
+- **A one-hour claim window.** A winner who is offline, or screened on Robinhood Chain, for an hour
+  after the cycle's end loses the prize to carry-over; a winner needs gas on the prize's chain
+  (MINT's stated requirement).
 - **The worker relays each open and records each payout.** It cannot change an outcome, because
   Chainlink decides it, and it cannot reorder, because `PrizeDraw` refuses an `openIndex` out of
   turn. It can delay one, which is visible as a `BoxOpened` with no `OutcomeRecorded`. It relays an
@@ -530,9 +540,8 @@ these.
 
 Twenty-four are in `docs/OPEN-QUESTIONS.md`, each with the section it affects, when it is
 needed, the answer where one exists, and the default otherwise:
-- **resolved or closed (22):** CQ-1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 23, 24;
-- **in follow-up (1):** CQ-2;
-- **open (1):** CQ-22.
+- **resolved or closed (23):** CQ-1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24;
+- **in follow-up (1):** CQ-2.
 
 They map onto O1–O2 in §10. Tranche 1's code is written. The whitelist root check over a CSV is
 needed by 27 October; the rehearsal is ready to run; tranche 2 waits on the excluded
