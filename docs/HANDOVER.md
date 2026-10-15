@@ -1,6 +1,6 @@
 # MintABear — handover
 
-Written 2026-09-15, current as of 2026-10-15. Read this first when resuming.
+Written 2026-09-15, current as of the end of 2026-10-15. Read this first when resuming; the next session starts from `docs/prompts/2026-10-16-integrity-then-next.md`.
 
 ## Where things stand
 
@@ -276,49 +276,77 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
   - `mnt/RAF-18` `ce7606a`: MNT-59, the worker up to prize distribution, gated by CQ-22;
   - `feat/contracts-client-workspace` `7087acc`: PR B, MNT-154. Its lockfile is +345 / −0 with no version moving, the images build and the apps' tests pass.
 
-**Session of 15 October (the follow-up): done.**
-- Reviewed and accepted, each merged into `feat/contracts` (local, not pushed): MNT-162 `98aa18f`,
-  MNT-163 `56edbd4`, MNT-55 (RAF-14) `08f33ef`, MNT-64 (OPS-4) `3649aad`, MNT-165 (RUNBOOK) `5300d35`.
-  `feat/contracts` is 18 commits ahead of `release/1.1` and 0 behind; it touches only `packages/contracts` and
-  `packages/contracts-client`, no Railway-watched path.
+**Session of 15 October (the follow-up): done.** Prompt for the next session:
+`docs/prompts/2026-10-16-integrity-then-next.md`.
+- **Reviewed, accepted and merged into `feat/contracts`, all Done:** MNT-162 `98aa18f`, MNT-163
+  `56edbd4`, MNT-55 (RAF-14) `08f33ef`, MNT-64 (OPS-4) `3649aad`, MNT-165 (RUNBOOK: the burn
+  command, the record check within Robinhood Chain's 10,000,000-block log range) `5300d35`, MNT-169
+  (DEL-6: `units.balanceOf`) `5afada1`.
+- **PR mintdotio/NFT#17** is open from `feat/contracts` (`5afada1`, pushed, 20 commits, 0 behind
+  `release/1.1` `f1f9ce6`) into `release/1.1`. It carries MNT-160, 161, 162, 163, 55, 64, 165 and
+  169, touches only `packages/contracts` and `packages/contracts-client` (no Railway-watched path),
+  and its description lists them by Spec Ref with the gates on `5afada1`. Merging is the person's
+  or lcampanis's. Afterwards `git merge origin/release/1.1` on `feat/contracts`, never a rebase:
+  the branch is pushed. MINT's own PR #16 (`feat/swap`) is also open against `release/1.1` and
+  touches none of our files.
 - **The testnet rehearsal (OPS-4) ran end to end** on 46630 and Arbitrum Sepolia:
-  `reports/ops-4-rehearsal-2026-10-15.md`. The collection, the whitelist on SeaDrop, a burn through
-  `Activation` and its reset on transfer, and two mystery-box cycles with real Chainlink words (three
-  losses, three wins, each paid on 46630 and recorded); every outcome recomputed from its word; the
-  six `BoxOpened` match the six `OutcomeRecorded`; all four contracts Sourcify `exact_match`. The
-  Sepolia leg was skipped on the person's word (the payout was on 46630, which OPS-4's note allows).
-- The mainnet half of OPS-4 is Subtask MNT-164: Studio takes the collection over, `compare` passes
-  against Studio's root over a test CSV, the team's bears are minted and one is sold on OpenSea,
-  and `verify.sh 4663` exits 0 (MNT-95's mainnet repeat). 19 October, before the drop page.
-- The rehearsal wallet `0x7672…04Aa` owns every testnet contract and the VRF subscription, and
-  holds bears 1–3. Its keystore was removed after the run; re-import it
-  (`cast wallet import rehearsal --interactive`) for any later testnet step. The throwaway deployer,
-  minter, worker and prize keys are deleted: the draw's worker on Arbitrum Sepolia must be set again
-  (`setWorker`) before RAF-18's testnet run.
+  `reports/ops-4-rehearsal-2026-10-15.md`.
+  - The collection, the whitelist on SeaDrop, a burn through `Activation` and its reset on
+    transfer.
+  - Two mystery-box cycles with real Chainlink words: three losses and three wins, each paid on
+    46630 and recorded. Every outcome was recomputed from its word.
+  - The six `BoxOpened` match the six `OutcomeRecorded`, and all four contracts are Sourcify
+    `exact_match`.
+  - The Sepolia leg was skipped on the person's word: the payout was on 46630, which OPS-4's note
+    allows.
+  - The mainnet half is Subtask MNT-164 (Studio takeover, `compare` against Studio's root, one
+    team-bear sale, `verify.sh 4663`), on 19 October before the drop page.
+- **The testnet contracts stay live,** listed under "Verified on-chain facts". They are owned by the
+  rehearsal wallet `0x7672…04Aa`, which holds bears 1–3 and 998,334 test $MNTD. `Activation` is
+  paused. The draw's worker is a deleted throwaway key, so set it again (`setWorker`) before RAF-18's
+  testnet run. The keystore was removed; re-import it with `cast wallet import rehearsal --interactive`,
+  and keep a mode-600 password file passed by path.
+- **CQ-22 resolved, option B: winners claim from a prize vault** (MINT, 15 October). The change is
+  archived as `2026-10-15-raf-prize-vault-claims`, with the grilling record in its proposal.
+  - RAF-35, 36 and 37 were added (board MNT-166, 167, 168). RAF-32, 33, 14, 16, 17, 34 and 18,
+    OPS-2, 3 and 7 and DEL-6 and 8 were modified.
+  - `/mnt:board` ran: 3 created, 12 refreshed, the validator OK. Manifest
+    `MNT-20261015T133143Z-2f44947b.json` in the bridge's `manifests/`.
+  - MNT-59 (RAF-18) is In Progress with a stale plan: its payout step now signs tickets, serves them,
+    watches `PrizeClaimed` and records claims.
+- **MINT's prompts for building UI on the client:** `docs/client/MINT-prompt-1-contracts-client-general.md`,
+  `-2-mystery-box-admin.md` and `-3-level-up-page.md`. They are self-contained for MINT's AI
+  assistant and follow MINT's `AGENTS.md`. They state that PR #17 and PR B must land before an app
+  can import the client. Not yet sent to MINT; that is the person's call.
+- **Defect MNT-170** (DEL-6): the client accepts a malformed address. `planTransfer` returns `ok`
+  for `to: '0x123'`, and the reads answer `UNKNOWN_ERROR`. It is `tasks.md` 3.7, first in the pick
+  order.
 - Name and symbol confirmed: `MintABear` / `BEAR`. VRF settings confirmed: ETH payment, 300,000
   callback gas, 3 confirmations.
 
-**Next, in this order:**
-1. **The prize vault** (CQ-22 resolved 15 October: option B; change
-   `2026-10-15-raf-prize-vault-claims`). `tranche-2/tasks.md` 5.1–5.6: RAF-35, RAF-36, RAF-37,
-   then OPS-2's and OPS-3's vault entry points and DEL-6's client calls (Defects when picked);
-   then RAF-18's payout step on `mnt/RAF-18`. Built by about 22 October, audited and deployed by
-   31 October for the first cycle on 4 November.
-2. **PR mintdotio/NFT#17** from `feat/contracts` (`5afada1`, pushed 15 October) into `release/1.1`:
-   MNT-160, 161, 162, 163, 55, 64, 165 and 169 (`units.balanceOf`). Defect MNT-170 (malformed
-   addresses in the client) is `tasks.md` 3.7, first in the pick order. No Railway-watched path. Merging is the person's (or
-   lcampanis's); afterwards `git merge origin/release/1.1` on `feat/contracts` (never a rebase:
-   it is pushed). The 19 October collection deploy runs from this code.
+**Next, in this order (written at the end of 15 October):**
+1. **Integrity check first.** Internal docs, YouTrack and code, against each other. The scope is in
+   the prompt above; the report goes to `reports/integrity-check-2026-10-16.md`.
+2. **`/mnt:next`** → `tasks.md` 3.7, Defect MNT-170, on `mnt/DEL-6-170` off `feat/contracts`.
 3. **PR B** (MNT-154, `tasks.md` 0.3): `feat/contracts-client-workspace` `7087acc` is based on
-   `10279d5`, 9 commits behind `feat/contracts`, and merges cleanly. Merge `feat/contracts` into it,
-   re-run its proof (lockfile, Docker installs, the apps' tests), push and open the PR on the
-   person's word; Lorenzo merges around 20–21 October; then one Privy login on staging. Then the
-   worker joins the workspace on `mnt/RAF-18`.
-4. **Mainnet collection deploy on 19 October** (§8) and MNT-164 before the drop page.
-5. **Waiting on MINT:** CQ-2, the mainnet $MNTD address, by 19 October (`4663.json`'s `mntd`).
-6. **Calea:** the VRF subscription on Arbitrum One for `42161.json` (CQ-17); R-2: RAF-27's
-   Scenario title through `/opsx:propose`; the RUNBOOK notes (a burn command; log queries
-   within Robinhood Chain's 10,000,000-block range) are Done (MNT-165, merge `5300d35`).
+   `10279d5`, 13 commits behind `feat/contracts` (at `5afada1`) and merging cleanly.
+   - Merge `feat/contracts` into it and re-run its proof: the lockfile, each Dockerfile's frozen
+     install, the apps' tests.
+   - Push and open the PR on the person's word, ideally after #17 merges, so its diff is only the
+     workspace.
+   - Lorenzo merges it around 20–21 October; then one Privy login on staging.
+4. **The prize vault**, `tasks.md` 5.1–5.6: RAF-35, RAF-36, RAF-37, then OPS-2's and OPS-3's vault
+   entry points and DEL-6's client calls (Defects when picked). Built by about 22 October, audited
+   and deployed by 31 October for the first cycle on 4 November.
+5. **RAF-18** (`tasks.md` 4.2): the worker's payout step on `mnt/RAF-18`, after the vault and PR B.
+6. **19 October:** the mainnet collection deploy from #17's code (§8), then MNT-164 before the drop
+   page.
+7. **Waiting on MINT:** CQ-2, the mainnet $MNTD address, by 19 October (`4663.json`'s `mntd`); #17's
+   merge.
+8. **Calea:**
+   - the VRF subscription on Arbitrum One for `42161.json` (CQ-17);
+   - R-2: RAF-27's Scenario title through `/opsx:propose`;
+   - sending MINT the three prompts.
 
 ### Tranche 2 — the mystery box
 
