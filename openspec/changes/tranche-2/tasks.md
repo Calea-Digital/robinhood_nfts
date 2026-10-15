@@ -27,6 +27,7 @@ is Open and not hard-gated; `/mnt:done` ticks it. CQ-22 is resolved (MINT, 15 Oc
 - [x] 3.3 RAF-17 — every read answers; `odds(cycleId)`
 - [x] 3.4 RAF-19 — every acceptance case has a deterministic test
 - [x] 3.5 DEL-6 — (Defect MNT-158) the client's mystery-box calls: `open`, the reads, and a wallet's shots left counted from `ownerOf`, `isExcluded` and `opened` per bear in one Multicall3 call
+- [x] 3.6 DEL-6 — (Defect MNT-169) the client reads a wallet's $MNTD: `readMntdBalance(client, { mntd }, owner)` and `units.balanceOf(owner?)`, the connected wallet's by default, `NO_WALLET` without either; for the level-up page
 
 ## 4. The worker (RAF-18 gated by CQ-22)
 

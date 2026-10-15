@@ -107,9 +107,8 @@ anything, read:
 6. **Transfers.** If the page offers sending a bear, use `client.bears.planTransfer` and show its
    `RESETS_LEVEL` warning before the user confirms.
 
-**The wallet's $MNTD balance.** The facade has no read for it. Read it with viem's `erc20Abi`
-(`balanceOf` on the $MNTD address), the one direct read this page makes, and note it in your
-summary so Calea can add it to the library.
+**The wallet's $MNTD balance** is `client.units.balanceOf()`: base units, the connected wallet's by
+default. Compare it with the cost before enabling the button, and show what is missing.
 
 ### Test it
 
