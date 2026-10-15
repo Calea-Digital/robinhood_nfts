@@ -57,6 +57,10 @@ at Arbitrum Sepolia's prices; mainnet's will differ (network fee plus Chainlink'
   window it describes (unpause, burn, re-pause) would be easier to run with one.
 - **The test $MNTD has two deployments** on 46630; the funded one is `0x6357…128B`. `46630.json`
   names it.
+- **Log queries on Robinhood Chain span at most 10,000,000 blocks** (about 11.5 days at ~100 ms
+  blocks); a wider one is refused with `query spans … blocks`. Start at the contract's deploy block
+  and page. (A first reading during the run took the refusal for an empty answer: the query's
+  error output had been discarded.)
 - **Anvil forks of 46630 keep the real (dust) balances** of anvil's default accounts; a local run
   funds them first with `anvil_setBalance`.
 

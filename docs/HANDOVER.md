@@ -311,9 +311,8 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
 4. **Mainnet collection deploy on 19 October** (§8) and MNT-164 before the drop page.
 5. **Waiting on MINT:** CQ-2, the mainnet $MNTD address, by 19 October (`4663.json`'s `mntd`).
 6. **Calea:** the VRF subscription on Arbitrum One for `42161.json` (CQ-17); R-2: RAF-27's
-   Scenario title through `/opsx:propose`; two RUNBOOK lines (a burn command in the Activation
-   section; on 46630, log queries start at the contract's deploy block, since `--from-block 0`
-   returns nothing without an error).
+   Scenario title through `/opsx:propose`; the RUNBOOK notes (a burn command; log queries
+   within Robinhood Chain's 10,000,000-block range) are `NONE` Task MNT-165, In Review.
 
 ### Tranche 2 — the mystery box
 
