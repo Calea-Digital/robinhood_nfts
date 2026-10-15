@@ -306,7 +306,7 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
    31 October for the first cycle on 4 November.
 2. **PR mintdotio/NFT#17** from `feat/contracts` (`5afada1`, pushed 15 October) into `release/1.1`:
    MNT-160, 161, 162, 163, 55, 64, 165 and 169 (`units.balanceOf`). Defect MNT-170 (malformed
-   addresses in the client) is on the board, not yet in `tasks.md`. No Railway-watched path. Merging is the person's (or
+   addresses in the client) is `tasks.md` 3.7, first in the pick order. No Railway-watched path. Merging is the person's (or
    lcampanis's); afterwards `git merge origin/release/1.1` on `feat/contracts` (never a rebase:
    it is pushed). The 19 October collection deploy runs from this code.
 3. **PR B** (MNT-154, `tasks.md` 0.3): `feat/contracts-client-workspace` `7087acc` is based on
