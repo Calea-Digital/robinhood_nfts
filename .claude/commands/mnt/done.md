@@ -1,7 +1,7 @@
 ---
 name: "MNT: Done"
 description: "Finish the claimed requirement: run the gates, tick tasks.md, set In Review, summarise, log time"
-allowed-tools: Bash(git:*), Bash(forge:*), Bash(pnpm:*), Bash(slither:*), Bash(bash ../NFT/packages/contracts/script/verify.sh:*), Bash(bash ../NFT/packages/contracts/test/verify.test.sh:*), Bash(python3 docs/tools/check_scenario_quotes.py:*), Bash(openspec:*), mcp__claude_ai_YouTrack__search_issues, mcp__claude_ai_YouTrack__get_issue, mcp__claude_ai_YouTrack__get_issue_comments, mcp__claude_ai_YouTrack__add_issue_comment, mcp__claude_ai_YouTrack__update_issue, mcp__claude_ai_YouTrack__log_work
+allowed-tools: Bash(git:*), Bash(forge:*), Bash(pnpm:*), Bash(slither:*), Bash(bash ../NFT/packages/contracts/script/verify.sh:*), Bash(bash ../NFT/packages/contracts/test/verify.test.sh:*), Bash(python3 docs/tools/check_scenario_quotes.py:*), Bash(python3 docs/tools/check_tree_tests.py:*), Bash(openspec:*), mcp__claude_ai_YouTrack__search_issues, mcp__claude_ai_YouTrack__get_issue, mcp__claude_ai_YouTrack__get_issue_comments, mcp__claude_ai_YouTrack__add_issue_comment, mcp__claude_ai_YouTrack__update_issue, mcp__claude_ai_YouTrack__log_work
 ---
 
 Close out the requirement this session claimed (`$ARGUMENTS` may name the Spec Ref; else the
@@ -11,6 +11,8 @@ one whose claim comment carries this session's nonce, or ask). A claimed Defect 
 Defect line, and the issue moved to In Review is the Defect — never the requirement's Task.
 
 The code is in `../NFT` (MINT's repository); the spec, `tasks.md` and these commands are here.
+`../NFT` below is the worktree holding the Task branch (CLAUDE.md, "Two repositories"); when it
+is not `~/trees/NFT`, use its path everywhere and pass `--code-root <worktree>/packages` to both checks.
 Read CLAUDE.md "Two repositories" first: never touch `release/1.0` or `main` there, no `MNT-n`
 ids in anything committed there, nothing private there.
 
