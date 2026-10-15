@@ -337,8 +337,8 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
 
 **Next, in this order (written at the end of the second 15 October session):**
 1. **See what MINT merged.** `git -C ~/trees/NFT fetch origin` and `gh pr list --repo mintdotio/NFT --state all --limit 5`.
-   - **#17 merged at `ba32aac`:** bring `feat/contracts` level with `git merge origin/release/1.1` (never a rebase). MNT-171 (`6eccd31`) then goes to staging in a follow-up PR from `feat/contracts`, on the person's word.
-   - **#17 still open:** on the person's word, push `feat/contracts` (`6eccd31`) so #17 carries MNT-171, and add a short "the wallet's chain" section to its description. The client gate is 134 tests.
+   - **MNT-171 (`6eccd31`) stays out of #17** (the person, 15 October): it goes in the next PR from `feat/contracts`, opened on the person's word. Do not push `feat/contracts` while #17 is open.
+   - **Once #17 merges at `ba32aac`:** bring `feat/contracts` level with `git merge origin/release/1.1` (never a rebase). Then the next PR carries MNT-171 and whatever is accepted after it; its description gets a "the wallet's chain" section (the client gate is 134 tests).
    - **#16 merged:** PR B's lockfile must be regenerated on top of it (IC-5).
 2. **PR B** (MNT-154, `tasks.md` 0.3): merge `feat/contracts` into `feat/contracts-client-workspace` (13+ behind, merged cleanly on 15 October), and `release/1.1` too if #16 has merged. Regenerate the lockfile and re-run its proof: each Dockerfile's `pnpm install --frozen-lockfile --filter …` and the apps' tests. Then the PR, on the person's word, ideally after #17 merges so its diff is only the workspace. Lorenzo merges it around 20–21 October; then one Privy login on staging, and MNT-170's and MNT-171's hand checks there (a pasted address from MetaMask and Privy; Privy's wallet left on Ethereum, then a burn → `WRONG_CHAIN`).
 3. **The integrity check's open items** (IC-5 to IC-18), on the person's word item by item. The spec and register items (IC-6, IC-7, IC-8) go through `/opsx:propose` before the vault, because RAF-27 and OPS-1 still describe the prize wallet.
