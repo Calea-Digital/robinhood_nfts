@@ -304,8 +304,9 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
    then OPS-2's and OPS-3's vault entry points and DEL-6's client calls (Defects when picked);
    then RAF-18's payout step on `mnt/RAF-18`. Built by about 22 October, audited and deployed by
    31 October for the first cycle on 4 November.
-2. **PR mintdotio/NFT#17** from `feat/contracts` (`5300d35`, pushed 15 October) into `release/1.1`:
-   MNT-160, 161, 162, 163, 55, 64 and 165. No Railway-watched path. Merging is the person's (or
+2. **PR mintdotio/NFT#17** from `feat/contracts` (`5afada1`, pushed 15 October) into `release/1.1`:
+   MNT-160, 161, 162, 163, 55, 64, 165 and 169 (`units.balanceOf`). Defect MNT-170 (malformed
+   addresses in the client) is on the board, not yet in `tasks.md`. No Railway-watched path. Merging is the person's (or
    lcampanis's); afterwards `git merge origin/release/1.1` on `feat/contracts` (never a rebase:
    it is pushed). The 19 October collection deploy runs from this code.
 3. **PR B** (MNT-154, `tasks.md` 0.3): `feat/contracts-client-workspace` `7087acc` is based on
