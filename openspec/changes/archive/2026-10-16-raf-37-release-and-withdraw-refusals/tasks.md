@@ -7,4 +7,4 @@
 
 ## 2. Code
 
-- [ ] 2.1 On `mnt/RAF-37`, MNT-168's work: `release` with `UnknownCycle`, `ClaimWindowOpen` and `AlreadyReleased`; `withdraw` with `InvalidPrize`, `KindMismatch`, `Reserved` and `ZeroAddress`; `released`; the interface pin. Verify: a test per refusal, the deadline second and the one after it, and a planted breakage per refusal caught.
+- [x] 2.1 On `mnt/RAF-37`, MNT-168's work: `release` with `UnknownCycle`, `ClaimWindowOpen` and `AlreadyReleased`; `withdraw` with `InvalidPrize`, `KindMismatch`, `Reserved` and `ZeroAddress`; `released`; the interface pin. Verify: a test per refusal, the deadline second and the one after it, and a planted breakage per refusal caught.
