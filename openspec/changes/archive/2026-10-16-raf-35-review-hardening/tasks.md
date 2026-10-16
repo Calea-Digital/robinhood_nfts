@@ -8,6 +8,6 @@
 
 ## 2. Code on `mnt/RAF-35` (MNT-166, still In Progress)
 
-- [ ] 2.1 `PrizeVault.registerCycle`: `InvalidPrize`, the 90-day `InvalidWindow`, and `KindMismatch` with the per-token kind and count, which replacement lowers. Verify: a test per refusal, including a token re-listed as another kind after its reservations are lifted, and a planted breakage per refusal caught.
-- [ ] 2.2 Tree leaves and the obligation for RAF-36 and RAF-37 to lower the per-token count. DESIGN's `PrizeVault` section and HANDOVER's accepted risks (`setSigner`). Verify: `check_scenario_quotes.py` and `check_tree_tests.py` clean.
-- [ ] 2.3 `tranche-2/tasks.md` 5.2 and 5.3 name the per-token count. Verify: the lines read so.
+- [x] 2.1 `PrizeVault.registerCycle`: `InvalidPrize`, the 90-day `InvalidWindow`, and `KindMismatch` with the per-token kind and count, which replacement lowers. Verify: a test per refusal, including a token re-listed as another kind after its reservations are lifted, and a planted breakage per refusal caught.
+- [x] 2.2 Tree leaves and the obligation for RAF-36 and RAF-37 to lower the per-token count. DESIGN's `PrizeVault` section and HANDOVER's accepted risks (`setSigner`). Verify: `check_scenario_quotes.py` and `check_tree_tests.py` clean.
+- [x] 2.3 `tranche-2/tasks.md` 5.2 and 5.3 name the per-token count. Verify: the lines read so.

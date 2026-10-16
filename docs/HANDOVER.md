@@ -517,6 +517,13 @@ tranche 2, RAF-17. Four constraints:
   on every chain, until the window closes; nothing outside the registered list, nothing twice.
   Such a claim matches no `OutcomeRecorded`, so it is visible. Mitigation: the key is a secret in
   MINT's Railway project; on a suspected leak, pause the vaults, `setSigner` and `setWorker`.
+- **The owner's `setSigner` is immediate** (the person's choice, 16 October, MNT-166's
+  self-review; CQ-11). The rule that the owner withdraws only what is not reserved binds
+  `withdraw`, not the owner. A compromised admin key can name its own key as every vault's
+  signer, sign tickets naming itself and claim the reserved prizes of every cycle whose window is
+  open. A delay on `setSigner`, or a signer fixed per cycle, would close this, at the cost of the
+  instant rotation that answers a leaked worker key. Accepted with the single admin EOA, which
+  already controls every contract.
 - **A one-hour claim window.** A winner who is offline, or screened on Robinhood Chain, for an hour
   after the cycle's end loses the prize to carry-over; a winner needs gas on the prize's chain
   (MINT's stated requirement).
