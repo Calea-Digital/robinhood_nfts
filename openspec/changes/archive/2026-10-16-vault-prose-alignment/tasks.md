@@ -10,9 +10,9 @@
 
 ## 2. Board
 
-- [ ] 2.1 Commit the named paths (spec, register, config, rendered docs, the archived change), then run `/mnt:board`. Verify: the preview refreshes RAF-27, OPS-1, OPS-3, OPS-4, OPS-5, CQ-8, CQ-11 and CQ-20 only, creates nothing, and the validator's read-back is OK.
+- [x] 2.1 Commit the named paths (spec, register, config, rendered docs, the archived change), then run `/mnt:board`. Verify: the preview refreshes RAF-27, OPS-1, OPS-3, OPS-4, OPS-5, CQ-8, CQ-11 and CQ-20 only, creates nothing, and the validator's read-back is OK.
 
 ## 3. Hand-offs
 
-- [ ] 3.1 In `openspec/changes/tranche-2/tasks.md`, add RAF-32 and RAF-33 to the "with it" lists of 5.1 to 5.3, and RAF-16's share to 5.2 and 5.3 (IC-8). Verify: every vault clause named in IC-8 sits on a 5.x line, and `check_scenario_quotes.py` still reads 41/0.
-- [ ] 3.2 Update the HANDOVER for #17 merged, PR #20 open with MNT-171, this change archived, IC-6 and IC-7 closed, and OPS-3 on Sourcify. Verify: its "Next" list starts from 5.1.
+- [x] 3.1 In `openspec/changes/tranche-2/tasks.md`, add RAF-32 and RAF-33 to the "with it" lists of 5.1 to 5.3, and RAF-16's share to 5.2 and 5.3 (IC-8). Verify: every vault clause named in IC-8 sits on a 5.x line, and `check_scenario_quotes.py` still reads 41/0.
+- [x] 3.2 Update the HANDOVER for #17 merged, PR #20 open with MNT-171, this change archived, IC-6 and IC-7 closed, and OPS-3 on Sourcify. Verify: its "Next" list starts from 5.1.
