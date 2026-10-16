@@ -32,7 +32,7 @@ Answers from each call are marked as such below.
 | CQ-2 | ACT | $MNTD burn route | Native; OpenZeppelin `ERC20Burnable`, 18 decimals, immutable; testnet `0x15CF…211C`; mainnet deployed 19 October (planned) | 2026-10-20 | Follow-up |
 | CQ-12 | OPS | Addresses; Safe on 4663 | Admin `0x1530…6141` (EOA) owns every contract on every chain | 2026-10-02 | Answered |
 | CQ-17 | RAF | VRF subscription and network | Arbitrum One; Calea holds and funds the subscription, invoicing MINT | 2026-10-12 | Answered |
-| CQ-20 | RAF | Prize count, odds and excluded ids | the owner sets each cycle's prize count and prize list from MINT's admin page; **every bear plays**, the team's 222 included, so no id is excluded and 4,444 bears play each cycle; prizes are held in MINT's prize wallet on Robinhood Chain, Ethereum and ApeChain, and possibly Base in a later cycle; a prize chain needs no contract. | 2026-10-29 | Answered |
+| CQ-20 | RAF | Prize count, odds and excluded ids | the owner sets each cycle's prize count and prize list from MINT's admin page; **every bear plays**, the team's 222 included, so no id is excluded and 4,444 bears play each cycle; prizes are held by a `PrizeVault` on Robinhood Chain, Ethereum and ApeChain, and possibly Base in a later cycle, funded from MINT's prize wallet. | 2026-10-29 | Answered |
 | CQ-22 | RAF | Prize delivery from the prize wallet | Option B: a `PrizeVault` on each prize chain holds the cycle's prizes, the worker signs a ticket for each win, and the winner claims on the prize's chain until one hour after the cycle's end; unclaimed prizes stay in the vault for a later cycle | — | Answered |
 | CQ-23 | OPS | Worker operator after handover | MINT runs the worker; Calea builds it | 2026-10-12 | Answered |
 | CQ-3 | ACT | Token-agnostic `credit` design | Superseded — `Activation` burns $MNTD itself; MINT's reply concerned the royalty pot (§2) | — | Closed |
@@ -40,10 +40,10 @@ Answers from each call are marked as such below.
 | CQ-5 | ACT | Weight table | 1.00 / 1.10 / 1.25 / 1.45 / 1.70 / 2.00, six levels | — | Answered |
 | CQ-6 | COL | May holders burn bears? | No; supply stays 4,444 | — | Answered |
 | CQ-7 | COL | Enforce royalties on-chain | Yes, from deployment | — | Answered |
-| CQ-8 | RAF | Where the prize assets live | MINT's prize wallet; no vaults | — | Answered |
+| CQ-8 | RAF | Where the prize assets live | A prize vault on each prize chain, funded from MINT's prize wallet | — | Answered |
 | CQ-9 | RAF | Mystery box model | Cycles set by the owner; one shot per bear per cycle | — | Answered |
 | CQ-10 | RAF | Claim window | Superseded by CQ-22 | — | Closed |
-| CQ-11 | RAF | Owner withdrawals | Superseded; custody is MINT's wallet | — | Closed |
+| CQ-11 | RAF | Owner withdrawals | Unreserved prizes only; the vault enforces it | — | Closed |
 | CQ-13 | DEL | Existing-contract review target | Withdrawn — no existing-contract review; tranche 1's internal audit 30 Sep – 1 Oct | — | Closed |
 | CQ-14 | DEL | Monorepo and CI | `github.com/mintdotio/NFT`, with Calea's recommended layout | — | Answered |
 | CQ-15 | COL | Royalty rate and receiver | 5% to `0xf7E7…0e63` | — | Answered |
@@ -340,8 +340,8 @@ subscription id, so `PrizeDraw` keeps running. The coordinator on Arbitrum One h
 ### CQ-20 — Prize count, odds and the token ids out of play
 - **Section:** RAF
 - **Needed by:** 2026-10-29 — before the first cycle's prize list is published
-- **Status:** Answered (meeting, 12 October 2026; every bear plays; ApeChain a prize chain, Base possible later)
-- **Resolution:** the owner sets each cycle's prize count and prize list from MINT's admin page; **every bear plays**, the team's 222 included, so no id is excluded and 4,444 bears play each cycle; prizes are held in MINT's prize wallet on Robinhood Chain, Ethereum and ApeChain, and possibly Base in a later cycle; a prize chain needs no contract.
+- **Status:** Answered (meeting, 12 October 2026; every bear plays; ApeChain a prize chain, Base possible later; custody by vault, 15 October 2026 (CQ-22))
+- **Resolution:** the owner sets each cycle's prize count and prize list from MINT's admin page; **every bear plays**, the team's 222 included, so no id is excluded and 4,444 bears play each cycle; prizes are held by a `PrizeVault` on Robinhood Chain, Ethereum and ApeChain, and possibly Base in a later cycle, funded from MINT's prize wallet.
 
 **Question.** The instant mystery box (CQ-9) needs three numbers that only MINT can give.
 
@@ -397,6 +397,12 @@ later cycle. A chain needs no contract: the prize wallet is an EOA with the same
 EVM chain, and `recordPayout` takes any non-zero chain id. Adding Base is a line in that cycle's
 prize list and a chain on the page. Calea checks the prize wallet's address on a new chain before
 its first cycle.
+
+**Superseded (MINT, 15 October 2026, CQ-22).** Every prize chain carries a `PrizeVault`, deployed
+at the same address on each through the CREATE2 deployer (OPS-2, RAF-35). Adding Base means
+deploying the vault there before the first cycle that holds a prize on Base, as well as a line in
+that cycle's list and a chain on the page. Calea still checks the prize wallet's address on a new
+chain before its first cycle, because the wallet funds that chain's vault.
 
 ### CQ-22 — How a prize is delivered
 - **Section:** RAF
@@ -623,8 +629,8 @@ published; if OpenSea cannot fill orders, one owner call lifts enforcement until
 ### CQ-8 — Where the prize assets live
 - **Section:** RAF
 - **Needed by:** —
-- **Status:** Answered (call, 28 September 2026)
-- **Resolution:** prizes are NFTs and tokens held in MINT's prize wallet `0xf6c02F0fDAC5c03EE9f1cc60A5D9875Efc4c83e3` on Robinhood Chain, Ethereum and possibly ApeChain, and paid from it to the winner on the prize's chain; no contract is deployed on a prize chain.
+- **Status:** Answered (call, 28 September 2026; superseded by CQ-22, 15 October 2026)
+- **Resolution:** prizes are NFTs and tokens on Robinhood Chain, Ethereum and ApeChain (Base possibly later), held by a `PrizeVault` on each prize chain at one address and funded from MINT's prize wallet `0xf6c02F0fDAC5c03EE9f1cc60A5D9875Efc4c83e3` during cycle setup (CQ-22, RAF-35).
 
 **Question.** On which chain are the prize assets held, and where should the vault live?
 
@@ -654,6 +660,11 @@ nor registry on Apechain" — nor on any prize chain.
 **Recorded as (28 September).** RAF-33: the prize wallet holds every prize and pays it by
 transfer; the vault contracts and their rules (RAF-2 to RAF-6, RAF-11, RAF-24) are retired. The
 wallet is an externally owned account, active on 4663 and Ethereum (read 28 September 2026).
+
+**Superseded (MINT, 15 October 2026, CQ-22).** Winners claim from a prize vault. MINT's admin
+page sends each cycle's prizes from the prize wallet to the `PrizeVault` on their chain, and the
+vault releases each one only to its winner (RAF-35, RAF-36). The wallet remains the source of
+the prizes, no longer their custody, and a contract is deployed on every prize chain.
 
 ### CQ-9 — Raffle entry model
 - **Section:** RAF
@@ -757,8 +768,8 @@ has to request a prize within 30 days is part of CQ-22.
 ### CQ-11 — May the owner withdraw inventory?
 - **Section:** RAF
 - **Needed by:** —
-- **Status:** Closed (superseded at the call, 28 September 2026)
-- **Resolution:** superseded: prizes are held in MINT's own wallet, so nothing on-chain locks or releases them; MINT's rule that nothing is withdrawn while a cycle is live is MINT's to keep.
+- **Status:** Closed (superseded at the call, 28 September 2026; answered by the vault, 15 October 2026 (CQ-22))
+- **Resolution:** the owner withdraws from a vault only what no cycle reserves; a registered cycle's prizes are locked until claimed or released after the claim window (RAF-37).
 
 **Question.** May the admin withdraw *unreserved* inventory, or is everything that enters the
 vault committed to future rounds?
@@ -780,6 +791,12 @@ reading with CQ-9.
 wallet (CQ-8, RAF-33) there is no vault to refuse a withdrawal. The published prize list of a
 cycle (RAF-27) is MINT's commitment, and every win and every payout is on the record, but only
 MINT's own practice keeps a committed prize in the wallet until it is won.
+
+**Superseded (MINT, 15 October 2026, CQ-22).** The prizes are in vaults again, so the vault
+enforces the rule MINT gave. From registration until the claim window closes, a cycle's prizes
+on a chain are reserved for their winners, and the owner's `withdraw` is refused for anything
+reserved (`Reserved`). After the window, `release` frees what was not claimed, and it carries
+over to a later cycle's list or can be withdrawn (RAF-37).
 
 ### CQ-13 — Existing smart-contract review: which contract, source, line limit
 - **Section:** DEL

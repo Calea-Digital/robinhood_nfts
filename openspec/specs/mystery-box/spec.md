@@ -41,12 +41,15 @@ Every one of the 4,444 bears plays, the team's 222 included, and a team bear can
 other (MINT, 12 October 2026, CQ-20). No bear is ever left out. A cycle's odds depend on two
 numbers: the 4,444 bears and the cycle's number of prizes. Before each cycle MINT publishes
 its prize list: each prize's chain, token and id or amount, in order. The n-th prize won in a
-cycle is entry n of the list. Only the count and the list's fingerprint are on-chain. The prizes
-are in MINT's prize wallet (RAF-33), so the list is MINT's commitment.
+cycle is entry n of the list. On Robinhood Chain and Arbitrum One only the count and the list's
+fingerprint are on-chain. The prizes themselves are sent from MINT's prize wallet to the prize
+vault on each prize chain, and each vault accepts the cycle's list only when it matches the
+fingerprint and every prize on its chain is already held (RAF-35, CQ-22).
 
 *Technical note.* `MysteryBox(owner, bears)` has no exclusion: `PLAYABLE` reads `MAX_BEARS`,
-4,444, and `PrizeDraw` is deployed with `PLAYABLE` 4,444. The prize list's hash is the cycle's `manifestHash` (RAF-32); the contracts cannot check
-it against a balance.
+4,444, and `PrizeDraw` is deployed with `PLAYABLE` 4,444. The prize list's hash is the cycle's
+`manifestHash` (RAF-32); `MysteryBox` and `PrizeDraw` cannot check it against a balance, and
+`PrizeVault.registerCycle` does, refusing with `ManifestMismatch` or `Unfunded` (RAF-35).
 
 #### Scenario: Opening freezes the odds
 - **GIVEN** a box deployed with no other call

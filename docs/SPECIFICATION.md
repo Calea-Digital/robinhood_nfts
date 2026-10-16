@@ -633,12 +633,15 @@ the cycle's `start`, `end` and full prize list (RAF-35). All three emit their cy
 other (MINT, 12 October 2026, CQ-20). No bear is ever left out. A cycle's odds depend on two
 numbers: the 4,444 bears and the cycle's number of prizes. Before each cycle MINT publishes
 its prize list: each prize's chain, token and id or amount, in order. The n-th prize won in a
-cycle is entry n of the list. Only the count and the list's fingerprint are on-chain. The prizes
-are in MINT's prize wallet (RAF-33), so the list is MINT's commitment.
+cycle is entry n of the list. On Robinhood Chain and Arbitrum One only the count and the list's
+fingerprint are on-chain. The prizes themselves are sent from MINT's prize wallet to the prize
+vault on each prize chain, and each vault accepts the cycle's list only when it matches the
+fingerprint and every prize on its chain is already held (RAF-35, CQ-22).
 
 *Technical note.* `MysteryBox(owner, bears)` has no exclusion: `PLAYABLE` reads `MAX_BEARS`,
-4,444, and `PrizeDraw` is deployed with `PLAYABLE` 4,444. The prize list's hash is the cycle's `manifestHash` (RAF-32); the contracts cannot check
-it against a balance.
+4,444, and `PrizeDraw` is deployed with `PLAYABLE` 4,444. The prize list's hash is the cycle's
+`manifestHash` (RAF-32); `MysteryBox` and `PrizeDraw` cannot check it against a balance, and
+`PrizeVault.registerCycle` does, refusing with `ManifestMismatch` or `Unfunded` (RAF-35).
 
 *Acceptance.* Given a box deployed with no other call; when the owner schedules the first cycle; then `PLAYABLE` reads 4,444 on both chains, and the holder of bear 1, a team bear, can open it.
 
@@ -962,18 +965,20 @@ is recorded before the first sale (COL-6).
 | Role | What it does | Who holds it |
 |---|---|---|
 | Admin | owns every contract on every chain | MINT, `0x1530…6141` |
-| Worker | carries openings to the draw and records payouts | MINT, a key MINT creates (CQ-23) |
+| Worker | carries openings to the draw, signs each winner's claim ticket and records claims | MINT, a key MINT creates (CQ-23) |
 | Royalty receiver | receives the 5% royalties (the pot) | MINT, `0xf7E7…0e63` |
-| Prize wallet | holds and pays every prize | MINT, `0xf6c0…83e3` |
+| Prize wallet | funds the prize vaults with each cycle's prizes | MINT, `0xf6c0…83e3` |
 | Randomness subscription | pays for the draw's random numbers | Calea, invoicing MINT (CQ-17) |
 
 *Technical note.* Admin `0x153052B43c8fD4ec01f14D1Edd8660778daa6141`, an EOA (MINT, 28 September
 2026), owner of every contract on every chain (MINT, 12 October 2026, CQ-12). A later move to a
 multisig goes through each contract's two-step handover (COL-10, ACT-12, RAF-14). Worker: an EOA MINT creates and funds with ETH on
-Arbitrum One, holding `resolve` and `recordPayout` on `PrizeDraw` (CQ-23, RAF-18). Royalty receiver
+Arbitrum One, holding `resolve` and `recordPayout` on `PrizeDraw` and set as every
+`PrizeVault`'s `signer`, whose key signs the claim tickets (CQ-23, RAF-18, RAF-36). Royalty receiver
 `0xf7E70F5ef311232dBd1b0E4dFB1e3e8FBE7b0e63`, the ERC-2981 receiver `→ CQ-15`. Prize wallet
-`0xf6c02F0fDAC5c03EE9f1cc60A5D9875Efc4c83e3`, an EOA (RAF-33). VRF subscription: the Chainlink
-subscription `PrizeDraw` draws on, owned by a Calea wallet on Arbitrum One (CQ-17).
+`0xf6c02F0fDAC5c03EE9f1cc60A5D9875Efc4c83e3`, an EOA that sends each cycle's prizes to the vault
+on their chain during cycle setup and pays no winner itself (RAF-33, RAF-35). VRF subscription:
+the Chainlink subscription `PrizeDraw` draws on, owned by a Calea wallet on Arbitrum One (CQ-17).
 
 *Acceptance.* When the mainnet deploy scripts run; then the admin and worker addresses they read are the ones MINT recorded; and the royalty receiver is set in Studio before the first sale.
 
@@ -1004,12 +1009,13 @@ admin with the worker as `signer` from construction, with no call after it.
 
 *Acceptance.* When the deploy script runs on a fresh chain; then each contract is created with its constructor arguments in the listed order and is never left deployed-but-unconfigured; and no address is set after construction; every call after construction is a listed setting or ownership transfer, in the listed order.
 
-**OPS-3 Verification.** Every contract's source is published and verified: on Sourcify for Robinhood Chain and its
-testnet, and on Arbiscan for Arbitrum One and Arbitrum Sepolia. Each prize vault is verified on
-its chain too, on Sourcify where the chain is supported and on the chain's explorer otherwise.
+**OPS-3 Verification.** Every contract's source is published and verified on Sourcify: on Robinhood Chain and its
+testnet, and on Arbitrum One and Arbitrum Sepolia. Each prize vault is verified on its chain too,
+on Sourcify where the chain is supported and on the chain's explorer otherwise.
 
 *Technical note.* Sourcify for 4663 and 46630, because mainnet Blockscout's API sits behind a bot
-challenge; Arbiscan through Etherscan's API for 42161 and 421614. `PrizeVault` on 1, 33139 and
+challenge, and for 42161 and 421614, where Arbiscan shows a Sourcify-verified source; one route
+needs no explorer API key (the person's choice, 16 October 2026). `PrizeVault` on 1, 33139 and
 8453 and on their testnets (11155111, 33111, 84532) through Sourcify, or Etherscan's API for the
 chain's explorer.
 
@@ -1035,8 +1041,10 @@ case on 46630: the owner sets the allowlist root with SeaDrop's `updateAllowList
 passes over the CSV against it, a two-spot wallet mints two with its proof, and a one-spot wallet
 is refused its second. On mainnet, `compare` passing over a test CSV against the root Studio set
 shows that Studio builds the tree, each wallet's limit included, as `AllowListTree` does. The
-burn goes through `Activation` against $MNTD on 46630 to a recorded level. The cycles cover relays in order, words and outcomes, and a payout from a prize
-wallet on 46630 or Sepolia recorded with `recordPayout`.
+burn goes through `Activation` against $MNTD on 46630 to a recorded level. The cycles are the
+rehearsal of 15 October 2026: relays in order, words and outcomes, and each win paid on 46630 from
+the rehearsal wallet and recorded with `recordPayout`. The prize vaults' run on the testnets,
+claims with the worker's tickets included, is RAF-18's.
 
 *Acceptance.* When the rehearsal runs on 46630, Arbitrum Sepolia and Sepolia; then each listed path completes end to end, including one open that wins and one that does not.
 
@@ -1049,15 +1057,17 @@ agreed response hours (DEL-10). The runbook covers:
 - switching royalty enforcement off and on (OPS-6);
 - pausing and opening burns around 29 October (ACT-15);
 - loading the whitelist into Studio and checking it (WL-4);
-- running a mystery-box cycle (RAF-18), and setting up, funding and running the worker;
+- running a mystery-box cycle (RAF-18), funding and registering its prizes on the vaults, and
+  setting up, funding and running the worker;
 - moving each contract's ownership to a new owner, such as a multisig (COL-10, ACT-12, RAF-14).
 
 *Technical note.* The runbook is one document, backed by `forge script` tooling. MINT's admin
-authorises the worker with `setWorker` (CQ-23). The ownership steps cover all four contracts: `MintABear`'s
-`transferOwnership` then `acceptOwnership`, and the Solady handover on `Activation`, `MysteryBox`
-and `PrizeDraw` (`requestOwnershipHandover` from the new owner, `completeOwnershipHandover` from
-the owner within 48 hours), each with its read-back of `owner()`, and the same steps as a Safe
-proposes them.
+authorises the worker with `setWorker` on `PrizeDraw` and `setSigner` on each `PrizeVault`
+(CQ-23). The ownership steps cover all five contracts: `MintABear`'s
+`transferOwnership` then `acceptOwnership`, and the Solady handover on `Activation`, `MysteryBox`,
+`PrizeDraw` and each `PrizeVault` (`requestOwnershipHandover` from the new owner,
+`completeOwnershipHandover` from the owner within 48 hours), each with its read-back of `owner()`,
+and the same steps as a Safe proposes them.
 
 *Acceptance.* When handover completes; then every contract's owner is MINT's admin, every source is verified and the runbook is delivered; and Calea holds no owner key and no contract role; it holds the randomness subscription (CQ-17).
 

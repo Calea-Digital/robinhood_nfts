@@ -304,11 +304,11 @@ subscription id, so `PrizeDraw` keeps running. The coordinator on Arbitrum One h
 ### CQ-20 — Prize count, odds and the token ids out of play
 - **Statement:** Prize count, odds and excluded ids
 - **State:** resolved
-- **Status note:** meeting, 12 October 2026; every bear plays; ApeChain a prize chain, Base possible later
+- **Status note:** meeting, 12 October 2026; every bear plays; ApeChain a prize chain, Base possible later; custody by vault, 15 October 2026 (CQ-22)
 - **Section:** RAF
 - **Needed by:** 2026-10-29 — before the first cycle's prize list is published
-- **Resolution:** the owner sets each cycle's prize count and prize list from MINT's admin page; **every bear plays**, the team's 222 included, so no id is excluded and 4,444 bears play each cycle; prizes are held in MINT's prize wallet on Robinhood Chain, Ethereum and ApeChain, and possibly Base in a later cycle; a prize chain needs no contract.
-- **Default if deferred:** prizes on Robinhood Chain and Ethereum only; adding ApeChain later changes the page, not the contracts.
+- **Resolution:** the owner sets each cycle's prize count and prize list from MINT's admin page; **every bear plays**, the team's 222 included, so no id is excluded and 4,444 bears play each cycle; prizes are held by a `PrizeVault` on Robinhood Chain, Ethereum and ApeChain, and possibly Base in a later cycle, funded from MINT's prize wallet.
+- **Default if deferred:** prizes on Robinhood Chain and Ethereum only; adding ApeChain later means one vault deployment there and a chain on the page.
 - **Blocks:** RAF-18
 
 **Question.** The instant mystery box (CQ-9) needs three numbers that only MINT can give.
@@ -365,6 +365,12 @@ later cycle. A chain needs no contract: the prize wallet is an EOA with the same
 EVM chain, and `recordPayout` takes any non-zero chain id. Adding Base is a line in that cycle's
 prize list and a chain on the page. Calea checks the prize wallet's address on a new chain before
 its first cycle.
+
+**Superseded (MINT, 15 October 2026, CQ-22).** Every prize chain carries a `PrizeVault`, deployed
+at the same address on each through the CREATE2 deployer (OPS-2, RAF-35). Adding Base means
+deploying the vault there before the first cycle that holds a prize on Base, as well as a line in
+that cycle's list and a chain on the page. Calea still checks the prize wallet's address on a new
+chain before its first cycle, because the wallet funds that chain's vault.
 
 ### CQ-22 — How a prize is delivered
 - **Statement:** Prize delivery from the prize wallet
@@ -616,11 +622,11 @@ published; if OpenSea cannot fill orders, one owner call lifts enforcement until
 ### CQ-8
 - **Statement:** Where the prize assets live
 - **State:** resolved
-- **Status note:** call, 28 September 2026
+- **Status note:** call, 28 September 2026; superseded by CQ-22, 15 October 2026
 - **Section:** RAF
-- **Resolution:** prizes are NFTs and tokens held in MINT's prize wallet `0xf6c02F0fDAC5c03EE9f1cc60A5D9875Efc4c83e3` on Robinhood Chain, Ethereum and possibly ApeChain, and paid from it to the winner on the prize's chain; no contract is deployed on a prize chain.
-- **Summary:** MINT's prize wallet; no vaults
-- **Blocks:** RAF-33
+- **Resolution:** prizes are NFTs and tokens on Robinhood Chain, Ethereum and ApeChain (Base possibly later), held by a `PrizeVault` on each prize chain at one address and funded from MINT's prize wallet `0xf6c02F0fDAC5c03EE9f1cc60A5D9875Efc4c83e3` during cycle setup (CQ-22, RAF-35).
+- **Summary:** A prize vault on each prize chain, funded from MINT's prize wallet
+- **Blocks:** RAF-33, RAF-35
 
 **Question.** On which chain are the prize assets held, and where should the vault live?
 
@@ -650,6 +656,11 @@ nor registry on Apechain" — nor on any prize chain.
 **Recorded as (28 September).** RAF-33: the prize wallet holds every prize and pays it by
 transfer; the vault contracts and their rules (RAF-2 to RAF-6, RAF-11, RAF-24) are retired. The
 wallet is an externally owned account, active on 4663 and Ethereum (read 28 September 2026).
+
+**Superseded (MINT, 15 October 2026, CQ-22).** Winners claim from a prize vault. MINT's admin
+page sends each cycle's prizes from the prize wallet to the `PrizeVault` on their chain, and the
+vault releases each one only to its winner (RAF-35, RAF-36). The wallet remains the source of
+the prizes, no longer their custody, and a contract is deployed on every prize chain.
 
 ### CQ-9 — Raffle entry model
 - **Statement:** Mystery box model
@@ -760,10 +771,10 @@ has to request a prize within 30 days is part of CQ-22.
 ### CQ-11 — May the owner withdraw inventory?
 - **Statement:** Owner withdrawals
 - **State:** resolved
-- **Status note:** superseded at the call, 28 September 2026
+- **Status note:** superseded at the call, 28 September 2026; answered by the vault, 15 October 2026 (CQ-22)
 - **Section:** RAF
-- **Resolution:** superseded: prizes are held in MINT's own wallet, so nothing on-chain locks or releases them; MINT's rule that nothing is withdrawn while a cycle is live is MINT's to keep.
-- **Summary:** Superseded; custody is MINT's wallet
+- **Resolution:** the owner withdraws from a vault only what no cycle reserves; a registered cycle's prizes are locked until claimed or released after the claim window (RAF-37).
+- **Summary:** Unreserved prizes only; the vault enforces it
 - **Status label:** Closed
 
 **Question.** May the admin withdraw *unreserved* inventory, or is everything that enters the
@@ -786,6 +797,12 @@ reading with CQ-9.
 wallet (CQ-8, RAF-33) there is no vault to refuse a withdrawal. The published prize list of a
 cycle (RAF-27) is MINT's commitment, and every win and every payout is on the record, but only
 MINT's own practice keeps a committed prize in the wallet until it is won.
+
+**Superseded (MINT, 15 October 2026, CQ-22).** The prizes are in vaults again, so the vault
+enforces the rule MINT gave. From registration until the claim window closes, a cycle's prizes
+on a chain are reserved for their winners, and the owner's `withdraw` is refused for anything
+reserved (`Reserved`). After the window, `release` frees what was not claimed, and it carries
+over to a later cycle's list or can be withdrawn (RAF-37).
 
 ### CQ-13 — Existing smart-contract review: which contract, source, line limit
 - **Statement:** Existing-contract review target
