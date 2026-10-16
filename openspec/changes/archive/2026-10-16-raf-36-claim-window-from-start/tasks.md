@@ -7,4 +7,4 @@
 
 ## 2. Code
 
-- [ ] 2.1 On `mnt/RAF-36`, MNT-167's work: `ClaimClosed` before `start`, `WrongChain` outside the list, and `eip712Domain()` in the interface pin. Verify: a test per refusal, and the pin lists `eip712Domain()`.
+- [x] 2.1 On `mnt/RAF-36`, MNT-167's work: `ClaimClosed` before `start`, `WrongChain` outside the list, and `eip712Domain()` in the interface pin. Verify: a test per refusal, and the pin lists `eip712Domain()`.
