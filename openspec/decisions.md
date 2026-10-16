@@ -773,7 +773,7 @@ has to request a prize within 30 days is part of CQ-22.
 - **State:** resolved
 - **Status note:** superseded at the call, 28 September 2026; answered by the vault, 15 October 2026 (CQ-22)
 - **Section:** RAF
-- **Resolution:** the owner withdraws from a vault only what no cycle reserves; a registered cycle's prizes are locked until claimed or released after the claim window (RAF-37).
+- **Resolution:** the owner withdraws from a vault only what no cycle reserves; a registered cycle's prizes are locked against `withdraw` until claimed or released after the claim window (RAF-37). The owner's `setSigner` takes effect at once, so the owner can still reach reserved prizes by signing its own tickets; accepted with the single admin key (CQ-12).
 - **Summary:** Unreserved prizes only; the vault enforces it
 - **Status label:** Closed
 
@@ -803,6 +803,14 @@ enforces the rule MINT gave. From registration until the claim window closes, a 
 on a chain are reserved for their winners, and the owner's `withdraw` is refused for anything
 reserved (`Reserved`). After the window, `release` frees what was not claimed, and it carries
 over to a later cycle's list or can be withdrawn (RAF-37).
+
+**Limit (Calea, 16 October 2026, the person's choice).** The rule binds `withdraw`, not the
+owner. The owner's `setSigner` takes effect at once, so a compromised admin key can name a key of
+its own as the signer, sign tickets naming itself, and claim the current cycles' reserved prizes;
+a leaked worker key can do the same without the owner until the vault is paused or the signer is
+rotated. A delay on `setSigner`, or a signer fixed per cycle, would close this, at the cost of the
+instant rotation that answers a leaked worker key. With one admin EOA already controlling every
+contract (CQ-12), the risk is accepted and stated in the HANDOVER's accepted risks.
 
 ### CQ-13 — Existing smart-contract review: which contract, source, line limit
 - **Statement:** Existing-contract review target
