@@ -285,7 +285,8 @@ one per bear (RAF-28).
 `ownershipHandoverExpiresAt(pendingOwner)`. `PrizeVault`: `MAX_PRIZES`, `CLAIM_GRACE`, each
 cycle's `(start, end, manifestHash, prizeCount)`, `prizeOf(cycleId, prizeIndex)`,
 `claimed(cycleId, prizeIndex)`, `claimDeadline(cycleId)`, `reserved(kind, token, id)`,
-`signer()`, `paused()`, `owner()` and `ownershipHandoverExpiresAt(pendingOwner)`. No other public
+`signer()`, `paused()`, `eip712Domain()` (ERC-5267: the ticket's domain, from which the worker and
+wallets build its typed data), `owner()` and `ownershipHandoverExpiresAt(pendingOwner)`. No other public
 read exists on any of them. Each read costs a fixed amount, whatever the number of bears.
 
 #### Scenario: Every read answers
@@ -398,16 +399,16 @@ A winner claims their prize on the prize's chain, paying gas there, with a ticke
 signs once the draw has recorded the win. MINT has stated that a winner needs gas on every
 prize chain to claim. The ticket names the cycle, the opening, the prize and the winner: the
 address that opened the box. Only that address can claim, the prize goes only to it, and each
-prize is released once. The claim is open until one hour after the cycle's end, on the vault's
-own chain clock. Every recipient is treated alike: a smart-contract wallet that does not exist
+prize is released once. The claim opens with the cycle and stays open until one hour after the
+cycle's end, on the vault's own chain clock. Every recipient is treated alike: a smart-contract wallet that does not exist
 on a prize chain cannot claim there, and that prize carries over (RAF-37).
 
 *Technical note.* The ticket is an EIP-712 message `Claim(cycleId, openIndex, prizeIndex,
 winner)` in the domain of the vault's chain and address, signed by the vault's `signer`, which is
 the worker's address (CQ-23). `claim(cycleId, openIndex, prizeIndex, signature)` from
 `msg.sender` = the winner is refused when paused (`ContractPaused`), for an unregistered cycle
-(`UnknownCycle`), after `end + CLAIM_GRACE`, one hour (`ClaimClosed`), for an entry on another
-chain (`WrongChain`), for a signature that does not recover to `signer` over the sender
+(`UnknownCycle`), before the cycle's `start` or after `end + CLAIM_GRACE`, one hour
+(`ClaimClosed`), for an entry on another chain or a `prizeIndex` outside the list (`WrongChain`), for a signature that does not recover to `signer` over the sender
 (`InvalidTicket`), and for a prize already claimed (`AlreadyClaimed`). It transfers the prize to
 the winner (native by value, ERC-20 by a safe transfer, ERC-721 and ERC-1155 by a safe transfer,
 so a contract that cannot receive refuses it), lifts its reservation, and emits
