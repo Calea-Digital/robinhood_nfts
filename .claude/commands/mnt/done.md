@@ -25,7 +25,7 @@ ids in anything committed there, nothing private there.
    `bash script/verify.sh 46630 --dry-run --broadcast-dir test/fixtures/broadcast` diffed
    against `test/fixtures/verify-dry-run.expected`, and `bash test/verify.test.sh`. Then the
    client, after a fresh `forge build` (Slither's compile leaves `out/` without the test and
-   script artifacts, and `gen:abi` then fails on `SeaDrop.json`): `pnpm run check` in `../NFT/packages/contracts-client`
+   script artifacts, and `gen:abi` then fails on `SeaDrop.json`) and `pnpm install --frozen-lockfile` at the workspace root (pnpm 12; `npx pnpm@12.14.0` if Corepack is too old): `pnpm run check` in `../NFT/packages/contracts-client`
    (ABI drift, typecheck, build, vitest). A dependency change also re-runs the Dockerfiles'
    frozen installs and MINT's apps' tests (CLAUDE.md, "Two repositories").
    Every Scenario in the Task's `Done when` has a test carrying it in its `/* Scenario: */`
