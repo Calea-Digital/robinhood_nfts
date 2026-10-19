@@ -69,6 +69,13 @@ step "5/6 bridge --write"
 step "6/6 validate --check-issues (reads the board back: checks 1–10)"
 "$PY" "$BRIDGE/validate.py" "${COMMON[@]}" --check-issues
 
+# The board now carries this openspec/ tree. Recorded inside .git (never committed) so the
+# board-reminder hook stays quiet until openspec/ changes again. Skipped on --allow-dirty:
+# a dirty trial did not write committed text.
+if [ -z "$ALLOW_DIRTY" ]; then
+  git -C "$ROOT" rev-parse HEAD:openspec > "$(git -C "$ROOT" rev-parse --absolute-git-dir)/board-synced-tree" 2>/dev/null || true
+fi
+
 if [ "$CLIENT_DOC" = 1 ]; then
   step "client document"
   (cd "$ROOT" && python3 docs/tools/build_client_doc.py)
