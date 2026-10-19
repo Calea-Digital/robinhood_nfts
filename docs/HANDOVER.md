@@ -460,6 +460,24 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
   prepares the commands and reads the chains.
 - **`tasks.md` for tranche 2 has no unticked line.**
 
+**Mainnet deploy: MintABear and Activation (prepared 19 October, waiting on CQ-2).** Prompt:
+`docs/prompts/2026-10-20-mainnet-deploy.md`.
+- **Scope:** `MintABear` (`runCollection`), then `Activation` (`runActivation`). The box, the draw,
+  the vault and the worker are separate jobs. `Activation` needs MINT's mainnet $MNTD address in
+  `4663.json`'s `mntd` (CQ-2, due 20 October), fixed in its constructor. Start when it arrives.
+- **State on 4663 (19 October):**
+  - SeaDrop `0x00005EA0…24bf5` and validator V3 `0x721C…cd1B` are deployed.
+  - Gas is 0.02 gwei: both deploys cost well under 0.001 ETH.
+  - `4663.json` has MINT's admin `0x1530…6141`; `mntd` is unset.
+- **The deployer `0x0e1533E96e1328bdB8C0fc03858a484e4DE26ff2` has no ETH on 4663** (0 ETH, nonce 0).
+  It has 0.2004 ETH on Ethereum (nonce 45) and dust on Arbitrum One. The person's 0.15 ETH bridge
+  attempt has not arrived: find the transaction on Etherscan or Arbiscan first.
+  - A native Orbit deposit lands in about 10–15 minutes, or needs a manual redeem.
+  - If there is no transaction, it was never sent.
+
+  Routes: Robinhood Chain's official bridge from Ethereum (0.005 ETH is plenty); Relay, if it
+  supports 4663; or MINT's admin (0.0018 ETH on 4663) sends 0.002 ETH.
+
 **Next, in this order (written 19 October, evening):**
 1. **PR #28** (the worker): merging is MINT's, and it redeploys staging (`pnpm-lock.yaml`). After it
    merges, run `git merge origin/release/1.1` on `feat/contracts` and push on the person's word.
