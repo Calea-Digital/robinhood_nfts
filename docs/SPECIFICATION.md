@@ -68,8 +68,9 @@ before the page it serves goes live.
   proofs built from it.
 - **Activation** (§5): the contract that burns $MNTD to raise a bear's level and holds the royalty
   weights.
-- **The mystery box** (§6): a contract on Robinhood Chain that records each opening, and the draw
-  on Arbitrum One that decides it and records the payout.
+- **The mystery box** (§6): a contract on Robinhood Chain that records each opening, the draw
+  on Arbitrum One that decides it and records the payout, and a prize vault on each prize chain
+  that holds the prizes until their winners claim them.
 - **Quality**: tests for every requirement, and the internal audit report (review, fuzzing) for
   each tranche.
 - **Deployment** (§7): scripts, a testnet rehearsal, verified mainnet deployment, the runbook and
@@ -107,8 +108,8 @@ before the page it serves goes live.
 | Lorenzo (MINT) | Privy login; account, Status and wager APIs |
 | Vlad (MINT) | Privy connection on getminted.io and the wager API, with Lorenzo |
 | Guri (MINT) | The whitelist eligibility check |
-| MINT's wallets | Admin `0x1530…6141`: mints the team bears, schedules each cycle, pauses. Prize wallet `0xf6c0…83e3`: holds and pays prizes |
-| Worker | Carries each box opening to the draw and records payouts. Built by Calea, run by MINT from a key MINT creates (CQ-23) |
+| MINT's wallets | Admin `0x1530…6141`: mints the team bears, schedules each cycle, pauses. Prize wallet `0xf6c0…83e3`: funds each prize vault during cycle setup |
+| Worker | Carries each box opening to the draw, signs each winner's claim ticket and records the claims. Built by Calea, run by MINT from a key MINT creates (CQ-23) |
 | Calea / Rayco | Builds, tests, deploys and hands over the contracts and the client library. Keeps no key or contract role after handover. Holds and funds the randomness subscription, invoicing MINT (CQ-17) |
 | Calea internal auditor | Audits each tranche independently of the developer: review, fuzzing, report |
 
@@ -135,6 +136,7 @@ Sepolia and, if ApeChain holds prizes, Curtis.
 | `Activation` | Robinhood Chain | Burns $MNTD for a bear and records its level and royalty weight |
 | `MysteryBox` | Robinhood Chain | Runs the cycles, checks that the opener owns the bear, and records each opening |
 | `PrizeDraw` | Arbitrum One | Decides each opening in turn with a fresh random number, and records wins and payouts |
+| `PrizeVault` | Each prize chain | Holds the cycle's prizes, at one address on every chain; each winner claims there with the worker's signed ticket, and what is not claimed carries over |
 
 The whitelist has no contract (WL-8).
 

@@ -744,11 +744,11 @@ MINT.
 ### CQ-10
 - **Statement:** Claim window
 - **State:** resolved
-- **Status note:** superseded at the call, 28 September 2026
+- **Status note:** superseded at the call, 28 September 2026; replaced by the vault's claim window on 15 October 2026, CQ-22
 - **Section:** RAF
-- **Resolution:** superseded: there is no vault to claim from; a win is paid from MINT's prize wallet, pushed or requested as CQ-22 decides, and a 30-day window applies only if it is requested.
+- **Resolution:** superseded: a winner claims from the prize vault on the prize's chain, from the cycle's start until one hour after its end (RAF-36); an unclaimed prize is released and carries over to a later cycle (RAF-37). There is no 30-day window.
 - **Summary:** Superseded by CQ-22
-- **Blocks:** RAF-33
+- **Blocks:** RAF-33, RAF-36, RAF-37
 - **Status label:** Closed
 
 **Question.** How long does a winner have to claim?
@@ -767,6 +767,12 @@ never won.
 **Superseded (call, 28 September 2026).** Prizes are held in MINT's prize wallet and paid by
 transfer (CQ-8, RAF-33), so there is no `claim` or `expirePrize` on-chain. Whether the winner
 has to request a prize within 30 days is part of CQ-22.
+
+**Superseded (MINT, 15 October 2026, CQ-22).** Winners claim from a prize vault with the worker's
+signed ticket, from the cycle's start until one hour after its end (RAF-36). After that anyone
+may release the cycle, and its unclaimed prizes stay in the vault for a later cycle's list
+(RAF-37). The 30-day hold MINT first asked for became that hour, and "rolled into a new mystery
+box round" is the carry-over.
 
 ### CQ-11 — May the owner withdraw inventory?
 - **Statement:** Owner withdrawals
