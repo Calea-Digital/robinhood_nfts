@@ -34,8 +34,8 @@ on the person's accept here, so `feat/contracts` holds approved work only, and a
      behaviour.
    - Flag anything outside the Technical note's files, anything the out-of-scope list
      forbids, anything that touches MINT's apps or a Railway-watched path
-     (`apps/mintabear/**`, `apps/whitelist-api/**`, `packages/whitelist-core/**`,
-     `pnpm-lock.yaml`), and anything private that leaked into NFT (an `MNT-n` id, a path into
+     (`apps/webapp/**`, `apps/whitelist-api/**`, the shared packages they build from,
+     `pnpm-lock.yaml`; CLAUDE.md, "Two repositories"), and anything private that leaked into NFT (an `MNT-n` id, a path into
      this repository, the board).
    - Check the branch is not already merged and that it merges cleanly into `feat/contracts`
      (`git -C ../NFT merge-tree --write-tree feat/contracts <branch>`), and name other In
