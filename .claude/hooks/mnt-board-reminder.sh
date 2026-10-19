@@ -18,6 +18,6 @@ SYNCED="$(cat "$(git -C "$ROOT" rev-parse --absolute-git-dir)/board-synced-tree"
 [ "$TREE" = "$SYNCED" ] && exit 0
 # No record yet (board.sh never ran here): fall back to "the last commit touched openspec/".
 [ -n "$SYNCED" ] || git -C "$ROOT" diff-tree --root --no-commit-id --name-only -r -m HEAD 2>/dev/null | grep -q '^openspec/' || exit 0
-MSG="openspec/ differs from the tree the MNT board was last written from. If this branch carries spec work the board lacks, run /mnt:board (docs/tools/board.sh) — after an archive, run docs/tools/spec_tools/fold_archive.py and commit first. On a branch older than the board, there is nothing to do."
+MSG="openspec/ differs from the tree the MNT board was last written from. If this branch carries spec work the board lacks, run /mnt:board (docs/tools/board.sh) — after an archive, fold its decisions delta into openspec/decisions.md by hand (not fold_archive.py: this project's deltas list changed fields only) and commit first. On a branch older than the board, there is nothing to do."
 printf '{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"%s"}}\n' "$MSG"
 exit 0

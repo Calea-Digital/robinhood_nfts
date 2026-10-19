@@ -56,5 +56,5 @@ after the requirement (kebab-case). The artifacts follow the calea-house schema,
 
 Then run `docs/tools/board.sh --dry` and fix every finding. Show the person the change and the
 board's `--check-existing` preview (NEW / DRIFTED), and stop there. Archiving
-(`/opsx:archive`), `docs/tools/spec_tools/fold_archive.py openspec/changes/archive/<the change> --write`, the commit and
+(`/opsx:archive`), folding the decisions delta into `openspec/decisions.md` by hand (this project's deltas list changed fields only; `fold_archive.py` would replace each entry whole), the commit and
 `/mnt:board` happen only once the person says so.
