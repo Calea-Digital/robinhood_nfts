@@ -6,12 +6,10 @@ with the feature you want. It gives the assistant the rules for using the client
 correctly. Prompts 2 and 3 are this prompt specialised for the mystery box admin and the
 level-up page.
 
-**Before you start, check two things:**
-- The client library on `release/1.1` is the current one. PR #17 brings the current library;
-  until it merges, `packages/contracts-client` still carries removed whitelist modules.
-- `packages/contracts-client` is part of the pnpm workspace. Calea's PR B adds it, with its
-  dependencies, to the root lockfile; until then no app can depend on it. Do not wire it in by
-  hand.
+**Where things stand.** The client library is in the pnpm workspace on `release/1.1`
+(`packages/contracts-client`, merged on 17 October), with its dependencies in the root lockfile.
+No app imports it yet: the first feature built on it adds it to `apps/webapp`, as the prompt
+describes.
 
 ---
 
@@ -39,23 +37,54 @@ Read these, in this order, and base your code on what they show rather than on a
    built for each role.
 3. `packages/contracts-client/src/client.ts`: the facade `createMintABearClient` and the TSDoc on
    every method. Open the module behind a method (`src/activation.ts`, `src/mysteryBox.ts`,
-   `src/prizeDraw.ts`, `src/mint.ts`, `src/events.ts`) when you need its exact types.
+   `src/prizeDraw.ts`, `src/mint.ts`, `src/events.ts`, `src/calls.ts`) when you need its exact
+   types.
 4. `packages/contracts-client/src/errors.ts`: the `ErrorCode` union and the `MESSAGES` map.
 
 If something you need is not in the library, stop and say so; do not work around it. Calea
 adds missing calls to the library.
 
-### 2. The facts the code depends on
+### 2. Where the code goes
+
+- **`apps/webapp` is the only frontend** (Next.js 16, App Router, Node 24). Read its `README.md`
+  before adding anything. A new page is a new feature folder, `src/features/<name>/`, with
+  `components/` (client components), `shared.ts` (types both sides use) and `server/`
+  (route-handler logic and configuration, each file starting with `import 'server-only'`); a route
+  under `app/`; a nav link in `src/components/AppNav.tsx`; and an entry in `src/seo.ts`
+  (`pageMetadata(PAGES.<name>)`, plus an `opengraph-image.tsx`). Model it on
+  `src/features/claim/` and `src/features/nft/`.
+- **Add the library to the webapp.** Its package name is `@mint/contracts-client`. Add
+  `"@mint/contracts-client": "workspace:*"` to `apps/webapp/package.json`'s dependencies, then run
+  `pnpm install` at the repository root and keep the lockfile change. Its only peer dependency is
+  `viem`, which the webapp already has.
+  - The package exports its built `dist/`. Run `pnpm --filter @mint/contracts-client build` before
+    the webapp's `check` or `build`.
+  - `apps/webapp/Dockerfile` copies and installs only the packages the webapp uses today. Add the
+    library's `package.json` to the install stage, copy the package, and build it before the
+    webapp's build. Prove it with a local `docker build -f apps/webapp/Dockerfile .`. Add
+    `packages/contracts-client/**` to the webapp service's Railway watch paths.
+- **Server routes.** If a feature reads on the server, its route handlers follow `AGENTS.md`:
+  validate with zod, bound the query and body (`readQuery`, `readJson`), rate-limit
+  (`RateLimiter` and `clientKey`), answer with `privateJson`, and never let an upstream error's
+  text reach a response. `app/api/claim/*` shows the pattern.
+- **UI.** Use `@mint/ui`'s `Panel`, `PanelHeader`, `EmptyState`, `DetailRow` and `ActionError`,
+  and its `.button` class; do not restyle a panel per page. Every page works at 375px with no
+  horizontal overflow. Labelled controls, `aria-live` for async status, `role="alert"` for
+  refusals, visible focus.
+
+### 3. The facts the code depends on
 
 - **Chains.** The collection, `Activation` and the mystery box are on Robinhood Chain (mainnet
-  4663, testnet 46630); the library exports `robinhoodChain` and `robinhoodChainTestnet`, use
-  them as viem chains. The prize draw is on Arbitrum One (42161, testnet Arbitrum Sepolia
-  421614); use viem's `arbitrum` / `arbitrumSepolia`. Make the chain and every address
-  configuration (environment variables, read at runtime the way the app already reads its
-  config), never constants in components.
+  4663, testnet 46630). Use the chain objects the app already has, from `@mint/wallet/chains`
+  (`robinhoodChain`, `robinhoodChainTestnet`); the library's own exports of the same names are
+  equivalent. The prize draw is on Arbitrum One (42161, testnet Arbitrum Sepolia 421614); use
+  viem's `arbitrum` / `arbitrumSepolia`. Make the chain and every address configuration, never
+  constants in components: environment variables read at runtime by a validated config module
+  in the feature's `server/config.ts` (zod; errors name variables, never values), with the public
+  subset passed to the page, as `src/features/claim/server/config.ts` does.
 - **One client per page:**
   ```ts
-  import { createMintABearClient, robinhoodChainTestnet } from "@mint/contracts-client";
+  import { createMintABearClient } from "@mint/contracts-client";
   const client = createMintABearClient({
     publicClient,               // viem PublicClient on Robinhood Chain, with a real RPC transport
     walletClient,               // viem WalletClient with an account; omit until the user connects
@@ -67,25 +96,34 @@ adds missing calls to the library.
   Build it once for reads, and again when the wallet connects or changes. Reads never need a
   wallet.
 - **The public client needs a real RPC.** The library reads, simulates and waits for receipts
-  through `publicClient`. If the app's wagmi config uses a browser transport that throws, as
-  `apps/claim` does, create the library's `publicClient` with `http(rpcUrl)` from the app's
-  config, or keep reads on the server and pass the results to the page.
-- **Wallets.** Any viem `WalletClient` with an account works. The library has no wagmi or Privy
-  dependency.
-  - With wagmi, `getWalletClient(config, { chainId })` gives one.
-  - With Privy, use `createWalletClient({ account, chain, transport: custom(await wallet.getEthereumProvider()) })`
-    and add the chain to Privy's `supportedChains`.
-  - **The library checks the chain only for the draw's wallet.** The app must make sure the
-    wallet is on Robinhood Chain before any collection, `Activation` or box write: use the
-    network guard the app already has, or `switchChain`.
+  through `publicClient`. In the browser, build it with
+  `createPublicClient({ chain, transport: http() })` over the chain's public RPC, as the app's
+  wagmi reads do. A private RPC URL is a server-only value: use it only in route handlers, and
+  pass their results to the page.
+- **Wallets.** Wallet and login hooks come only from `@mint/wallet` (`useEvmWallet`,
+  `useWallets`, `useConnectWallet`). The library takes any viem `WalletClient` with an account;
+  it has no wagmi or Privy dependency.
+  - For the wallet wagmi signs with, `getWalletClient(config, { chainId })` from `wagmi/actions`,
+    with `useConfig()`, the way the claim and staking panels call `writeContract`.
+  - For a particular Privy wallet (the NFT wallet, for example), use
+    `createWalletClient({ account, chain, transport: custom(await wallet.getEthereumProvider()) })`,
+    as `src/features/nft/useWhitelistHost.tsx` does.
+  - The wallet can only switch to a chain in the app's wallet chain list (`AppProviders`, built by
+    `buildChains` in `src/features/swap/chains.ts`). Robinhood Chain is first and is the default.
+    Add any other chain a feature signs on that is not there yet.
+  - **The library checks the wallet's chain before every write it sends**, the draw's included. A
+    wallet on another network is refused with `WRONG_CHAIN` before anything is signed. Show its
+    `userMessage`, or switch (`switchChain` from `wagmi/actions`, or the Privy wallet's
+    `switchChain`) and retry. The nav's `WalletButton` already asks a new wallet to switch to
+    Robinhood Chain.
 - **Big numbers are `bigint`.** Token ids, amounts, timestamps and cycle ids are `bigint`; levels
   and prize counts are `number`. Use `client.units.formatMntd` / `parseMntd` for $MNTD (18
-  decimals, read from the token). Never use JavaScript numbers for amounts.
+  decimals, read from the chain). Never use JavaScript numbers for amounts.
 - **A wallet's bears.** The collection cannot list a wallet's tokens (ERC721A). Take a wallet's
   token ids from MINT's indexer or OpenSea's API, or from the library's
   `client.events.index()` (a reference indexer over `Transfer` events from `deployBlock`).
 
-### 3. The patterns to follow
+### 4. The patterns to follow
 
 - **Plan, show, send.** Writes come as a pair: `planX(...)` checks everything on-chain and
   returns either `{ ok: true, calls, warnings, ... }` or `{ ok: false, code, userMessage, details }`
@@ -103,15 +141,18 @@ adds missing calls to the library.
     went through, with the transaction hashes, and offer to continue.
   - Never show raw viem errors or revert data.
 - **Transaction state.** Show the hash as soon as it exists, with a link to the chain's
-  explorer, then the confirmed state from the returned receipt. Follow the app's existing UI
-  conventions: in `apps/claim`, the phase state machine in `lib/client/claim-flow.ts` and inline
-  MUI `Alert`s; in `apps/mintabear`, inline `role="alert"` elements.
-- **Smart wallets.** If the connected wallet can batch, a plan's calls can go in one batch:
+  explorer, then the confirmed state from the returned receipt. Follow the claim's pattern: a
+  phase state machine in plain TypeScript (`src/features/claim/client/claim-flow.ts`, tested in
+  `tests/claim-flow.test.ts`), MUI `Alert`s inside a `role="status"` `aria-live` region, and
+  `ActionError` from `@mint/ui` for refusals.
+- **Smart wallets.** If the connected wallet can batch, a plan's calls can go in one batch. That
+  send is the page's, not the library's, so check the chain first:
+  `await checkWalletChain(publicClient, smartWallet)`, then
   `smartWallet.sendTransaction({ calls: plan.calls.map(toTransaction) })`.
 - **Reads.** Poll reads (they are free) or refresh them after each confirmed write. Do not cache
   a bear's level across a transfer: any transfer resets it to 0.
 
-### 4. Testing and local development
+### 5. Testing and local development
 
 - **Contracts already on the testnets** (Robinhood Chain testnet 46630 and Arbitrum Sepolia
   421614), deployed by Calea and verified on Sourcify; use them for reads and screens:
@@ -120,6 +161,8 @@ adds missing calls to the library.
   - `MysteryBox`: `0xA15a5B96849435B0030F1F6D6E3f886c8C0d55a7` (46630)
   - `PrizeDraw`: `0x8108AE7e4EB89CcCE253B8aD93d7c46250790A05` (421614; the same address as the
     collection, on another chain)
+  - `PrizeVault`: `0xAE51fA4E8f5089fE0D3017589fDa851475bF383d` (46630; its calls arrive in the
+    library's next release)
   - test $MNTD: `0x63573eD184850Df903C908314Bc6aA3fD6d0128B` (46630)
   - deploy blocks: on 46630, the collection `135822444`, `Activation` `135823655` and the box
     `135825279`; on 421614, the draw `319417133`.
@@ -133,20 +176,28 @@ adds missing calls to the library.
   cast rpc anvil_impersonateAccount 0x7672D1F3C832796D378827019a9f9Bf4D80404Aa --rpc-url http://127.0.0.1:8545
   cast send <contract> "<function>" <args> --unlocked --from 0x7672D1F3C832796D378827019a9f9Bf4D80404Aa --rpc-url http://127.0.0.1:8545
   ```
-  Point the app's RPC at `http://127.0.0.1:8545` with chain id 46630, and fund your test wallet
-  with `cast rpc anvil_setBalance <wallet> 0x56BC75E2D63100000`.
-- **Tests.** Test the app's own logic with the app's test runner (`node --test` with tsx in
-  MINT's apps). For a flow against a real chain, copy the pattern of the library's examples:
-  start anvil, deploy, drive the flow, assert on reads. Run the app's `pnpm check` and
-  `pnpm build` before finishing.
+  Point the feature's RPC at `http://127.0.0.1:8545` with chain id 46630, and fund your test
+  wallet with `cast rpc anvil_setBalance <wallet> 0x56BC75E2D63100000`. The CSP in `proxy.ts`
+  allows browser connections over https and wss only: for browser reads against the fork, allow
+  `http://127.0.0.1:8545` in development only, with a comment saying why, or read through the
+  server.
+- **Tests.** Test the feature's own logic (state machines, adapters, parsers, formatting) with
+  `node:test` in `apps/webapp/tests/<name>.test.ts`; `pnpm --filter @mint/webapp check` runs them
+  with the typecheck. For a flow against a real chain, copy the pattern of the library's
+  examples: start anvil, deploy, drive the flow, assert on reads. Check the UI in a running
+  browser (`pnpm dev:webapp`), at 375px as well. Run `pnpm --filter @mint/webapp check` and
+  `pnpm --filter @mint/webapp build` before finishing.
 
-### 5. Done means
+### 6. Done means
 
 - every contract call goes through `@mint/contracts-client`;
 - every refusal and error a user can meet shows its `userMessage`;
-- chains and addresses come from configuration;
-- the flow works on the testnet or a local fork, including at least one refusal;
-- `pnpm check` and `pnpm build` pass for the app.
+- chains and addresses come from validated runtime configuration;
+- the page follows `AGENTS.md`: a feature folder, `@mint/ui` panels, `@mint/wallet` hooks only,
+  SEO metadata, accessible and responsive to 375px;
+- the flow works in a browser on the testnet or a local fork, including at least one refusal;
+- `pnpm --filter @mint/webapp check` and `pnpm --filter @mint/webapp build` pass, and the
+  webapp's Docker image builds.
 
 When you finish, list the library functions you used and anything you needed from the library
 that it does not have.

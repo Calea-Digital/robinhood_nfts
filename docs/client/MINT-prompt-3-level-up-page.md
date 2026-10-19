@@ -41,26 +41,41 @@ anything, read:
 
 ### Where it lives and how it is built
 
-- It belongs to the getminted.io MintABear app, `apps/mintabear`. Look at how that app is built
-  before adding anything, and propose where the page goes before writing it:
-  - Vite;
-  - a page in **vanilla TypeScript and DOM** (`src/page.ts`, `src/controller.ts`, plain CSS in
-    `src/styles.css`);
-  - React only for the Privy host (`src/host/privy.tsx`);
-  - errors shown inline in `role="alert"` elements.
-- Keep that pattern: do not add a framework, a router or a CSS library without asking.
-- **Wallet:** Privy, as the app already uses it. The bears are in the wallet that minted them: the
-  "NFT wallet" the app connects with `connectWallet({ walletChainType: 'ethereum-only', … })`, or a
-  Privy embedded wallet.
-  - Add Robinhood Chain to `PRIVY_CONFIG`: `supportedChains: [robinhoodChain]` (or
-    `robinhoodChainTestnet`), from `@mint/contracts-client`, and set it as the default chain.
-  - Build the wallet client with
-    `createWalletClient({ account, chain, transport: custom(await wallet.getEthereumProvider()) })`.
-  - Before any burn, make sure the wallet is on Robinhood Chain (`wallet.switchChain(chainId)`).
-    The library does not check the main wallet's chain.
-- **Reads** use a `publicClient` with `http(rpcUrl)` from the app's configuration: new `VITE_*`
-  variables for the chain id, the RPC URL and the `MintABear`, `Activation` and $MNTD addresses
-  (typed in `src/env.d.ts`, like the existing ones).
+- It belongs to `apps/webapp`, the only frontend. Read its `README.md` and look at how the MINT a
+  Bear page (`/nft`, `src/features/nft/`) and the claim (`/claim`, `src/features/claim/`) are
+  built before adding anything, and propose where the page goes before writing it: a new feature
+  folder and route (for example `src/features/bears/` at `/bears`, with a link from `/nft`), or a
+  section of `/nft`.
+  - A feature folder holds `components/` (client components), `shared.ts` and `server/` (each
+    file `import 'server-only'`); a new route gets a link in `src/components/AppNav.tsx`, an entry
+    in `src/seo.ts` and an `opengraph-image.tsx`.
+  - Keep the page's logic in plain TypeScript that can be tested without a browser, the way
+    `src/features/nft/controller.ts` holds the MINT a Bear page's state machine and
+    `useMintABear.ts` wraps it in a hook.
+  - Build the UI from `@mint/ui` (`Panel`, `PanelHeader`, `EmptyState`, `DetailRow`,
+    `ActionError`, `.button`) and MUI, in the NFT page's look. Page-specific styles stay in the
+    feature folder. Do not add a UI library without asking.
+  - Refusals in `role="alert"`, transaction progress in an `aria-live` region, labelled controls,
+    visible focus; responsive to 375px with no horizontal overflow.
+- **Wallet:** the app's one Privy login, through `@mint/wallet` only. The bears are in the wallet
+  that minted them: the "NFT wallet" holders connect on `/nft` (`useConnectWallet` with
+  `NFT_WALLET_LIST`, in `src/features/nft/useWhitelistHost.tsx`), or a Privy embedded wallet.
+  `useEvmWallet()` lists the login's EVM wallets.
+  - Robinhood Chain is already the wallet's default chain (`AppProviders`); add nothing to
+    Privy's configuration.
+  - Build the wallet client for the wallet that holds the bears with
+    `createWalletClient({ account, chain, transport: custom(await wallet.getEthereumProvider()) })`,
+    as `useWhitelistHost.tsx` does.
+  - The library checks the wallet's chain before every write and refuses `WRONG_CHAIN` before
+    anything is signed. Make sure the wallet is on Robinhood Chain before a burn
+    (`wallet.switchChain(chainId)`), and on `WRONG_CHAIN` switch and plan again.
+- **Configuration:** a validated `server/config.ts` in the feature folder (zod, read at runtime,
+  as `src/features/claim/server/config.ts`), with new variables for the chain id, the
+  `MintABear`, `Activation` and $MNTD addresses and the collection's deploy block, listed in
+  `apps/webapp/.env.example`. The page receives the public subset; the chain id should agree with
+  the app's (`src/server/app-chain.ts`).
+- **Reads** use a `publicClient` over the chain's public RPC, as Prompt 1 says; a private RPC URL
+  stays on the server.
 - **Which bears a wallet holds.** The collection cannot list them. Use MINT's own indexer or
   OpenSea's API if the app has one; otherwise `client.events.index()` (the library's reference
   indexer over `Transfer` events, paged from the collection's deploy block). Show only bears whose
@@ -93,11 +108,13 @@ anything, read:
    - Show each transaction's hash as soon as it exists, with a link to Robinhood Chain's explorer.
    - On success, `result.activated` has `previousLevel`, `newLevel`, `amount` and `cumulative`:
      show the new level and refresh the bear.
-   - A wallet that can batch (a smart wallet) can send both calls at once:
+   - A wallet that can batch (a smart wallet) can send both calls at once: check its chain with
+     `checkWalletChain(publicClient, smartWallet)`, then
      `sendTransaction({ calls: plan.calls.map(toTransaction) })`.
 5. **Errors.** `try/catch` around the send, with `explainError(error, "burn")`:
    - `USER_REJECTED` is a cancel, not a failure;
    - `INSUFFICIENT_GAS_FUNDS` means add ETH on Robinhood Chain;
+   - `WRONG_CHAIN` means switch the wallet to Robinhood Chain and try again;
    - a `MintABearError` with `completed` means the approval went through and the burn did not:
      say so and offer "Burn now" with a fresh plan, which will skip the approval;
    - anything else, show its `userMessage`.
@@ -125,5 +142,6 @@ default. Compare it with the cost before enabling the button, and show what is m
   above level 5, burn with too little $MNTD, burn from a wallet that does not own the bear,
   decline the wallet prompt, and transfer the bear and see its level drop to 0.
 - **Unit-test the page's own logic** (choosing levels, formatting amounts, mapping codes to the
-  UI's states) with `node --test`.
-- Finish with `pnpm check` and `pnpm build` for `apps/mintabear`.
+  UI's states) with `node:test` in `apps/webapp/tests/`.
+- Check the page in a browser, at 375px as well.
+- Finish with `pnpm --filter @mint/webapp check` and `pnpm --filter @mint/webapp build`.
