@@ -16,9 +16,12 @@ with `../NFT` added (CLAUDE.md, "Two repositories", has the rules). The port is 
 - **PR B, `feat/contracts-client-workspace`**: merged into `release/1.1` as mintdotio/NFT#20
   (17 October). The client is in MINT's pnpm workspace; no app imports it yet. MNT-154 is Done
   (the person's Privy login on staging, 19 October).
-- **The vault PR, mintdotio/NFT#25** (19 October, open): `feat/contracts` `dbd2c66` into
-  `release/1.1` — the prize vault (RAF-35…37), `runPrizeVault` (OPS-2) and `verify.sh` for the
-  vault (OPS-3). Only `packages/contracts`; no Railway-watched path.
+- **The vault PR, mintdotio/NFT#25**: merged into `release/1.1` on 19 October at 11:03 UTC by
+  lcampanis (`d860438`), with `feat/contracts` `dbd2c66`: the prize vault (RAF-35…37),
+  `runPrizeVault` (OPS-2) and `verify.sh` for the vault (OPS-3).
+- **The client PR, mintdotio/NFT#26** (19 October, open): `feat/contracts` `6cc0708` (level with
+  `release/1.1`) — the client's vault calls and list builder (DEL-6, MNT-174) and RAF-27's quote.
+  Only `packages/contracts*`; no Railway-watched path.
 
 `release/1.0` is production and is never touched. Nothing of the code remains in this
 repository, and its CI runs only the spec checks.
@@ -390,14 +393,18 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
 - **MNT-173, OPS-3 (5.5), Done**, merge `dbd2c66`: `verify.sh` reads the vault's `CREATE2`, on every
   prize chain and testnet (all on Sourcify); a contract created inside a call is reported after the
   known ones are checked, never skipped. Fixtures are forge's own `runPrizeVault` records.
-- **PR mintdotio/NFT#25** open (`feat/contracts` pushed at `dbd2c66`). Gates green there: 313
-  tests, coverage 100/100, Slither 47, verify 15/15, client 134, quotes 44/0, trees 26/0.
+- **PR mintdotio/NFT#25** merged (11:03 UTC). **MNT-174, DEL-6 (5.6), Done**, merge `244eec0`: the
+  client's vault calls (`src/prizeVault.ts`; facade `vaults`, `prizeVault`, `vaultAdmin`,
+  `worker.signTicket`; 23 error codes). Review fixes: USDT-style funding, a duplicate NFT refused,
+  `register` held to the box's cycle, signatures read as the vault reads them (64-byte compact yes,
+  v 0/1 no). Self-review `reports/del-6-174-diff-review.md`. `feat/contracts` then merged
+  `release/1.1` (`6cc0708`, gates green: 313, client 143) and is **PR #26**. IC-10 closed with it.
 - **The vault on real 46630** (the person's hand check, from the rehearsal wallet, keystore
   `rehearsal`): `0xAE51fA4E8f5089fE0D3017589fDa851475bF383d`, Sourcify `exact_match` with the
   other three (`verify.sh 46630 --check` exit 0). Cycle 1 (11:08–11:13 UTC, claims to 12:13:02):
   funded 0.001 ETH and 10 test $MNTD; registered (manifest
   `0xc185…70be`); prize 2 claimed with a signed ticket (tx `0x1838…b9af`), a replay refused
-  `AlreadyClaimed`. Release and withdraw of prize 1: pending (the window closes 12:13:02 UTC; an early `release` was refused with `ClaimWindowOpen`, as specified).
+  `AlreadyClaimed`. An early `release` was refused with `ClaimWindowOpen`. After the window: `release` (tx `0x7e5a…f9fa`; a second one refused with `AlreadyReleased`) and `withdraw` of the freed 0.001 ETH (tx `0x3ce6…7851`); the vault is empty and reserves nothing. MNT-172's and MNT-173's hand checks are closed.
 - **Docs:** CLAUDE.md and `/mnt:review` describe `apps/webapp`, Railway's watch paths and MINT's CI
   (IC-22), the vaults (IC-13) and the vault's lint note (IC-26); the SPECIFICATION narrative
   describes the vault (IC-15); CQ-10's resolution names the claim window (IC-19, change
@@ -417,13 +424,9 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
   is there now). `apps/claim/` in it is MINT's old build output, untracked; leave it.
 
 **Next, in this order (written 19 October):**
-1. **5.6, DEL-6** (a Defect against DEL-6 when picked): the client's vault calls — funding per
-   prize kind, `manifestHash` from the list, `registerCycle`, the ticket's typed data and `claim`,
-   reads, `release`, `withdraw`, `setSigner`, pauses — the worker's ticket signing, and the list
-   builder's refusals (unknown kind, wrong standard by ERC-165, a chain with no vault, a
-   twin-address token). With it, IC-10's last lines in NFT: `PrizeDraw.sol:21–22`'s NatSpec
-   (changes `PrizeDraw`'s metadata hash, not its behaviour; mainnet is not deployed),
-   `contracts-client/src/prizeDraw.ts:11` and the client README's "The mystery box" step 4.
+1. **PR #26** (the client's vault calls): merging is MINT's; then `git merge origin/release/1.1` on
+   `feat/contracts`, pushed on the person's word. Hand checks after merge: the client's fund,
+   register and claim for a cycle 2 on the 46630 vault; a ticket signed by the real worker key.
 2. **4.2, RAF-18**: merge `feat/contracts` into `mnt/RAF-18` first (56 behind, pre-pnpm-12 and
    Node 24: the worker's Dockerfile and Node version change; IC-25), then the payout step: sign and
    serve tickets, watch `PrizeClaimed` on every vault, `recordPayout`.
