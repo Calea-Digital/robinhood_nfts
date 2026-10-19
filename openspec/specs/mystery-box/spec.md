@@ -51,7 +51,7 @@ fingerprint and every prize on its chain is already held (RAF-35, CQ-22).
 `manifestHash` (RAF-32); `MysteryBox` and `PrizeDraw` cannot check it against a balance, and
 `PrizeVault.registerCycle` does, refusing with `ManifestMismatch` or `Unfunded` (RAF-35).
 
-#### Scenario: Opening freezes the odds
+#### Scenario: Every bear plays from the first cycle
 - **GIVEN** a box deployed with no other call
 - **WHEN** the owner schedules the first cycle
 - **THEN** `PLAYABLE` reads 4,444 on both chains, and the holder of bear 1, a team bear, can open it
