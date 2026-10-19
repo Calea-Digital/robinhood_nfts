@@ -19,9 +19,13 @@ with `../NFT` added (CLAUDE.md, "Two repositories", has the rules). The port is 
 - **The vault PR, mintdotio/NFT#25**: merged into `release/1.1` on 19 October at 11:03 UTC by
   lcampanis (`d860438`), with `feat/contracts` `dbd2c66`: the prize vault (RAF-35…37),
   `runPrizeVault` (OPS-2) and `verify.sh` for the vault (OPS-3).
-- **The client PR, mintdotio/NFT#26** (19 October, open): `feat/contracts` `6cc0708` (level with
-  `release/1.1`) — the client's vault calls and list builder (DEL-6, MNT-174) and RAF-27's quote.
-  Only `packages/contracts*`; no Railway-watched path.
+- **The client PR, mintdotio/NFT#26**: merged into `release/1.1` on 19 October at 12:17 UTC, with
+  `feat/contracts` `6cc0708`: the client's vault calls and list builder (DEL-6, MNT-174) and
+  RAF-27's quote.
+- **The worker PR, mintdotio/NFT#28** (19 October, open): `feat/contracts` `9643adc` (level with
+  `release/1.1`) — `apps/box-worker` in the pnpm workspace (RAF-18, MNT-59). It changes
+  `pnpm-lock.yaml` (+22, the worker's importer only), a Railway-watched path: **merging redeploys
+  staging.** MINT creates the worker's Railway service from `apps/box-worker/railway.json`.
 
 `release/1.0` is production and is never touched. Nothing of the code remains in this
 repository, and its CI runs only the spec checks.
@@ -423,23 +427,64 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
   with the testnet broadcasts in `packages/contracts/broadcast/` (keep; `runPrizeVault` for 46630
   is there now). `apps/claim/` in it is MINT's old build output, untracked; leave it.
 
-**Next, in this order (written 19 October):**
-1. **PR #26** (the client's vault calls): merging is MINT's; then `git merge origin/release/1.1` on
-   `feat/contracts`, pushed on the person's word. Hand checks after merge: the client's fund,
-   register and claim for a cycle 2 on the 46630 vault; a ticket signed by the real worker key.
-2. **4.2, RAF-18**: merge `feat/contracts` into `mnt/RAF-18` first (56 behind, pre-pnpm-12 and
-   Node 24: the worker's Dockerfile and Node version change; IC-25), then the payout step: sign and
-   serve tickets, watch `PrizeClaimed` on every vault, `recordPayout`.
-3. **After #25 merges:** `git merge origin/release/1.1` on `feat/contracts`, pushed on the person's
-   word.
-4. **Waiting on MINT:** CQ-2's $MNTD address (`4663.json`'s `mntd`, due 20 October); the worker's
-   key (`vault.json`'s `signer`); MNT-146's multisig against CQ-12 (with vaults, an admin move is a
-   handover on every vault too); MNT-164, OPS-4's mainnet checks, when MINT announces the mainnet
-   deployment.
-5. **Calea:** the VRF subscription on Arbitrum One (CQ-17) into `42161.json`; send MINT's prompts
-   when the person says; R-2's decision.
-6. **Dates:** the whitelist campaign closes 27 October 12:00 UTC (CSV to Iñigo and Calea by 14:00,
-   then `compare`); the stage opens 29 October 12:00 UTC; `Activation` deploys once $MNTD is known.
+**Session of 19 October, afternoon and evening: done.**
+- **MNT-59, RAF-18 (4.2), Done**, merge `a4f89fc`:
+  - The worker branch was brought level: `feat/contracts` merged in, with `pnpm-workspace.yaml`
+    resolved to `feat/contracts`' version.
+  - The worker joins the pnpm workspace on Node 24 and pnpm 12. The lockfile is +22 / −0; pnpm
+    re-resolved `@scure/bip32`'s `@noble/curves` to 1.9.1, and I held it at 1.9.7.
+  - New payout step `vaultClaims`. It signs a winner's ticket only when the prize chain's vault
+    carries the draw's `manifestHash`, its cycle has started, and it trusts the worker. Tickets are
+    served at `GET /tickets/:openIndex` and `?wallet=`.
+  - It records each claim with `recordPayout` and the claim's own transaction, and retires wins
+    once recorded or expired.
+  - Each chain is read once per pass and a failing chain is contained. At start it refuses a chain
+    without the vault, or a chain listed twice.
+  - New alarms: `not-the-signer`, `prize-chain-unconfigured`, `prize-chain-failing`,
+    `terms-mismatch`.
+  - The Docker image links the client's `viem` peer to the worker's.
+  - Self-review: `reports/raf-18-diff-review.md`. The review's fixes A–I are in `74a5105`.
+- **RAF-18's Scenario passed on the testnets** with the person, 18:00–18:30 UTC. Box and vault
+  were on 46630; the draw on Arbitrum Sepolia was a test `PrizeDraw` at
+  `0x1E0F58140e30FFEf81A050f0079309c124290823` with `PLAYABLE` 4 so that wins occur, on the
+  rehearsal subscription.
+  - Cycles 3 and 4 ran: four wins were claimed and recorded with their claims' transactions, a
+    relay out of turn was refused with `OutOfOrder`, and bear 1 opened in both cycles.
+  - Gas measured: about 135,000 per relay and 75,500 per record (now in the worker's README).
+  - Left there: the test draw is still a consumer of the rehearsal subscription, and cycles 3 and 4
+    each hold one unwon prize (1 test $MNTD) until released.
+- **PR #26 merged** (12:17 UTC). **`feat/contracts` `9643adc` is PR #28**, the worker. Gates green
+  there: 313 forge tests, coverage 100/100, Slither 47, verify 15/15, client 143, worker 28,
+  webapp 89, Docker image built.
+- **The person's keystore `rehearsal`** (the rehearsal wallet) signs every testnet step; Claude
+  prepares the commands and reads the chains.
+- **`tasks.md` for tranche 2 has no unticked line.**
+
+**Next, in this order (written 19 October, evening):**
+1. **PR #28** (the worker): merging is MINT's, and it redeploys staging (`pnpm-lock.yaml`). After it
+   merges, run `git merge origin/release/1.1` on `feat/contracts` and push on the person's word.
+   MINT then creates the Railway service with its own key, funds it on Arbitrum One, and calls
+   `setWorker` and `setSigner`.
+2. **Hand checks:**
+   - the client's fund, register and claim for a new cycle on the 46630 vault;
+   - a ticket signed by the real worker key;
+   - the worker with a wrong second prize RPC (refused at start) and with an RPC that stops
+     answering mid-run (`prize-chain-failing`, the other chain carries on).
+3. **Waiting on MINT:**
+   - CQ-2's $MNTD address, which goes into `4663.json`'s `mntd`;
+   - the worker's mainnet key, which goes into `vault.json`'s `signer`;
+   - MNT-146's multisig, against CQ-12: with vaults, an admin move is also a handover on every
+     vault;
+   - MNT-164, OPS-4's mainnet checks, when MINT announces the mainnet deployment.
+4. **Calea:**
+   - the VRF subscription on Arbitrum One (CQ-17), into `42161.json`;
+   - send MINT's prompts when the person says (they predate the worker PR; add its ticket routes);
+   - optionally, remove the test draw from the rehearsal subscription.
+5. **Dates:**
+   - The whitelist campaign closes 27 October 12:00 UTC. The CSV goes to Iñigo and Calea by 14:00,
+     then `compare`.
+   - The stage opens 29 October 12:00 UTC.
+   - `Activation` deploys once $MNTD is known.
 
 ### Tranche 2 — the mystery box
 
@@ -449,8 +494,8 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
   (the whitelist registries removed), MNT-161 (every bear plays), MNT-162 and MNT-163
   (`Deploy.s.sol`: Cancun simulations, the box's and the draw's entry points); OPS-4's testnet
   rehearsal (MNT-64), two cycles included.
-- **In progress, gated by MINT:** RAF-18 (CQ-22). The worker, `apps/box-worker`, is built up to
-  prize distribution on `mnt/RAF-18`; the payout step is left open.
+- **Done since:** RAF-35…37 (`PrizeVault`), OPS-2's and OPS-3's vault Defects (MNT-172, MNT-173),
+  DEL-6's vault calls (MNT-174) and RAF-18, the worker (MNT-59): all of tranche 2's lines.
 
 The things to get right:
 - **`PrizeDraw` must refuse an `openIndex` out of turn**, so the worker cannot choose which open
