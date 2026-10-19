@@ -1,6 +1,6 @@
 # MintABear — handover
 
-Written 2026-09-15, current as of the session of 16–17 October. Read this first when resuming; the next session starts from "Next, in this order (written 17 October)" below.
+Written 2026-09-15, current as of the session of 19 October. Read this first when resuming; the next session starts from "Next, in this order (written 19 October)" below.
 
 ## Where things stand
 
@@ -13,14 +13,12 @@ with `../NFT` added (CLAUDE.md, "Two repositories", has the rules). The port is 
   and every Railway-watched path are untouched; Railway therefore built nothing for it, and the
   first build that clones the repository with its submodules is the next change under a watched
   path. `feat/contracts` is the code integration branch Task branches come off.
-- **PR B, `feat/contracts-client-workspace`** (`7087acc`, pushed 14 October, no PR open yet; based
-  on `10279d5`, after MNT-160 and MNT-161, so 13 commits behind `feat/contracts`): the client joins
-  the workspace. Its lockfile is +345 / −0 with no version moving (the earlier build on PR A
-  moved `debug`, `@noble/curves` and the `zod` peer; this one does not). Agreed 14 October
-  (`tasks.md` 0.3): rebuild it after MNT-160 and MNT-161 merge, prove the Docker installs, the apps'
-  tests and a Privy login on staging, and Lorenzo merges it into `release/1.1` around 20–21 October,
-  before the worker that uses it. `release/1.0` is not promoted before 29 October. Risk: low on
-  staging, low to medium for the `zod` peer; promoting production during the drop is what to avoid.
+- **PR B, `feat/contracts-client-workspace`**: merged into `release/1.1` as mintdotio/NFT#20
+  (17 October). The client is in MINT's pnpm workspace; no app imports it yet. MNT-154 is Done
+  (the person's Privy login on staging, 19 October).
+- **The vault PR, mintdotio/NFT#25** (19 October, open): `feat/contracts` `dbd2c66` into
+  `release/1.1` — the prize vault (RAF-35…37), `runPrizeVault` (OPS-2) and `verify.sh` for the
+  vault (OPS-3). Only `packages/contracts`; no Railway-watched path.
 
 `release/1.0` is production and is never touched. Nothing of the code remains in this
 repository, and its CI runs only the spec checks.
@@ -129,11 +127,11 @@ comment and logged time. The human merges `tranche-1` into `main`.
 
 | | |
 |---|---|
-| Contracts | `MintABear`, `Activation`; tranche 2 is `MysteryBox` (4663) and `PrizeDraw` (Arbitrum One). No whitelist contract: `WhitelistClaim` and `WhitelistImport` are removed (MNT-160) |
-| Scripts | `Deploy.s.sol` (OPS-2: `runCollection`, `runActivation`, `runMysteryBox`, `runPrizeDraw`), `verify.sh` (OPS-3), `Enforcement.s.sol` (OPS-6), `WhitelistExport.s.sol` (WL-4), `RehearsalAllowList.s.sol` (OPS-4, 46630 only); `packages/contracts/docs/RUNBOOK.md` in NFT: ownership handover, whitelist into Studio, transfer enforcement, royalties, Activation, the mystery box, the testnet rehearsal |
-| Tests | 308 contract tests and 134 client tests on `feat/contracts` `c5f053b` (2026-10-17), all passing; 100% line, branch and function coverage (gate ≥90 / ≥80). Work-item Scenarios with no quoting test: the operational OPS-1, OPS-3 (live), OPS-4 (run on the testnets, below) and OPS-5; DEL-3 (the auditor's) and DEL-9 (the repository); DEL-6 (the client's tests carry tree leaves under DEL-6 but none quotes its Scenario); RAF-18 (the worker, on `mnt/RAF-18`) |
-| Gates | in NFT, run locally by `/mnt:done` (NFT has no CI): `fmt --check`, `build --sizes` (no warnings), `test`, coverage, Slither, `verify.sh` dry run and verdict test, the client check (`pnpm install --frozen-lockfile` at the workspace root with pnpm 12, then `pnpm run check`); here, in CI: spec lint and generated prose; the scenario-quote check (44/0) and the tree check (26/0) — all green (2026-10-17, `c5f053b`). The two checks default to `~/trees/NFT`; pass `--code-root <worktree>/packages` when the branch is elsewhere. Slither refuses to overwrite a `--json` file: delete it first |
-| Slither | 47 results on `feat/contracts` `c5f053b`, no High or Critical; 4 accepted Mediums: `locked-ether` on `Activation`, `MysteryBox`, `PrizeDraw`, and `reentrancy-no-eth` on `PrizeDraw.resolve`'s request (both below and in the NatSpec); `PrizeVault` adds only `timestamp` Lows (its windows) |
+| Contracts | `MintABear`, `Activation`; tranche 2 is `MysteryBox` (4663), `PrizeDraw` (Arbitrum One) and `PrizeVault` (every prize chain, one CREATE2 address). No whitelist contract: `WhitelistClaim` and `WhitelistImport` are removed (MNT-160) |
+| Scripts | `Deploy.s.sol` (OPS-2: `runCollection`, `runActivation`, `runMysteryBox`, `runPrizeDraw`, `runPrizeVault`), `verify.sh` (OPS-3), `Enforcement.s.sol` (OPS-6), `WhitelistExport.s.sol` (WL-4), `RehearsalAllowList.s.sol` (OPS-4, 46630 only); `packages/contracts/docs/RUNBOOK.md` in NFT: ownership handover, whitelist into Studio, transfer enforcement, royalties, Activation, the mystery box, the testnet rehearsal |
+| Tests | 313 contract tests, 15 `verify.test.sh` cases and 134 client tests on `feat/contracts` `dbd2c66` (2026-10-19), all passing; 100% line, branch and function coverage (gate ≥90 / ≥80). Work-item Scenarios with no quoting test: the operational OPS-1, OPS-3 (live), OPS-4 (run on the testnets, below) and OPS-5; DEL-3 (the auditor's) and DEL-9 (the repository); DEL-6 (the client's tests carry tree leaves under DEL-6 but none quotes its Scenario); RAF-18 (the worker, on `mnt/RAF-18`) |
+| Gates | in NFT, run locally by `/mnt:done` (MINT's CI, since 17 October, never builds `packages/contracts*`): `fmt --check`, `build --sizes` (no warnings), `test`, coverage, Slither, `verify.sh` dry run and verdict test, the client check (`pnpm install --frozen-lockfile` at the workspace root with pnpm 12, then `pnpm run check`); here, in CI: spec lint and generated prose; the scenario-quote check (44/0) and the tree check (26/0) — all green (2026-10-17, `c5f053b`). The two checks default to `~/trees/NFT`; pass `--code-root <worktree>/packages` when the branch is elsewhere. Slither refuses to overwrite a `--json` file: delete it first |
+| Slither | 47 results on `feat/contracts` `dbd2c66`, no High or Critical; 4 accepted Mediums: `locked-ether` on `Activation`, `MysteryBox`, `PrizeDraw`, and `reentrancy-no-eth` on `PrizeDraw.resolve`'s request (both below and in the NatSpec); `PrizeVault` adds only `timestamp` Lows (its windows) |
 
 Requirements amended since v2.1, each through an archived OpenSpec change:
 - **23 September:** ACT-5 (after a transfer the weight reads the level-0 weight) and OPS-2
@@ -378,17 +376,67 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
 - **Worktrees:** `~/trees/NFT` (still on `feat/contracts-client-workspace`, now merged; switch it to `feat/contracts` and move the broadcasts there, then remove `NFT-every-bear`) and `~/trees/NFT-every-bear` (`feat/contracts` `c5f053b`, with the untracked testnet broadcasts and a pnpm workspace install).
 - **Commits here** are on `main` and not pushed this session.
 
-**Next, in this order (written 17 October):**
-1. **A project integrity check (docs, code, YouTrack)** before any new Task, like `reports/integrity-check-2026-10-16-b.md`:
-   - **Board and specs:** the board against `openspec/` (`board.sh --dry`), `tasks.md` against the board's states, the generated prose and the client-document check.
-   - **Code against docs:** `PrizeVault` as built against RAF-14, 16, 17, 32–37 and against NFT's README, DESIGN and trees. CLAUDE.md, the HANDOVER and the MINT prompts (IC-17) against both.
-   - **NFT's state:** the open PRs (#23 and later), `feat/contracts` against `release/1.1`, private text in NFT, the worktrees, and the open IC items (IC-9 to IC-19, R-2).
-   - **Write `reports/integrity-check-2026-10-18.md`;** fix only on the person's word.
-2. **`/mnt:next`:** 5.4, OPS-2 (a Defect against OPS-2 when picked). `runPrizeVault` goes through the CREATE2 deployer `0x4e59…956C` with the same salt and arguments on every prize chain, reading back `owner` and `signer`. With it come the RUNBOOK's vault steps (the rules above) and the 46630 hand check. Then 5.5, OPS-3: `verify.sh` for the prize chains and their testnets, Sourcify or the chain's explorer. Then 5.6, DEL-6: the client's vault calls and the list builder.
-3. **The vault PR** into `release/1.1`, once 5.4 and 5.5 are accepted, on the person's word. Push `feat/contracts` with it.
-4. **RAF-18** (`tasks.md` 4.2): the worker's payout step. First merge `feat/contracts` into `mnt/RAF-18` (IC-21).
-5. **Waiting on MINT:** CQ-2, the mainnet $MNTD address (`4663.json`'s `mntd`); it was due 20 October.
-6. **Calea:** the VRF subscription on Arbitrum One (CQ-17); MINT's prompts after IC-17's fixes and the vault; R-2 and IC-19 through `/opsx:propose`.
+**Session of 19 October: done.** Report: `reports/integrity-check-2026-10-18.md`.
+- **Integrity check** (IC-22 to IC-26): MINT's restructure of 17 October (#21, #22: one Next.js
+  `apps/webapp`, Node 24, pnpm 12, CI that skips our packages) had left our descriptions of NFT
+  stale. Board, `tasks.md`, git and the specs agreed; nothing private in NFT.
+- **MNT-172, OPS-2 (5.4), Done**, merge `40a66d8`: `runPrizeVault` through the CREATE2 deployer
+  from `vault.json` (4663, 1, 33139, 8453; MINT's admin; signer unset until MINT's worker key
+  exists) or `vault-testnet.json` (the four testnets; the rehearsal wallet as owner and signer);
+  refuses an unlisted chain, a missing deployer, a moved `expectedVault`; reads back address,
+  owner, signer, pause, EIP-712 domain. RUNBOOK "Prize vault" with the review rules and the
+  lost-admin-key fallback (a new salt, a per-chain address). Self-review
+  `reports/ops-2-172-diff-review.md`.
+- **MNT-173, OPS-3 (5.5), Done**, merge `dbd2c66`: `verify.sh` reads the vault's `CREATE2`, on every
+  prize chain and testnet (all on Sourcify); a contract created inside a call is reported after the
+  known ones are checked, never skipped. Fixtures are forge's own `runPrizeVault` records.
+- **PR mintdotio/NFT#25** open (`feat/contracts` pushed at `dbd2c66`). Gates green there: 313
+  tests, coverage 100/100, Slither 47, verify 15/15, client 134, quotes 44/0, trees 26/0.
+- **The vault on real 46630** (the person's hand check, from the rehearsal wallet, keystore
+  `rehearsal`): `0xAE51fA4E8f5089fE0D3017589fDa851475bF383d`, Sourcify `exact_match` with the
+  other three (`verify.sh 46630 --check` exit 0). Cycle 1 (11:08–11:13 UTC, claims to 12:13:02):
+  funded 0.001 ETH and 10 test $MNTD; registered (manifest
+  `0xc185…70be`); prize 2 claimed with a signed ticket (tx `0x1838…b9af`), a replay refused
+  `AlreadyClaimed`. Release and withdraw of prize 1: pending (the window closes 12:13:02 UTC; an early `release` was refused with `ClaimWindowOpen`, as specified).
+- **Docs:** CLAUDE.md and `/mnt:review` describe `apps/webapp`, Railway's watch paths and MINT's CI
+  (IC-22), the vaults (IC-13) and the vault's lint note (IC-26); the SPECIFICATION narrative
+  describes the vault (IC-15); CQ-10's resolution names the claim window (IC-19, change
+  `cq-10-vault-resolution`, board refreshed); MINT's three prompts target `apps/webapp` and the
+  built vault (IC-24, `9368c9f`; not sent).
+- **Spec tools re-installed** from ai-stack `49d235e` (IC-9): `board.sh` records the synced tree,
+  so the reminder hook is quiet once the board carries `openspec/`. `fold_archive.py` is installed
+  but **must not run here**: it replaces a register entry whole, and this project's decisions
+  deltas list changed fields only (it would drop CQ-10's history — dry-run shown). Fold by hand;
+  the hook and `/mnt:grill` say so. The schema copy is left older than ai-stack's master for the
+  same reason.
+- **R-2 stays open:** OpenSpec 1.13 refuses a renamed Scenario in a MODIFIED block (no escape in
+  its validator). Options for the person: edit `spec.md` and `MysteryBox.t.sol:224`'s quote
+  directly, outside the flow, or keep the title.
+- **Housekeeping:** MNT-95 Done (the person). Worktrees: only `~/trees/NFT`, on `feat/contracts`,
+  with the testnet broadcasts in `packages/contracts/broadcast/` (keep; `runPrizeVault` for 46630
+  is there now). `apps/claim/` in it is MINT's old build output, untracked; leave it.
+
+**Next, in this order (written 19 October):**
+1. **5.6, DEL-6** (a Defect against DEL-6 when picked): the client's vault calls — funding per
+   prize kind, `manifestHash` from the list, `registerCycle`, the ticket's typed data and `claim`,
+   reads, `release`, `withdraw`, `setSigner`, pauses — the worker's ticket signing, and the list
+   builder's refusals (unknown kind, wrong standard by ERC-165, a chain with no vault, a
+   twin-address token). With it, IC-10's last lines in NFT: `PrizeDraw.sol:21–22`'s NatSpec
+   (changes `PrizeDraw`'s metadata hash, not its behaviour; mainnet is not deployed),
+   `contracts-client/src/prizeDraw.ts:11` and the client README's "The mystery box" step 4.
+2. **4.2, RAF-18**: merge `feat/contracts` into `mnt/RAF-18` first (56 behind, pre-pnpm-12 and
+   Node 24: the worker's Dockerfile and Node version change; IC-25), then the payout step: sign and
+   serve tickets, watch `PrizeClaimed` on every vault, `recordPayout`.
+3. **After #25 merges:** `git merge origin/release/1.1` on `feat/contracts`, pushed on the person's
+   word.
+4. **Waiting on MINT:** CQ-2's $MNTD address (`4663.json`'s `mntd`, due 20 October); the worker's
+   key (`vault.json`'s `signer`); MNT-146's multisig against CQ-12 (with vaults, an admin move is a
+   handover on every vault too); MNT-164, OPS-4's mainnet checks, when MINT announces the mainnet
+   deployment.
+5. **Calea:** the VRF subscription on Arbitrum One (CQ-17) into `42161.json`; send MINT's prompts
+   when the person says; R-2's decision.
+6. **Dates:** the whitelist campaign closes 27 October 12:00 UTC (CSV to Iñigo and Calea by 14:00,
+   then `compare`); the stage opens 29 October 12:00 UTC; `Activation` deploys once $MNTD is known.
 
 ### Tranche 2 — the mystery box
 
