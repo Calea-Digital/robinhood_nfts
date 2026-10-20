@@ -466,9 +466,9 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
   `rehearsal`), not `0x0e15…6ff2`: the person's choice on the day. It holds no role afterwards.
   It had 0.01 ETH on 4663; both deploys cost about 0.00013 ETH, and it is at nonce 5.
 - **Config:** `4663.json`'s `mntd` is MINT's $MNTD `0x62Ed…a967` (CQ-2, resolved), with the
-  config test pinning it: NFT `mnt/OPS-2-mainnet` at `3cb2c27`, off `feat/contracts` `9643adc`,
-  not merged and not pushed (merge on the person's approval). 313 tests pass; both checks here
-  pass.
+  config test pinning it: NFT `mnt/OPS-2-mainnet` at `3cb2c27`, merged into `feat/contracts` as
+  `be600b9` on the person's approval, not pushed. A push lands it in the open PR #28 (head
+  `feat/contracts`). 313 tests pass; both checks here pass.
 - **Read back on 4663:**
   - `MintABear`: `maxSupply` 4444, validator V3, owner the deployer, pending owner MINT's admin
     (`PotentialOwnerUpdated`), no drop configured, royalties and URIs empty.
@@ -503,8 +503,7 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
      vault;
    - MNT-164, OPS-4's mainnet checks, when MINT announces the mainnet deployment.
 4. **Calea:**
-   - merge `mnt/OPS-2-mainnet` into `feat/contracts` on the person's approval (it rides the next
-     PR into `release/1.1`);
+   - push `feat/contracts` (`be600b9`, the mainnet config) on the person's word; it joins PR #28;
    - the `Activation` burn on mainnet (rehearsal item 4) in a window MINT's admin opens and closes
      again, before 29 October;
    - the VRF subscription on Arbitrum One (CQ-17), into `42161.json`;
