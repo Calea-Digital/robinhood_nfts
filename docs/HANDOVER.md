@@ -577,6 +577,19 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
   - logout resetting to the signed-out view.
 
   The nav's network reads "Robinhood Chain" (mainnet) on staging, which is MNT-186.
+- **MetaMask pass, `/mntd` on staging (testnet LockedStaking `0x33ae…f283`).** MINT sent
+  `0x7672…` 10,000,000 `0x15CF…` MNTD.
+  - Approve exactly 100 (`0x92bc…dbfd`, allowance read back 1e20).
+  - `stake(100, 1 day)`: lsMNTD 0.27397 = 100/365; MNTD 9,999,900; allowance 0.
+  - Position view: no early exit, no second position.
+  - `getReward()` twice; the second started with the wallet on mainnet, the page switched it to
+    46630 itself, and it went through (`0x5a5b…ec06`).
+  - **Unlocks 21 Oct 2026 about 19:35 UTC: test the withdraw (`exit`) after that.**
+  - The very first Approve failed with "could not be sent" and reached no wallet; it isn't
+    reproducible. Filed as **MNT-197**: the panel discards the cause. MNT-198 is the hero showing
+    through the nav.
+  - A second wallet extension owns `window.ethereum` on the person's browser; MetaMask comes in
+    through EIP-6963.
 - **Pricing report for the CEO:** `reports/2026-10-20-MintABear-work-for-MINT.pdf`, with its HTML
   source beside it; regenerate with Chrome headless `--print-to-pdf`. It has three parts:
   - the contracted scope, delivered;
@@ -589,15 +602,16 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
 - The local QA stack is stopped (`docker compose stop`, no volumes removed).
 
 **Next, in this order (written 20 October, evening):**
-1. **Fund the QA wallet (MINT, asked):**
+1. **Give the QA wallet an allocation (MINT, asked):**
    - `0x7672…04Aa` needs testnet MNTD **`0x15CF…211C`**, the token staging's claim and
      LockedStaking `0x33ae…f283` use. It holds only `0x6357…`, which staging doesn't use.
    - It also needs an allocation. Quickest is `transferOwnership(0x7672…)` from `0xA10D…04B5` on
      vesting wallet `0x6810…148C` or `0xAA22…1471`.
-   - At 18:20 UTC neither was done: 0.021 ETH, 0 `0x15CF…`, Distributor still 4 rows.
+   - The MNTD arrived (10,000,000 `0x15CF…`); the allocation for `/claim` has not (Distributor still
+     4 rows, at 19:40 UTC).
 2. **Resume the MetaMask pass once funded:**
    - `/claim`: view, claim, rejection, wrong network, pending across reload.
-   - `/mntd`: approve, lock, unlock on 46630.
+   - `/mntd`: withdraw (`exit`) after the 21 Oct unlock; approve, lock and claim are done.
    - `/swap`: UI only. Change the amount after a quote; the button must drop to "Getting a
      quote…" (MNT-184).
    - `/nft`: claims at $50 and $100. These need wagering on mintstage.io by the `0x7672…` account,
