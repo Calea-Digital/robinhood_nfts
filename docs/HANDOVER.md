@@ -503,7 +503,8 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
      vault;
    - MNT-164, OPS-4's mainnet checks, when MINT announces the mainnet deployment.
 4. **Calea:**
-   - PR #28 now carries the mainnet config (`be600b9`) beside the worker;
+   - PR #28 now carries the mainnet config (`be600b9`) beside the worker; its description has a
+     section with the config and the two mainnet addresses for `getDeployment(4663)`;
    - the `Activation` burn on mainnet (rehearsal item 4) in a window MINT's admin opens and closes
      again, before 29 October;
    - the VRF subscription on Arbitrum One (CQ-17), into `42161.json`;
