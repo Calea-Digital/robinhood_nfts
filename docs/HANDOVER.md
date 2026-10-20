@@ -1,6 +1,6 @@
 # MintABear — handover
 
-Written 2026-09-15, current as of the session of 19 October. Read this first when resuming; the next session starts from "Next, in this order (written 19 October)" below.
+Written 2026-09-15, current as of the session of 20 October. Read this first when resuming; the next session starts from "Next, in this order (written 20 October)" below.
 
 ## Where things stand
 
@@ -460,25 +460,31 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
   prepares the commands and reads the chains.
 - **`tasks.md` for tranche 2 has no unticked line.**
 
-**Mainnet deploy: MintABear and Activation (prepared 19 October, waiting on CQ-2).** Prompt:
+**Mainnet deploy: MintABear and Activation (20 October, done).** Prompt:
 `docs/prompts/2026-10-20-mainnet-deploy.md`.
-- **Scope:** `MintABear` (`runCollection`), then `Activation` (`runActivation`). The box, the draw,
-  the vault and the worker are separate jobs. `Activation` needs MINT's mainnet $MNTD address in
-  `4663.json`'s `mntd` (CQ-2, due 20 October), fixed in its constructor. Start when it arrives.
-- **State on 4663 (19 October):**
-  - SeaDrop `0x00005EA0…24bf5` and validator V3 `0x721C…cd1B` are deployed.
-  - Gas is 0.02 gwei: both deploys cost well under 0.001 ETH.
-  - `4663.json` has MINT's admin `0x1530…6141`; `mntd` is unset.
-- **The deployer `0x0e1533E96e1328bdB8C0fc03858a484e4DE26ff2` has no ETH on 4663** (0 ETH, nonce 0).
-  It has 0.2004 ETH on Ethereum (nonce 45) and dust on Arbitrum One. The person's 0.15 ETH bridge
-  attempt has not arrived: find the transaction on Etherscan or Arbiscan first.
-  - A native Orbit deposit lands in about 10–15 minutes, or needs a manual redeem.
-  - If there is no transaction, it was never sent.
+- **Deployer: the rehearsal wallet `0x7672D1F3C832796D378827019a9f9Bf4D80404Aa`** (keystore
+  `rehearsal`), not `0x0e15…6ff2`: the person's choice on the day. It holds no role afterwards.
+  It had 0.01 ETH on 4663; both deploys cost about 0.00013 ETH, and it is at nonce 5.
+- **Config:** `4663.json`'s `mntd` is MINT's $MNTD `0x62Ed…a967` (CQ-2, resolved), with the
+  config test pinning it: NFT `mnt/OPS-2-mainnet` at `3cb2c27`, off `feat/contracts` `9643adc`,
+  not merged and not pushed (merge on the person's approval). 313 tests pass; both checks here
+  pass.
+- **Read back on 4663:**
+  - `MintABear`: `maxSupply` 4444, validator V3, owner the deployer, pending owner MINT's admin
+    (`PotentialOwnerUpdated`), no drop configured, royalties and URIs empty.
+  - `Activation`: `BEARS`, `MNTD`, 18 decimals, thresholds 1,666…41,666 × 10^18, weights 100…200,
+    owner MINT's admin, paused.
+  - `verify.sh 4663 --check`: both `exact_match`.
+- **Broadcast files:** NFT's untracked `broadcast/Deploy.s.sol/4663/` holds only the real runs
+  (`run-1792496308501.json`, `run-1792496478742.json` and the `-latest` copies). An anvil fork of
+  4663 also reports chain id 4663, so a fork rehearsal writes into the real directory. Its files
+  are moved to the session scratchpad. Rehearse on a fork with a different `--chain-id`, or move
+  the files out after.
+- **Forge's broadcast mislabels hashes:** `runCollection-latest.json` pairs some transaction
+  hashes with the wrong call (all four landed in one block). The hashes in "Verified on-chain
+  facts" are read from the chain.
 
-  Routes: Robinhood Chain's official bridge from Ethereum (0.005 ETH is plenty); Relay, if it
-  supports 4663; or MINT's admin (0.0018 ETH on 4663) sends 0.002 ETH.
-
-**Next, in this order (written 19 October, evening):**
+**Next, in this order (written 20 October):**
 1. **PR #28** (the worker): merging is MINT's, and it redeploys staging (`pnpm-lock.yaml`). After it
    merges, run `git merge origin/release/1.1` on `feat/contracts` and push on the person's word.
    MINT then creates the Railway service with its own key, funds it on Arbitrum One, and calls
@@ -489,12 +495,18 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
    - the worker with a wrong second prize RPC (refused at start) and with an RPC that stops
      answering mid-run (`prize-chain-failing`, the other chain carries on).
 3. **Waiting on MINT:**
-   - CQ-2's $MNTD address, which goes into `4663.json`'s `mntd`;
+   - MINT's admin `acceptOwnership` on `MintABear` `0x655e…cB28`, then the RUNBOOK's "Ownership
+     handover" (reset the allowed-SeaDrop list, read SeaDrop's state); Calea reads back `owner`;
+   - Studio (Iñigo): provenance, metadata, royalties (5% to `0xf7E7…0e63`, COL-6), drop stages;
    - the worker's mainnet key, which goes into `vault.json`'s `signer`;
    - MNT-146's multisig, against CQ-12: with vaults, an admin move is also a handover on every
      vault;
    - MNT-164, OPS-4's mainnet checks, when MINT announces the mainnet deployment.
 4. **Calea:**
+   - merge `mnt/OPS-2-mainnet` into `feat/contracts` on the person's approval (it rides the next
+     PR into `release/1.1`);
+   - the `Activation` burn on mainnet (rehearsal item 4) in a window MINT's admin opens and closes
+     again, before 29 October;
    - the VRF subscription on Arbitrum One (CQ-17), into `42161.json`;
    - send MINT's prompts when the person says (they predate the worker PR; add its ticket routes);
    - optionally, remove the test draw from the rehearsal subscription.
@@ -502,7 +514,7 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
    - The whitelist campaign closes 27 October 12:00 UTC. The CSV goes to Iñigo and Calea by 14:00,
      then `compare`.
    - The stage opens 29 October 12:00 UTC.
-   - `Activation` deploys once $MNTD is known.
+   - `Activation` is deployed and paused; MINT's admin unpauses it at switch-on, 29 October (ACT-15).
 
 ### Tranche 2 — the mystery box
 
@@ -711,6 +723,8 @@ these.
 | OpenSea contracts on 46630 | SeaDrop, Seaport 1.6, ConduitController and validator V3 deployed; OpenSea's SignedZone not deployed; OpenSea itself does not support the chain (read 2026-10-14) |
 | Testnet $MNTD (46630) | `0x63573eD184850Df903C908314Bc6aA3fD6d0128B` — the one MINT funded the rehearsal wallet from (1,000,000), named in `46630.json`; `0x15CFC2be2Dc468E3f173c560C493A71C3fE4211C` is a second deployment of the same runtime (only the EIP-712 immutables differ). Both the reference token's code, 18 decimals (read 2026-10-14 and 15) |
 | Rehearsal deployments (2026-10-15) | 46630: `MintABear` `0x8108AE7e4EB89CcCE253B8aD93d7c46250790A05`, `Activation` `0x389578ECe1E63DBEe48c9b22504D1Af29E2aef2f`, `MysteryBox` `0xA15a5B96849435B0030F1F6D6E3f886c8C0d55a7`; Arbitrum Sepolia: `PrizeDraw` `0x8108AE7e4EB89CcCE253B8aD93d7c46250790A05` (same address as the collection: deployer nonce 0 on both). All owned by the rehearsal wallet `0x7672D1F3C832796D378827019a9f9Bf4D80404Aa`; VRF subscription `19717353…670789` (in `421614.json`). Sourcify `exact_match` |
+| Mainnet $MNTD (4663) | `0x62Ed300A5916aeD339a65E04754392763982a967` — MINT's (CQ-2): "MNTD", 18 decimals, 1,000,000,000 supply, no owner, no proxy, `burnFrom`; Sourcify `exact_match` (`src/token/MNTD.sol:MNTD`, solc 0.8.28, OZ 5.6.1); deployed by `0x928C591b9d1D79C35b85adb93Dd9634fe761F6c5`, block 92,969,522; runtime equal to the testnet $MNTD's but for the EIP-712 immutables (read 2026-10-20) |
+| Mainnet deployments (2026-10-20) | 4663, deployer `0x7672…04Aa`: `MintABear` `0x655e88103f77a48E0b7875511318d3c5f79FcB28`, block 93,422,005, creation tx `0x1eaf5964e848ad78def7194c015c41cd44ad9414a4513a1fae4e12b3a995d44b`; `Activation` `0xAbd272C95F20B59659E3E21Ed75A58652e93159b`, block 93,423,642, tx `0xc62fcd3e6c74f919cf18823186f845af636f1c9affdbeac26f5baaa88eed059a`. Both Sourcify `exact_match` |
 | Reference $MNTD | Base Sepolia `0xa21273093af1b3b880b73afd54514bb3d6269968`: OpenZeppelin 5.5 `ERC20 + ERC20Burnable + ERC20Permit`, 18 decimals, 1,000,000,000 minted once, no owner, no proxy; solc 0.8.28, `cancun` |
 
 - **Contract size limit is ~96 KB**, four times Ethereum's.
@@ -735,10 +749,9 @@ these.
 
 Twenty-four are in `docs/OPEN-QUESTIONS.md`, each with the section it affects, when it is
 needed, the answer where one exists, and the default otherwise:
-- **resolved or closed (23):** CQ-1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24;
-- **in follow-up (1):** CQ-2.
+- **resolved or closed (24):** all of them; CQ-2 on 20 October with the mainnet $MNTD.
 
-They map onto O1–O2 in §10. Tranche 1's code is written. The whitelist root check over a CSV is
+§10 has no open item. Tranche 1's code is written. The whitelist root check over a CSV is
 needed by 27 October; the rehearsal is ready to run; tranche 2 waits on the excluded
 ids.
 
