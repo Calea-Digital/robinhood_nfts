@@ -558,24 +558,53 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
 - **Lesson:** every suite was green on `release/1.1` while H-1 was live. No test tied a browser
   call to a route. Both #31 and #32 now add one.
 
+**After #32 (20 October, evening).**
+- **Both hosts serve #32**, confirmed at 15:34 UTC:
+  - app.getminted.io: `/ready` ready, claim on 4663; `/api/claim/vesting` answers mainnet
+    allocations, so MINT's "We could not load your allocation" is fixed in production.
+  - Staging: `/ready` ready, claim and `/mntd` staking on 46630.
+  - Both `/ready` answers mean MINT set `APP_TRUSTED_PROXY_HOPS=1` and cleared
+    `SWAP_MNTD_ADDRESS`; either missing would have kept the old build.
+- **MetaMask pass, `/nft` on staging** (the person signs, from `0x7672…04Aa`, logged in with that
+  wallet through Privy). Every check passed with no console error:
+  - the signed-out view;
+  - the login (`/me` 200);
+  - binding the NFT wallet with a free signature (challenge → signature → bind, shows ✓);
+  - the binding surviving a reload;
+  - a pasted wallet the person doesn't own (`0xA10D…`), refused in the browser before any request
+    ("You connected 0x7672…, not the pasted wallet…");
+  - cancel restoring the panel;
+  - logout resetting to the signed-out view.
+
+  The nav's network reads "Robinhood Chain" (mainnet) on staging, which is MNT-186.
+- **Pricing report for the CEO:** `reports/2026-10-20-MintABear-work-for-MINT.pdf`, with its HTML
+  source beside it; regenerate with Chrome headless `--print-to-pdf`. It has three parts:
+  - the contracted scope, delivered;
+  - DEL-10's items, beyond the SoW but already listed;
+  - extras A–G: the whitelist register, whitelist and TGE go-live support, the web-app review,
+    rework from MINT's changes, the monorepo move, decision support.
+
+  Board-logged time covers only E and F (about 23 h, a lower bound). A–D and G need the person's
+  day estimates.
+- The local QA stack is stopped (`docker compose stop`, no volumes removed).
+
 **Next, in this order (written 20 October, evening):**
-1. **Railway env (MINT), before the MetaMask pass:**
-   - `APP_TRUSTED_PROXY_HOPS=1` on staging and production. Without it, #32's build fails `/ready`
-     and Railway keeps the old one.
-   - Delete `SWAP_MNTD_ADDRESS` (or set it to exactly the official MNTD).
-   - `STAKING_CHAIN_ID=46630` on staging.
-   - The worker's three deploy-block variables when its service is created.
-   - **Check that staging and app.getminted.io actually redeployed with #32:** at 15:30 UTC
-     staging's `/claim` bundle called `/api/claim/vesting`, app.getminted.io's did not yet.
-2. **Phase 4, the MetaMask pass on staging, testnet 46630 only.** The person signs and Claude
-   drives Chrome and reads the console and network. MINT first gives the QA wallet a testnet
-   vesting allocation on the Distributor `0x68c5…fC04` (today all four rows belong to
-   `0xA10D…04B5`), plus ETH and test MNTD. The checklist:
-   - `/nft`: login variants, wallet binding, spots 1 and 2, account switch, logout.
+1. **Fund the QA wallet (MINT, asked):**
+   - `0x7672…04Aa` needs testnet MNTD **`0x15CF…211C`**, the token staging's claim and
+     LockedStaking `0x33ae…f283` use. It holds only `0x6357…`, which staging doesn't use.
+   - It also needs an allocation. Quickest is `transferOwnership(0x7672…)` from `0xA10D…04B5` on
+     vesting wallet `0x6810…148C` or `0xAA22…1471`.
+   - At 18:20 UTC neither was done: 0.021 ETH, 0 `0x15CF…`, Distributor still 4 rows.
+2. **Resume the MetaMask pass once funded:**
    - `/claim`: view, claim, rejection, wrong network, pending across reload.
-   - `/mntd`: approve, lock, unlock on the testnet LockedStaking.
-   - `/swap`: UI only, no signing. Change the amount after a quote and check the button drops to
-     "Getting a quote…" (MNT-184's UI check).
+   - `/mntd`: approve, lock, unlock on 46630.
+   - `/swap`: UI only. Change the amount after a quote; the button must drop to "Getting a
+     quote…" (MNT-184).
+   - `/nft`: claims at $50 and $100. These need wagering on mintstage.io by the `0x7672…` account,
+     or MINT's credit.
+   - `/nft`: an account switch with a second login.
+   - Check the chain before starting (`cast` balance of `0x15CF…` and `/api/claim/vesting` for
+     the wallet).
 3. **Board:** the person sets MNT-175 to 185 Done once staging confirms. MINT answers MNT-187 and
    MNT-188. Schedule the Lows (MNT-189 to 196).
 4. **Waiting on MINT:**
