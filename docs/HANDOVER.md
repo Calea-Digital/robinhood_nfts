@@ -590,6 +590,15 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
     through the nav.
   - A second wallet extension owns `window.ethereum` on the person's browser; MetaMask comes in
     through EIP-6963.
+- **The resilience PR, mintdotio/NFT#33** (open, from `feat/contracts` `eba2524`): MNT-197, 191 and 192,
+  all in MINT's webapp, each with a test that fails without it, and all In Review. Webapp 101/101;
+  `next build` passes with no env set; no Railway change needed.
+  - MNT-197: staking errors are logged to the console and named for the holder.
+  - MNT-191: a failed Relay chain list is cached for 60 s.
+  - MNT-192: `/ready` answers 200 with `"claim": "unavailable"` when only the claim RPC is down,
+    and 503 for broken configuration.
+
+  Merging it redeploys staging. After it merges, fast-forward `feat/contracts` to `release/1.1`.
 - **Pricing report for the CEO:** `reports/2026-10-20-MintABear-work-for-MINT.pdf`, with its HTML
   source beside it; regenerate with Chrome headless `--print-to-pdf`. It has three parts:
   - the contracted scope, delivered;
@@ -619,9 +628,13 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
    - `/nft`: an account switch with a second login.
    - Check the chain before starting (`cast` balance of `0x15CF…` and `/api/claim/vesting` for
      the wallet).
-3. **Board:** the person sets MNT-175 to 185 Done once staging confirms. MINT answers MNT-187 and
+3. **Before the mystery box opens (4 November):**
+   - MINT decides MNT-187 (smart-account openers on prize chains; a message to send).
+   - Calea fixes MNT-190 (the worker re-reads an overlap of blocks) and MNT-195 (the client's
+     event reads paged, `mntd` only on request) on their own branches, as one PR, next week.
+4. **Board:** the person sets MNT-175 to 185 Done once staging confirms (it has). MINT answers MNT-187 and
    MNT-188. Schedule the Lows (MNT-189 to 196).
-4. **Waiting on MINT:**
+5. **Waiting on MINT:**
    - MINT's admin `acceptOwnership` on `MintABear` `0x655e…cB28`, then the RUNBOOK's "Ownership
      handover" (reset the allowed-SeaDrop list, read SeaDrop's state). Calea reads back `owner`.
      At 15:00 UTC the owner was still the rehearsal wallet.
@@ -632,7 +645,7 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
    - MNT-146's multisig, against CQ-12. With vaults, moving the admin is also a handover on every
      vault.
    - MNT-164, OPS-4's mainnet checks, when MINT announces the mainnet deployment.
-5. **Calea:**
+6. **Calea:**
    - The `Activation` burn on mainnet (rehearsal item 4), in a window MINT's admin opens and closes
      again, before 29 October.
    - The VRF subscription on Arbitrum One (CQ-17), into `42161.json`.
@@ -644,7 +657,7 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
      - an RPC that stops answering mid-run (`prize-chain-failing`; the other chain carries on).
    - Send MINT's prompts when the person says.
    - Optionally, remove the test draw from the rehearsal subscription.
-6. **Dates:**
+7. **Dates:**
    - The whitelist campaign closes 27 October 12:00 UTC. The CSV goes to Iñigo and Calea by 14:00,
      then `compare`.
    - The stage opens 29 October 12:00 UTC.
