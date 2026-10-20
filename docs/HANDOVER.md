@@ -29,9 +29,8 @@ with `../NFT` added (CLAUDE.md, "Two repositories", has the rules). The port is 
   lcampanis (`ff2468f`). It carries the six fixes from the pre-production review ("Pre-production
   review", below). MINT merged its own fix of the `/claim` path just before, as #31 (`b1edbc0`,
   Iñigo); the two changes are the same line, and both tests remain.
-- **`feat/contracts`** is `ff2468f`, level with `release/1.1`, in the worktree `~/trees/NFT-fix`.
-  `origin/feat/contracts` is `ca8235e`, which is #32's head; pushing the fast-forward is the
-  person's call.
+- **`feat/contracts`** is `ff2468f`, level with `release/1.1`, in the worktree `~/trees/NFT-fix`,
+  and pushed. GitHub deletes the branch when a PR from it merges, so the next push recreates it.
 
 `release/1.0` is production and is never touched. Nothing of the code remains in this
 repository, and its CI runs only the spec checks.
