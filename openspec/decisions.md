@@ -76,12 +76,12 @@ on 5 November, and the handover on 19 November.
 
 ### CQ-2
 - **Statement:** $MNTD burn route
-- **State:** follow-up
-- **Status note:** meeting, 12 October 2026; testnet address checked; mainnet deployment planned for 19 October, 24 hours before TGE
+- **State:** resolved
+- **Status note:** meeting, 12 October 2026; mainnet address from MINT, 20 October 2026, checked on-chain and fixed in `Activation`
 - **Section:** ACT
 - **Needed by:** 2026-10-20 — before `Activation` is deployed
-- **Resolution:** option (a1) — $MNTD is **native** to Robinhood Chain, burned by `Activation` in the same transaction as the record. The token is OpenZeppelin `ERC20Burnable` with 18 decimals, fixed supply and no owner or proxy, so its address is final once deployed.
-- **Summary:** Native; OpenZeppelin `ERC20Burnable`, 18 decimals, immutable; testnet `0x15CF…211C`; mainnet deployed 19 October (planned)
+- **Resolution:** option (a1) — $MNTD is **native** to Robinhood Chain, burned by `Activation` in the same transaction as the record. The token is OpenZeppelin `ERC20Burnable` with 18 decimals, fixed supply of 1,000,000,000 and no owner or proxy, deployed on 4663 at `0x62Ed300A5916aeD339a65E04754392763982a967` (Sourcify `exact_match`) and fixed in `Activation`'s constructor.
+- **Summary:** Native; OpenZeppelin `ERC20Burnable`, 18 decimals, immutable; mainnet `0x62Ed…a967`, testnet `0x6357…128B`
 - **Blocks:** ACT-7, OPS-2, OPS-5
 
 **Question.** On which chain does the $MNTD burn happen, what does the token's level-up function

@@ -1277,7 +1277,7 @@ in one place, then lists what is still open.
 | **Royalties** | 5% to `0xf7E7…0e63`, enforced on marketplace sales from deployment (CQ-7, CQ-15) | COL-6, COL-7 |
 | **Holder protection** | No freeze and no clawback. No admin can touch a holder's bear (CQ-16) | ACT-12 |
 | **Whitelist** | Kept in MINT's backend, with no contract. Wagering gives up to 2 spots per wallet out of 1,000, all guaranteed; collaborations and giveaways add up to 3,222 spots on top, so every spot has a bear. getminted.io shows a wallet all of its spots. The final list goes into Studio, and Calea checks the two match (CQ-18, CQ-24). The campaign closes on 27 October at 12:00 UTC; the whitelist stage opens on 29 October at 12:00 UTC, and holders mint on OpenSea's drop page (CQ-1, CQ-19) | WL-1, WL-8, WL-4, WL-5 |
-| **$MNTD** | Native to Robinhood Chain. A standard burnable token: 18 decimals, fixed supply, no owner (CQ-2) | ACT-7 |
+| **$MNTD** | Native to Robinhood Chain at `0x62Ed…a967`. A standard burnable token: 18 decimals, fixed supply, no owner (CQ-2) | ACT-7 |
 | **Levels** | Burning 1,666 / 3,333 / 8,333 / 16,666 / 41,666 $MNTD in total reaches levels 1–5 (CQ-4) | ACT-2 |
 | **Weights** | 1.00 / 1.10 / 1.25 / 1.45 / 1.70 / 2.00 for levels 0–5. A level-5 bear earns twice a level-0 bear's share (CQ-5) | ACT-3 |
 | **Status links** | MINT's, kept off-chain against holders' Privy accounts (CQ-21) | ACT-12 |
@@ -1289,21 +1289,11 @@ in one place, then lists what is still open.
 | **Play page** | MINT builds it in TypeScript on getminted.io, using Calea's tested client library (CQ-19) | DEL-6, DEL-11 |
 | **Repository** | `github.com/mintdotio/NFT`, with Calea's recommended layout (CQ-14) | DEL-9 |
 
-Questions closed without a decision are listed in the appendix.
+Questions closed without a decision are listed i### Open items
 
-### Open items
+None. Every decision this specification needs has been made.
 
-One point is still MINT's to supply, with the date it is needed. It carries
-Calea's fallback, which is what is built if it is not answered in time.
-
-**O1 — $MNTD's mainnet address (CQ-2)** · by 20 October
-
-The activation contract is tied to one $MNTD address for life. The testnet token is deployed and
-carries the reference token's code. MINT deploys the mainnet token on 19 October, 24 hours before
-TGE, and sends its address that day.
-
-*Holds up:* the activation contract's deployment, not the mint. *If not answered:* the
-activation contract is not deployed, and burns cannot open on 29 October.
+ on 29 October.
 
 ## 11. Sign-off
 

@@ -29,7 +29,7 @@ Answers from each call are marked as such below.
 | ID | Section | Question | Resolution / default | Needed by | Status |
 |---|---|---|---|---|---|
 | CQ-1 | CAL | Dates after the 29 Oct mint | Anchors stand; whitelist closes 27 Oct 12:00 UTC, stage 29 Oct 12:00 UTC; first cycle 4 Nov; first split 5 Nov; handover 19 Nov | 2026-10-29 | Answered |
-| CQ-2 | ACT | $MNTD burn route | Native; OpenZeppelin `ERC20Burnable`, 18 decimals, immutable; testnet `0x15CF…211C`; mainnet deployed 19 October (planned) | 2026-10-20 | Follow-up |
+| CQ-2 | ACT | $MNTD burn route | Native; OpenZeppelin `ERC20Burnable`, 18 decimals, immutable; mainnet `0x62Ed…a967`, testnet `0x6357…128B` | 2026-10-20 | Answered |
 | CQ-12 | OPS | Addresses; Safe on 4663 | Admin `0x1530…6141` (EOA) owns every contract on every chain | 2026-10-02 | Answered |
 | CQ-17 | RAF | VRF subscription and network | Arbitrum One; Calea holds and funds the subscription, invoicing MINT | 2026-10-12 | Answered |
 | CQ-20 | RAF | Prize count, odds and excluded ids | the owner sets each cycle's prize count and prize list from MINT's admin page; **every bear plays**, the team's 222 included, so no id is excluded and 4,444 bears play each cycle; prizes are held by a `PrizeVault` on Robinhood Chain, Ethereum and ApeChain, and possibly Base in a later cycle, funded from MINT's prize wallet. | 2026-10-29 | Answered |
@@ -125,8 +125,8 @@ on 5 November, and the handover on 19 November.
 ### CQ-2 — $MNTD burn route
 - **Section:** ACT
 - **Needed by:** 2026-10-20 — before `Activation` is deployed
-- **Status:** Follow-up (meeting, 12 October 2026; testnet address checked; mainnet deployment planned for 19 October, 24 hours before TGE)
-- **Resolution:** option (a1) — $MNTD is **native** to Robinhood Chain, burned by `Activation` in the same transaction as the record. The token is OpenZeppelin `ERC20Burnable` with 18 decimals, fixed supply and no owner or proxy, so its address is final once deployed.
+- **Status:** Answered (meeting, 12 October 2026; mainnet address from MINT, 20 October 2026, checked on-chain and fixed in `Activation`)
+- **Resolution:** option (a1) — $MNTD is **native** to Robinhood Chain, burned by `Activation` in the same transaction as the record. The token is OpenZeppelin `ERC20Burnable` with 18 decimals, fixed supply of 1,000,000,000 and no owner or proxy, deployed on 4663 at `0x62Ed300A5916aeD339a65E04754392763982a967` (Sourcify `exact_match`) and fixed in `Activation`'s constructor.
 
 **Question.** On which chain does the $MNTD burn happen, what does the token's level-up function
 do, and does it call our contract?
