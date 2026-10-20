@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>MintABear — work for MINT</title>
+<style>
+  @page { size: A4; margin: 16mm 15mm 16mm 15mm; }
+  body { font: 9.4pt/1.38 -apple-system, "Helvetica Neue", Arial, sans-serif; color: #1c2430; }
+  h1 { font-size: 16pt; margin: 0 0 2pt; }
+  .sub { color: #5b6675; margin: 0 0 10pt; font-size: 9pt; }
+  h2 { font-size: 11pt; margin: 13pt 0 5pt; padding-bottom: 2pt; border-bottom: 1.5px solid #1f7a6b; color: #134e45; }
+  p { margin: 0 0 6pt; }
+  table { width: 100%; border-collapse: collapse; margin: 3pt 0 6pt; }
+  th, td { text-align: left; vertical-align: top; padding: 3.5pt 5pt; border-bottom: 1px solid #dde3ea; }
+  th { background: #eef4f3; font-weight: 600; font-size: 8.6pt; }
+  td.n { white-space: nowrap; color: #134e45; font-weight: 600; }
+  td.w { white-space: nowrap; }
+  .box { background: #f4f8f7; border-left: 3px solid #1f7a6b; padding: 6pt 8pt; margin: 4pt 0 8pt; }
+  .muted { color: #5b6675; font-size: 8.4pt; }
+  ul { margin: 2pt 0 4pt 14pt; padding: 0; } li { margin: 0 0 2pt; }
+</style></head><body>
+
+<h1>MintABear — work delivered for MINT</h1>
+<p class="sub">Calea Digital · internal, for pricing · state on 20 October 2026 · source: YouTrack MNT “Done” lane (140 tasks), git history of github.com/mintdotio/NFT, project notes</p>
+
+<div class="box">
+<b>Summary.</b> Everything in the statement of work (14 Sep) is built, tested and — for the collection and Activation — live on Robinhood Chain mainnet since 20 Oct.
+Because MINT is short of people, Calea also built and launched MINT’s own whitelist register, supported the whitelist and TGE go-lives,
+reviewed and hardened MINT’s web app before production, and absorbed several changes of direction. Sections 2 and 3 are the items to charge beyond the contract.
+</div>
+
+<h2>1. Contracted scope (statement of work) — delivered</h2>
+<table>
+<tr><th style="width:30%">Item</th><th>Status</th></tr>
+<tr><td>Collection contract (MintABear)</td><td>Deployed and Sourcify-verified on 4663, 20 Oct; ownership handover to MINT’s admin pending MINT’s acceptance</td></tr>
+<tr><td>Activation ($MNTD burn → bear levels)</td><td>Deployed on 4663, 20 Oct, against MINT’s mainnet $MNTD; paused until switch-on (29 Oct)</td></tr>
+<tr><td>Mystery box (box on 4663)</td><td>Built, tested, rehearsed on testnets (15 Oct); mainnet deploy 29–31 Oct</td></tr>
+<tr><td>Quality</td><td>313 contract tests, 100% coverage; internal audit of tranche 1 (30 Sep–1 Oct), all findings fixed</td></tr>
+<tr><td>Deployment</td><td>Deploy and verification scripts for every chain, runbook, full testnet rehearsal</td></tr>
+<tr><td>Integration</td><td>TypeScript client library for getminted.io (143 tests), delivered into MINT’s repository</td></tr>
+<tr><td>Support</td><td>Running through 19 November</td></tr>
+</table>
+
+<h2>2. Beyond the SoW, already listed in the specification (DEL-10) — confirm they are in the agreement</h2>
+<table>
+<tr><th style="width:30%">Item</th><th>What was delivered</th></tr>
+<tr><td>Cross-chain draw</td><td>Draw contract on Arbitrum One with Chainlink VRF; in-order relay of every opening; payout record</td></tr>
+<tr><td>Box worker</td><td>Service that relays openings, applies outcomes, signs winners’ claim tickets, records claims and raises alarms; built by Calea, run by MINT</td></tr>
+<tr><td>Whitelist support</td><td>Check that OpenSea Studio’s list matches MINT’s final CSV; review of MINT’s claim rules</td></tr>
+<tr><td>Admin-page calls</td><td>Client-library calls for MINT’s admin page (cycles, prizes, vault funding)</td></tr>
+<tr><td>Randomness subscription</td><td>Held and funded by Calea; invoiced to MINT as a service</td></tr>
+</table>
+
+<h2>3. Extra work outside the contract</h2>
+<table>
+<tr><th style="width:3%">#</th><th style="width:27%">Item</th><th>What Calea did</th><th style="width:13%">When</th></tr>
+<tr><td class="n">A</td><td><b>Whitelist register</b> (MINT’s per the spec)</td><td>Built MINT’s off-chain register end to end: API with Privy login, wager-based eligibility, free wallet signatures, first-come counter, freeze and CSV export; the page integration; Railway deployment, smoke test, runbook. Live on nft.getminted.io since 1 Oct (1,000 spots).</td><td class="w">29 Sep – 1 Oct</td></tr>
+<tr><td class="n">B</td><td><b>Whitelist go-live support</b></td><td>Staging and production setup with MINT on Railway, Privy configuration, review of MINT’s page changes, step-by-step production instructions for MINT’s CTO, live checks. Continues with the 27 Oct freeze, export and Studio check.</td><td class="w">30 Sep – 1 Oct; 27 Oct</td></tr>
+<tr><td class="n">C</td><td><b>TGE go-live support</b></td><td>Verified MINT’s mainnet $MNTD on-chain and wired it in; production values for the vesting-claim page; audit of MINT’s production settings (removed a setting that could redirect swaps to another token); diagnosed the production “could not load your allocation” failure; watched staging and production deploys through.</td><td class="w">20 Oct</td></tr>
+<tr><td class="n">D</td><td><b>Pre-production review of MINT’s web app</b></td><td>Senior code review of MINT’s claim, swap, staking and whitelist pages and APIs; adversarial testing on a production build; 6 fixes shipped (4 in MINT’s own code, incl. the claim page that could not load any allocation); 21 issues logged with fixes or recommendations. Wallet-signed QA on staging in progress.</td><td class="w">20 Oct –</td></tr>
+<tr><td class="n">E</td><td><b>Rework from MINT’s changes of direction</b></td><td><ul>
+<li>Whitelist: two on-chain registries built, then removed when MINT chose an off-chain register; options brief; client and check re-targeted.</li>
+<li>Prizes (15 Oct): prize wallet replaced by a prize vault on every prize chain — new contract, one address on 4 chains, verification, client calls.</li>
+<li>Team bears: 222 excluded ids, then reversed to “every bear plays”.</li>
+<li>Activation: credit/adapter design replaced by direct burn; Status links retired.</li></ul></td><td class="w">24 Sep – 19 Oct</td></tr>
+<tr><td class="n">F</td><td><b>Delivery into MINT’s monorepo</b></td><td>Moved contracts and client into mintdotio/NFT, joined MINT’s pnpm workspace and CI, coordinated releases on MINT’s branches (PRs #12, #20, #25, #26, #28, #32).</td><td class="w">7 – 20 Oct</td></tr>
+<tr><td class="n">G</td><td><b>Decision support for MINT</b></td><td>Eight specification versions (v1.0–v2.6) for MINT’s decision-makers as their answers changed, operational extracts for calls, a questions document, the whitelist options brief, and build prompts for MINT’s frontend developers.</td><td class="w">14 Sep – 14 Oct</td></tr>
+</table>
+
+<p class="muted"><b>Effort evidence.</b> Time logged on the board for the extra items E–F (tooling time only; calls, reviews and coordination are not logged, so these are lower bounds):
+whitelist rework 9 h 45 min · prize-vault redesign 6 h 40 min · every-bear change 1 h 55 min · monorepo move 4 h 10 min.
+Items A–D and G were not logged as board tasks; their effort should be estimated by the engineer (dates above).</p>
+
+<h2>4. Recommendation</h2>
+<ul>
+<li>Confirm section 2 is priced in Rayco’s agreement; it was flagged as beyond the SoW in the specification MINT accepted.</li>
+<li>Charge section 3 as additional work. The largest items are A (a production system MINT owns and runs) and D (review and fixes of MINT’s own web app); B and C were time-critical launch support.</li>
+<li>Support for the 27 Oct whitelist hand-off, the 29 Oct mint and the mystery-box launch continues to 19 Nov; further work on MINT’s web app should be agreed as a change request.</li>
+</ul>
+</body></html>
