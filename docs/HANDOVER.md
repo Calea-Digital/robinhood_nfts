@@ -1,6 +1,6 @@
 # MintABear — handover
 
-Written 2026-09-15, current as of the session of 20 October. Read this first when resuming; the next session starts from "Next, in this order (written 20 October)" below.
+Written 2026-09-15, current as of the session of 20 October, evening. Read this first when resuming; the next session starts from "Next, in this order (written 20 October, evening)" below.
 
 ## Where things stand
 
@@ -22,10 +22,16 @@ with `../NFT` added (CLAUDE.md, "Two repositories", has the rules). The port is 
 - **The client PR, mintdotio/NFT#26**: merged into `release/1.1` on 19 October at 12:17 UTC, with
   `feat/contracts` `6cc0708`: the client's vault calls and list builder (DEL-6, MNT-174) and
   RAF-27's quote.
-- **The worker PR, mintdotio/NFT#28** (19 October, open): `feat/contracts` `9643adc` (level with
-  `release/1.1`) — `apps/box-worker` in the pnpm workspace (RAF-18, MNT-59). It changes
-  `pnpm-lock.yaml` (+22, the worker's importer only), a Railway-watched path: **merging redeploys
-  staging.** MINT creates the worker's Railway service from `apps/box-worker/railway.json`.
+- **The worker PR, mintdotio/NFT#28**: merged into `release/1.1` on 20 October at 13:49 UTC.
+  It holds `apps/box-worker` in the pnpm workspace (RAF-18, MNT-59) and the mainnet config
+  (`be600b9`). MINT creates the worker's Railway service from `apps/box-worker/railway.json`.
+- **The hardening PR, mintdotio/NFT#32**: merged into `release/1.1` on 20 October at 15:21 UTC by
+  lcampanis (`ff2468f`). It carries the six fixes from the pre-production review ("Pre-production
+  review", below). MINT merged its own fix of the `/claim` path just before, as #31 (`b1edbc0`,
+  Iñigo); the two changes are the same line, and both tests remain.
+- **`feat/contracts`** is `ff2468f`, level with `release/1.1`, in the worktree `~/trees/NFT-fix`.
+  `origin/feat/contracts` is `ca8235e`, which is #32's head; pushing the fast-forward is the
+  person's call.
 
 `release/1.0` is production and is never touched. Nothing of the code remains in this
 repository, and its CI runs only the spec checks.
@@ -484,33 +490,119 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
   hashes with the wrong call (all four landed in one block). The hashes in "Verified on-chain
   facts" are read from the chain.
 
-**Next, in this order (written 20 October):**
-1. **PR #28** (the worker): merging is MINT's, and it redeploys staging (`pnpm-lock.yaml`). After it
-   merges, run `git merge origin/release/1.1` on `feat/contracts` and push on the person's word.
-   MINT then creates the Railway service with its own key, funds it on Arbitrum One, and calls
-   `setWorker` and `setSigner`.
-2. **Hand checks:**
-   - the client's fund, register and claim for a new cycle on the 46630 vault;
-   - a ticket signed by the real worker key;
-   - the worker with a wrong second prize RPC (refused at start) and with an RPC that stops
-     answering mid-run (`prize-chain-failing`, the other chain carries on).
-3. **Waiting on MINT:**
+**Pre-production review of `release/1.1` (20 October, afternoon).**
+- **Scope:** every surface a user can reach on staging, MINT's code included:
+  - the webapp's `/nft`, `/claim`, `/mntd`, `/swap` and their API routes;
+  - `apps/whitelist-api` and the shared packages;
+  - our client and `apps/box-worker`;
+  - the 4663 deployment, read back.
+- **Report:** `reports/2026-10-20-release-1.1-review.md`. The attack scripts and the stack launcher
+  are in `reports/2026-10-20-phase2/`.
+- **Phase 1, static review** (three parallel reviewers, each finding verified by hand): 2 High,
+  8 Medium, 11 Low, 6 Info.
+  - **The worst, H-1:** `/claim` fetched `/api/vesting`, while the route is `/api/claim/vesting`, so
+    nobody could load an allocation, on staging or app.getminted.io. The bug came in with the
+    consolidation `d81a1fe` (16 October).
+  - **The whitelist register held up:** row locks, DB constraints, single-use challenges, the
+    freeze and the CSV caps.
+- **Phase 2, adversarial QA:** run on a local stack, the webapp as a production build on testnet
+  46630, through the public routes only.
+  - The whitelist path held against 23 attacks: auth forgery, route escapes, body tricks, wallet
+    theft and replay, races (8 parallel claims give exactly 2 spots; two accounts racing for one
+    wallet give one winner), and per-visitor limits.
+  - The claim, transaction-status and Relay routes held against 29 of 30. The 30th was Info: a
+    mis-checksummed address is normalised on a public read.
+- **Fixes:** six branches, each with a test that fails without it. The person accepted each one;
+  they were merged into `feat/contracts` and shipped as #32:
+
+  | Branch | Findings |
+  |---|---|
+  | `mnt/defect-claim-vesting-path` | H-1 |
+  | `mnt/defect-worker-hardening` | H-2 (a malformed request killed the worker), M-5, M-6, M-7, L-4, L-10 |
+  | `mnt/defect-claim-minblock` | M-2 |
+  | `mnt/defect-proxy-hops` | M-3: production refuses `APP_TRUSTED_PROXY_HOPS=0` |
+  | `mnt/defect-swap-stale-quote` | M-1 |
+  | `mnt/defect-swap-token-override` | L-11: production refuses a foreign `SWAP_MNTD_ADDRESS` |
+
+- **Gates on `ca8235e`:**
+
+  | Suite | Result |
+  |---|---|
+  | forge | 313 |
+  | client | 143 |
+  | webapp | 95, now 96 with #31 |
+  | worker | 34 |
+  | whitelist API | 69 |
+  | core / server-kit / whitelist-client | 12 / 7 / 3 |
+
+  `next build` also passes with no env set.
+- **Board:** 21 Defects (Work Kind Defect, `MNT Claude`).
+  - MNT-175 to 185 are fixed and In Review; Done is the person's.
+  - MNT-186 to 196 are Open. Three wait on MINT: MNT-187 (smart-account openers on prize chains,
+    RAF-36, a decision), MNT-188 (what a wager-API 404 means, WL-1) and MNT-186 (staging env).
+    The rest are Lows to schedule.
+- **MINT's answers today:**
+  - Production's whitelist API keeps the live register's database. `release/1.0` and `1.1` share
+    migrations 001 to 003, so there is no schema change. Testing app.getminted.io therefore writes
+    to the real register.
+  - The production claim env is `CLAIM_CHAIN_ID=4663`, Distributor `0xFC53…B601` (checked: its
+    `TOKEN()` is $MNTD). `CLAIM_CLAIMS_ENABLED` is MINT's switch for when releases open.
+  - Calea told MINT to drop `SWAP_MNTD_ADDRESS`, `CLAIM_TOKEN_ADDRESS` and
+    `LOCKED_STAKING_ADDRESS` from production (all redundant or dangerous), and that
+    `SWAP_RELAY_API_KEY` and `MNTD_POOL_ID` are missing.
+- **Worktrees:**
+  - `~/trees/NFT-qa`: detached, the integration checkout of the stack.
+  - `~/trees/NFT-worker`: the merged worker branch.
+  - `~/trees/NFT-fix`: `feat/contracts`.
+  - Remove the first two when Phase 4 is done. The six `mnt/defect-*` branches are merged and can
+    be deleted.
+- **Lesson:** every suite was green on `release/1.1` while H-1 was live. No test tied a browser
+  call to a route. Both #31 and #32 now add one.
+
+**Next, in this order (written 20 October, evening):**
+1. **Railway env (MINT), before the MetaMask pass:**
+   - `APP_TRUSTED_PROXY_HOPS=1` on staging and production. Without it, #32's build fails `/ready`
+     and Railway keeps the old one.
+   - Delete `SWAP_MNTD_ADDRESS` (or set it to exactly the official MNTD).
+   - `STAKING_CHAIN_ID=46630` on staging.
+   - The worker's three deploy-block variables when its service is created.
+   - **Check that staging and app.getminted.io actually redeployed with #32:** at 15:30 UTC
+     staging's `/claim` bundle called `/api/claim/vesting`, app.getminted.io's did not yet.
+2. **Phase 4, the MetaMask pass on staging, testnet 46630 only.** The person signs and Claude
+   drives Chrome and reads the console and network. MINT first gives the QA wallet a testnet
+   vesting allocation on the Distributor `0x68c5…fC04` (today all four rows belong to
+   `0xA10D…04B5`), plus ETH and test MNTD. The checklist:
+   - `/nft`: login variants, wallet binding, spots 1 and 2, account switch, logout.
+   - `/claim`: view, claim, rejection, wrong network, pending across reload.
+   - `/mntd`: approve, lock, unlock on the testnet LockedStaking.
+   - `/swap`: UI only, no signing. Change the amount after a quote and check the button drops to
+     "Getting a quote…" (MNT-184's UI check).
+3. **Board:** the person sets MNT-175 to 185 Done once staging confirms. MINT answers MNT-187 and
+   MNT-188. Schedule the Lows (MNT-189 to 196).
+4. **Waiting on MINT:**
    - MINT's admin `acceptOwnership` on `MintABear` `0x655e…cB28`, then the RUNBOOK's "Ownership
-     handover" (reset the allowed-SeaDrop list, read SeaDrop's state); Calea reads back `owner`;
-   - Studio (Iñigo): provenance, metadata, royalties (5% to `0xf7E7…0e63`, COL-6), drop stages;
-   - the worker's mainnet key, which goes into `vault.json`'s `signer`;
-   - MNT-146's multisig, against CQ-12: with vaults, an admin move is also a handover on every
-     vault;
+     handover" (reset the allowed-SeaDrop list, read SeaDrop's state). Calea reads back `owner`.
+     At 15:00 UTC the owner was still the rehearsal wallet.
+   - Studio (Iñigo): provenance, metadata, royalties (5% to `0xf7E7…0e63`, COL-6), drop stages.
+     `baseURI` is empty and royalties are unset today.
+   - The worker's Railway service: MINT's key, funded on Arbitrum One, then `setWorker` and
+     `setSigner`. The mainnet key also goes into `vault.json`'s `signer`.
+   - MNT-146's multisig, against CQ-12. With vaults, moving the admin is also a handover on every
+     vault.
    - MNT-164, OPS-4's mainnet checks, when MINT announces the mainnet deployment.
-4. **Calea:**
-   - PR #28 now carries the mainnet config (`be600b9`) beside the worker; its description has a
-     section with the config and the two mainnet addresses for `getDeployment(4663)`;
-   - the `Activation` burn on mainnet (rehearsal item 4) in a window MINT's admin opens and closes
-     again, before 29 October;
-   - the VRF subscription on Arbitrum One (CQ-17), into `42161.json`;
-   - send MINT's prompts when the person says (they predate the worker PR; add its ticket routes);
-   - optionally, remove the test draw from the rehearsal subscription.
-5. **Dates:**
+5. **Calea:**
+   - The `Activation` burn on mainnet (rehearsal item 4), in a window MINT's admin opens and closes
+     again, before 29 October.
+   - The VRF subscription on Arbitrum One (CQ-17), into `42161.json`.
+   - The worker's hand checks:
+     - the client's fund, register and claim for a new cycle on the 46630 vault;
+     - a ticket signed by the real worker key;
+     - a wrong second prize RPC, which now retries under `startup-failed` instead of being refused
+       at start;
+     - an RPC that stops answering mid-run (`prize-chain-failing`; the other chain carries on).
+   - Send MINT's prompts when the person says.
+   - Optionally, remove the test draw from the rehearsal subscription.
+6. **Dates:**
    - The whitelist campaign closes 27 October 12:00 UTC. The CSV goes to Iñigo and Calea by 14:00,
      then `compare`.
    - The stage opens 29 October 12:00 UTC.
