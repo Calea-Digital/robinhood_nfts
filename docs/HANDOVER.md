@@ -1,6 +1,6 @@
 # MintABear — handover
 
-Written 2026-09-15, current as of the session of 20 October, evening. Read this first when resuming; the next session starts from "Next, in this order (written 20 October, evening)" below.
+Written 2026-09-15, current as of the session of 29 October. Read this first when resuming; the next session starts from "Next, in this order (written 29 October)" below.
 
 ## Where things stand
 
@@ -610,7 +610,43 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
   day estimates.
 - The local QA stack is stopped (`docker compose stop`, no volumes removed).
 
-**Next, in this order (written 20 October, evening):**
+**29 October: MINT's new requests.**
+- **BearDrop, holders' $MNTD claimed per bear** (MINT asked so as not to airdrop; billed as an extra, DEL-13).
+  Grilled and specified in two rounds, archived as `2026-10-29-dst-bear-drop`. The new family is DST
+  (`openspec/specs/distribution`, §6a), with OPS-2 and DEL-6 modified.
+  - MINT's answers resolve CQ-25 to CQ-28: 500 $MNTD for each of the 4,444 bears, the team's included
+    (2,222,000), 90 days, rounds left open, no external review.
+  - Board: milestone MNT-199; DST-1 to DST-6 are MNT-200 to MNT-205; CQ-25 to CQ-28 are MNT-206 to
+    MNT-209, Done.
+  - Pick order: `openspec/changes/tranche-3/tasks.md`, DST-5 first.
+  - Dates: testnet run by 12 Nov; mainnet 13–14 Nov (deploy, load, check, handover); MINT funds and opens.
+- **Whitelist extended to 7 November**, and the OpenSea stage moves with it (archived
+  `2026-10-29-wl-5-campaign-to-7-november`). CQ-1 is back to follow-up as §10's O1, needed by 3 November,
+  with the default: close 7 Nov 12:00 UTC, stage 9 Nov 12:00 UTC.
+- **The worker key after Railway's incident.** MINT has a call on Tuesday 3 November at 23:00, timezone
+  unconfirmed. The brief is `reports/2026-11-03-call-worker-key.md`.
+  - Nothing on mainnet is exposed: no draw, vault or box is deployed, `vault.json`'s signer is unset, and
+    `42161.json`'s subscription is 0.
+  - The testnet draw's worker is `0x18D2…1Eff` (10 txs, about 0 ETH).
+  - The recommendation: treat that key as burned, have MINT make a fresh mainnet key, and deploy the
+    vaults with its address.
+- **On-chain, 29 October:** `MintABear` 0 minted, `baseURI` empty, and its owner is still the rehearsal
+  wallet `0x7672…04Aa`, because MINT's admin has not called `acceptOwnership()`. `Activation` is paused
+  and owned by the admin.
+- **Board read-back:** one pre-existing problem. MNT-188 (Spec Ref WL-1, informative) is open; Cancel or
+  close is the person's call.
+- **§10 repaired:** commit `133c8ff` had left "listed i### Open items" garbled in `SPECIFICATION.md`.
+
+**Next, in this order (written 29 October):**
+1. **BearDrop:** `/mnt:next` for DST-5, then DST-1, 2, 4, 3, 6, OPS-2 and DEL-6, on `mnt/DST-n` off
+   `feat/contracts` in `~/trees/NFT-fix`. First check whether #33 has merged and fast-forward.
+2. **The 3 November call** (the brief's §7): the worker key; the mint dates (CQ-1); `acceptOwnership`;
+   the first cycle's date.
+3. **BearDrop round 1's list:** Calea writes 4,444 rows of 500 and sends MINT its checksum to confirm.
+4. **Testnet run by 12 Nov, mainnet 13–14 Nov.**
+5. The items below, from 20 October, that are still open.
+
+**Earlier: next, in this order (written 20 October, evening):**
 1. **Give the QA wallet an allocation (MINT, asked):**
    - `0x7672…04Aa` needs testnet MNTD **`0x15CF…211C`**, the token staging's claim and
      LockedStaking `0x33ae…f283` use. It holds only `0x6357…`, which staging doesn't use.
