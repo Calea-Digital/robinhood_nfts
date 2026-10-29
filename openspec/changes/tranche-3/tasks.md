@@ -6,10 +6,10 @@ round 1 is 500 $MNTD for each of the 4,444 bears, open for 90 days.
 
 ## 1. BearDrop (Robinhood Chain)
 
-- [ ] 1.1 DST-5 — `BearDrop(owner, bears, mntd)`, immutables, two-step handover only (`TwoStepHandoverOnly`, `RenounceDisabled`), `setPaused`/`PausedSet`; the tree `test/BearDrop.tree.md`
+- [x] 1.1 DST-5 — `BearDrop(owner, bears, mntd)`, immutables, two-step handover only (`TwoStepHandoverOnly`, `RenounceDisabled`), `setPaused`/`PausedSet`; the tree `test/BearDrop.tree.md`
 - [x] 1.2 DST-1 — `setAmounts` for the next round only, `openRound` with `NotNextRound`, `EmptyRound`, `InvalidWindow` (`MAX_ROUND_LENGTH` 365 days), `Unfunded`; `owed`; `AmountsSet`, `RoundOpened`
 - [x] 1.3 DST-2 — `claim(roundId, ids)` by the owner, non-reentrant, all-or-nothing: `UnknownRound`, `OutsideWindow`, `ContractPaused`, `NotBearOwner`, `NothingToClaim`, `AlreadyClaimed`; `Claimed`
-- [ ] 1.4 DST-4 — `closeRound` (`RoundRunning`, `AlreadyClosed`, `RoundClosed`) and `withdraw` (`Reserved`, `ZeroAddress`, `Withdrawn`)
+- [x] 1.4 DST-4 — `closeRound` (`RoundRunning`, `AlreadyClosed`, `RoundClosed`) and `withdraw` (`Reserved`, `ZeroAddress`, `Withdrawn`)
 - [ ] 1.5 DST-3 — every read asserted by value; the interface pinned from the artifact (`BaseTest._assertInterface`)
 
 ## 2. Scripts and operations
