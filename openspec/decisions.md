@@ -9,12 +9,13 @@ verbatim in the tracker and in the client document.
 
 ### CQ-1 — Dates after the 29 October mint
 - **Statement:** Dates after the 29 Oct mint
-- **State:** resolved
-- **Status note:** meeting, 12 October 2026; every date settled
+- **State:** follow-up
+- **Status note:** MINT, 29 October 2026; the whitelist campaign extended to 7 November, and the whitelist stage moves with it
 - **Section:** CAL
-- **Needed by:** 2026-10-29 — before the mint
-- **Resolution:** the three anchors stand — TGE 20 October, mint 29 October, burns and level-up from 29 October. The whitelist campaign runs from 30 September to 27 October 12:00 UTC, and the whitelist stage opens on 29 October 12:00 UTC, 48 hours later. The first mystery-box cycle starts on 4 November. The first royalty split is on 5 November and the handover on 19 November. Calea's own working dates in §8 are its plan.
-- **Summary:** Anchors stand; whitelist closes 27 Oct 12:00 UTC, stage 29 Oct 12:00 UTC; first cycle 4 Nov; first split 5 Nov; handover 19 Nov
+- **Needed by:** 2026-11-03 — the call with MINT; Studio's stage and the freeze depend on it
+- **Resolution:** the three anchors stand — TGE 20 October, mint 29 October, burns and level-up from 29 October. The whitelist campaign runs from 30 September to 27 October 12:00 UTC, and the whitelist stage opens on 29 October 12:00 UTC, 48 hours later. The first mystery-box cycle starts on 4 November. The first royalty split is on 5 November and the handover on 19 November. Calea's own working dates in §8 are its plan. The whitelist campaign closes on 7 November and the whitelist stage moves with it (MINT, 29 October 2026); the hour and the dependent dates follow.
+- **Default if deferred:** The campaign closes on 7 November at 12:00 UTC and the whitelist stage opens on 9 November at 12:00 UTC; the first mystery-box cycle is scheduled after the mint, on MINT's word.
+- **Summary:** Whitelist closes 7 Nov, stage after it (date to follow); first cycle after the mint; first split 5 Nov; handover 19 Nov
 
 **Question.** The SoW schedule chains off a 15 October mint. With the mint at 29 October, which
 dates hold and which move?
@@ -73,6 +74,22 @@ on 5 November, and the handover on 19 November.
 
 **Recorded as.** §8: both dates are MINT's. The split's closing block is taken on 5 November
 (ACT-10), and Calea's technical support runs to 19 November (OPS-5, DEL-10).
+
+**Answer (MINT, 29 October 2026).** "gmgm just extending the WL checker from NFT page to close on 7th of
+Nov". Asked whether the OpenSea whitelist stage moves too: "yes".
+
+**Recorded as.** WL-5: the campaign closes on 7 November and the stage follows at least 48 hours
+after the freeze.
+
+**Remaining** (for the call of 3 November):
+- the hour the campaign closes on 7 November;
+- the whitelist stage's date and hour, and the public stage's;
+- whether Activation's switch-on (ACT-15; paused today) waits for the mint;
+- the first mystery-box cycle, set for 4 November, which now comes before any holder has a bear;
+- the first royalty split (5 November) and the handover (19 November).
+
+On-chain on 29 October: `MintABear` has minted nothing, `baseURI` is empty, and its owner is still
+Calea's rehearsal wallet, because MINT's admin has not accepted the ownership offered on 20 October.
 
 ### CQ-2
 - **Statement:** $MNTD burn route
@@ -1135,3 +1152,70 @@ right to mint while bears last, or is a bear reserved for it?
 1,000 of them wagering; the team's 222 are minted first; the whitelist stage's supply is the
 collection's 4,444, so every row can be minted while the stage runs; `compare` fails on a list
 that totals more than 4,222.
+
+### CQ-25 — How much $MNTD each bear gets
+- **Statement:** Holders' $MNTD per bear
+- **State:** resolved
+- **Status note:** MINT, 29 October 2026
+- **Section:** DST
+- **Resolution:** In round 1, every bear 1–4,444, the team's 222 included, gets 500 $MNTD, 2,222,000 in all. Calea writes the list (4,444 rows of 500) and MINT confirms its checksum.
+- **Summary:** 500 $MNTD per bear, all 4,444, 2,222,000 in all
+- **Blocks:** DST-1, DST-6
+
+**Question.** How much $MNTD does each bear get in the first round? The same for every bear, or an
+amount that varies per bear (rarity, activation level at a date, a tier)? Do the team's 222 bears
+count? What is the round's total?
+
+**In plain words.** The contract pays whatever amount the list gives each bear, so any rule works. A
+bear held by the dead address can never claim, and its amount comes back to MINT when the round closes
+(DST-4).
+
+**Answer (MINT, 29 October 2026).** "same for every bear and even team 222 count yes incase we gift
+them. Let's do 2,222,000 $MNTD so that's 500 $MNTD per bear."
+
+**Recorded as.** DST-1 and DST-6: round 1's list is 4,444 rows of 500 $MNTD, so its total is
+2,222,000, and MINT funds the contract with that before `openRound`.
+
+### CQ-26 — One distribution or several
+- **Statement:** More holder rounds?
+- **State:** resolved
+- **Status note:** MINT, 29 October 2026
+- **Section:** DST
+- **Resolution:** Left open: `BearDrop` runs numbered rounds, and MINT may open more with a new list, funding and `openRound`.
+- **Summary:** Left open; more rounds possible
+- **Blocks:** DST-1
+
+**Question.** Is this a one-off distribution, or will holders get $MNTD again? The answer changes no
+code, because `BearDrop` runs numbered rounds. It changes what the page shows and the runbook's cadence.
+
+**Answer (MINT, 29 October 2026).** "We can always do a second one … Let's leave it open so we can do
+more if we want."
+
+### CQ-27 — How long holders have to claim
+- **Statement:** Claim window per round
+- **State:** resolved
+- **Status note:** MINT, 29 October 2026
+- **Section:** DST
+- **Resolution:** 90 days from the round's start. After that anyone can close the round, and MINT's admin can withdraw the unclaimed $MNTD.
+- **Summary:** 90 days
+- **Blocks:** DST-1, DST-4
+
+**Question.** How long does a round stay claimable? The contract accepts up to 365 days. A short window
+returns unclaimed $MNTD sooner; a long one gives secondary buyers more time.
+
+**Answer (MINT, 29 October 2026).** "Yes sure let's add the claim window of 90 days."
+
+### CQ-28 — External review of BearDrop
+- **Statement:** External review of BearDrop
+- **State:** resolved
+- **Status note:** MINT, 29 October 2026
+- **Section:** DEL
+- **Resolution:** No external review. Calea's differential review and `solidity-auditor` passes cover `BearDrop`, and the report goes to MINT.
+- **Summary:** None; Calea's own review only
+- **Blocks:** DEL-13
+
+**Question.** `BearDrop` holds holders' $MNTD until it is claimed. Should an external reviewer look at it
+before mainnet? It is a small contract: one token, no upgrade path, and no external calls other than
+`ownerOf` and the $MNTD transfer.
+
+**Answer (MINT, 29 October 2026).** "out of scope for us."

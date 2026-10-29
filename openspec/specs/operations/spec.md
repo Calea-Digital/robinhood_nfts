@@ -46,6 +46,9 @@ and each contract is deployed before the page that depends on it goes live.
 - **Every prize chain** (Robinhood Chain, Ethereum, ApeChain; Base when a cycle first uses it):
   the prize vault, at the same address on each, before the first cycle that holds a prize there
   (RAF-35).
+- **Holders' $MNTD** (Robinhood Chain): `BearDrop`, before the first round MINT announces (DST-1).
+  Calea deploys it, loads and checks round 1's list (DST-6) and hands ownership to MINT's admin, who
+  funds it and opens the round.
 
 *Technical note.* The calls after construction are, in order, `setMaxSupply`,
 `setTransferValidator` and ownership transfers. Robinhood Chain:
@@ -58,7 +61,10 @@ requestConfirmations, nativePayment, playable, firstOpenIndex)` with `playable` 
 `firstOpenIndex` 1 → added as the subscription's consumer → `setWorker(worker)` by the owner
 (RAF-14). Each prize chain: `PrizeVault(owner, signer)` through the CREATE2 deployer
 `0x4e59b44847b379578588920cA78FbF26c0B4956C` with the same salt and arguments, owned by MINT's
-admin with the worker as `signer` from construction, with no call after it.
+admin with the worker as `signer` from construction, with no call after it. Robinhood Chain, for
+holders' $MNTD: `BearDrop(owner, bears, mntd)`, owned by the deploying wallet → `setAmounts` batches for
+round 1 (DST-6) → MINT's admin `requestOwnershipHandover` → `completeOwnershipHandover(admin)` (DST-5);
+MINT funds the contract and calls `openRound`.
 
 #### Scenario: Correct from the first block
 - **WHEN** the deploy script runs on a fresh chain

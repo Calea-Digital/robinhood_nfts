@@ -392,15 +392,16 @@ whitelist stage's `maxTokenSupplyForStage` is 4,444, the collection's total incl
 
 **WL-5 Timing.** MINT's backend takes claims only during the campaign window. The list is frozen at least 48
 hours before the whitelist stage opens, which leaves time to load it into Studio, check it and
-fix anything. The campaign runs from 30 September to 27 October at 12:00 UTC, and the whitelist
-stage opens on 29 October at 12:00 UTC (MINT, 12 October 2026). The 48 hours is Calea's buffer,
-not an OpenSea rule. Dates: CQ-1. The hand-off on 27 October:
-1. Before 12:00 UTC, MINT loads every other channel's spots into the register. Nothing can be
+fix anything. The campaign runs from 30 September to 7 November, and the whitelist stage on
+OpenSea moves with it, at least 48 hours after the freeze (MINT, 29 October 2026). The closing hour
+and the stage's date and hour follow (→ CQ-1). The 48 hours is Calea's buffer, not an OpenSea rule.
+The hand-off on the closing day:
+1. Before the close, MINT loads every other channel's spots into the register. Nothing can be
    added after the freeze.
-2. At 12:00 UTC, MINT's CTO freezes the register and exports the final list. A second export must
+2. At the close, MINT's CTO freezes the register and exports the final list. A second export must
    be byte for byte the same.
-3. By 14:00 UTC, the list and its checksum reach Iñigo and Calea. Iñigo loads it into Studio, and
-   Calea's check (WL-4) passes before the stage opens.
+3. Within two hours, the list and its checksum reach Iñigo and Calea. Iñigo loads it into Studio,
+   and Calea's check (WL-4) passes before the stage opens.
 
 *Technical note.* The register's `admin freeze --out <file>` validates the list and locks the
 register for good; claims in flight finish first. `admin export` must reproduce the file's
@@ -969,6 +970,114 @@ and for a zero `to` (`ZeroAddress`). It is non-reentrant.
 **Retired identifiers.** ACT-9 (the on-chain Status link) → ACT-12; ACT-11 (pause over burns and links) → ACT-15; DEL-4 (verified testnet addresses) → OPS-3 and OPS-4; DEL-5 (deployment scripts and runbook) → OPS-2 and OPS-5; DEL-7 (the existing-contract review, withdrawn with CQ-13) → DEL-3; RAF-1 (a single raffle chain) → RAF-32 and RAF-33; RAF-7 (passive ownership snapshot) → RAF-28; RAF-9 (draw over calldata entries) → RAF-30; RAF-10 (carry forward between rounds) → RAF-32; RAF-12 (round cancellation) → RAF-32; RAF-13 (per-round `minLevel` eligibility) → RAF-27; RAF-20 (rounds on the hub) → RAF-32; RAF-21 (entry into a round) → RAF-28; RAF-22 (one seed per round) → RAF-29; RAF-23 (the per-round draw) → RAF-30; RAF-2 (vault addresses) → RAF-33; RAF-3 (asset approval on the vaults) → RAF-27 and RAF-33; RAF-4 (deposit intake) → RAF-33; RAF-5 (vault inventory states) → RAF-30 and RAF-33; RAF-6 (committing prizes from the vaults) → RAF-27 and RAF-32; RAF-11 (claims from a vault) → RAF-33; RAF-15 (pause with vault claims) → RAF-34; RAF-24 (a prize vault per chain) → RAF-33; RAF-25 (recipient nomination) → RAF-33; RAF-26 (one game over the collection) → RAF-32; RAF-31 (closing the game) → RAF-32 and RAF-33; WL-3 (the voucher registry `WhitelistClaim`) → WL-8; WL-6 (the off-chain register as an alternative) → WL-8; WL-7 (the owner-imported registry `WhitelistImport`) → WL-8.
 <!-- openspec:end -->
 
+## 6a. Holders' $MNTD — BearDrop (DST)
+
+
+<!-- openspec:begin family DST -->
+MINT gives $MNTD to MintABear holders as a claim each bear makes, never as an airdrop. A bear's
+amount stays with the bear until it is claimed, so anyone, including a buyer on the secondary market,
+can look a bear up by its id and see what it still has to claim.
+
+**DST-1 Rounds and amounts.** MINT's $MNTD for holders is handed out in numbered rounds. Before a round opens, the owner sets each
+bear's amount for it from the round's list, in as many batches as needed, and can correct them.
+Opening the round fixes those amounts, the claim window and a fingerprint of the list, so the amounts
+cannot change once holders can claim. A round opens only if the contract already holds every $MNTD it
+owes, this round's total included. In round 1, every bear, the team's 222 included, gets 500 $MNTD,
+2,222,000 in all, claimable for 90 days (MINT, CQ-25, CQ-27). MINT may run later rounds the same way
+(CQ-26).
+
+*Technical note.* `BearDrop.setAmounts(uint64 roundId, uint256[] ids, uint256[] amounts)`, owner only,
+for the next round (`roundCount + 1`) only (`NotNextRound`). It refuses mismatched lengths
+(`LengthMismatch`) and an id outside 1–4,444 (`InvalidTokenId`). Setting an id again replaces its
+amount, and the round's running total follows. Emits `AmountsSet(roundId, count, total)`.
+`openRound(uint64 roundId, uint40 start, uint40 end, bytes32 listHash)`, owner only, refuses:
+- `NotNextRound`;
+- `EmptyRound`, for a total of zero;
+- `InvalidWindow`, for `start` in the past, `end <= start` or `end - start > MAX_ROUND_LENGTH`
+  (365 days);
+- `Unfunded`, when the $MNTD balance is below `owed` plus the round's total.
+
+It then adds the total to `owed`, increments `roundCount` and emits
+`RoundOpened(roundId, start, end, total, listHash)`. `listHash` is
+`keccak256(abi.encode(ids, amounts))` over the list's rows sorted by id (DST-6).
+
+*Acceptance.* Given amounts set for round 1, with bear 7 at 100 $MNTD and bear 8 at 50, and the contract holding 150 $MNTD; when the owner opens round 1 and then calls `setAmounts` for round 1 again; then the round opens with a total of 150 and `owed` reads 150, and the second `setAmounts` reverts with `NotNextRound`; and with only 149 $MNTD held, `openRound` reverts with `Unfunded`.
+
+**DST-2 Claim by the bear's owner.** During a round's window, a bear's current owner claims the bear's amount for that round, for several
+bears in one transaction, and receives the $MNTD. Each bear claims once per round. An amount nobody has
+claimed stays with the bear when it changes hands, so the buyer can claim it; a transfer resets nothing.
+
+*Technical note.* `claim(uint64 roundId, uint256[] ids)` is non-reentrant and pays `msg.sender` the
+sum. The whole call reverts on the first id that fails:
+- `UnknownRound`, for a round not yet opened;
+- `OutsideWindow`, before `start` or after `end`;
+- `ContractPaused` (DST-5);
+- `NotBearOwner`, unless `ownerOf(id) == msg.sender`;
+- `NothingToClaim`, for an amount of zero;
+- `AlreadyClaimed`.
+
+Each id emits `Claimed(roundId, tokenId, owner, amount)`. `owed` falls by the sum. The only call made
+on the collection is `ownerOf`.
+
+*Acceptance.* Given round 1 open with bear 7 at 100 $MNTD, and bear 7 sold by its first owner without claiming; when the buyer claims bear 7 in round 1, and then the buyer claims it again and the seller tries; then the buyer receives 100 $MNTD and `claimed(1, 7)` reads true; and the buyer's second claim reverts with `AlreadyClaimed` and the seller's with `NotBearOwner`.
+
+**DST-3 Reads for an id checker.** For any bear and any round, anyone can read for free how much the bear gets and whether it has been
+claimed, together with each round's window, total, amount claimed and fingerprint. A page can therefore
+answer "does this bear still have tokens to claim?" with no backend.
+
+*Technical note.* `amountOf(roundId, id)`, `claimed(roundId, id)`,
+`roundOf(roundId) → (start, end, total, claimedTotal, listHash, closed)`, `roundCount`, `owed`,
+`paused`, `BEARS`, `MNTD`, `MAX_ROUND_LENGTH`, plus Solady's `owner` and `ownershipHandoverExpiresAt`.
+No other public read or write exists beyond those named in DST-1 to DST-5. The interface is pinned from
+the artifact, as ACT-12 is.
+
+*Acceptance.* Given round 1 open, with bear 7 at 100 $MNTD and claimed, and bear 8 at 50 $MNTD and not claimed; when an address with no bear reads `amountOf` and `claimed` for bears 7, 8 and 9 in round 1; then they read 100 and true, 50 and false, and 0 and false.
+
+**DST-4 Leftovers and withdrawal.** The owner can withdraw $MNTD only beyond what running rounds still owe holders. Once a round's window
+has ended, anyone can close it, which frees its unclaimed share for withdrawal or for a later round.
+That share includes the amounts of bears held by the dead address, which no one can claim.
+
+*Technical note.* `closeRound(roundId)` can be called by anyone, strictly after `end`, once. It
+refuses `UnknownRound`, `RoundRunning` and `AlreadyClosed`, subtracts `total - claimedTotal` from
+`owed`, and emits `RoundClosed(roundId, unclaimed)`.
+`withdraw(address to, uint256 amount)` is owner only and non-reentrant. It refuses `ZeroAddress`, and
+`Reserved` when the balance after the withdrawal would be below `owed`. It emits
+`Withdrawn(to, amount)`. Only $MNTD is held and withdrawable; the contract accepts no native currency.
+
+*Acceptance.* Given round 1 open with a total of 150 $MNTD, 100 claimed, and the contract holding 70 $MNTD; when the owner withdraws 21 during the window, withdraws 20, and then, after `end`, someone closes round 1 and the owner withdraws the remaining 50; then the first withdrawal reverts with `Reserved`, the second succeeds, and after the close `owed` reads 0 and the 50 is withdrawn.
+
+**DST-5 Ownership and pause.** `BearDrop` always has an owner, and ownership moves only by a handover the new owner asks for and the
+current owner completes. MINT's admin ends up the owner (OPS-2). The owner can pause claims and resume
+them. A pause stops claims only: it does not move a window's end, and reads, closing and withdrawal
+carry on.
+
+*Technical note.* `BearDrop(owner, bears, mntd)`: a zero address refuses with `ZeroAddress`, and
+`BEARS` and `MNTD` are immutable. Solady `Ownable` with `requestOwnershipHandover` and
+`completeOwnershipHandover` (48 h). `transferOwnership` reverts with `TwoStepHandoverOnly`, and
+`renounceOwnership` reverts with `RenounceDisabled`. `setPaused(bool)`, owner only, emits
+`PausedSet(paused)`.
+
+*Acceptance.* Given `BearDrop` owned by the deployer, with round 1 open; when the owner calls `transferOwnership` and `renounceOwnership`, MINT's admin requests a handover and the deployer completes it, and the new owner pauses; then the first two revert, `owner` reads MINT's admin, a holder's claim reverts with `ContractPaused`, and `closeRound` after `end` still succeeds.
+
+**DST-6 Loading and checking MINT's list.** Each round's list is a CSV with one bear per row. For round 1, Calea writes it from CQ-25 (4,444
+rows of 500 $MNTD) and MINT confirms its checksum. Calea's script loads it on-chain in batches and
+then reads every bear's amount back. It fails unless the chain matches the file exactly,
+with a bear absent from the file reading zero, and the round's total and fingerprint match. A malformed
+file is refused before anything is sent.
+
+*Technical note.* `script/BearDropList.s.sol`:
+- `load(path, drop, roundId)` sends `setAmounts` in batches.
+- `check(path, drop, roundId)` is read-only and compares ids 1–4,444, the total and the `listHash`. A
+  difference fails with `AmountMismatch(id, onChain, inFile)`, `TotalMismatch` or `HashMismatch`.
+- `hash(path)` prints `listHash` for `openRound`.
+
+The CSV header is `tokenId,amount`, with the amount in whole $MNTD and at most 18 decimal places,
+scaled by `MNTD.decimals()`. It refuses `BadHeader`, `BadRow(line, row)`, `EmptyList`,
+`DuplicateId(id)`, `InvalidTokenId(id)` and `ZeroAmount(id)`. It reads from `exports/` only.
+
+*Acceptance.* Given a CSV with bear 7 at `100` and bear 8 at `50.5`, loaded into round 1; when `check` runs against it, and again after the owner changes bear 8 to 50 $MNTD on-chain; then the first run passes, with bear 9 reading zero, and the second fails with `AmountMismatch(8, 50e18, 50.5e18)`.
+<!-- openspec:end -->
+
 ## 7. Operations, roles and handover (OPS)
 
 
@@ -1009,6 +1118,9 @@ and each contract is deployed before the page that depends on it goes live.
 - **Every prize chain** (Robinhood Chain, Ethereum, ApeChain; Base when a cycle first uses it):
   the prize vault, at the same address on each, before the first cycle that holds a prize there
   (RAF-35).
+- **Holders' $MNTD** (Robinhood Chain): `BearDrop`, before the first round MINT announces (DST-1).
+  Calea deploys it, loads and checks round 1's list (DST-6) and hands ownership to MINT's admin, who
+  funds it and opens the round.
 
 *Technical note.* The calls after construction are, in order, `setMaxSupply`,
 `setTransferValidator` and ownership transfers. Robinhood Chain:
@@ -1021,7 +1133,10 @@ requestConfirmations, nativePayment, playable, firstOpenIndex)` with `playable` 
 `firstOpenIndex` 1 → added as the subscription's consumer → `setWorker(worker)` by the owner
 (RAF-14). Each prize chain: `PrizeVault(owner, signer)` through the CREATE2 deployer
 `0x4e59b44847b379578588920cA78FbF26c0B4956C` with the same salt and arguments, owned by MINT's
-admin with the worker as `signer` from construction, with no call after it.
+admin with the worker as `signer` from construction, with no call after it. Robinhood Chain, for
+holders' $MNTD: `BearDrop(owner, bears, mntd)`, owned by the deploying wallet → `setAmounts` batches for
+round 1 (DST-6) → MINT's admin `requestOwnershipHandover` → `completeOwnershipHandover(admin)` (DST-5);
+MINT funds the contract and calls `openRound`.
 
 *Acceptance.* When the deploy script runs on a fresh chain; then each contract is created with its constructor arguments in the listed order and is never left deployed-but-unconfigured; and no address is set after construction; every call after construction is a listed setting or ownership transfer, in the listed order.
 
@@ -1113,8 +1228,8 @@ on timestamps. The gas limit is Arbitrum-style, per transaction.
 
 ## 8. Calendar (CAL)
 
-Four dates are fixed by MINT: TGE on 20 October, the whitelist frozen on 27 October at 12:00 UTC,
-the mint on 29 October with the whitelist stage at 12:00 UTC, and burns open on 29 October.
+Three dates are fixed by MINT: TGE on 20 October, the whitelist campaign closing on 7 November, and
+the whitelist stage at least 48 hours after its freeze, on a date still to be set (CQ-1).
 OpenSea does not support Robinhood Chain's testnet, so Studio and the first sale are proven on
 mainnet the week before the drop page. Every date marked *Calea* is Calea's working plan (CQ-1). The first mystery-box cycle is listed; later cycles are MINT's to
 schedule.
@@ -1123,7 +1238,7 @@ schedule.
 |---|---|---|---|
 | 30 Sep – 1 Oct | Internal audit of the collection and activation contracts | Calea | Calea |
 | 12 Oct | Test $MNTD on the testnet, for the burn rehearsal: `0x15CF…211C`, the reference token's code | MINT (Lorenzo) | MINT |
-| 30 Sep – 27 Oct 12:00 UTC | Whitelist campaign open on getminted.io/mintabear | Iñigo; Javier; Vlad; Lorenzo | MINT |
+| 30 Sep – 7 Nov | Whitelist campaign open on getminted.io/mintabear; the closing hour to be set (CQ-1) | Iñigo; Javier; Vlad; Lorenzo | MINT |
 | 15 Oct | Work before deployment finished: the whitelist registries removed, the deploy configs for 46630 and 4663 | Calea | agreed |
 | 16 Oct | Testnet rehearsal on 46630: the collection with royalty enforcement, the whitelist on SeaDrop, a burn against the test $MNTD | Calea | agreed |
 | 19 Oct | Collection deployed on 4663 with royalty enforcement; the admin accepts ownership; Studio takes it over and Calea's check passes on a test list; the team's 222 minted | Calea; MINT's admin; Iñigo | agreed |
@@ -1132,14 +1247,16 @@ schedule.
 | 20 – 21 Oct | One team bear listed and sold on OpenSea from a second MINT wallet; Calea confirms it settled and the 5% reached the pot | MINT; Calea | agreed |
 | 22 Oct | Go or no-go on royalty enforcement (OPS-6), then the drop page is published | MINT | agreed |
 | 20 – 28 Oct | Real burns rehearsed on mainnet, in short windows the admin opens and closes | Calea; MINT | derived |
-| 27 Oct, before 12:00 UTC | Every other channel's spots loaded into the register | MINT | agreed |
-| 27 Oct 12:00 UTC | Register frozen and the final list exported by MINT's CTO; list and checksum to Iñigo and Calea by 14:00 UTC | MINT (CTO) | agreed |
-| 27 Oct 14:00 – 29 Oct 12:00 UTC | List loaded into Studio and checked by Calea | Iñigo; Calea | MINT |
-| 29 Oct | Mint on OpenSea's drop page: the whitelist stage first, from 12:00 UTC, then the other stages; burns and level-up open | Iñigo; Javier; Calea | MINT |
+| 7 Nov, before the close | Every other channel's spots loaded into the register | MINT | agreed |
+| 7 Nov, at the close | Register frozen and the final list exported by MINT's CTO; list and checksum to Iñigo and Calea within two hours | MINT (CTO) | agreed |
+| From the freeze to the stage | List loaded into Studio and checked by Calea | Iñigo; Calea | MINT |
+| At least 48 h after the freeze (CQ-1) | Mint on OpenSea's drop page: the whitelist stage first, then the other stages | Iñigo; Javier; Calea | MINT |
 | 20 – 21 Oct | The client library joins MINT's workspace on staging (`release/1.1`), before the worker that uses it; production (`release/1.0`) unchanged until after the mint | Calea; MINT (Lorenzo) | agreed |
 | 22 – 28 Oct | The worker built; the mystery box, draw and worker rehearsed on 46630 and Arbitrum Sepolia through two cycles | Calea | Calea |
 | 29 – 31 Oct | Mystery box and draw deployed and verified; the draw added to Calea's randomness subscription; MINT authorises the worker; the first cycle's terms (end, prize count, prize list) set by MINT's admin by 31 Oct, then scheduled on both chains and read back | Calea; MINT | Calea |
-| 4 Nov | First mystery-box cycle opens | MINT | MINT |
+| After the mint (CQ-1) | First mystery-box cycle opens | MINT | MINT |
+| by 12 Nov | `BearDrop` rehearsed on 46630 against the test $MNTD: load, hand over, fund, open, claim, a sold bear's claim, close, withdraw | Calea | agreed |
+| 13 – 14 Nov | `BearDrop` deployed on 4663, round 1 (4,444 × 500 $MNTD) loaded and checked, ownership handed to MINT's admin; MINT funds 2,222,000 $MNTD and opens the round for 90 days | Calea; MINT | agreed |
 | 5 Nov | First royalty split; after that at each ETH cap or countdown (§2) | MINT | MINT |
 | 19 Nov | Handover; technical support ends (OPS-5) | Iñigo; Robert; Calea | MINT |
 
@@ -1192,7 +1309,10 @@ show holders:
   vault on its chain, registering the prize list on every vault and scheduling the cycle on both
   game chains, all with one fingerprint computed from the list — then pauses, the vaults' signer,
   releases and withdrawals;
-- **the worker:** relaying openings, signing and serving claim tickets, and recording payouts.
+- **the worker:** relaying openings, signing and serving claim tickets, and recording payouts;
+- **holders' $MNTD** (DST): looking any bear up by its id (its amount and whether it is claimed, per
+  round), a wallet's bears with something left to claim, the claim, and MINT's admin calls (loading a
+  list, opening and closing a round, pause, withdrawal).
 
 MINT builds against a library that has already been exercised, not against raw contract
 interfaces (`→ CQ-19`). It also includes a reference script that reproduces the royalty split,
@@ -1206,7 +1326,9 @@ native, ERC-20 `transfer`, ERC-721 and ERC-1155 `safeTransferFrom` — from the 
 `manifestHash` computed as `keccak256(abi.encode(prizes))`, `registerCycle`, the ticket's EIP-712
 typed data, `claim`, the vault's reads, `release`, `withdraw`, `setSigner`, pauses); the admin
 page (`scheduleCycle` on both game chains, pauses); the worker (`resolve`, `recordPayout`,
-ticket signing). It documents the revert reasons a caller has to handle. The reference script
+ticket signing); `BearDrop` (`amountOf`, `claimed`, `roundOf`, `roundCount`, `owed`, a wallet's
+claimable bears in one Multicall3 call over its bear ids, `claim`, `setAmounts`, `openRound`,
+`closeRound`, `setPaused`, `withdraw`, and `listHash` computed from a list). It documents the revert reasons a caller has to handle. The reference script
 reproduces the split from `Activation.snapshot`, so that "allocations plus carried rounding equal
 funding" is testable by MINT.
 
@@ -1261,6 +1383,11 @@ stays as it is and is neither built nor reviewed by Calea. Everything lives in
 
 **DEL-12 Review sign-off.** Every Critical and High finding from the internal audit (DEL-3) is fixed before the contract it
 concerns goes to mainnet, for every contract in an audit tranche (DEL-8).
+
+**DEL-13 Holders' $MNTD claim as an extra.** `BearDrop` (DST-1 to DST-6) is outside the statement of work and DEL-10's list. Calea builds it at MINT's
+request of 29 October 2026, with its deployment, its list check and its calls in the client library, and
+invoices it separately as an extra at a price agreed with MINT. It is live on Robinhood Chain by
+15 November 2026. No external review is part of it (MINT, CQ-28), and running it afterwards is MINT's.
 <!-- openspec:end -->
 
 ## 10. Decisions
@@ -1276,7 +1403,7 @@ in one place, then lists what is still open.
 | **Supply** | 4,444 bears, forever. No bear can be burned (CQ-6) | COL-2, COL-8 |
 | **Royalties** | 5% to `0xf7E7…0e63`, enforced on marketplace sales from deployment (CQ-7, CQ-15) | COL-6, COL-7 |
 | **Holder protection** | No freeze and no clawback. No admin can touch a holder's bear (CQ-16) | ACT-12 |
-| **Whitelist** | Kept in MINT's backend, with no contract. Wagering gives up to 2 spots per wallet out of 1,000, all guaranteed; collaborations and giveaways add up to 3,222 spots on top, so every spot has a bear. getminted.io shows a wallet all of its spots. The final list goes into Studio, and Calea checks the two match (CQ-18, CQ-24). The campaign closes on 27 October at 12:00 UTC; the whitelist stage opens on 29 October at 12:00 UTC, and holders mint on OpenSea's drop page (CQ-1, CQ-19) | WL-1, WL-8, WL-4, WL-5 |
+| **Whitelist** | Kept in MINT's backend, with no contract. Wagering gives up to 2 spots per wallet out of 1,000, all guaranteed; collaborations and giveaways add up to 3,222 spots on top, so every spot has a bear. getminted.io shows a wallet all of its spots. The final list goes into Studio, and Calea checks the two match (CQ-18, CQ-24). The campaign closes on 7 November; the whitelist stage follows at least 48 hours after the freeze, on a date still to be set (O1), and holders mint on OpenSea's drop page (CQ-1, CQ-19) | WL-1, WL-8, WL-4, WL-5 |
 | **$MNTD** | Native to Robinhood Chain at `0x62Ed…a967`. A standard burnable token: 18 decimals, fixed supply, no owner (CQ-2) | ACT-7 |
 | **Levels** | Burning 1,666 / 3,333 / 8,333 / 16,666 / 41,666 $MNTD in total reaches levels 1–5 (CQ-4) | ACT-2 |
 | **Weights** | 1.00 / 1.10 / 1.25 / 1.45 / 1.70 / 2.00 for levels 0–5. A level-5 bear earns twice a level-0 bear's share (CQ-5) | ACT-3 |
@@ -1286,14 +1413,27 @@ in one place, then lists what is still open.
 | **Draw** | On Arbitrum One, using Chainlink's randomness. Calea holds and funds the subscription and invoices MINT, after the handover too (CQ-17) | RAF-8, DEL-10 |
 | **Worker** | Built by Calea, run by MINT on its own infrastructure from a key MINT creates, with ETH on Arbitrum One for gas (CQ-23) | RAF-18 |
 | **Prizes** | Held by a prize vault on each prize chain (Robinhood Chain, Ethereum, ApeChain; Base when a cycle first uses it), funded from MINT's prize wallet `0xf6c0…83e3` on MINT's admin page during cycle setup. A winner claims with a ticket the worker signs, paying gas on the prize's chain, until one hour after the cycle's end; each prize is released once, only to the winner, and an unclaimed prize stays for a later cycle. Every claim is recorded on-chain (CQ-8, CQ-20, CQ-22) | RAF-33, RAF-35, RAF-36, RAF-37 |
+| **Holders' $MNTD** | Claimed by each bear from a contract, never airdropped: 500 $MNTD for every one of the 4,444 bears, the team's included (2,222,000 in all), claimable for 90 days. An unclaimed amount stays with the bear when it is sold. MINT may run more rounds. No external review; Calea's own review covers it, and it is billed as an extra (CQ-25, CQ-26, CQ-27, CQ-28) | DST-1, DST-2, DST-4, DEL-13 |
 | **Play page** | MINT builds it in TypeScript on getminted.io, using Calea's tested client library (CQ-19) | DEL-6, DEL-11 |
 | **Repository** | `github.com/mintdotio/NFT`, with Calea's recommended layout (CQ-14) | DEL-9 |
 
-Questions closed without a decision are listed i### Open items
+Questions closed without a decision are listed in the appendix.
 
-None. Every decision this specification needs has been made.
+### Open items
 
- on 29 October.
+One point is still MINT's to supply, with the date it is needed. It carries
+Calea's fallback, which is what is built if it is not answered in time.
+
+**O1 — Dates after the 7 November close (CQ-1)** · by 3 November
+
+MINT extended the whitelist campaign to 7 November, and the whitelist stage moves with it. Still
+to set: the hour the campaign closes, the whitelist and public stages' dates and hours (the whitelist
+stage at least 48 hours after the freeze), Activation's switch-on, the first mystery-box cycle (set
+for 4 November, before any holder has a bear), the first royalty split and the handover.
+
+*Holds up:* Studio's stage dates, the freeze and the first cycle. *If not answered:* the campaign
+closes on 7 November at 12:00 UTC, the whitelist stage opens on 9 November at 12:00 UTC, and the
+first cycle is scheduled after the mint, on MINT's word.
 
 ## 11. Sign-off
 

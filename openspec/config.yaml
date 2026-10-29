@@ -18,7 +18,7 @@ rules:
   specs:
     - "Every Scenario must have a matching leaf in packages/contracts/test/<Contract>.tree.md (in mintdotio/NFT) and a /* Scenario: */ block above the matching unit test."
     - "A MODIFIED delta repeats the **Kind:** line; openspec archive drops it otherwise and the bridge then refuses the spec."
-    - "Family prefixes in use (prefix → spec path): COL → specs/collection, WL → specs/whitelist, ACT → specs/activation, RAF → specs/mystery-box, OPS → specs/operations, DEL → specs/deliverables."
+    - "Family prefixes in use (prefix → spec path): COL → specs/collection, WL → specs/whitelist, ACT → specs/activation, RAF → specs/mystery-box, OPS → specs/operations, DEL → specs/deliverables, DST → specs/distribution."
   decisions:
     - "Decision ids keep the prefix the project already uses; one namespace, one id for life."
 
