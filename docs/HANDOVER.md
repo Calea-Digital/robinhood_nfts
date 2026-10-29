@@ -638,8 +638,28 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
 - **§10 repaired:** commit `133c8ff` had left "listed i### Open items" garbled in `SPECIFICATION.md`.
 
 **Next, in this order (written 29 October):**
-1. **BearDrop:** `/mnt:next` for DST-5, then DST-1, 2, 4, 3, 6, OPS-2 and DEL-6, on `mnt/DST-n` off
-   `feat/contracts` in `~/trees/NFT-fix`. First check whether #33 has merged and fast-forward.
+1. **BearDrop:** the contract is built. The branches are stacked in `~/trees/NFT-fix`, each off
+   the one before; review and merge them in this order:
+
+   | Branch | Head | Requirement | Board |
+   |---|---|---|---|
+   | `mnt/DST-5` | `e2a5e8c` | DST-5 | MNT-204 |
+   | `mnt/DST-1` | `c8162bd` | DST-1 | MNT-200 |
+   | `mnt/DST-2` | `2ea3b28` | DST-2 | MNT-201 |
+   | `mnt/DST-4` | `59e9109` | DST-4, plus DST-5's Scenario test | MNT-203 |
+   | `mnt/DST-3` | `a9dcb6e` | DST-3 | MNT-202 |
+
+   - `feat/contracts` was fast-forwarded to `release/1.1` `ae733f4` (#33 merged) and is unpushed.
+     Its remote branch was deleted when #33 merged.
+   - Gates at the top of the stack: 341 tests, coverage 100/100, Slither 54 with no High or
+     Critical, client 143, quotes 49/0, tree 26/0.
+   - Self-reviews: `reports/dst-1-`, `dst-2-`, `dst-3-` and `dst-4-diff-review.md`. Nothing is
+     above Informational. I-2 and I-3 are kept as they are (the person, 29 October).
+   - **I-1 goes into OPS-2's RUNBOOK, in this order:** handover, then a read of `owner()`, then
+     funding, then `openRound`.
+   - **Next:** `/mnt:review` of the five; then `/mnt:next` for DST-6 (`BearDropList.s.sol`), OPS-2
+     (`runBearDrop`, RUNBOOK) and DEL-6 (the client), each stacked on `mnt/DST-3` or on
+     `feat/contracts` once the five are merged.
 2. **The 3 November call** (the brief's §7): the worker key; the mint dates (CQ-1); `acceptOwnership`;
    the first cycle's date.
 3. **BearDrop round 1's list:** Calea writes 4,444 rows of 500 and sends MINT its checksum to confirm.
