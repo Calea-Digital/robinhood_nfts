@@ -15,7 +15,7 @@ round 1 is 500 $MNTD for each of the 4,444 bears, open for 90 days.
 ## 2. Scripts and operations
 
 - [x] 2.1 DST-6 — `script/BearDropList.s.sol`: `load`, `check`, `hash`; CSV refusals; fixtures under `test/fixtures/bear-drop-csv`; `fs_permissions` read access to them
-- [ ] 2.2 OPS-2 — (Defect MNT-210) `runBearDrop(configPath)` with read-back; the config field `bearDrop` in `script/config/46630.json` and `4663.json`; `verify.sh` covers its broadcast; RUNBOOK "Holders' $MNTD (BearDrop)" (handover, read `owner()`, fund, open; never pause near a window's end) and a DESIGN note
+- [x] 2.2 OPS-2 — (Defect MNT-210) `runBearDrop(configPath)` with read-back; the config field `bearDrop` in `script/config/46630.json` and `4663.json`; `verify.sh` covers its broadcast; RUNBOOK "Holders' $MNTD (BearDrop)" (handover, read `owner()`, fund, open; never pause near a window's end) and a DESIGN note
 
 ## 3. Client
 
