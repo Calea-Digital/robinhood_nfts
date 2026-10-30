@@ -750,7 +750,7 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
    - MNT-184's `/swap` check on staging passed: `/swap` now redirects to `/earn`. After a quote,
      both changing the amount and flipping the direction disabled the button and showed "Getting a
      quote…" within one render, until the new quote arrived. Nothing was sent.
-   - New Defects, both Done on 30 October, merged into `feat/contracts` (local, **not pushed**):
+   - New Defects, both Done on 30 October, merged into `feat/contracts` and pushed (`c94c036`, in PR #43):
      - MNT-212, merge `75dc706`: the Swap button reads "Not enough <symbol>" above the pay
        token's balance and asks Relay for no quote then. Each side's balance is read once and
        refreshed every 15 s and after a swap.
@@ -762,8 +762,9 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
        - A network or connection refusal is retried once.
        - Deferred, not filed: writing through the probe's client; the same race in `/claim`.
      - `feat/contracts` `c94c036`: webapp `pnpm check` 116/116, `next build` passes.
-     - Pushing `feat/contracts` adds both to the open PR #43 into `release/1.1`; that needs the
-       person's word.
+     - PR #43 into `release/1.1` now carries both; its title and description list them and the
+       staging checks. Merging it redeploys staging (`apps/webapp/**`). Merging is MINT's or the
+       person's step.
      - Hand checks on staging after it merges:
        - `/earn`: "Not enough ETH" and "Not enough MNTD";
        - `/mntd`: Approve right after login; Lock from mainnet; a locked MetaMask reads "did not
