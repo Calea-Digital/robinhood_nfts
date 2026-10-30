@@ -685,7 +685,9 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
    `git merge origin/release/1.1`, and push only on the person's word.
 
    **Next:**
-   1. After #43 merges, the testnet run (4.1). What MNT-211 covered:
+   1. Close the 14 In Review Defects from 20 October in a clean session:
+      `docs/prompts/2026-10-30-close-in-review-defects.md` (item 4 of the 20 October list below).
+   2. After #43 merges, the testnet run (4.1). What MNT-211 covered:
       - the id lookup, a wallet's claimable bears (Multicall3), the claim, and the admin calls;
       - `listHash` must equal `OK_HASH` (`keccak256(abi.encode([7, 8], [100e18, 50.5e18]))` =
         `0xc0cf…ed65`);
@@ -740,7 +742,14 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
    - MINT decides MNT-187 (smart-account openers on prize chains; a message to send).
    - Calea fixes MNT-190 (the worker re-reads an overlap of blocks) and MNT-195 (the client's
      event reads paged, `mntd` only on request) on their own branches, as one PR, next week.
-4. **Board:** the person sets MNT-175 to 185 Done once staging confirms (it has). MINT answers MNT-187 and
+4. **Board:** the 14 In Review Defects from 20 October (MNT-175 to 185, 191, 192, 197) are closed
+   in a clean session from `docs/prompts/2026-10-30-close-in-review-defects.md`. Assessed on 30
+   October: all fixes are in `release/1.1` through #32 and #33.
+   - Twelve are safe to close after a light check.
+   - MNT-197 closes with a note: the original cause is unconfirmed.
+   - MNT-184 waits for the `/swap` hand check on staging.
+
+   The person sets Done. MINT answers MNT-187 and
    MNT-188. Schedule the Lows (MNT-189 to 196).
 5. **Waiting on MINT:**
    - MINT's admin `acceptOwnership` on `MintABear` `0x655e…cB28`, then the RUNBOOK's "Ownership
