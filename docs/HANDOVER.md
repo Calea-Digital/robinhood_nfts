@@ -750,10 +750,16 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
    - MNT-184's `/swap` check on staging passed: `/swap` now redirects to `/earn`. After a quote,
      both changing the amount and flipping the direction disabled the button and showed "Getting a
      quote…" within one render, until the new quote arrived. Nothing was sent.
-   - New Defects, Open, `MNT Claude`, Lows to schedule with MNT-189 to 196:
-     - MNT-212: the Swap button stays enabled when the wallet can't cover the amount (found in that
-       check);
-     - MNT-213: retry a staking write once after `switchChain` (MNT-197's follow-up).
+   - New Defects, both fixed and In Review on 30 October. Each is on its own branch off
+     `feat/contracts` `f7d8c69`, not merged and not pushed; next is `/mnt:review`.
+     - MNT-212, `mnt/defect-swap-balance` `2c156f5` (worktree `~/trees/NFT-defects`): the Swap
+       button reads "Not enough <symbol>" above the pay token's balance, and balances refresh after
+       a swap and every 15 s. Hand check on staging after merge.
+     - MNT-213, `mnt/defect-staking-retry` `ddd2991` (worktree `~/trees/NFT-defects-2`): a
+       staking action's first write is retried once when the wallet refused it while settling.
+       This covers the first write after a login as well as after a switch; MNT-197's case had no
+       switch.
+     - Webapp `pnpm check` 109/109 and `next build` pass on both.
    - Not done, and not filed: moving the Relay chain list off the shared layout (MNT-191).
 
    MINT answers MNT-187 and MNT-188. Schedule the Lows (MNT-189 to 196).
