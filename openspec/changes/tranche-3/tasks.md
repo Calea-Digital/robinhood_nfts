@@ -19,7 +19,7 @@ round 1 is 500 $MNTD for each of the 4,444 bears, open for 90 days.
 
 ## 3. Client
 
-- [ ] 3.1 DEL-6 — (Defect MNT-211) `packages/contracts-client` `drop`: `lookup(ids)`, a wallet's claimable bears (Multicall3), `claim`, the admin's calls, `listHash`; error codes with `userMessage`; `examples/drop.ts`; README; `gen:abi`; the README tells buyers to read `claimed` before buying
+- [x] 3.1 DEL-6 — (Defect MNT-211) `packages/contracts-client` `drop`: `lookup(ids)`, a wallet's claimable bears (Multicall3), `claim`, the admin's calls, `listHash`; error codes with `userMessage`; `examples/drop.ts`; README; `gen:abi`; the README tells buyers to read `claimed` before buying
 
 ## 4. Live
 
