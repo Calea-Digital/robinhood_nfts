@@ -760,7 +760,9 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
        - A wallet that never settles is not written to and gets a plain reason.
        - If the wallet is on another network than wagmi reported, the page switches once.
        - A network or connection refusal is retried once.
-       - Deferred, not filed: writing through the probe's client; the same race in `/claim`.
+       - Deferred, not filed: writing through the probe's client.
+       - The same race in `/claim` is MNT-214, Open, a Low to schedule (proposal: move `settle` and
+         `sendSettled` into `packages/wallet`).
      - `feat/contracts` `c94c036`: webapp `pnpm check` 116/116, `next build` passes.
      - PR #43 into `release/1.1` now carries both; its title and description list them and the
        staging checks. Merging it redeploys staging (`apps/webapp/**`). Merging is MINT's or the
@@ -769,8 +771,8 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
        - `/earn`: "Not enough ETH" and "Not enough MNTD";
        - `/mntd`: Approve right after login; Lock from mainnet; a locked MetaMask reads "did not
          answer".
-     - Worktrees `~/trees/NFT-defects` and `~/trees/NFT-defects-2` hold the merged Task
-       branches; remove them when the person agrees.
+     - Their worktrees are removed. The branches `mnt/defect-swap-balance` and
+       `mnt/defect-staking-retry` are merged and kept.
    - Not done, and not filed: moving the Relay chain list off the shared layout (MNT-191).
 
    MINT answers MNT-187 and MNT-188. Schedule the Lows (MNT-189 to 196).
