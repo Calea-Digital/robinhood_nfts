@@ -664,8 +664,14 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
    - **Fork run of the whole runbook section on 46630:** deploy through claim, the refusals, close and
      withdraw, all as written. Round 1's list: sha256 `6161d7ad…c910`, `listHash` `0x54e0…adba`.
 
+   **MNT-211 (DEL-6, the client's `drop` module) is In Review**, on `mnt/DEL-6-211` at `196131d` in
+   `~/trees/NFT`, off `f0ba784`, not merged.
+   - Client 155/155; the self-review is `reports/del-6-211-diff-review.md` (three Lows fixed).
+   - BearDrop's reverts decode under `BearDrop.<fn>` (`errorKey`), apart from the vault's.
+   - `MAX_CLAIM_BATCH` is 1,000 (about 19,400 gas a bear, measured).
+
    **Next:**
-   1. `/mnt:next` for DEL-6, Defect MNT-211, the client's `drop` module, off `feat/contracts` `f0ba784`:
+   1. `/mnt:review` MNT-211; on accept it merges into `feat/contracts`. What it covers:
       - the id lookup, a wallet's claimable bears (Multicall3), the claim, and the admin calls;
       - `listHash` must equal `OK_HASH` (`keccak256(abi.encode([7, 8], [100e18, 50.5e18]))` =
         `0xc0cf…ed65`);
