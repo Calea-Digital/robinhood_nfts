@@ -742,15 +742,19 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
    - MINT decides MNT-187 (smart-account openers on prize chains; a message to send).
    - Calea fixes MNT-190 (the worker re-reads an overlap of blocks) and MNT-195 (the client's
      event reads paged, `mntd` only on request) on their own branches, as one PR, next week.
-4. **Board:** the 14 In Review Defects from 20 October (MNT-175 to 185, 191, 192, 197) are closed
-   in a clean session from `docs/prompts/2026-10-30-close-in-review-defects.md`. Assessed on 30
-   October: all fixes are in `release/1.1` through #32 and #33.
-   - Twelve are safe to close after a light check.
-   - MNT-197 closes with a note: the original cause is unconfirmed.
-   - MNT-184 waits for the `/swap` hand check on staging.
+4. **Board:** 13 of the 14 In Review Defects from 20 October are Done (30 October): MNT-175 to 183,
+   185, 191, 192 and 197. Each has a `Reviewed — accepted` comment naming its merge commit in
+   `release/1.1` and the test that pins it. Both suites passed on a clean `origin/release/1.1`
+   `ae733f4`: webapp 108/108, box-worker 34/34. `/ready` was ready on staging and production.
+   - Production moved: app.getminted.io now redirects (301) to `getminted.io`.
+   - Not done, and not filed: the retry after `switchChain` (MNT-197) and moving the Relay chain
+     list off the shared layout (MNT-191).
+   - MNT-184 stays In Review until the person accepts it. The `/swap` check on staging passed on
+     30 October: `/swap` now redirects to `/earn`. After a quote, both changing the amount and
+     flipping the direction disabled the button and showed "Getting a quote…" within one render,
+     until the new quote arrived. Nothing was sent.
 
-   The person sets Done. MINT answers MNT-187 and
-   MNT-188. Schedule the Lows (MNT-189 to 196).
+   MINT answers MNT-187 and MNT-188. Schedule the Lows (MNT-189 to 196).
 5. **Waiting on MINT:**
    - MINT's admin `acceptOwnership` on `MintABear` `0x655e…cB28`, then the RUNBOOK's "Ownership
      handover" (reset the allowed-SeaDrop list, read SeaDrop's state). Calea reads back `owner`.
