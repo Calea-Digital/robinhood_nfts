@@ -742,17 +742,19 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
    - MINT decides MNT-187 (smart-account openers on prize chains; a message to send).
    - Calea fixes MNT-190 (the worker re-reads an overlap of blocks) and MNT-195 (the client's
      event reads paged, `mntd` only on request) on their own branches, as one PR, next week.
-4. **Board:** 13 of the 14 In Review Defects from 20 October are Done (30 October): MNT-175 to 183,
-   185, 191, 192 and 197. Each has a `Reviewed — accepted` comment naming its merge commit in
+4. **Board:** all 14 In Review Defects from 20 October are Done (30 October): MNT-175 to 185, 191,
+   192 and 197. Each has a `Reviewed — accepted` comment naming its merge commit in
    `release/1.1` and the test that pins it. Both suites passed on a clean `origin/release/1.1`
    `ae733f4`: webapp 108/108, box-worker 34/34. `/ready` was ready on staging and production.
    - Production moved: app.getminted.io now redirects (301) to `getminted.io`.
-   - Not done, and not filed: the retry after `switchChain` (MNT-197) and moving the Relay chain
-     list off the shared layout (MNT-191).
-   - MNT-184 stays In Review until the person accepts it. The `/swap` check on staging passed on
-     30 October: `/swap` now redirects to `/earn`. After a quote, both changing the amount and
-     flipping the direction disabled the button and showed "Getting a quote…" within one render,
-     until the new quote arrived. Nothing was sent.
+   - MNT-184's `/swap` check on staging passed: `/swap` now redirects to `/earn`. After a quote,
+     both changing the amount and flipping the direction disabled the button and showed "Getting a
+     quote…" within one render, until the new quote arrived. Nothing was sent.
+   - New Defects, Open, `MNT Claude`, Lows to schedule with MNT-189 to 196:
+     - MNT-212: the Swap button stays enabled when the wallet can't cover the amount (found in that
+       check);
+     - MNT-213: retry a staking write once after `switchChain` (MNT-197's follow-up).
+   - Not done, and not filed: moving the Relay chain list off the shared layout (MNT-191).
 
    MINT answers MNT-187 and MNT-188. Schedule the Lows (MNT-189 to 196).
 5. **Waiting on MINT:**
