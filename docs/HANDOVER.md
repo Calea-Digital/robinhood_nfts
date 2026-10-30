@@ -1,6 +1,6 @@
 # MintABear — handover
 
-Written 2026-09-15, current as of the session of 29 October. Read this first when resuming; the next session starts from "Next, in this order (written 29 October)" below.
+Written 2026-09-15, current as of the session of 29 October. Read this first when resuming; the next session starts from "Next, in this order (written 29 October)" below, whose item 1 was brought up to date on 30 October.
 
 ## Where things stand
 
@@ -638,56 +638,60 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
 - **§10 repaired:** commit `133c8ff` had left "listed i### Open items" garbled in `SPECIFICATION.md`.
 
 **Next, in this order (written 29 October):**
-1. **BearDrop: resume here.** State at the end of 29 October, in `~/trees/NFT-fix`. The worktree
-   is clean and on `mnt/OPS-2-210`, with no stash. Nothing is pushed.
+1. **BearDrop: resume here.** State at the end of 30 October's review. Nothing is pushed.
 
-   **Done and merged into `feat/contracts` `ef14de7`** (local, 15 commits ahead of `release/1.1`
-   `ae733f4`, `packages/contracts` only): the contract, DST-5, 1, 2, 4 and 3 (MNT-204, 200, 201,
-   203, 202). They were accepted in `/mnt:review` with fork runs on 46630; the evidence is in each
-   Task's `Reviewed — accepted` comment.
+   **`feat/contracts` `f0ba784`**, in `~/trees/NFT` (local, `packages/contracts` only). The whole
+   contract side of BearDrop is reviewed, accepted, merged and Done: DST-5, 1, 2, 4, 3 (29 October),
+   then DST-6, MNT-205 (merge `18b4c05`), and OPS-2, Defect MNT-210 (merge `f0ba784`), both on 30 October.
+   - **Gates on `f0ba784`:** 358 tests; dry run matches `verify-dry-run.expected`; `verify.test.sh`
+     17/17. On the branch: coverage 98.8% lines, Slither 54 with no High or Critical; quotes 50/0; tree 26/0.
+   - **`~/trees/NFT-fix`** is on `mnt/OPS-2-210` (merged); switch it before reusing.
+   - **`~/trees/NFT`** has the person's untracked `apps/claim/` and `packages/contracts/broadcast/`:
+     leave them.
 
-   **In Review, not merged; review them in this order:**
-
-   | Board | Branch | Head | What it adds | Self-review |
-   |---|---|---|---|---|
-   | DST-6, MNT-205 | `mnt/DST-6`, off `feat/contracts` | `48d747c` | `script/BearDropList.s.sol` (`csvRows`, `hash`, `load`, `check`); `script/lib/CsvText.sol`, taken out of `WhitelistExport` with that suite unchanged; 24 CSV fixtures; `OK_HASH` pinned for the client | `reports/dst-6-diff-review.md` |
-   | OPS-2, Defect MNT-210 | `mnt/OPS-2-210`, stacked on `mnt/DST-6` | `297324d` | `runBearDrop` (owner is the broadcaster, read back) and the RUNBOOK section "Holders' $MNTD — BearDrop" | `reports/ops-2-210-diff-review.md` |
-
-   - **DST-6 after In Review.** At the person's word ("fast check") it gained a commit, `48d747c`:
-     `check` reads the amounts through Multicall3, one `eth_call` per 1,000 bears. Remote slot
-     reads cost about 0.24 s each on the public testnet RPC, about 17 minutes for 4,444.
-     - `load` still reads locally inside its simulation, so it stays slow, once per round.
-     - `BearDropList` coverage is 92.9% lines, because its `vm.rpc` path only runs against a live
-       node. It was proven on a local node: 11 ms per 1,000 bears, and a mismatch caught.
-   - **Forge stalls on this machine.** `forge script` waited about 10 minutes after each run for an
-     online lookup. `--offline` removes it (0.5 s), and the RUNBOOK says so. Measure the real
-     operator timings in the testnet run.
-   - **Gates on `297324d`:** 355 tests; coverage 99.0% lines and 98.7% statements; Slither 54 with no
-     High or Critical; client 143; quotes 50/0; tree 26/0.
-   - **Fork run of the RUNBOOK, steps 1–4, on 46630:** deploy, hash `0x54e0…adba` for 4,444 × 500,
-     `load` in 9 batches of about 16.6M gas with a matching check, and the handover. Step 5 failed
-     only because the public RPC pruned the fork's state.
+   **What the 30 October review changed** (details in each Task's comments):
+   - **DST-6:**
+     - `load` zeroes every bear the file leaves out, so loading the corrected list is the whole
+       correction;
+     - `decodeBatch(answer, asked)` refuses a short Multicall3 answer (`BatchSizeMismatch`).
+   - **MNT-210:**
+     - `verify.sh` verifies the BearDrop `runBearDrop` creates;
+     - each read-back is pinned;
+     - `deployBearDrop` refuses forge's default sender (`DefaultSender`);
+     - the runbook takes `openRound`'s `LIST_HASH` from `check`'s output (`hash` assumes 18 decimals),
+       lists BearDrop's non-admin steps, and gives a Safe owner's path for a later round;
+     - DESIGN says about 150M gas.
+   - **Fork run of the whole runbook section on 46630:** deploy through claim, the refusals, close and
+     withdraw, all as written. Round 1's list: sha256 `6161d7ad…c910`, `listHash` `0x54e0…adba`.
 
    **Next:**
-   1. `/mnt:review` MNT-205, then MNT-210. Each accept merges with `--no-ff` into `feat/contracts`.
-   2. After DST-6 merges, add `./test/fixtures/bear-drop-csv` to CLAUDE.md's `fs_permissions` line.
-      It now grants five paths, not four.
-   3. `/mnt:next` for DEL-6, Defect MNT-211, the client's `drop` module, stacked on
-      `mnt/OPS-2-210` or off `feat/contracts`:
+   1. `/mnt:next` for DEL-6, Defect MNT-211, the client's `drop` module, off `feat/contracts` `f0ba784`:
       - the id lookup, a wallet's claimable bears (Multicall3), the claim, and the admin calls;
       - `listHash` must equal `OK_HASH` (`keccak256(abi.encode([7, 8], [100e18, 50.5e18]))` =
         `0xc0cf…ed65`);
-      - the README tells buyers to read `claimed` before buying.
-   4. Then one PR from `feat/contracts` into `release/1.1`, on the person's word. It touches no
+      - the README tells buyers to read `claimed` before buying, and that a seller can claim before a
+        sale settles.
+
+      The RUNBOOK already names the `drop` module (item 6 of MNT-210's review): MNT-211 makes it true.
+   2. Then one PR from `feat/contracts` into `release/1.1`, on the person's word. It touches no
       Railway-watched path.
-   5. The testnet run, `tasks.md` 4.1, by 12 November. Decide which test $MNTD BearDrop uses on
-      46630: `46630.json` names `0x6357…`, while staging's web app uses `0x15CF…`.
-   6. Mainnet on 13–14 November (4.2).
+   3. The testnet run, `tasks.md` 4.1, by 12 November. Decide which test $MNTD BearDrop uses on
+      46630: `46630.json` names `0x6357…`, while staging's web app uses `0x15CF…`. Hand checks deferred
+      to it:
+      - `script/verify.sh 46630 --check` names the BearDrop as verified;
+      - `owner()` reads the admin before funding;
+      - time `load` and `check` on the public RPC with `--offline`;
+      - `decimals()` of $MNTD reads 18.
+   4. Mainnet on 13–14 November (4.2). Confirm with MINT that its admin is a key wallet for round 1, or
+      follow the runbook's Safe path.
 
    **Open notes for the reviewer:**
    - I-2 (`listHash` unchecked on-chain) and I-3 (no bound on `start`) were kept on the person's word.
    - The pause never moves `end`: the RUNBOOK says never to pause near a window's end.
-   - A seller can claim before a sale settles: DEL-6's README must say so.
+   - Informational, left as they are:
+     - DST-6's `check` reads amounts at `latest` but the round at the fork block;
+     - `csvRows`'s file-reading code is still repeated in `WhitelistExport`;
+     - `RUNBOOK.md`'s whitelist step lists the readable paths without `test/fixtures/bear-drop-csv/`.
 2. **The 3 November call** (the brief's §7): the worker key; the mint dates (CQ-1); `acceptOwnership`;
    the first cycle's date.
 3. **BearDrop round 1's list:** Calea writes 4,444 rows of 500 and sends MINT its checksum to confirm.
