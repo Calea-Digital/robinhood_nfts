@@ -664,14 +664,24 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
    - **Fork run of the whole runbook section on 46630:** deploy through claim, the refusals, close and
      withdraw, all as written. Round 1's list: sha256 `6161d7ad…c910`, `listHash` `0x54e0…adba`.
 
-   **MNT-211 (DEL-6, the client's `drop` module) is In Review**, on `mnt/DEL-6-211` at `196131d` in
-   `~/trees/NFT`, off `f0ba784`, not merged.
-   - Client 155/155; the self-review is `reports/del-6-211-diff-review.md` (three Lows fixed).
-   - BearDrop's reverts decode under `BearDrop.<fn>` (`errorKey`), apart from the vault's.
-   - `MAX_CLAIM_BATCH` is 1,000 (about 19,400 gas a bear, measured).
+   **MNT-211 (DEL-6, the client's `drop` module) is Done**, merged as `f7d8c69` (30 October), after
+   eight review fixes in `1e21eb6`. The changes:
+   - `unclaimed` means the round can still pay;
+   - `load` sends only what changes;
+   - shortfalls are given in whole $MNTD;
+   - BearDrop is recognised by its functions, and its reverts decode under `BearDrop.<fn>`;
+   - a claim carries at most 1,000 bears (`MAX_CLAIM_BATCH`).
+
+   **`feat/contracts` `f7d8c69` is ready for the PR into `release/1.1`.** It is 28 commits ahead of
+   `ae733f4`, and every Task in it is Done: DST-1 to DST-6, MNT-210, MNT-211.
+   - **Full gates green:** 358 tests, coverage 98.6% lines, Slither 54 with no High or Critical, dry
+     run and `verify.test.sh` 17/17, client 155/155, quotes 51/0, tree 26/0.
+   - It touches no Railway-watched path, and no private reference.
+   - The person's untracked `apps/claim/` and `packages/contracts/broadcast/` (real rehearsal
+     broadcasts) sit in `~/trees/NFT`: never delete them; clean only files a run itself wrote.
 
    **Next:**
-   1. `/mnt:review` MNT-211; on accept it merges into `feat/contracts`. What it covers:
+   1. The PR from `feat/contracts` into `release/1.1`, on the person's word. Done; what MNT-211 covered:
       - the id lookup, a wallet's claimable bears (Multicall3), the claim, and the admin calls;
       - `listHash` must equal `OK_HASH` (`keccak256(abi.encode([7, 8], [100e18, 50.5e18]))` =
         `0xc0cf…ed65`);
