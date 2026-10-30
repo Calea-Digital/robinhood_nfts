@@ -1,6 +1,6 @@
 # MintABear — handover
 
-Written 2026-09-15, current as of the session of 29 October. Read this first when resuming; the next session starts from "Next, in this order (written 29 October)" below, whose item 1 was brought up to date on 30 October.
+Written 2026-09-15, current as of the session of 30 October. Read this first when resuming; the next session starts from "Next, in this order (written 30 October, end of day)" below.
 
 ## Where things stand
 
@@ -29,8 +29,11 @@ with `../NFT` added (CLAUDE.md, "Two repositories", has the rules). The port is 
   lcampanis (`ff2468f`). It carries the six fixes from the pre-production review ("Pre-production
   review", below). MINT merged its own fix of the `/claim` path just before, as #31 (`b1edbc0`,
   Iñigo); the two changes are the same line, and both tests remain.
-- **`feat/contracts`** is `ff2468f`, level with `release/1.1`, in the worktree `~/trees/NFT-fix`,
-  and pushed. GitHub deletes the branch when a PR from it merges, so the next push recreates it.
+- **The BearDrop PR, mintdotio/NFT#43**: open into `release/1.1` from `feat/contracts` `c94c036`.
+  It carries BearDrop (DST-1…6, MNT-210, MNT-211) and two webapp fixes (MNT-212, MNT-213), so
+  merging it redeploys staging.
+- **`feat/contracts`** is `c94c036`, pushed, checked out in `~/trees/NFT`. GitHub deletes the
+  branch when a PR from it merges, so the next push recreates it.
 
 `release/1.0` is production and is never touched. Nothing of the code remains in this
 repository, and its CI runs only the spec checks.
@@ -637,7 +640,72 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
   close is the person's call.
 - **§10 repaired:** commit `133c8ff` had left "listed i### Open items" garbled in `SPECIFICATION.md`.
 
-**Next, in this order (written 29 October):**
+**Next, in this order (written 30 October, end of day):**
+
+**State.**
+- **Code:** `feat/contracts` `c94c036` is pushed and is the head of the open PR mintdotio/NFT#43 into
+  `release/1.1`. The PR's title and description cover:
+  - BearDrop;
+  - MNT-212: the swap button refuses an amount above the balance;
+  - MNT-213: a staking write waits for the wallet to settle;
+  - the staging hand checks.
+
+  Merging it redeploys staging (`apps/webapp/**`). Gates:
+  - webapp `pnpm check` 116/116 and `next build` on `c94c036`;
+  - contracts and client on `f7d8c69` (unchanged since): 358 tests, Slither 54 with no High or
+    Critical, client 155/155.
+- **Board:** the In Review lane is empty.
+  - Done on 30 October: the 14 Defects from 20 October (MNT-175…185, 191, 192, 197), MNT-212 and
+    MNT-213.
+  - Open from today: MNT-214 (`/claim` has MNT-213's settle race).
+  - Still open from before: MNT-186…190, 193…196.
+- **Worktrees:**
+  - `~/trees/NFT` is on `feat/contracts`. Leave the person's untracked `apps/claim/` and
+    `packages/contracts/broadcast/` alone.
+  - `~/trees/NFT-fix` is on the merged `mnt/OPS-2-210`; switch it before reusing.
+  - `~/trees/NFT-qa` and `~/trees/NFT-worker` are old.
+- **Production** moved: app.getminted.io redirects (301) to `getminted.io`; staging is
+  `mintabear-app.mintstage.io`, and `/swap` there redirects to `/earn`.
+
+**Steps:**
+1. **PR #43 merges** (MINT's or the person's step). Then bring `feat/contracts` level:
+   `git -C ~/trees/NFT fetch origin && git -C ~/trees/NFT merge origin/release/1.1`. Push only on
+   the person's word.
+2. **Staging hand checks** once it is deployed (the person signs; the PR lists them):
+   - `/earn` swap:
+     - 0.01 ETH against a smaller balance reads "Not enough ETH", disabled;
+     - flipped on 0 MNTD, "Not enough MNTD";
+     - below the balance, "Swap ETH for MNTD".
+   - `/mntd`:
+     - Approve right after login opens MetaMask on the first click;
+     - Lock with MetaMask on mainnet shows the switch, then the prompt;
+     - with MetaMask locked, Claim reads "Your wallet did not answer…" within ~3 s;
+     - a `[staking] … retried while the wallet settled` console line names the real error.
+
+   Record the results on MNT-212 and MNT-213, which are Done with these checks deferred.
+3. **Before the mystery box opens (4 November):**
+   - MINT decides MNT-187;
+   - Calea fixes MNT-190 and MNT-195 (item 3 of the 20 October list).
+4. **The 3 November call:**
+   - the worker key;
+   - the mint dates (CQ-1);
+   - `acceptOwnership`;
+   - the first cycle's date;
+   - BearDrop round 1's list checksum (item 3 below).
+5. **Testnet run, `tasks.md` 4.1, by 12 November**, with the BearDrop checks in item 1 below:
+   - first decide the test $MNTD on 46630 (`0x6357…` in `46630.json`, or `0x15CF…`, which staging
+     uses);
+   - `verify.sh 46630 --check`;
+   - `owner()` read before funding;
+   - `load` and `check` timed with `--offline`;
+   - `decimals()` reads 18.
+6. **Schedule the Lows** with the person: MNT-189…196 and MNT-214. MNT-214's proposal is to move
+   `settle` and `sendSettled` from `features/mntd/staking.ts` into `packages/wallet` for `/claim`,
+   `/mntd` and `/swap`.
+7. **Mainnet on 13–14 November (4.2).** Confirm MINT's admin is a key wallet for round 1, or use
+   the runbook's Safe path.
+
+**Earlier: next, in this order (written 29 October):**
 1. **BearDrop: resume here.** State at the end of 30 October's review. Nothing is pushed.
 
    **`feat/contracts` `f0ba784`**, in `~/trees/NFT` (local, `packages/contracts` only). The whole
@@ -685,8 +753,8 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
    `git merge origin/release/1.1`, and push only on the person's word.
 
    **Next:**
-   1. Close the 14 In Review Defects from 20 October in a clean session:
-      `docs/prompts/2026-10-30-close-in-review-defects.md` (item 4 of the 20 October list below).
+   1. Done 30 October: the 14 In Review Defects from 20 October are closed
+      (`docs/prompts/2026-10-30-close-in-review-defects.md`).
    2. After #43 merges, the testnet run (4.1). What MNT-211 covered:
       - the id lookup, a wallet's claimable bears (Multicall3), the claim, and the admin calls;
       - `listHash` must equal `OK_HASH` (`keccak256(abi.encode([7, 8], [100e18, 50.5e18]))` =
