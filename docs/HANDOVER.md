@@ -680,8 +680,12 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
    - The person's untracked `apps/claim/` and `packages/contracts/broadcast/` (real rehearsal
      broadcasts) sit in `~/trees/NFT`: never delete them; clean only files a run itself wrote.
 
+   **The PR is open: mintdotio/NFT#43**, from `feat/contracts` `f7d8c69` (pushed 30 October) into
+   `release/1.1`. Merging is MINT's step. Afterwards, bring `feat/contracts` level with
+   `git merge origin/release/1.1`, and push only on the person's word.
+
    **Next:**
-   1. The PR from `feat/contracts` into `release/1.1`, on the person's word. Done; what MNT-211 covered:
+   1. After #43 merges, the testnet run (4.1). What MNT-211 covered:
       - the id lookup, a wallet's claimable bears (Multicall3), the claim, and the admin calls;
       - `listHash` must equal `OK_HASH` (`keccak256(abi.encode([7, 8], [100e18, 50.5e18]))` =
         `0xc0cf…ed65`);
