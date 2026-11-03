@@ -1,6 +1,6 @@
 # MintABear — handover
 
-Written 2026-09-15, current as of the session of 30 October. Read this first when resuming; the next session starts from "Next, in this order (written 30 October, end of day)" below.
+Written 2026-09-15, current as of the session of 3 November. Read this first when resuming; the next session starts from "Next, in this order (written 3 November, after the call)" below.
 
 ## Where things stand
 
@@ -640,7 +640,52 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
   close is the person's call.
 - **§10 repaired:** commit `133c8ff` had left "listed i### Open items" garbled in `SPECIFICATION.md`.
 
-**Next, in this order (written 30 October, end of day):**
+**3 November: the call with MINT (Iñigo; notes pasted by the person).**
+- **The worker key.** The person explained both roles and the leak risk; Iñigo confirmed the key must be
+  separate from the prize wallet `0xf6c0…83e3`.
+  - **Decided:** a fresh **hot wallet** (an EOA, Iñigo's choice over a MINT multisig, for speed), one key
+    for both roles (worker and every vault's signer). The KMS option was not taken up. Keys can be
+    rotated later (`setWorker`, `setSigner`).
+  - **Sent:** the instructions, `reports/2026-11-03-mint-worker-key-instructions.md` (MINT-facing,
+    no private references), went to MINT after the call.
+  - **MINT's next step:** Iñigo creates the wallet and sends its **address** encrypted (SSH or an
+    encrypted message). Calea then writes it into `vault.json`'s `signer` and deploys the draw, the
+    vaults and the box with it (brief's §6); MINT's admin calls `setWorker`.
+  - **Not answered on the call:** whether `0x18D2…1Eff` is the Railway key and where else it lives;
+    Railway's hardening (secrets rotated, 2FA, members, audit log); who holds the new key's backup.
+    These are in the instructions' closing questions; chase them if Iñigo's reply leaves them out.
+- **The NFT launch: tentatively 10 November.** MINT decides by mid-week (about 5 November) whether to
+  keep it or move it to 12, 13 or 15 November. Not recorded in CQ-1 yet: the notes don't say whether
+  "launch" means the whitelist stage or the public stage, and the date isn't final. CQ-1 stays
+  follow-up; its `Needed by` (3 November) has passed.
+  - The whitelist campaign still closes on 7 November; a 10 November stage leaves the 48 hours after
+    the freeze.
+  - The first mystery-box cycle (was 4 November) is moot until holders have bears: after the launch.
+- **MINT's frontend has not started.** Iñigo has been on the token and Kitsune. He has the three
+  Markdown prompts Calea sent in chat earlier (one general, two for the UI), will set the site up
+  locally and on staging, and will tell Calea when it is ready for the mainnet deploy and the UI
+  integration. Calea's mainnet deploys of the box wait for that and for the key's address.
+- **The mainnet contract deploy:** the person offered to deploy "the latest contract PR" to mainnet or to
+  leave it to Lorenzo (lcampanis). Who does it was not settled.
+- **Not raised on the call:** `acceptOwnership()` on `MintABear`; BearDrop round 1's list and checksum
+  (sha256 `6161d7ad…c910`); the whitelist close hour; Activation's switch-on; the first royalty split
+  (5 November); MNT-187; PR #43's merge.
+
+**Next, in this order (written 3 November, after the call):**
+1. **Wait for the worker key's address from Iñigo** (encrypted). On arrival: confirm it by reading back
+   its first and last four characters with him, write it into `vault.json`'s `signer`, create the VRF
+   subscription on Arbitrum One (CQ-17: Calea holds and funds it) and fill `42161.json`, then deploy per
+   the brief's §6. The testnet draw's worker moves off `0x18D2…1Eff` once MINT confirms it is the Railway
+   key.
+2. **Send MINT the follow-up questions**, `reports/2026-11-03-questions-for-mint-after-call.md` (the
+   person sends them): the launch date and which stage it means; `acceptOwnership()`; the old key and
+   Railway's hardening; who deploys to mainnet; BearDrop round 1's checksum; MNT-187; PR #43.
+3. **CQ-1:** once MINT fixes the date (about 5 November), record it through `/opsx:propose` → archive →
+   commit → `/mnt:board`, with the whitelist stage, the public stage, the first cycle and Activation's
+   switch-on.
+4. Then the 30 October list below, from its step 1 (PR #43), skipping its step 4 (the call).
+
+**Earlier: next, in this order (written 30 October, end of day):**
 
 **State.**
 - **Code:** `feat/contracts` `c94c036` is pushed and is the head of the open PR mintdotio/NFT#43 into
