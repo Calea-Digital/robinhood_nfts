@@ -799,6 +799,12 @@ Sepolia, 0.42 APE on Curtis). The gaps, told to the person:
 - **No cycle is open.** Cycle 1 ran from 20 November 18:18 to 22 November 18:18 UTC with no
   openings; the admin schedules cycle 2 on both chains and registers it on the vaults
   (`/nft/admin`).
+- **Cycle 1's prizes are still reserved** on all three vaults (`released(1)` reads false), so
+  registering them again for cycle 2 fails `Unfunded` until someone sends `release(1)` to
+  `0x5514…e155` on each chain; anyone may, since the window closed on 22 November at 19:18 UTC.
+  Neither MINT's admin page nor its worker ever calls `release` (the client has `planRelease`), so
+  on mainnet too a finished cycle's unclaimed prizes carry over only if someone sends it by hand:
+  a "Release cycle" step belongs on `/nft/admin` before the first mainnet cycle.
 - **The mint is sold out,** so MINT's testnet doc's "Mint 3 test bears" fails; testers need bears
   sent to them.
 - **The worker has never sent a transaction** (nonce 0; 0.01 ETH on Arbitrum Sepolia, enough for
@@ -820,7 +826,9 @@ Sepolia, 0.42 APE on Curtis). The gaps, told to the person:
    46630: the stock clone, v2, the guard set on the clone and a new box, owned by `0x2689…F5e7`.
 2. **The client for a stock collection:** the bear reads in `activation.ts` and the reset event in
    `events.ts`.
-3. **Tell MINT:** the testnet gaps above, and that our rehearsal set is retired.
+3. **Tell MINT:** the testnet gaps above, and that our rehearsal set is retired. The message is
+   written, `reports/2026-11-24-message-to-mint-testnet.md` (the person sends it); follow up on the
+   missing "Release cycle" step on `/nft/admin`, needed before the first mainnet cycle.
 4. **The register and the specification** (`/opsx:propose` → archive → commit → `/mnt:board`):
    COL-6 at 6.9%; `BearDrop` out of scope (DST, DEL-13); the royalty router as a commercial item,
    open; the worker key, the first cycle, `Activation`'s switch-on and the admin's gas as open
