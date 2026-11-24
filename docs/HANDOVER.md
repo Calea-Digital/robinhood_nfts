@@ -1,6 +1,6 @@
 # MintABear — handover
 
-Written 2026-09-15, current as of the session of 3 November. Read this first when resuming; the next session starts from "Next, in this order (written 3 November, after the call)" below.
+Written 2026-09-15, current as of the session of 24 November. Read this first when resuming; the next session starts from "Next, in this order (written 24 November)" below, inside the 24 November entry, which follows the 20 November one.
 
 ## Where things stand
 
@@ -671,7 +671,165 @@ post-merge checks, a real Chainlink answer after a worker relay and the admin pa
   (sha256 `6161d7ad…c910`); the whitelist close hour; Activation's switch-on; the first royalty split
   (5 November); MNT-187; PR #43's merge.
 
-**Next, in this order (written 3 November, after the call):**
+**20 November: state read before the call with MINT.** The brief is
+`reports/2026-11-20-call-contract-state.md`; every value in it was read on-chain that morning. The
+call's outcomes are in the 24 November entry below.
+- **The collection that mints is MINT's, not ours.** MINT's site (`release/1.5`,
+  `apps/webapp/src/features/bears/deployments.ts`) and its `docs/post-mint/LAUNCH-CHECKLIST.md` name
+  `0x96ba687Ad4F1F5213E676cEb7556c48F02ab4dD1` on 4663: a stock OpenSea Studio clone that MINT's admin
+  created on 23 September. It has no `transferNonce`, `exists` or `MAX_BEARS`; its validator and
+  `royaltyInfo` read zero; its public stage is 26 November, 18:00 to 20:00 UTC.
+  - Our `MintABear` `0x655e…cB28` is unused, still owned by `0x7672…04Aa`, the offer to the admin
+    never accepted.
+  - `Activation` `0xAbd2…159b` is bound to ours and cannot work with the Studio collection. The box,
+    the draw, the vaults and `BearDrop` can; `Deploy.s.sol`'s `_requireCollection` refuses the Studio
+    address.
+  - Open with MINT: whether the Studio collection is final, and the reset rule for an `Activation`
+    without the counter.
+- **Nothing else is deployed on mainnet.** `42161.json`'s subscription is 0 and `vault.json`'s signer
+  is unset: the new worker key's address has not arrived.
+- **No key needs rotating on-chain.** `0x18D2…1Eff`, the testnet draw's worker, is Calea's own
+  throwaway key from the 15 October rehearsal (its report lists it; the chain shows one `setWorker`,
+  by Calea's wallet that day, and no transaction from the key since 12:39 UTC). It was never the
+  Railway key, though the 29 October brief asked MINT whether it was and MINT's checklist repeats it
+  as fact. No key MINT held has ever had a role on a draw or a vault. MINT speaks of a key compromised
+  by "the Relay incident" and of transferring ownership; which key they mean is open, and so are
+  Railway's hardening and the new mainnet worker address. The testnet draw needs `setWorker` again
+  before any staging run, since that key is deleted.
+- **The whitelist register is frozen** (MINT's report: 750 spots, export sha256 matching). The CSV
+  and its sha256 have not reached Calea, and the allowlist root on the Studio collection is zero.
+- **MINT's branches moved:** production is `release/1.4`, staging is `release/1.5`; `feat/contracts`
+  `c94c036` is in both (PR #43 merged on 2 November). Calea's pull requests target `release/1.5`.
+  Node 24.22.3, Next 16.4.6. CLAUDE.md still names `release/1.1` and `release/1.0`.
+- **MINT edited the worker and the client** in its PRs #52 and #53 and added
+  `test/mocks/MockRoyaltyRouter.sol`; our gates have not run on `release/1.5`.
+- **New asks in MINT's checklist:** a royalty router ("Calea's to write and audit"), a `BearDrop`
+  with a wagering voucher, 888 $MNTD per bear against our list's 500, royalties of 6.9% against the
+  specification's 5%.
+
+**24 November: the call's answers, `Activation` for the Studio collection, MINT's testnet set.**
+
+MINT's answers to the brief's §8, as the person relayed them on 24 November:
+1. **The Studio collection `0x96ba…4dD1` is final.** MINT knows it differs from the audited
+   `MintABear` (no supply cap in code, holders can burn, no transfer counter) and keeps it.
+2. **`Activation` is redone for it, keeping the old rule:** a transfer always returns the level to
+   zero, even when the bear comes back to a wallet that held a higher level. Parked until
+   25 November; what was established is below.
+3. **No key was compromised.** The item is closed; nothing to rotate.
+4. **The mainnet worker key's address:** not available yet. Open.
+5. **Royalties are 6.9%.** The specification says 5%; COL-6 is to be amended.
+6. **The stage times, the team mint and the whitelist stage:** MINT's, outside Calea's scope.
+7. **`BearDrop`:** 888 $MNTD per bear, unlocked by a wagering voucher, run off-chain by MINT.
+   Outside Calea's scope; our on-chain `BearDrop` (DST-1…6) is not used on mainnet.
+8. **The royalty router:** open. MINT has not renewed its contract with Calea, so Calea builds
+   nothing until it does; once signed, the router is Calea's to deliver.
+9. **The first mystery-box cycle (date, prize chains) and `Activation`'s switch-on:** open.
+10. **The admin's gas on Arbitrum One** (about 0.002 ETH for `setWorker`): open.
+
+None of this is in `openspec/` yet (step 3 below).
+
+**`Activation` for the Studio collection: what was established (decision on 25 November).**
+- `0x96ba…` is an EIP-1167 clone of OpenSea's `ERC721SeaDropCloneable` at `0x09a2…dd6a` (21,257 B;
+  the source is `lib/seadrop/src/clones/`). It exposes no per-token transfer state: no counter, no
+  `explicitOwnershipOf` or `tokensOfOwner`, and ERC721A's ownership timestamp is internal. After
+  A→B→A everything a contract can read about the bear is as it was, so no design gives free
+  transfers and an automatic reset together.
+- **The clone calls its transfer validator with STATICCALL** (bytecode offset `0x2fbf`), although
+  its `getTransferValidationFunction` reports `isViewFunction = false`. Proven on a fork of mainnet
+  in `reports/2026-11-24-validator-poc/` (`forge test -vvvv` there): with a validator that
+  increments a nonce set on `0x96ba…`, every transfer reverts `StateChangeDuringStaticCall`, the
+  bear stays and the nonce stays 0; a read-only validator runs on the owner's `transferFrom`,
+  `safeTransferFrom` and an operator's transfer. A validator can refuse a transfer and never record
+  one, so the proposal the person was sent on 24 November ("a custom transfer validator that
+  increments a nonce per NFT") fails its own first condition. Mints and burns skip the validator;
+  the admin's `setTransferValidator(0)` is the only way around it.
+- **Options weighed:**
+  - reset by anyone: `reset(id)` clears a record whose owner no longer holds the bear, and a
+    watcher calls it on every `Transfer`; a round trip completed before anyone resets keeps the
+    level;
+  - **the return guard**: a read-only validator MINT's admin sets on `0x96ba…`, refusing the bear's
+    return to the wallet that burned while that record stands; anyone's `reset` clears it, and the
+    bear arrives at level 0. Sales stay free; airtight while the admin keeps it set; how OpenSea
+    handles a validator that is not Limit Break's is unproven on mainnet, and 46630 cannot show it;
+  - the full lock: no activated bear moves until its holder's `release(id)` zeroes it; an
+    activated bear listed on OpenSea fails to fill;
+  - the strict rule off-chain, from `BearActivated` and `Transfer` events;
+  - custody (a stake), which moves bears out of holders' wallets and reworks the box, the split,
+    the Status link and `/nft`;
+  - rejected: an approval marker (the owner re-approves), a wrapper NFT, a counting validator
+    (STATICCALL).
+- **Recommended, the person's choice pending:** reset by anyone, the return guard, and a refusal
+  for a bear held by a token-bound account of the collection. Bear ids bounded in `Activation`,
+  since the clone's `maxSupply` can be raised; a burned bear (`ownerOf` reverts) reads as cleared.
+- **GoatStreet** (`0xc211…c929`, Cashmere Labs, the same Studio implementation, Limit Break v5
+  validator `0x721C008f…42e3`) uses reset by anyone. `GoatSoftStake` `0x29A2…2969` (verified on
+  Sourcify) records the owner, anyone may `kick(id)`, and its NatSpec accepts the gap ("nothing on
+  the collection calls into here"). It refuses goats held by the collection's own ERC-6551
+  accounts, since a basket parked in one goat's wallet would keep its levels when that goat is
+  sold, and it treats a reverting `ownerOf` as a burned goat. Its levels are holding time, not burns.
+- **Importing our `MintABear` `0x655e…` into OpenSea instead** is possible in principle: it is
+  SeaDrop v1-native, SeaDrop v1 is live on 4663, and OpenSea already indexes it as `mintabear`. It
+  needs the admin's `acceptOwnership()` and OpenSea support linking it to Studio, unproven and of
+  unknown turnaround. Not pursued: MINT keeps the Studio collection. Rehearsal unknowns 1 and 2
+  (Studio taking over our contract; SignedZone orders under V3) are moot with it.
+- **Testnet for v2 (the person's choice):** a new stock `ERC721SeaDropCloneable` on 46630 set up
+  like mainnet's, a new `MysteryBox` for it (a box's collection is fixed), v2 and the guard, owned
+  by MINT's testnet admin. Before `/nft` works with a stock collection, the client's bear reads
+  (`transferNonce`, `exists` in `activation.ts`) and `events.ts`'s `TransferNonceAdvanced` reset
+  must change.
+
+**MINT's testnet set, checked 24 November.** MINT ran its own `bears:testnet`; its admin, owner
+and prize wallet is `0x2689f84287c601828470b94278E54fe75145F5e7`. Every contract from our code is
+byte-identical to our build (immutables masked; `release/1.5`'s contract sources are `c94c036`'s
+plus a test mock), and the admin owns each:
+
+| Contract | Address | Read on 24 November |
+|---|---|---|
+| TestABear (46630), our `MintABear` | `0xeda2Bc13211d361048e24bf34f86ba8FaCa2AD73` | royalty 690 bps to the test router; no validator; 4,444 of 4,444 minted |
+| `Activation` | `0x2285D701dd8529Ff773813a5D6f059c97780c9Da` | bears TestABear, $MNTD `0xaaD5…e595` (MINT's testnet token), unpaused |
+| `MysteryBox` | `0x7A3010B23Cf7528064EA4FB7F7C7422f8DF7AbBA` | cycle 1, nothing opened |
+| `BearDrop` | `0x31e51460901e3b9Fb75106D56c84FD9FB55174a6` | one round, 600,000 $MNTD owed |
+| `PrizeVault` (46630, Sepolia, Curtis) | `0x5514c86E08Dd67a7d325E73986cb9f0AB6d1e155` | signer the worker `0x35C1…DD05` on all three |
+| `PrizeDraw` (Arbitrum Sepolia) | `0xbA0A8A1AAC1516d6d6234151D54dabf74498420D` | worker `0x35C1fbcf3d8a71e55AB63472e9EE6bC91d6DDD05`, playable 4,444; VRF subscription 0.02 ETH native, the draw its consumer, no requests yet |
+| Rewards router (test) | `0xaaA321bbC78C1CD12a4Da0b10E25CAbB227D1A20` | MINT's mock; not compared |
+| Prize NFTs | Owls `0x434A…0279`, Foxes `0x0eb9…9Bd6` (46630); Frogs `0x51b6…5C4F`, Whales `0xf045…9309` (Sepolia); Tigers `0xeda2…AD73` (Curtis) | MINT's mocks; not compared |
+
+The admin holds gas on all four chains (0.099 ETH on 46630, 0.030 on Arbitrum Sepolia, 0.038 on
+Sepolia, 0.42 APE on Curtis). The gaps, told to the person:
+- **No cycle is open.** Cycle 1 ran from 20 November 18:18 to 22 November 18:18 UTC with no
+  openings; the admin schedules cycle 2 on both chains and registers it on the vaults
+  (`/nft/admin`).
+- **The mint is sold out,** so MINT's testnet doc's "Mint 3 test bears" fails; testers need bears
+  sent to them.
+- **The worker has never sent a transaction** (nonce 0; 0.01 ETH on Arbitrum Sepolia, enough for
+  hundreds of relays): check its service runs.
+- **Staging must set every `BEARS_*` address:** `deployments.ts`'s testnet defaults are our retired
+  set below.
+- **TestABear has the counter,** so the testnet does not exercise the Studio collection.
+
+**Our rehearsal set is retired, not handed over** (the person, 24 November). `MintABear`
+`0x8108…0A05`, `Activation` `0x3895…ef2f`, `MysteryBox` `0xA15a…55a7` and `PrizeVault`
+`0xae51…383d` on 46630, and `PrizeDraw` `0x8108…0A05` on Arbitrum Sepolia, stay owned by
+`0x7672…04Aa`. MINT's own testnet doc calls them unusable, and MINT is to be told they are retired.
+
+**Next, in this order (written 24 November):**
+1. **`Activation` v2.** The person picks the mechanism (recommendation above). Then the spec
+   change through `/opsx:propose`: the reset rule of COL-3, COL-4, ACT-4 and ACT-5 for a collection
+   without the counter, the guard as a requirement, and OPS-2's `_requireCollection`, which refuses
+   `0x96ba…` today. Build on `mnt/<ref>` off `feat/contracts`, run the gates, then deploy on
+   46630: the stock clone, v2, the guard set on the clone and a new box, owned by `0x2689…F5e7`.
+2. **The client for a stock collection:** the bear reads in `activation.ts` and the reset event in
+   `events.ts`.
+3. **Tell MINT:** the testnet gaps above, and that our rehearsal set is retired.
+4. **The register and the specification** (`/opsx:propose` → archive → commit → `/mnt:board`):
+   COL-6 at 6.9%; `BearDrop` out of scope (DST, DEL-13); the royalty router as a commercial item,
+   open; the worker key, the first cycle, `Activation`'s switch-on and the admin's gas as open
+   questions; CQ-1's stages as MINT's.
+5. **The mainnet worker key's address** (unchanged since 3 November): `vault.json`'s `signer`, the
+   Arbitrum One subscription and `42161.json`, then the draw, the vault and the box against
+   `0x96ba…`, after step 1's `_requireCollection` change.
+
+**Earlier: next, in this order (written 3 November, after the call):**
 1. **Wait for the worker key's address from Iñigo** (encrypted). On arrival: confirm it by reading back
    its first and last four characters with him, write it into `vault.json`'s `signer`, create the VRF
    subscription on Arbitrum One (CQ-17: Calea holds and funds it) and fill `42161.json`, then deploy per
@@ -972,6 +1130,10 @@ tranche 2, RAF-17. Four constraints:
 
 ## Decisions that should not be relitigated
 
+- **Mainnet mints on MINT's Studio collection `0x96ba…4dD1`** (MINT, confirmed 24 November). The
+  transfer counter, the validator set at deploy, no burn and the supply cap in code below are
+  properties of our `MintABear`, which mainnet does not use; the Studio collection has none of
+  them, and `Activation` for it is being redesigned (the 24 November entry).
 - **The transfer counter, not a callback.** A callback fails open or bricks transfers; the
   counter can do neither. The client accepted it on 2026-09-15.
 - **`solc 0.8.17`.** Forced by SeaDrop's exact pragma. See `CLAUDE.md`.
@@ -1140,8 +1302,8 @@ these.
 
 ## Unknowns to settle by rehearsal
 
-1. Does OpenSea Studio attach to and manage a contract we deployed ourselves, validator set? (mainnet, 19 October: OpenSea does not support 46630)
-2. Does OpenSea emit SignedZone-restricted orders for a Limit-Break-validated collection on 4663? (mainnet: one team bear listed and sold before the drop page is published)
+1. Moot since MINT kept its Studio collection (24 November): does OpenSea Studio attach to and manage a contract we deployed ourselves, validator set? (mainnet, 19 October: OpenSea does not support 46630)
+2. Moot for the same reason: does OpenSea emit SignedZone-restricted orders for a Limit-Break-validated collection on 4663? (mainnet: one team bear listed and sold before the drop page is published)
 3. The whitelist on mainnet (19 October, before any stage opens): `compare` passes over a test CSV against the root Studio set, which shows Studio builds its tree like `script/lib/AllowListTree.sol`, each wallet's limit included (MNT-164). The 46630 half passed on 15 October: the owner set the root with `RehearsalAllowList.set`, `compare` matched, a two-spot wallet minted two and a one-spot wallet was refused its second.
 4. A burn through `Activation` against the real token on mainnet between 20 and 28 October (the 46630 half passed on 15 October: a burn to level 1 against the test $MNTD, and the reset on transfer). The pause has no exemption, so that rehearsal runs in a window the owner opens and closes again; holders' access opens on 29 October (ACT-15, §8).
 5. Settled on 15 October: two mystery-box cycles on 46630 and Arbitrum Sepolia, scheduling on both chains, relays in order (one out of turn refused), real Chainlink words, wins and losses, payouts recorded with `recordPayout`, the same bears opened again in the second cycle. Gas: `open` 62,112; `resolve` 155,322 for a cycle's first relay, then about 136k; `recordPayout` 75,492; a VRF request about 0.0000081 ETH at Arbitrum Sepolia's prices.
@@ -1156,6 +1318,11 @@ needed, the answer where one exists, and the default otherwise:
 §10 has no open item. Tranche 1's code is written. The whitelist root check over a CSV is
 needed by 27 October; the rehearsal is ready to run; tranche 2 waits on the excluded
 ids.
+
+Open with MINT since the call (24 November), not in the register yet: the mainnet worker key's
+address; the royalty router (commercial, until MINT renews its contract); the first cycle's date
+and prize chains; `Activation`'s switch-on; the admin's gas on Arbitrum One. `Activation` for the
+Studio collection waits on the person's choice of mechanism, then a spec change.
 
 ## Related documents
 
