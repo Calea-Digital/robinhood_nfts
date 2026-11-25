@@ -868,22 +868,65 @@ Sepolia, 0.42 APE on Curtis). The gaps, told to the person:
   - **MINT's site** names `0x96ba…` (`deployments.ts`, `LAUNCH-CHECKLIST.md`); it needs
     `0x655e…cB28` with deploy block 93,422,005.
 
+**Mainnet smoke test, 25 November afternoon (read-only; nothing sent).** Read at block 123,142,353
+(15:20 UTC). The message to MINT is `reports/2026-11-25-message-to-mint-mainnet-check.md` (the
+person sends it).
+- **Studio configured the drop on `MintABear`** (admin txs `0xecdb7f6e…7308`, block 123,109,237, and
+  `0x2260878b…66b5`, block 123,109,621):
+  - SeaDrop v1's public stage: 26 November 18:00 to 20:00 UTC, free, one per wallet;
+  - OpenSea's fee recipient `0x0000a26b…a719` the only one allowed; payer `0x0729…97f7`; creator
+    payout the admin; `maxSupply` written again as 4,444;
+  - OpenSea's signer `0xfCe4…F8C3` for the allowlist stages, allowed 26 November 15:00 to
+    27 November 20:00 UTC.
+  - The drop JSON (`ipfs://bafkreigbng…cube`): Team 15–16 (444 per wallet), GTD 16–17 (5), FCFS
+    17–18 (1), Public 18–20 (1), each capped at 4,444. The preview is
+    `opensea.io/collection/mint-a-bear`.
+  - The allowlists are signed by OpenSea's server, with no Merkle root on-chain, so `compare` (WL-4)
+    cannot check them.
+- **Simulated** (`eth_call` with `--block.time`):
+  - `mintPublic` at 18:01 passes; a second bear, 15:01, 20:01 and another fee recipient are refused.
+  - V3 at level 0, list 0: the holder's own transfer and Payment Processor pass; Seaport without
+    SignedZone's authorization fails `CallerMustBeWhitelisted`.
+- **Fork test** (`reports/2026-11-25-mainnet-smoke/`, `forge test` there on a fork of 4663, nothing
+  broadcast):
+  public mint; burn refused while paused; the admin's unpause on the fork; 1,666 $MNTD burned →
+  level 1, weight 110, supply down by the amount; A→B → level 0, nonce 1; B→A → still 0, nonce 2;
+  Seaport as operator refused.
+- **Metadata:** `baseURI` is the pre-reveal JSON (`ipfs://bafkreic4…svhy`, "Mint A Bear Pre-reveal"),
+  whose `image` is an MP4 (1.36 MB). `contractURI` and the provenance hash are empty; SeaDrop refuses
+  `setProvenanceHash` after the first mint.
+- **On-chain royalties are unset:** `royaltyInfo` reads (0x0, 0); OpenSea shows 6.9% from its own
+  setting.
+- **`Activation`** is paused since construction and was never opened (its only events are the
+  constructor's).
+- **MINT's site** (`release/1.5`): `deployments.ts` pins mainnet's `bears` to `0x96ba…`, and
+  `server/config.ts` refuses any other `BEARS_ADDRESS` on 4663. Re-pointing it is a code change.
+- **The Studio collection was postponed, not closed** (admin txs `0xdf16ad8c…`, `0x992e5182…`,
+  `0x24b4d9a3…`): its public stage now opens 6 July 2027, 14:00 to 16:00 UTC, with OpenSea's
+  signer allowed 6–7 July 2027. `setMaxSupply(0)` on it closes every mint route while nothing is
+  minted there.
+
 **Next, in this order (written 25 November):**
-1. **MINT confirms the drop is on `MintABear`** and removes the Studio collection's stage before
-   26 November 18:00 UTC; read `getPublicDrop(0x96ba…)` on SeaDrop v1 back afterwards. Then the
-   24 November list's steps 1 and 2 (`Activation` v2, the client for a stock collection) are
-   dropped, and the decision bullet "Mainnet's collection" below is settled.
-2. **Read Studio's setup back on `0x655e…`** once Iñigo has done it: `baseURI`, `contractURI`,
-   `royaltyInfo` (690 bps), SeaDrop's creator payout, fee recipients and stages, `maxSupply` 4,444.
-   Before the page is public, one team bear is listed and sold on OpenSea under V3.
-3. **Tell MINT:** the testnet message (`reports/2026-11-24-message-to-mint-testnet.md`) needs its
-   point 5 rewritten, since TestABear now matches mainnet (a correction if it has gone out); the
-   site's addresses; the missing "Release cycle" step on `/nft/admin`.
-4. **The register and the specification** (`/opsx:propose` → archive → commit → `/mnt:board`):
-   the 24 November list's step 4, without an `Activation` change.
-5. **The mainnet worker key's address:** `vault.json`'s `signer`, the Arbitrum One subscription and
+1. **The person sends MINT the mainnet message** today. Before 26 November 15:00 UTC, on MINT's
+   side: the provenance hash (if wanted), the site's `deployments.ts`, the Team list, the
+   pre-reveal image. Then the testnet message with its point 5 rewritten
+   (`reports/2026-11-24-message-to-mint-testnet.md`), unless it already went out.
+2. **During the drop (26 November):** read `totalSupply` and the first `SeaDropMint` events after
+   15:00. After the Team stage, check that one team bear's OpenSea resale went through under V3
+   (unknown 2); if it fails, the admin's `setTransferValidator(0)`.
+3. **Read back MINT's fixes:** `royaltyInfo` (690 bps and the receiver), `provenanceHash`, `maxSupply`
+   0 on `0x96ba…`, the site's `deployments.ts`.
+4. **Drop the 24 November list's steps 1 and 2** (`Activation` v2, the client for a stock
+   collection) once the drop runs on `0x655e…`; the decision bullet "Mainnet's collection" below is
+   then settled.
+5. **The register and the specification** (`/opsx:propose` → archive → commit → `/mnt:board`): the
+   24 November list's step 4, without an `Activation` change; COL-5's provenance and COL-6's 6.9% as
+   MINT sets them; ACT-15's opening date (29 October) replaced by the switch-on as an open question.
+6. **The mainnet worker key's address:** `vault.json`'s `signer`, the Arbitrum One subscription and
    `42161.json`, then the draw, the vault and the box against `0x655e…`.
-6. **`Activation`'s switch-on:** MINT's admin unpauses `0xAbd2…159b` on the date MINT sets (open).
+7. **`Activation`'s switch-on** (open; MINT's): after the site's burn flow works on mainnet, MINT's
+   Status boost reads `Activation`, and one small burn with a team bear has passed in a window the
+   admin opens and closes (unknown 4).
 
 **Earlier: next, in this order (written 24 November):**
 1. **`Activation` v2.** The person picks the mechanism (recommendation above). Then the spec
