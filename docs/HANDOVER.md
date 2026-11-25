@@ -1,6 +1,6 @@
 # MintABear — handover
 
-Written 2026-09-15, current as of the session of 24 November. Read this first when resuming; the next session starts from "Next, in this order (written 24 November)" below, inside the 24 November entry, which follows the 20 November one.
+Written 2026-09-15, current as of the session of 25 November. Read this first when resuming; the next session starts from "Next, in this order (written 25 November)" below, inside the 25 November entry, which follows the 24 November one.
 
 ## Where things stand
 
@@ -771,7 +771,8 @@ None of this is in `openspec/` yet (step 3 below).
   SeaDrop v1-native, SeaDrop v1 is live on 4663, and OpenSea already indexes it as `mintabear`. It
   needs the admin's `acceptOwnership()` and OpenSea support linking it to Studio, unproven and of
   unknown turnaround. Not pursued: MINT keeps the Studio collection. Rehearsal unknowns 1 and 2
-  (Studio taking over our contract; SignedZone orders under V3) are moot with it.
+  (Studio taking over our contract; SignedZone orders under V3) are moot with it. Overtaken on
+  25 November: MINT asked for exactly this (the 25 November entry).
 - **Testnet for v2 (the person's choice):** a new stock `ERC721SeaDropCloneable` on 46630 set up
   like mainnet's, a new `MysteryBox` for it (a box's collection is fixed), v2 and the guard, owned
   by MINT's testnet admin. Before `/nft` works with a stock collection, the client's bear reads
@@ -818,7 +819,73 @@ Sepolia, 0.42 APE on Curtis). The gaps, told to the person:
 `0xae51…383d` on 46630, and `PrizeDraw` `0x8108…0A05` on Arbitrum Sepolia, stay owned by
 `0x7672…04Aa`. MINT's own testnet doc calls them unusable, and MINT is to be told they are retired.
 
-**Next, in this order (written 24 November):**
+**25 November: MINT's admin owns our `MintABear`; the drop is to move to it.**
+- **The ask.** Iñigo, in chat at 12:03: send ownership of "the collection contract you created" to
+  `0x153052B43c8fD4ec01f14D1Edd8660778daa6141` and it can show up on OpenSea drops, where he sets
+  up the new page. The contract meant is our `MintABear` `0x655e…cB28` (the person), so mainnet
+  would have `MintABear` and `Activation` as built.
+- **Our half was already done.** The deploy offered ownership to that same address on 20 October
+  (`PotentialOwnerUpdated`, block 93,422,005, tx
+  `0x02a673abde66eff470b46669848b972c205f1a2313107c527c7ca920b57a3788`), and the offer still
+  stood: only the owner can change it, and the deployer `0x7672…04Aa` had sent nothing since
+  (nonce 5). Simulated first: `acceptOwnership()` from the admin passed (34,458 gas, under
+  0.000001 ETH); from anyone else it reverts `NotNextOwner()`.
+- **Done by MINT's admin:**
+  - `acceptOwnership()`: block 123,004,350, tx
+    `0xa104abb641563e773d3f02004a28efedc9297a7cdbe32f07fefea834f1cd4f91`
+    (`OwnershipTransferred(0x7672…04Aa, 0x1530…6141)`);
+  - `updateAllowedSeaDrop([0x00005EA0…4bf5])`, the RUNBOOK's step 2: block 123,004,846, tx
+    `0x85c574bf42db58637655b984e90618b29bf6646b98e311265da23f992ac551d6`
+    (`AllowedSeaDropUpdated` with SeaDrop v1 alone).
+- **Read back, the RUNBOOK's "Ownership handover" (simulated calls, nothing sent):**
+  - `owner()` is the admin; no offer is pending (a second `acceptOwnership` reverts
+    `NotNextOwner`); an owner call from `0x7672…04Aa` reverts `OnlyOwner`. Calea holds no role on
+    mainnet.
+  - SeaDrop v1 mints (`mintSeaDrop` simulated from it); any other caller reverts
+    `OnlyAllowedSeaDrop`.
+  - `maxSupply` 4,444, validator V3 `0x721C…cd1B`, 0 minted.
+  - SeaDrop's state for the collection is empty: creator payout, allowlist root, fee recipients,
+    signers, payers, token-gated tokens, public drop. Nothing was set before the handover.
+  - `Activation` `0xAbd2…159b`: owner the admin, paused, `BEARS` `0x655e…`, $MNTD `0x62Ed…a967`.
+- **What it changes once MINT confirms the drop is on `MintABear`:**
+  - **`Activation` v2 is not needed.** v1's counter gives MINT's rule as it stands: any transfer,
+    a return to the burner included, reads level 0. The 24 November analysis and the validator
+    proof stay as the record of why the Studio collection could not.
+  - **The testnet already matches mainnet:** TestABear is our `MintABear`. The 24 November gap
+    "TestABear has the counter" and point 5 of the testnet message fall away, and no stock clone
+    or v2 goes to 46630.
+  - **The box, the draw and the vaults deploy against `0x655e…`;** `_requireCollection` accepts it
+    as it is.
+  - **Rehearsal unknowns 1 and 2 are live again:** Studio taking over our contract (Iñigo's page
+    shows it) and OpenSea's sales under V3 (one team bear listed and sold before the page is
+    public; OPS-6's `setTransferValidator(0)` lifts enforcement in one call if sales fail).
+- **Still on MINT's side before the drop:**
+  - **The Studio collection's public stage still stands** on SeaDrop v1 for `0x96ba…`:
+    26 November, 18:00 to 20:00 UTC, one per wallet, fee 1,000 bps, fee recipients restricted.
+    It opens without an OpenSea page; if the drop has moved, it must be removed.
+  - **Studio on `MintABear`:** `baseURI` (the clone's is `ipfs://bafkreic4…svhy`), `contractURI`,
+    royalties at 6.9%, the creator payout and the stages are all empty. `maxSupply` stays 4,444.
+  - **MINT's site** names `0x96ba…` (`deployments.ts`, `LAUNCH-CHECKLIST.md`); it needs
+    `0x655e…cB28` with deploy block 93,422,005.
+
+**Next, in this order (written 25 November):**
+1. **MINT confirms the drop is on `MintABear`** and removes the Studio collection's stage before
+   26 November 18:00 UTC; read `getPublicDrop(0x96ba…)` on SeaDrop v1 back afterwards. Then the
+   24 November list's steps 1 and 2 (`Activation` v2, the client for a stock collection) are
+   dropped, and the decision bullet "Mainnet's collection" below is settled.
+2. **Read Studio's setup back on `0x655e…`** once Iñigo has done it: `baseURI`, `contractURI`,
+   `royaltyInfo` (690 bps), SeaDrop's creator payout, fee recipients and stages, `maxSupply` 4,444.
+   Before the page is public, one team bear is listed and sold on OpenSea under V3.
+3. **Tell MINT:** the testnet message (`reports/2026-11-24-message-to-mint-testnet.md`) needs its
+   point 5 rewritten, since TestABear now matches mainnet (a correction if it has gone out); the
+   site's addresses; the missing "Release cycle" step on `/nft/admin`.
+4. **The register and the specification** (`/opsx:propose` → archive → commit → `/mnt:board`):
+   the 24 November list's step 4, without an `Activation` change.
+5. **The mainnet worker key's address:** `vault.json`'s `signer`, the Arbitrum One subscription and
+   `42161.json`, then the draw, the vault and the box against `0x655e…`.
+6. **`Activation`'s switch-on:** MINT's admin unpauses `0xAbd2…159b` on the date MINT sets (open).
+
+**Earlier: next, in this order (written 24 November):**
 1. **`Activation` v2.** The person picks the mechanism (recommendation above). Then the spec
    change through `/opsx:propose`: the reset rule of COL-3, COL-4, ACT-4 and ACT-5 for a collection
    without the counter, the guard as a requirement, and OPS-2's `_requireCollection`, which refuses
@@ -1138,10 +1205,12 @@ tranche 2, RAF-17. Four constraints:
 
 ## Decisions that should not be relitigated
 
-- **Mainnet mints on MINT's Studio collection `0x96ba…4dD1`** (MINT, confirmed 24 November). The
-  transfer counter, the validator set at deploy, no burn and the supply cap in code below are
-  properties of our `MintABear`, which mainnet does not use; the Studio collection has none of
-  them, and `Activation` for it is being redesigned (the 24 November entry).
+- **Mainnet's collection is moving to our `MintABear` `0x655e…cB28`.** MINT kept its Studio
+  collection `0x96ba…4dD1` on 24 November, then asked on 25 November for an OpenSea drop on ours,
+  and its admin accepted ownership (the 25 November entry). Nothing is minted on either. The
+  transfer counter, the validator set at deploy, no burn and the supply cap in code below hold on
+  `0x655e…`; the Studio collection has none of them. Settled once MINT confirms the drop page is on
+  `0x655e…` and the Studio collection's stage is removed.
 - **The transfer counter, not a callback.** A callback fails open or bricks transfers; the
   counter can do neither. The client accepted it on 2026-09-15.
 - **`solc 0.8.17`.** Forced by SeaDrop's exact pragma. See `CLAUDE.md`.
@@ -1296,7 +1365,7 @@ these.
 | Testnet $MNTD (46630) | `0x63573eD184850Df903C908314Bc6aA3fD6d0128B` — the one MINT funded the rehearsal wallet from (1,000,000), named in `46630.json`; `0x15CFC2be2Dc468E3f173c560C493A71C3fE4211C` is a second deployment of the same runtime (only the EIP-712 immutables differ). Both the reference token's code, 18 decimals (read 2026-10-14 and 15) |
 | Rehearsal deployments (2026-10-15) | 46630: `MintABear` `0x8108AE7e4EB89CcCE253B8aD93d7c46250790A05`, `Activation` `0x389578ECe1E63DBEe48c9b22504D1Af29E2aef2f`, `MysteryBox` `0xA15a5B96849435B0030F1F6D6E3f886c8C0d55a7`; Arbitrum Sepolia: `PrizeDraw` `0x8108AE7e4EB89CcCE253B8aD93d7c46250790A05` (same address as the collection: deployer nonce 0 on both). All owned by the rehearsal wallet `0x7672D1F3C832796D378827019a9f9Bf4D80404Aa`; VRF subscription `19717353…670789` (in `421614.json`). Sourcify `exact_match` |
 | Mainnet $MNTD (4663) | `0x62Ed300A5916aeD339a65E04754392763982a967` — MINT's (CQ-2): "MNTD", 18 decimals, 1,000,000,000 supply, no owner, no proxy, `burnFrom`; Sourcify `exact_match` (`src/token/MNTD.sol:MNTD`, solc 0.8.28, OZ 5.6.1); deployed by `0x928C591b9d1D79C35b85adb93Dd9634fe761F6c5`, block 92,969,522; runtime equal to the testnet $MNTD's but for the EIP-712 immutables (read 2026-10-20) |
-| Mainnet deployments (2026-10-20) | 4663, deployer `0x7672…04Aa`: `MintABear` `0x655e88103f77a48E0b7875511318d3c5f79FcB28`, block 93,422,005, creation tx `0x1eaf5964e848ad78def7194c015c41cd44ad9414a4513a1fae4e12b3a995d44b`; `Activation` `0xAbd272C95F20B59659E3E21Ed75A58652e93159b`, block 93,423,642, tx `0xc62fcd3e6c74f919cf18823186f845af636f1c9affdbeac26f5baaa88eed059a`. Both Sourcify `exact_match` |
+| Mainnet deployments (2026-10-20) | 4663, deployer `0x7672…04Aa`: `MintABear` `0x655e88103f77a48E0b7875511318d3c5f79FcB28`, block 93,422,005, creation tx `0x1eaf5964e848ad78def7194c015c41cd44ad9414a4513a1fae4e12b3a995d44b`; `Activation` `0xAbd272C95F20B59659E3E21Ed75A58652e93159b`, block 93,423,642, tx `0xc62fcd3e6c74f919cf18823186f845af636f1c9affdbeac26f5baaa88eed059a`. Both Sourcify `exact_match`. Both owned by MINT's admin: `Activation` from construction, `MintABear` since its `acceptOwnership()` on 2026-11-25 (block 123,004,350) |
 | Reference $MNTD | Base Sepolia `0xa21273093af1b3b880b73afd54514bb3d6269968`: OpenZeppelin 5.5 `ERC20 + ERC20Burnable + ERC20Permit`, 18 decimals, 1,000,000,000 minted once, no owner, no proxy; solc 0.8.28, `cancun` |
 
 - **Contract size limit is ~96 KB**, four times Ethereum's.
@@ -1310,8 +1379,8 @@ these.
 
 ## Unknowns to settle by rehearsal
 
-1. Moot since MINT kept its Studio collection (24 November): does OpenSea Studio attach to and manage a contract we deployed ourselves, validator set? (mainnet, 19 October: OpenSea does not support 46630)
-2. Moot for the same reason: does OpenSea emit SignedZone-restricted orders for a Limit-Break-validated collection on 4663? (mainnet: one team bear listed and sold before the drop page is published)
+1. Live again since 25 November, when MINT's admin took our `MintABear` for an OpenSea drop: does OpenSea Studio attach to and manage a contract we deployed ourselves, validator set? Iñigo's drop page on `0x655e…` answers it. (OpenSea does not support 46630)
+2. Live again for the same reason: does OpenSea emit SignedZone-restricted orders for a Limit-Break-validated collection on 4663? (mainnet: one team bear listed and sold before the drop page is published)
 3. The whitelist on mainnet (19 October, before any stage opens): `compare` passes over a test CSV against the root Studio set, which shows Studio builds its tree like `script/lib/AllowListTree.sol`, each wallet's limit included (MNT-164). The 46630 half passed on 15 October: the owner set the root with `RehearsalAllowList.set`, `compare` matched, a two-spot wallet minted two and a one-spot wallet was refused its second.
 4. A burn through `Activation` against the real token on mainnet between 20 and 28 October (the 46630 half passed on 15 October: a burn to level 1 against the test $MNTD, and the reset on transfer). The pause has no exemption, so that rehearsal runs in a window the owner opens and closes again; holders' access opens on 29 October (ACT-15, §8).
 5. Settled on 15 October: two mystery-box cycles on 46630 and Arbitrum Sepolia, scheduling on both chains, relays in order (one out of turn refused), real Chainlink words, wins and losses, payouts recorded with `recordPayout`, the same bears opened again in the second cycle. Gas: `open` 62,112; `resolve` 155,322 for a cycle's first relay, then about 136k; `recordPayout` 75,492; a VRF request about 0.0000081 ETH at Arbitrum Sepolia's prices.
@@ -1330,7 +1399,7 @@ ids.
 Open with MINT since the call (24 November), not in the register yet: the mainnet worker key's
 address; the royalty router (commercial, until MINT renews its contract); the first cycle's date
 and prize chains; `Activation`'s switch-on; the admin's gas on Arbitrum One. `Activation` for the
-Studio collection waits on the person's choice of mechanism, then a spec change.
+Studio collection is not needed if the drop moves to our `MintABear` (25 November); MINT to confirm.
 
 ## Related documents
 
